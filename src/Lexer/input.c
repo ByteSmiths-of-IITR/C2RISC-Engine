@@ -1,11 +1,10 @@
-#include <stdio.h> 
-#include <stdlib.h>
-#serfe
+#include <stdio.h> // Preprocessor directive
+
+// */
 // Keywords
 int main() {
-    auto int a = 10;           // auto keyword
-    static int b = 
-    20;         // static keyword
+    auto int a = ;           // auto keyword
+    static int b = 20;         // static keyword
     register int c = 30;       // register keyword
     const int CONSTANT = 100;  // const keyword
     volatile int d = 40;       // volatile keyword
