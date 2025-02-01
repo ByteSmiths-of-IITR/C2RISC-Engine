@@ -18,9 +18,9 @@ Implementation Language - `C++` <br>
 
 Steps 
 - Make sure you have 'Flex' and 'g++' installed on your system
-- RUN `flex lexer.l` ➾ Generates a `lex.yy.c` file
-- RUN `g++ lex.yy.c -o lexer` ➾ Generates a `lexer` executable
-- RUN `./lexer <input_file>` ➾ This does a tokenization on <input_file> and stores output to `output.txt`
+- RUN `$ flex lexer.l` ➾ Generates a `lex.yy.c` file
+- RUN `$ g++ lex.yy.c -o lexer` ➾ Generates a `lexer` executable
+- RUN `$ ./lexer <input_file>` ➾ This does a tokenization on <input_file> and stores output to `output.txt`
 
 ### Running Parser
 TO BE MADE
