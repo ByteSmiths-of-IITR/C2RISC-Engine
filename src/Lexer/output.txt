@@ -1,94 +1,69 @@
-Unrecognized character: #
-An identifier: include
-Unrecognized character: <
-An identifier: iostream
-Unrecognized character: >
-An identifier: int
-An identifier: main
-Unrecognized character: (
-Unrecognized character: )
-Unrecognized character: {
-An identifier: int
-An identifier: num1
-Unrecognized character: ,
-An identifier: num2
-Unrecognized character: ,
-An identifier: sum
-Unrecognized character: ;
-An identifier: std
-Unrecognized character: :
-Unrecognized character: :
-An identifier: cout
-Unrecognized character: <
-Unrecognized character: <
-Unrecognized character: "
-Unrecognized character: E
-An identifier: nter
-An identifier: first
-An identifier: number
-Unrecognized character: :
-Unrecognized character: "
-Unrecognized character: ;
-An identifier: std
-Unrecognized character: :
-Unrecognized character: :
-An identifier: cin
-Unrecognized character: >
-Unrecognized character: >
-An identifier: num1
-Unrecognized character: ;
-An identifier: std
-Unrecognized character: :
-Unrecognized character: :
-An identifier: cout
-Unrecognized character: <
-Unrecognized character: <
-Unrecognized character: "
-Unrecognized character: E
-An identifier: nter
-An identifier: second
-An identifier: number
-Unrecognized character: :
-Unrecognized character: "
-Unrecognized character: ;
-An identifier: std
-Unrecognized character: :
-Unrecognized character: :
-An identifier: cin
-Unrecognized character: >
-Unrecognized character: >
-An identifier: num2
-Unrecognized character: ;
-An identifier: sum
-Unrecognized character: =
-An identifier: num1
-An operator: +
-An identifier: num2
-Unrecognized character: ;
-An identifier: std
-Unrecognized character: :
-Unrecognized character: :
-An identifier: cout
-Unrecognized character: <
-Unrecognized character: <
-Unrecognized character: "
-Unrecognized character: T
-An identifier: he
-An identifier: sum
-An identifier: is
-Unrecognized character: :
-Unrecognized character: "
-Unrecognized character: <
-Unrecognized character: <
-An identifier: sum
-Unrecognized character: <
-Unrecognized character: <
-An identifier: std
-Unrecognized character: :
-Unrecognized character: :
-An identifier: endl
-Unrecognized character: ;
-An identifier: return
-An integer: 0 (0)
-Unrecognized character: ;
-Unrecognized character: }
+UNKNOWN: #
+IDENTIFIER: include
+RELATIONAL_OP: <
+IDENTIFIER: iostream
+RELATIONAL_OP: >
+KEYWORD: int
+IDENTIFIER: main
+LPAREN: (
+RPAREN: )
+LBRACE: {
+KEYWORD: int
+IDENTIFIER: num1
+COMMA: ,
+IDENTIFIER: num2
+COMMA: ,
+IDENTIFIER: sum
+SEMICOLON: ;
+IDENTIFIER: std
+UNKNOWN: :
+UNKNOWN: :
+IDENTIFIER: cout
+BITWISE_OP: <<
+STRING_LITERAL: "Enter first number: "
+SEMICOLON: ;
+IDENTIFIER: std
+UNKNOWN: :
+UNKNOWN: :
+IDENTIFIER: cin
+BITWISE_OP: >>
+IDENTIFIER: num1
+SEMICOLON: ;
+IDENTIFIER: std
+UNKNOWN: :
+UNKNOWN: :
+IDENTIFIER: cout
+BITWISE_OP: <<
+STRING_LITERAL: "Enter second number: "
+SEMICOLON: ;
+IDENTIFIER: std
+UNKNOWN: :
+UNKNOWN: :
+IDENTIFIER: cin
+BITWISE_OP: >>
+IDENTIFIER: num2
+SEMICOLON: ;
+IDENTIFIER: sum
+ASSIGNMENT_OP: =
+IDENTIFIER: num1
+ARITHMETIC_OP: +
+IDENTIFIER: num2
+SEMICOLON: ;
+IDENTIFIER: std
+UNKNOWN: :
+UNKNOWN: :
+IDENTIFIER: cout
+BITWISE_OP: <<
+STRING_LITERAL: "The sum is: "
+BITWISE_OP: <<
+IDENTIFIER: sum
+BITWISE_OP: <<
+IDENTIFIER: std
+UNKNOWN: :
+UNKNOWN: :
+IDENTIFIER: endl
+SEMICOLON: ;
+KEYWORD: return
+DECIMAL_LITERAL: 0
+SEMICOLON: ;
+RBRACE: }
