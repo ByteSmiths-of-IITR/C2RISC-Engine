@@ -8,6 +8,11 @@ FILE *output_file;
 %option noyywrap
 
 /* Definitions */
+
+PREPROCESSOR_OP "#include"|"#define"|"#undef"|"#if"|"#ifdef"|"#ifndef"|"#else"|"#elif"|"#endif"|"#error"|"#pragma"|"#line"
+
+PREPROCESSOR_STATEMENT {PREPROCESSOR_OP}(.*)?\n
+
 DIGIT      [0-9]
 LETTER     [a-zA-Z_]
 ID         {LETTER}({LETTER}|{DIGIT})*
@@ -43,6 +48,8 @@ DOT        "."
 {WHITESPACE}      { /* Ignore whitespace */ }
 {COMMENT1}        { /* Ignore single-line comments */ }
 {COMMENT2}        { /* Ignore multi-line comments */ }
+{PREPROCESSOR_OP} { fprintf(output_file, "PREPROCESSOR_OP: %s\n", yytext); }
+{PREPROCESSOR_STATEMENT} { fprintf(output_file, "PREPROCESSOR_STATEMENT: %s", yytext); }
 
 "auto"|"break"|"case"|"char"|"const"|"continue"|"default"|"do"|"double"|"else"|"enum"|"extern"|"float"|"for"|"goto"|"if"|"inline"|"int"|"long"|"register"|"restrict"|"return"|"short"|"signed"|"sizeof"|"static"|"struct"|"switch"|"typedef"|"union"|"unsigned"|"void"|"volatile"|"while" { fprintf(output_file, "KEYWORD: %s\n", yytext); }
 
@@ -70,6 +77,11 @@ DOT        "."
 {SEMICOLON}      { fprintf(output_file, "SEMICOLON: %s\n", yytext); }
 {COMMA}          { fprintf(output_file, "COMMA: %s\n", yytext); }
 {DOT}            { fprintf(output_file, "DOT: %s\n", yytext); }
+
+
+
+
+
 
 .                { fprintf(output_file, "UNKNOWN: %s\n", yytext); }
 
