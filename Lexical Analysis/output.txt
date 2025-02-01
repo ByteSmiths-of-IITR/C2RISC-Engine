@@ -1,0 +1,1 @@
+#include <iostream>int main() {    int num, num, product;    std::cout << "nter two numbers: ";    std::cin >> num >> num;    product = num * num;    std::cout << "roduct: " << product << std::endl;    return ;}

@@ -67,7 +67,7 @@ int yywrap(void)
 void adjust(void)
 {
  EM_tokPos=charPos;
- charPos+=yyleng;
+ charPos+=yyleng;x
 }
 
 # define A 2
