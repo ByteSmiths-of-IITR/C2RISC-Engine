@@ -20,7 +20,7 @@ Steps
 - Make sure you have 'Flex' and 'g++' installed on your system
 - RUN `$ flex lexer.l` ➾ Generates a `lex.yy.c` file
 - RUN `$ g++ lex.yy.c -o lexer -w` ➾ Generates a `lexer` executable
-- RUN `$ ./lexer <input_file>` ➾ This does a tokenization on <input_file> and stores output to "<input_base_name>_output.txt" and error stored to "<input_base_name>_error.txt"
+- RUN `$ ./lexer <input_file>` ➾ This does a tokenization on <input_file> and stores output to `<input_base_name>_output.txt` and error stored to `<input_base_name>_error.txt`
 
 #### Some Debugging Instructions
 Global Variable
