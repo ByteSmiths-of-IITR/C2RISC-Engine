@@ -1,30 +1,302 @@
 %{
-#include <stdio.h>
-#include "tokens.h"  // Include token definitions
-#include <string.h>
+#include <iostream>
+#include <vector>
+#include <map>
+#include <string>
 
-#define DEBUGMODE 0
+// #define here std::cout << "HERE" << std::endl;
 
-#define TableSep "+-----------+-------------------------------+-------------------------------+-----------+\n"
+using namespace std;
+
+#define DEBUGMODE 0 // 1 to show debug messages
+#define SHOWERRORS 1 // 1 to show errors in error.txt 
+
+// Token classes
+enum class TokenClass {
+    KEYWORD,
+    IDENTIFIER,
+    LITERAL, // 2-9
+    DECIMAL,
+    BINARY,
+    OCTAL,
+    HEX,
+    FLOAT,
+    CHAR,
+    STRING, 
+    PUNCTUATION, // 10
+    OPERATOR, // 11
+    UNKNOWN // 12
+};
+
+char* tokenToString(TokenClass token) {
+    int tokenValue = static_cast<int>(token);
+    switch(tokenValue) {
+        case 0: return "KEYWORD";
+        case 1: return "IDENTIFIER";
+        case 2: return "LITERAL";
+        case 3: return "DECIMAL LITERAL";
+        case 4: return "BINARY LITERAL";
+        case 5: return "OCTAL LITERAL";
+        case 6: return "HEX LITERAL";
+        case 7: return "FLOAT LITERAL";
+        case 8: return "CHAR LITERAL";
+        case 9: return "STRING LITERAL";
+        case 10: return "PUNCTUATION";
+        case 11: return "OPERATOR";
+        case 12: return "UNKNOWN";
+        default: return "INVALID";
+    }
+}
+
 
 FILE *output_file;
+FILE *error_file;
 int line_number = 1;
 
-// Define the width of each column in the lexer table
-int lineNoWidth = 10;
-int tokenWidth = 30;
-int lexemeWidth = 30;
-int valueWidth = 10;
 
-// Function to print the lexer table
-void printLexerTable(int lineNo, char *token, char *lexeme) {
+// ----------- LEXER TABLE -------------------
+// Define the width of each column in the lexer table 
+vector<int> columnWidths = {10, 30, 20, 35};
 
-        // Calculate the number of spaces to add to each column
-        fprintf(output_file,"| %-*d| %-*s| %-*s| %-*s|\n", lineNoWidth, lineNo, tokenWidth, token, lexemeWidth, lexeme, valueWidth, "N/A");
-
-        // Print the table separator
-        fprintf(output_file, TableSep);
+void printLexerTableSeparator() {
+    fprintf(output_file, "+");
+    for (int i = 0; i < columnWidths.size(); i++) {
+        for (int j = 0; j < columnWidths[i]+1; j++) {
+            fprintf(output_file, "-");
+        }
+        fprintf(output_file, "+");
+    }
+    fprintf(output_file, "\n");
 }
+
+void printLexerTableHeader() {
+    printLexerTableSeparator();
+    fprintf(output_file, "| %-*s| %-*s| %-*s| %-*s|\n", columnWidths[0], "Line No", columnWidths[1], "Token", columnWidths[2], "Lexeme", columnWidths[3], "More Info");
+    printLexerTableSeparator();
+}
+
+void printLexerTable(int lineNo, char *token, char *lexeme, string moreInfo) {
+
+    // Calculate the number of spaces to add to each column
+    fprintf(output_file,"| %-*d| %-*s| %-*s| %-*s|\n", columnWidths[0], lineNo, columnWidths[1], token, columnWidths[2], lexeme, columnWidths[3], moreInfo.c_str());
+    
+    // Print the table separator
+    printLexerTableSeparator();
+}
+
+void printLexerTable(int lineNo, char *token, char *lexeme) {
+    printLexerTable(lineNo, token, lexeme, "N/A");
+}
+
+
+//  TOKENS----------------------------------------------
+
+std::map<string,string> KeywordInfo;
+std::map<string,string> OperatorInfo;
+std::map<string,string> PunctuationInfo;
+
+// Forward declarations of token handlers
+void handleToken(TokenClass token, char *lexeme);
+void handleKeyword(char *lexeme);
+void handleIdentifier(char *lexeme);
+void handleLiteral(TokenClass token, char *lexeme);
+void handlePunctuation(char *lexeme);
+void handleOperator(char *lexeme);
+void handleUnknown(char *lexeme);
+
+
+// Base Token Handler
+void handleToken(TokenClass token, char *lexeme) {
+    
+    int tokenValue = static_cast<int>(token);
+
+    if(tokenValue == 0) {
+        handleKeyword(lexeme);
+    }
+    else if(tokenValue == 1) {
+        handleIdentifier(lexeme);
+    }
+    else if(tokenValue >= 2 && tokenValue <= 9) {
+        handleLiteral(token, lexeme);
+    }
+    else if(tokenValue == 10) {
+        handlePunctuation(lexeme);
+    }
+    else if(tokenValue == 11) {
+        handleOperator(lexeme);
+    }
+    else if(tokenValue == 12) {
+        printLexerTable(line_number, "UNKNOWN", lexeme);
+    }
+    else{
+        printLexerTable(line_number, "Something Wrong", lexeme);
+    }
+}
+
+
+//------------ KEYWORDS
+
+// Adding more info to the keyword
+void InitializeKeywordMap(){
+    // KeywordInfo["alignas"] = "Alignment specifier";
+    KeywordInfo["nullptr"] = "Pointer literal";
+    KeywordInfo["true"] = "Boolean literal";
+    KeywordInfo["false"] = "Boolean literal";
+
+    KeywordInfo["new"] = "OP - P3, R-L";
+    KeywordInfo["delete"] = "OP - P3, R-L";
+    KeywordInfo["sizeof"] = "OP - P3, R-L";
+
+    KeywordInfo["alignas"] = "Alignment specifier";
+    KeywordInfo["int"] = "Data type";
+    KeywordInfo["char"] = "Data type";
+    KeywordInfo["float"] = "Data type";
+    KeywordInfo["double"] = "Data type";
+    KeywordInfo["void"] = "Data type";
+    KeywordInfo["bool"] = "Data type";
+    KeywordInfo["short"] = "Data type";
+    KeywordInfo["long"] = "Data type";
+    KeywordInfo["signed"] = "Data type";
+    KeywordInfo["unsigned"] = "Data type";
+    KeywordInfo["auto"] = "Type specifier";
+    KeywordInfo["const"] = "Type qualifier";
+    KeywordInfo["volatile"] = "Type qualifier";
+
+    KeywordInfo["if"] = "Conditional statement";
+    KeywordInfo["else"] = "Conditional statement";
+    KeywordInfo["switch"] = "Conditional statement";
+    KeywordInfo["case"] = "Conditional statement";
+    KeywordInfo["default"] = "Conditional statement";
+    
+    KeywordInfo["for"] = "Loop statement";
+    KeywordInfo["while"] = "Loop statement";
+    KeywordInfo["do"] = "Loop statement";
+    KeywordInfo["break"] = "Loop control statement";
+    KeywordInfo["continue"] = "Loop control statement";
+
+    KeywordInfo["return"] = "Function return statement";
+
+}
+
+void handleKeyword(char *lexeme) {
+    string key = lexeme;
+    if(KeywordInfo.find(key) != KeywordInfo.end()) {
+        printLexerTable(line_number, "KEYWORD", lexeme, KeywordInfo[key]);
+    }
+    else{
+        printLexerTable(line_number, "KEYWORD", lexeme);
+    }
+}
+
+//------------- IDENTIFIERS
+void handleIdentifier(char *lexeme) {
+    printLexerTable(line_number, "IDENTIFIER", lexeme);
+}
+
+
+//------------- LITERALS
+void handleLiteral(TokenClass token, char *lexeme) {
+    // We just need to print the token and lexeme
+    char* tokenString = tokenToString(token);
+
+    printLexerTable(line_number, tokenString, lexeme);
+}
+
+
+//---------- PUNCTUATION
+void InitializePunctuationMap(){
+    PunctuationInfo["("] = "Left Parenthesis";
+    PunctuationInfo[")"] = "Right Parenthesis";
+    PunctuationInfo["["] = "Left Square Bracket";
+    PunctuationInfo["]"] = "Right Square Bracket";
+    PunctuationInfo["{"] = "Left Curly Brace";
+    PunctuationInfo["}"] = "Right Curly Brace";
+    PunctuationInfo[";"] = "Semi-colon";
+}
+
+void handlePunctuation(char *lexeme) {
+    string key = lexeme;
+    if(PunctuationInfo.find(key) != PunctuationInfo.end()) {
+        printLexerTable(line_number, "PUNCTUATION", lexeme, PunctuationInfo[key]);
+    }
+    else{
+        printLexerTable(line_number, "PUNCTUATION", lexeme);
+    }
+}
+
+
+//---------- OPERATORS -------------------------------
+void InitializeOperatorMap(){
+    //// We will be categorizing on basis of Precedence and Associativity
+    OperatorInfo["::"] = "P1, L-R";
+
+    OperatorInfo["++"] = "Depends on PostFix or Prefix"; // Postfix
+    OperatorInfo["--"] = "Depends on PostFix or Prefix"; // Postfix
+
+    OperatorInfo["~"] = "Bitwise NOT"; // Bitwise NOT (one's complement)
+    OperatorInfo["!"] = "Logical NOT"; // Unary logical NOT
+    OperatorInfo["-"] = "Can be \"Uniary Negation\" or \"Subtraction"; // Unary minus
+    OperatorInfo["+"] = "Can be \"Uniary Plus\" or \"Addition\""; // Unary plus
+    OperatorInfo["&"] = "Can be \"Address-of\" or \"Bitwise ANd\""; // Address-of
+    OperatorInfo["*"] = "It can be \"Indirection\" or \"Multiplication\""; // Dereference or multiplication
+    // Keyword (sizeof, new, delete) are also operators
+    OperatorInfo["/"] = "Division";
+    OperatorInfo["\%"] = "Modulus"; // --------__TODO
+
+    OperatorInfo["<<"] = "Left Shift";
+    OperatorInfo[">>"] = "Right Shift";
+
+    OperatorInfo["<"] = "Less than";
+    OperatorInfo[">"] = "Greater than";
+    OperatorInfo["<="] = "Less than or equal to";
+    OperatorInfo[">="] = "Greater than or equal to";
+
+    OperatorInfo["=="] = "Equal to";
+    OperatorInfo["!="] = "Not equal to";
+
+    // OperatorInfo["&"] = "Bitwise AND";
+
+    OperatorInfo["^"] = "Bitwise exclusive OR";
+
+    // OperatorInfo["|"] = "Bitwise OR";
+
+    OperatorInfo["&&"] = "Logical AND";
+
+    OperatorInfo["||"] = "Logical OR";
+
+    OperatorInfo["?"] = "Conditional Operator (Ternary)";
+    OperatorInfo[":"] = "Conditional Operator (Ternary)";
+
+    OperatorInfo["="] = "Assignment Operator";
+    OperatorInfo["*="] = "MUL Assignment Operator";
+    OperatorInfo["/="] = "DIV Assignment Operator";
+    OperatorInfo["%="] = "MOD Assignment Operator";
+    OperatorInfo["+="] = "ADD Assignment Operator";
+    OperatorInfo["-="] = "SUB Assignment Operator";
+    OperatorInfo["<<="] = "Left Shift Assignment Operator";
+    OperatorInfo[">>="] = "Right Shift Assignment Operator";
+    OperatorInfo["&="] = "Bitwise AND Assignment Operator";
+    OperatorInfo["^="] = "Bitwise XOR Assignment Operator";
+    OperatorInfo["|="] = "Bitwise OR Assignment Operator";
+
+    OperatorInfo[","] = "Comma Operator";
+}
+
+void handleOperator(char *lexeme) {
+    string key = lexeme;
+    if(OperatorInfo.find(key) != OperatorInfo.end()) {
+        printLexerTable(line_number, "OPERATOR", lexeme, OperatorInfo[key]);
+    }
+    else{
+        printLexerTable(line_number, "OPERATOR", lexeme);
+    }
+}
+
+//---------- UNKNOWN
+void handleUnknown(char *lexeme) {
+    printLexerTable(line_number, "UNKNOWN", lexeme);
+}
+
 
 %}
 
@@ -38,37 +310,29 @@ PREPROCESSOR_OP "#include"|"#define"|"#undef"|"#if"|"#ifdef"|"#ifndef"|"#else"|"
 
 PREPROCESSOR_STATEMENT {PREPROCESSOR_OP}([^"//"\n"/*"])*
 
-
+/* Regular Expressions */
 DIGIT      [0-9]
 LETTER     [a-zA-Z_]
 ID         {LETTER}({LETTER}|{DIGIT})*
+
 DECIMAL    {DIGIT}+
+BINARY     0b[01]+
 OCTAL      0[0-7]+
 HEX        0[xX][0-9a-fA-F]+
+
 FLOAT      {DECIMAL}(\.{DECIMAL})?([eE][-+]?{DECIMAL})?
 CHAR       '([^'\\]|\\.)+'
 STRING     \"([^\"\\]|\\.)*\"
 
 WHITESPACE [ \t\r]+
 NEWLINE    [\n]
+
 COMMENT1   "//".*
 COMMENT2   "/*"([^*]|\*+[^*/])*\*+"/"
-REL_OP     "=="|"!="|"<="|">="|"<"|">"
-ARITH_OP   "\+"|"-"|"*"|"/"|"%"
-LOGICAL_OP "&&"|"||"|"!"
-BITWISE_OP "&"|"|"|"^"|"<<"|">>"|"~"
-ASSIGN_OP  "="|"+="|"-="|"*="|"/="|"%="|"<<="|">>="|"&="|"|="|"^="
-INC_DEC_OP "++"|"--"
 
-LPAREN     "("
-RPAREN     ")"
-LBRACE     "{"
-RBRACE     "}"
-LBRACKET   "["
-RBRACKET   "]"
-SEMICOLON  ";"
-COMMA      ","
-DOT        "."
+
+PUNCTUATOR "("|")"|"["|"]"|"{"|"}"|";"
+    
 
 %%
 
@@ -76,53 +340,38 @@ DOT        "."
 {COMMENT1}        { DEBUGMODE ? fprintf(output_file, "COMMENT1: %s\n", yytext) : NULL; }
 {COMMENT2}        { DEBUGMODE ? fprintf(output_file, "COMMENT2: %s\n", yytext) : NULL; }
 {PREPROCESSOR_OP} {  }
-{PREPROCESSOR_STATEMENT} { printLexerTable(line_number, "PREPROCESSOR_STATEMENT", yytext); }
+{PREPROCESSOR_STATEMENT} { printLexerTable(line_number, "PREPROCESSOR", yytext); }
 
 {NEWLINE}         { line_number++; }
 
-"auto"|"break"|"case"|"char"|"const"|"continue"|"default"|"do"|"double"|"else"|"enum"|"extern"|"float"|"for"|"goto"|"if"|"inline"|"int"|"long"|"register"|"restrict"|"return"|"short"|"signed"|"sizeof"|"static"|"struct"|"switch"|"typedef"|"union"|"unsigned"|"void"|"volatile"|"while" { printLexerTable(line_number, "KEYWORD", yytext); }
+"alignas"|"alignof"|"and"|"and_eq"|"asm"|"auto"|"bitand"|"bitor"|"bool"|"break"|"case"|"catch"|"char"|"char8_t"|"char16_t"|"char32_t"|"class"|"compl"|"concept"|"const"|"consteval"|"constexpr"|"constinit"|"const_cast"|"continue"|"co_await"|"co_return"|"co_yield"|"decltype"|"default"|"delete"|"do"|"double"|"dynamic_cast"|"else"|"enum"|"explicit"|"export"|"extern"|"false"|"float"|"for"|"friend"|"goto"|"if"|"inline"|"int"|"long"|"mutable"|"namespace"|"new"|"noexcept"|"not"|"not_eq"|"nullptr"|"operator"|"or"|"or_eq"|"private"|"protected"|"public"|"register"|"reinterpret_cast"|"requires"|"return"|"short"|"signed"|"sizeof"|"static"|"static_assert"|"static_cast"|"struct"|"switch"|"template"|"this"|"thread_local"|"throw"|"true"|"try"|"typedef"|"typeid"|"typename"|"union"|"unsigned"|"using"|"virtual"|"void"|"volatile"|"wchar_t"|"while"|"xor"|"xor_eq"       { handleToken(TokenClass::KEYWORD, yytext); }
 
-{ID}             { printLexerTable(line_number,"IDENTIFIER", yytext); }
-{HEX}            { printLexerTable(line_number, "HEX_LITERAL", yytext); }
-{OCTAL}          { printLexerTable(line_number, "OCT_LITERAL", yytext); }
-{DECIMAL}        { printLexerTable(line_number, "DECIMAL_LITERAL", yytext); }
-{FLOAT}          { printLexerTable(line_number, "FLOAT_LITERAL", yytext); }
-{CHAR}           { printLexerTable(line_number, "CHAR_LITERAL", yytext); }
-{STRING}         { printLexerTable(line_number, "STRING_LITERAL", yytext); }
+"main"           { printLexerTable(line_number, "IDENTIFIER", yytext,"Special Funciton Name"); }
 
-{REL_OP}         { printLexerTable(line_number,"RELATIONAL_OP", yytext); }
-{ARITH_OP}       { printLexerTable(line_number, "ARITHMETIC_OP", yytext); }
-{LOGICAL_OP}     { printLexerTable(line_number, "LOGICAL_OP", yytext); }
-{BITWISE_OP}     { printLexerTable(line_number, "BITWISE_OP", yytext); }
-{ASSIGN_OP}      { printLexerTable(line_number, "ASSIGNMENT_OP", yytext); }
-{INC_DEC_OP}     { printLexerTable(line_number, "INC_DEC_OP", yytext); }
+{ID}             { handleToken(TokenClass::IDENTIFIER, yytext); }
 
-{LPAREN}         { printLexerTable(line_number, "LPAREN", yytext); }
-{RPAREN}         { printLexerTable(line_number, "RPAREN", yytext); }
-{LBRACE}         { printLexerTable(line_number, "LBRACE", yytext); }
-{RBRACE}         { printLexerTable(line_number, "RBRACE", yytext); }
-{LBRACKET}       { printLexerTable(line_number, "LBRACKET", yytext); }
-{RBRACKET}       { printLexerTable(line_number, "RBRACKET", yytext); }
-{SEMICOLON}      { printLexerTable(line_number, "SEMICOLON", yytext); }
-{COMMA}          { printLexerTable(line_number, "COMMA", yytext); }
-{DOT}            { printLexerTable(line_number, "DOT", yytext); }
+{BINARY}         { handleToken(TokenClass::BINARY, yytext); }
+{OCTAL}          { handleToken(TokenClass::OCTAL, yytext); }
+{HEX}            { handleToken(TokenClass::HEX, yytext); }
+{DECIMAL}        { handleToken(TokenClass::DECIMAL, yytext); }
 
 
+{FLOAT}          { handleToken(TokenClass::FLOAT, yytext); }
+{CHAR}           { handleToken(TokenClass::CHAR, yytext); }
+{STRING}         { handleToken(TokenClass::STRING, yytext); }
+
+"+"|"-"|"*"|"/"|"%"|"&"|"|"|"^"|"~"|"<<"|">>"|"&&"|"||"|"!"|"=="|"!="|"<"|">"|"<="|">="|"="|"+="|"-="|"*="|"/="|"%="|"&="|"|="|"^="|"<<="|">>="|"++"|"--"|"::"|"?"|":"|","|"->*"|".*"|"."|"->" { handleToken(TokenClass::OPERATOR, yytext); }
+
+{PUNCTUATOR}     { handleToken(TokenClass::PUNCTUATION, yytext); }
 
 
-
-
-
-
-
-
+"\"".*  { fprintf(error_file, "Error on line %d: Unclosed string literal.\n", line_number); }
+"/". { fprintf(error_file, "Error on line %d: Unclosed multiline comment.\n", line_number); }
 
 
 .                { printLexerTable(line_number, "UNKNOWN", yytext); }
 
 %%
-
-
 
 
 int main(int argc, char **argv) {
@@ -143,21 +392,38 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-        // output_file = stdout;
+    if(SHOWERRORS){
+    error_file = fopen("error.txt", "w");
+    if (!error_file) {
+        perror("Error opening error file");
+        return 1;
+    }
+    }
 
-        // Print the table header
-        fprintf(output_file, TableSep);
+
+    InitializeKeywordMap();
+    InitializeOperatorMap();
+    InitializePunctuationMap();
         
-        fprintf(output_file,"| %-*s| %-*s| %-*s| %-*s|\n", lineNoWidth, "Line No", tokenWidth, "Token", lexemeWidth, "Lexeme", valueWidth, "Value");
+    // Print the header of the lexer table
+    printLexerTableHeader();
 
-        fprintf(output_file, TableSep);
 
-
-        
     yylex();  // Start lexical analysis
 
 
+    // Close the FILE pointers
     fclose(yyin);
     fclose(output_file);
+    if(SHOWERRORS){
+        fclose(error_file);
+    }
+
+    // Memory cleanup
+    KeywordInfo.clear();
+    OperatorInfo.clear();
+    PunctuationInfo.clear();
+    
+
     return 0;
 }

@@ -1,0 +1,21 @@
+
+
+
+
+
+
+// Rules
+First whitespace removing
+
+Comments Next
+
+Preprocessor directive next
+
+NEWLINE
+
+Keyword before ID
+
+
+
+// Operators 
+++ & -- can have different precedence
