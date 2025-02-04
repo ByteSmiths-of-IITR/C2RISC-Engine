@@ -1,0 +1,2 @@
+L.no: 9 | ERROR: INVALID string literal.       | Lexeme: "Mismatched \"
+L.no: 9 | ERROR: Unclosed character literal.   | Lexeme: '

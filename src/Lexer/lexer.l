@@ -3,6 +3,7 @@
 #include <vector>
 #include <map>
 #include <string>
+#include <sstream>
 
 // #define here std::cout << "HERE" << std::endl;
 
@@ -10,6 +11,13 @@ using namespace std;
 
 #define DEBUGMODE 0 // 1 to show debug messages
 #define SHOWERRORS 1 // 1 to show errors in error.txt 
+
+
+#define TESTMODE 0
+/*
+1- String and Char Testing
+2- Identifier Testing
+*/
 
 // Token classes
 enum class TokenClass {
@@ -25,7 +33,9 @@ enum class TokenClass {
     STRING, 
     PUNCTUATION, // 10
     OPERATOR, // 11
-    UNKNOWN // 12
+    UNKNOWN, // 12
+    MULTI_LINE_STRING,
+    MULTI_LINE_STRING_RAW
 };
 
 char* tokenToString(TokenClass token) {
@@ -44,6 +54,7 @@ char* tokenToString(TokenClass token) {
         case 10: return "PUNCTUATION";
         case 11: return "OPERATOR";
         case 12: return "UNKNOWN";
+        case 13: return "MULTI_LINE_STRING";
         default: return "INVALID";
     }
 }
@@ -56,7 +67,9 @@ int line_number = 1;
 
 // ----------- LEXER TABLE -------------------
 // Define the width of each column in the lexer table 
-vector<int> columnWidths = {10, 30, 20, 35};
+vector<int> columnWidths = {10, 30, 50, 35};
+int errorWidth = 30;
+
 
 void printLexerTableSeparator() {
     fprintf(output_file, "+");
@@ -100,14 +113,33 @@ void handleToken(TokenClass token, char *lexeme);
 void handleKeyword(char *lexeme);
 void handleIdentifier(char *lexeme);
 void handleLiteral(TokenClass token, char *lexeme);
+void handleMultiLineString(char *lexeme);
+void handleMultiLineStringRAW(char *lexeme);
 void handlePunctuation(char *lexeme);
 void handleOperator(char *lexeme);
+
 void handleUnknown(char *lexeme);
 
 
 // Base Token Handler
 void handleToken(TokenClass token, char *lexeme) {
     
+    if(TESTMODE == 1){
+        // Testing for string and char only
+        int tokenValue = static_cast<int>(token);
+        if(tokenValue != 8 && tokenValue !=9 && tokenValue != 13 && tokenValue != 14){
+            return;
+        }
+    }
+
+    if(TESTMODE == 2){
+        // Testing for identifier only
+        if(token != TokenClass::IDENTIFIER){
+            return;
+        }
+    }
+
+
     int tokenValue = static_cast<int>(token);
 
     if(tokenValue == 0) {
@@ -128,11 +160,16 @@ void handleToken(TokenClass token, char *lexeme) {
     else if(tokenValue == 12) {
         printLexerTable(line_number, "UNKNOWN", lexeme);
     }
+    else if(tokenValue == 13) {
+        handleMultiLineString(lexeme);
+    }
+    else if(tokenValue == 14) {
+        handleMultiLineStringRAW(lexeme);
+    }
     else{
         printLexerTable(line_number, "Something Wrong", lexeme);
     }
 }
-
 
 //------------ KEYWORDS
 
@@ -190,6 +227,12 @@ void handleKeyword(char *lexeme) {
 
 //------------- IDENTIFIERS
 void handleIdentifier(char *lexeme) {
+
+    if(strcmp(lexeme, "main") == 0){
+        printLexerTable(line_number, "IDENTIFIER", lexeme, "Special Funciton Name");
+        return;
+    }
+
     printLexerTable(line_number, "IDENTIFIER", lexeme);
 }
 
@@ -202,6 +245,47 @@ void handleLiteral(TokenClass token, char *lexeme) {
     printLexerTable(line_number, tokenString, lexeme);
 }
 
+//------------- MULTI LINE STRING
+void handleMultiLineStringRAW(char *lexeme) {
+    // we will remove the \n from the lexeme
+    string lexemeString = lexeme;
+    string newLexeme;
+    int currLineNo = line_number;
+
+    for(int i = 0; i < lexemeString.size(); i++){
+        if(i==0 | i==2 | i==lexemeString.size()-2){
+            continue;
+        }
+        if(lexemeString[i] == '\n'){
+            line_number++;
+        }
+        else{
+            newLexeme += lexemeString[i];
+        }
+    }
+
+    char* newLexemeChar = (char*)newLexeme.c_str();
+    printLexerTable(currLineNo, "STRING LITERAL", newLexemeChar,"RAW Multi Line String");
+}
+
+void handleMultiLineString(char *lexeme) {
+    // we will remove the \n from the lexeme &
+    string lexemeString = lexeme;
+    string newLexeme;
+    int currLineNo = line_number;
+    
+    for(int i = 0; i < lexemeString.size(); i++){
+        if(lexemeString[i] == '\\' && lexemeString[i+1] == '\n'){
+            line_number++;
+            i++;
+        }
+        else{
+            newLexeme += lexemeString[i];
+        }
+    }
+    char* newLexemeChar = (char*)newLexeme.c_str();
+    printLexerTable(currLineNo, "STRING LITERAL", newLexemeChar,"Multi Line String");
+}
 
 //---------- PUNCTUATION
 void InitializePunctuationMap(){
@@ -305,8 +389,7 @@ void handleError(char *lexeme, char *error) {
     if(!SHOWERRORS){
         return;
     }
-
-    fprintf(error_file, "Line %d: Lexeme - %s | ERROR - %s \n", line_number, lexeme, error);
+    fprintf(error_file, "L.no: %d | ERROR: %-*s| Lexeme: %s\n", line_number, errorWidth, error, lexeme);
 }
 
 
@@ -326,6 +409,7 @@ PREPROCESSOR_STATEMENT {PREPROCESSOR_OP}([^"//"\n"/*"])*
 DIGIT      [0-9]
 LETTER     [a-zA-Z_]
 ID         {LETTER}({LETTER}|{DIGIT})*
+ESCAPESEQ  \\[abfnrtv\\'"]
 
 DECIMAL    {DIGIT}+
 BINARY     0b[01]+
@@ -333,8 +417,20 @@ OCTAL      0[0-7]+
 HEX        0[xX][0-9a-fA-F]+
 
 FLOAT      {DECIMAL}(\.{DECIMAL})?([eE][-+]?{DECIMAL})?
-CHAR       '([^'\\]|\\.)+'
-STRING     \"([^\"\\]|\\.)*\"
+CHAR       '([^'\\]|{ESCAPESEQ})'
+
+
+INSIDE_OF_STRING ([^\"\\\n]|{ESCAPESEQ})
+STRING     \"{INSIDE_OF_STRING}*\"
+
+MULTI_LINE_STRING \"(({INSIDE_OF_STRING}*)[\\][\n])(({INSIDE_OF_STRING}*[\\][\n])*)({INSIDE_OF_STRING}*)\"
+MULTILINE_STRING_RAW "R"\""("({INSIDE_OF_STRING}*[\n])*{INSIDE_OF_STRING}*")"\"
+INVALID_MULTILINE_STRING \"(.*[\n])*\"
+
+/* NOT in USE */
+INVALID_ESCAPESEQ \\[^abfnrtv\\'"]
+
+
 
 WHITESPACE [ \t\r]+
 NEWLINE    [\n]
@@ -361,8 +457,6 @@ PUNCTUATOR "("|")"|"["|"]"|"{"|"}"|";"
 
 {KEYWORD}    { handleToken(TokenClass::KEYWORD, yytext); }
 
-"main"           { printLexerTable(line_number, "IDENTIFIER", yytext,"Special Funciton Name"); }
-
 {ID}             { handleToken(TokenClass::IDENTIFIER, yytext); }
 
 {BINARY}         { handleToken(TokenClass::BINARY, yytext); }
@@ -373,14 +467,23 @@ PUNCTUATOR "("|")"|"["|"]"|"{"|"}"|";"
 
 {FLOAT}          { handleToken(TokenClass::FLOAT, yytext); }
 {CHAR}           { handleToken(TokenClass::CHAR, yytext); }
+
+
 {STRING}         { handleToken(TokenClass::STRING, yytext); }
+{MULTI_LINE_STRING} { handleToken(TokenClass::MULTI_LINE_STRING, yytext); }
+{MULTILINE_STRING_RAW} { handleToken(TokenClass::MULTI_LINE_STRING_RAW, yytext); }
+
+
 
 {OPERATOR}       { handleToken(TokenClass::OPERATOR, yytext); }
 
 {PUNCTUATOR}     { handleToken(TokenClass::PUNCTUATION, yytext); }
 
 
-"\""  { handleError(yytext, "Unclosed string literal."); }
+"\"".*"\"" { handleError(yytext, "INVALID string literal."); }
+"\'".*"\'" { handleError(yytext, "INVALID character literal."); }
+
+"\""  { handleError(yytext, "Unclosed string literal in Same Line."); }
 "'"   { handleError(yytext, "Unclosed character literal."); }
 "/""*" { handleError(yytext, "Unclosed comment."); }
 
@@ -402,14 +505,24 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    output_file = fopen("output.txt", "w");
+    string outputFileName = "output.txt";
+    string errorFileName = "error.txt";
+
+    // we will open the output file in write mode with the name of input file
+    stringstream ss(argv[1]);
+    string input_name;
+    getline(ss, input_name, '.');
+    outputFileName = input_name + "_output.txt";
+    errorFileName = input_name + "_error.txt";
+
+    output_file = fopen(outputFileName.c_str(), "w");
     if (!output_file) {
         perror("Error opening output file");
         return 1;
     }
 
     if(SHOWERRORS){
-    error_file = fopen("error.txt", "w");
+    error_file = fopen(errorFileName.c_str(), "w");
     if (!error_file) {
         perror("Error opening error file");
         return 1;
