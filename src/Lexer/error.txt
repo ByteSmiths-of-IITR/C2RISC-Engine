@@ -1,2 +1,0 @@
-Error on line 9: Unclosed string literal.
-Error on line 15: Unclosed multiline comment.

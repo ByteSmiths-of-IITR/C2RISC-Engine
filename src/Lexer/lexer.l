@@ -298,6 +298,18 @@ void handleUnknown(char *lexeme) {
 }
 
 
+//----------------------------------------------ERRORS----------------------------------------------
+
+void handleError(char *lexeme, char *error) {
+    // check if error mode
+    if(!SHOWERRORS){
+        return;
+    }
+
+    fprintf(error_file, "Line %d: Lexeme - %s | ERROR - %s \n", line_number, lexeme, error);
+}
+
+
 %}
 
 
@@ -330,6 +342,9 @@ NEWLINE    [\n]
 COMMENT1   "//".*
 COMMENT2   "/*"([^*]|\*+[^*/])*\*+"/"
 
+OPERATOR   "+"|"-"|"*"|"/"|"%"|"&"|"|"|"^"|"~"|"<<"|">>"|"&&"|"||"|"!"|"=="|"!="|"<"|">"|"<="|">="|"="|"+="|"-="|"*="|"/="|"%="|"&="|"|="|"^="|"<<="|">>="|"++"|"--"|"::"|"?"|":"|","|"->*"|".*"|"."|"->"
+
+KEYWORD  "alignas"|"alignof"|"and"|"and_eq"|"asm"|"auto"|"bitand"|"bitor"|"bool"|"break"|"case"|"catch"|"char"|"char8_t"|"char16_t"|"char32_t"|"class"|"compl"|"concept"|"const"|"consteval"|"constexpr"|"constinit"|"const_cast"|"continue"|"co_await"|"co_return"|"co_yield"|"decltype"|"default"|"delete"|"do"|"double"|"dynamic_cast"|"else"|"enum"|"explicit"|"export"|"extern"|"false"|"float"|"for"|"friend"|"goto"|"if"|"inline"|"int"|"long"|"mutable"|"namespace"|"new"|"noexcept"|"not"|"not_eq"|"nullptr"|"operator"|"or"|"or_eq"|"private"|"protected"|"public"|"register"|"reinterpret_cast"|"requires"|"return"|"short"|"signed"|"sizeof"|"static"|"static_assert"|"static_cast"|"struct"|"switch"|"template"|"this"|"thread_local"|"throw"|"true"|"try"|"typedef"|"typeid"|"typename"|"union"|"unsigned"|"using"|"virtual"|"void"|"volatile"|"wchar_t"|"while"|"xor"|"xor_eq"   
 
 PUNCTUATOR "("|")"|"["|"]"|"{"|"}"|";"
     
@@ -344,7 +359,7 @@ PUNCTUATOR "("|")"|"["|"]"|"{"|"}"|";"
 
 {NEWLINE}         { line_number++; }
 
-"alignas"|"alignof"|"and"|"and_eq"|"asm"|"auto"|"bitand"|"bitor"|"bool"|"break"|"case"|"catch"|"char"|"char8_t"|"char16_t"|"char32_t"|"class"|"compl"|"concept"|"const"|"consteval"|"constexpr"|"constinit"|"const_cast"|"continue"|"co_await"|"co_return"|"co_yield"|"decltype"|"default"|"delete"|"do"|"double"|"dynamic_cast"|"else"|"enum"|"explicit"|"export"|"extern"|"false"|"float"|"for"|"friend"|"goto"|"if"|"inline"|"int"|"long"|"mutable"|"namespace"|"new"|"noexcept"|"not"|"not_eq"|"nullptr"|"operator"|"or"|"or_eq"|"private"|"protected"|"public"|"register"|"reinterpret_cast"|"requires"|"return"|"short"|"signed"|"sizeof"|"static"|"static_assert"|"static_cast"|"struct"|"switch"|"template"|"this"|"thread_local"|"throw"|"true"|"try"|"typedef"|"typeid"|"typename"|"union"|"unsigned"|"using"|"virtual"|"void"|"volatile"|"wchar_t"|"while"|"xor"|"xor_eq"       { handleToken(TokenClass::KEYWORD, yytext); }
+{KEYWORD}    { handleToken(TokenClass::KEYWORD, yytext); }
 
 "main"           { printLexerTable(line_number, "IDENTIFIER", yytext,"Special Funciton Name"); }
 
@@ -360,16 +375,17 @@ PUNCTUATOR "("|")"|"["|"]"|"{"|"}"|";"
 {CHAR}           { handleToken(TokenClass::CHAR, yytext); }
 {STRING}         { handleToken(TokenClass::STRING, yytext); }
 
-"+"|"-"|"*"|"/"|"%"|"&"|"|"|"^"|"~"|"<<"|">>"|"&&"|"||"|"!"|"=="|"!="|"<"|">"|"<="|">="|"="|"+="|"-="|"*="|"/="|"%="|"&="|"|="|"^="|"<<="|">>="|"++"|"--"|"::"|"?"|":"|","|"->*"|".*"|"."|"->" { handleToken(TokenClass::OPERATOR, yytext); }
+{OPERATOR}       { handleToken(TokenClass::OPERATOR, yytext); }
 
 {PUNCTUATOR}     { handleToken(TokenClass::PUNCTUATION, yytext); }
 
 
-"\"".*  { fprintf(error_file, "Error on line %d: Unclosed string literal.\n", line_number); }
-"/". { fprintf(error_file, "Error on line %d: Unclosed multiline comment.\n", line_number); }
+"\""  { handleError(yytext, "Unclosed string literal."); }
+"'"   { handleError(yytext, "Unclosed character literal."); }
+"/""*" { handleError(yytext, "Unclosed comment."); }
 
 
-.                { printLexerTable(line_number, "UNKNOWN", yytext); }
+.                { handleUnknown(yytext); handleError(yytext, "Unknown token."); }
 
 %%
 
