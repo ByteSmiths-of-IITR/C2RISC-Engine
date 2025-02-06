@@ -3,3 +3,5 @@ L.no: 5 | ERROR: INVALID character literal.    | Lexeme: 'AB'
 L.no: 6 | ERROR: INVALID character literal.    | Lexeme: '\xZZ'
 L.no: 12 | ERROR: INVALID string literal.       | Lexeme: "String with invalid escape \q"
 L.no: 13 | ERROR: INVALID string literal.       | Lexeme: "This contains a backslash at the end \ "
+L.no: 26 | ERROR: INVALID string literal.       | Lexeme: "Mismatched \"
+L.no: 26 | ERROR: Unclosed character literal.   | Lexeme: '
