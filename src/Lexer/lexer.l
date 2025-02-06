@@ -409,6 +409,7 @@ PREPROCESSOR_STATEMENT {PREPROCESSOR_OP}([^"//"\n"/*"])*
 DIGIT      [0-9]
 LETTER     [a-zA-Z_]
 ID         {LETTER}({LETTER}|{DIGIT})*
+INVALID_ID ({LETTER}|{DIGIT})*
 ESCAPESEQ  \\[abfnrtv\\'"]
 
 DECIMAL    {DIGIT}+
@@ -479,7 +480,7 @@ PUNCTUATOR "("|")"|"["|"]"|"{"|"}"|";"
 
 {PUNCTUATOR}     { handleToken(TokenClass::PUNCTUATION, yytext); }
 
-
+{INVALID_ID}     { handleError(yytext, "INVALID Identifier."); }
 "\"".*"\"" { handleError(yytext, "INVALID string literal."); }
 "\'".*"\'" { handleError(yytext, "INVALID character literal."); }
 
