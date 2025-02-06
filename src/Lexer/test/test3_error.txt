@@ -1,0 +1,3 @@
+L.no: 7 | ERROR: INVALID Identifier.           | Lexeme: 123E
+L.no: 7 | ERROR: INVALID Identifier.           | Lexeme: 45e
+L.no: 15 | ERROR: INVALID Identifier.           | Lexeme: 2fgg

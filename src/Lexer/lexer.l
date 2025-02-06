@@ -4,6 +4,7 @@
 #include <map>
 #include <string>
 #include <sstream>
+#include <cstring>
 
 // #define here std::cout << "HERE" << std::endl;
 
@@ -28,14 +29,16 @@ enum class TokenClass {
     BINARY,
     OCTAL,
     HEX,
-    FLOAT,
+    DOUBLE,
     CHAR,
     STRING, 
     PUNCTUATION, // 10
     OPERATOR, // 11
     UNKNOWN, // 12
     MULTI_LINE_STRING,
-    MULTI_LINE_STRING_RAW
+    MULTI_LINE_STRING_RAW,
+    FLOAT, // 15
+    LONG_DOUBLE // 16
 };
 
 char* tokenToString(TokenClass token) {
@@ -48,14 +51,17 @@ char* tokenToString(TokenClass token) {
         case 4: return "BINARY LITERAL";
         case 5: return "OCTAL LITERAL";
         case 6: return "HEX LITERAL";
-        case 7: return "FLOAT LITERAL";
+        case 7: return "DOUBLE LITERAL";
         case 8: return "CHAR LITERAL";
         case 9: return "STRING LITERAL";
         case 10: return "PUNCTUATION";
         case 11: return "OPERATOR";
         case 12: return "UNKNOWN";
         case 13: return "MULTI_LINE_STRING";
-        default: return "INVALID";
+        case 14: return "MULTI_LINE_STRING_RAW";
+        case 15: return "FLOAT LIETRAL";
+        case 16: return "LONG_DOUBLE LIETRAL";
+        default: return "INVALID TOKEN CLASS";
     }
 }
 
@@ -148,7 +154,7 @@ void handleToken(TokenClass token, char *lexeme) {
     else if(tokenValue == 1) {
         handleIdentifier(lexeme);
     }
-    else if(tokenValue >= 2 && tokenValue <= 9) {
+    else if(tokenValue >= 2 && tokenValue <= 9 || tokenValue == 15 || tokenValue == 16) {
         handleLiteral(token, lexeme);
     }
     else if(tokenValue == 10) {
@@ -417,7 +423,12 @@ BINARY     0b[01]+
 OCTAL      0[0-7]+
 HEX        0[xX][0-9a-fA-F]+
 
-FLOAT      {DECIMAL}(\.{DECIMAL})?([eE][-+]?{DECIMAL})?
+FLOAT_BASE     {DECIMAL}?(\.{DECIMAL})?([eE][-+]?{DECIMAL})?
+FLOAT          {FLOAT_BASE}[fF]
+DOUBLE         {FLOAT_BASE}
+LONG_DOUBLE    {FLOAT_BASE}[lL]
+
+
 CHAR       '([^'\\]|{ESCAPESEQ})'
 
 
@@ -467,6 +478,8 @@ PUNCTUATOR "("|")"|"["|"]"|"{"|"}"|";"
 
 
 {FLOAT}          { handleToken(TokenClass::FLOAT, yytext); }
+{DOUBLE}         { handleToken(TokenClass::DOUBLE, yytext); }
+{LONG_DOUBLE}    { handleToken(TokenClass::LONG_DOUBLE, yytext); }
 {CHAR}           { handleToken(TokenClass::CHAR, yytext); }
 
 
@@ -481,8 +494,8 @@ PUNCTUATOR "("|")"|"["|"]"|"{"|"}"|";"
 {PUNCTUATOR}     { handleToken(TokenClass::PUNCTUATION, yytext); }
 
 {INVALID_ID}     { handleError(yytext, "INVALID Identifier."); }
-"\"".*"\"" { handleError(yytext, "INVALID string literal."); }
-"\'".*"\'" { handleError(yytext, "INVALID character literal."); }
+"\""[^\"]*"\"" { handleError(yytext, "INVALID string literal."); }
+"\'"[^\']*"\'" { handleError(yytext, "INVALID character literal."); }
 
 "\""  { handleError(yytext, "Unclosed string literal in Same Line."); }
 "'"   { handleError(yytext, "Unclosed character literal."); }

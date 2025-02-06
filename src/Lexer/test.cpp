@@ -1,10 +1,4 @@
-// Test Wrong Cases one on one
-
-    // string invalid4 = "Line break 
-    // inside string";  
-    // Newline inside string without raw literal (INVALID)
-    
-    
-    string invalid5 = "Mismatched \"quotes'; // Mixed quote styles (INVALID)
-    // string invalid1 = "Unclosed string;   // Missing closing quote (INVALID)
-
+342e34
+323e-10
+334E-34l
+2343e-34f
