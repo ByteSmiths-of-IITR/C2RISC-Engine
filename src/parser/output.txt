@@ -1,4 +1,4 @@
 ..........Starting parsing..........
-Assignment: x = 42
-Assignment: y = 34
+Assignment: a = 90
+Assignment: b = 100
 ..........Parsing complete..........

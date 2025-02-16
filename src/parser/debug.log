@@ -1,0 +1,10 @@
+[INFO]   : Token: IDENTIFIER Value: a
+[DEBUG]  : Reaching here - 44 in lexer.l
+[INFO]   : Token: ASSIGN Value: =
+[INFO]   : Token: NUMBER Value: 90
+[INFO]   : Token: SEMICOLON Value: ;
+[INFO]   : Token: IDENTIFIER Value: b
+[DEBUG]  : Reaching here - 44 in lexer.l
+[INFO]   : Token: ASSIGN Value: =
+[INFO]   : Token: NUMBER Value: 100
+[INFO]   : Token: SEMICOLON Value: ;
