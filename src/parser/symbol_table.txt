@@ -1,0 +1,4 @@
+Name	Type
+myFunc	1
+arr	2
+x	0

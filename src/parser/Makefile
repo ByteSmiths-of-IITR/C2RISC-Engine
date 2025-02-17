@@ -82,4 +82,7 @@ clean:
 		$(EXECUTABLE) \
 		$(DOTFile) \
 		$(DOTImage) \
-		$(DOTPDF)
+		$(DOTPDF) \
+		$(VISUAL) \
+		$(S_EXPR) \
+		$(OUTPUT)

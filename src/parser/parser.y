@@ -8,7 +8,7 @@
 #include <fstream>
 #include <ctime>
 #include "ast.h"  // Ensure this is included
-
+#include "sym.h" 
 
 extern char *yytext;
 extern int DEBUGMODE;
@@ -148,33 +148,43 @@ int main(int argc, char **argv) {
         // cerr is not redirected to output file it will be printed to console 
         // When we need to show parser errors to the user, we can use cerr to a error.txt file (not now)
 
+    // ------------------------ Symbol Table ------------------------
+        // Create a new symbol table
+        /* SymbolTable *symTable = new SymbolTable(); */
+
+
+    //------------------------ Parsing ------------------------
 
         std::cout << "..........Starting parsing..........\n";
         yyparse();  // Call BISON's parser
         std::cout << "..........Parsing complete..........\n";
 
 
-    // Print AST as DOT file
-        if(!dot_file.empty()){
-            generateDOT(root, dot_file);
-        }
 
-    // Print Recursive Output
-        if(!recursive_output_file.empty()){
-            printASTToFile(root, recursive_output_file);
-        }    
 
-    // Print S-Expression
-        if(!SExp_file.empty()){
-            writeASTToSExpression(root, SExp_file);
-        }
+    // ------------------------- Printing Various Outputs ------------------------
+    
+        // Print AST as DOT file
+            if(!dot_file.empty()){
+                generateDOT(root, dot_file);
+            }
 
-    // Print Normal AST
-        if(DEBUGMODE){
-            printAST(root);
-        }
+        // Print Recursive Output
+            if(!recursive_output_file.empty()){
+                printASTToFile(root, recursive_output_file);
+            }    
 
-    // Cleanup
+        // Print S-Expression
+            if(!SExp_file.empty()){
+                writeASTToSExpression(root, SExp_file);
+            }
+
+        // Print Normal AST
+            if(DEBUGMODE){
+                printAST(root);
+            }
+
+    //------------------------- Cleanup ------------------------
         if (yyin) fclose(yyin);  // Close the input file if opened
         return 0;
 }
