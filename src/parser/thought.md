@@ -9,6 +9,7 @@
 
 ### Handling `const`
 - Things getting complicated with multilevel pointer const
+- A function can also be constant
 
 ### Handling Initialization Value
 - After making initial version ask GPT any ideas
