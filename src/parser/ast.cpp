@@ -8,7 +8,7 @@ ASTNode::ASTNode(std::string type, std::string value) {
 
 ASTNode::ASTNode(std::string type) {
     this->type = type;
-    this->value = "";
+    this->value = "NON_TERMINAL";
 }
 
 // Destructor that deletes child nodes
@@ -51,7 +51,7 @@ void writeNode(std::ofstream &out, ASTNode* node, int parentId, int &nodeCount) 
 
     int currentId = nodeCount++;
     out << "    node" << currentId << " [label=\"";
-    if(node->value == "") {
+    if(node->value == "NON_TERMINAL") {
         out << node->type;
     } else {
         out << node->value;
@@ -86,27 +86,39 @@ void generateDOT(ASTNode* root, const std::string& filename) {
 }
 
 // Function to print the AST in S-expression format
-    void printSExpression(ASTNode* root, std::ofstream& outputFile) {
-        // Base case: if the node is null, just return
-        if (root == nullptr) return;
+    void printSExpression(ASTNode* root, std::ofstream& outputFile, int indent ) {
+    // Base case: if the node is null, just return
+    if (root == nullptr) return;
 
-        // Open parenthesis for the current node
-        outputFile << "(";
-        if(root->value == "") {
-            outputFile << root->type;
-        } else {
-            outputFile << root->value;
-        }
-        
+    // Print indentation
+    outputFile << std::string(indent, ' ');
 
-        // If there are children, recursively print them
-        for (ASTNode* child : root->children) {
-            printSExpression(child, outputFile);
-        }
-
-        // Close the parenthesis for the current node
-        outputFile << ")";
+    // Open parenthesis for the current node
+    outputFile << "(";
+    
+    // Print node type or value
+    if (root->value == "NON_TERMINAL") {
+        outputFile << root->type;
+    } else {
+        outputFile << root->value;
     }
+
+    // If there are children, recursively print them
+    if (!root->children.empty()) {
+        outputFile << "\n"; // Move to the next line for children
+        for (size_t i = 0; i < root->children.size(); ++i) {
+            printSExpression(root->children[i], outputFile, indent + 2);
+            if (i != root->children.size() - 1) {
+                outputFile << "\n"; // Separate children
+            }
+        }
+        outputFile << "\n" << std::string(indent, ' '); // Close parenthesis at correct indentation
+    }
+
+    // Close the parenthesis for the current node
+    outputFile << ")";
+}
+
 
     // Wrapper function to take root and output file name
     void writeASTToSExpression(ASTNode* root, const std::string& outputFileName) {
@@ -139,7 +151,7 @@ void generateDOT(ASTNode* root, const std::string& filename) {
             outFile << "├── ";  // Not the last node in the branch
         }
 
-        if (node->value.empty()) {
+        if (node->value == "NON_TERMINAL") {
             outFile << "(" << node->type << ")\n";  // Node with type only
         } else {
             outFile << "\"" << node->value << "\"\n";  // Node with value (e.g., variable or literal)

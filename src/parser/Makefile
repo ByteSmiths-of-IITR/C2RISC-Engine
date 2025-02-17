@@ -34,6 +34,7 @@ DOTPDF = ast.pdf
 
 # Result recursive print
 VISUAL = visual.txt
+S_EXPR = s_expr.txt
 
 
 # Default target
@@ -58,7 +59,7 @@ run: $(EXECUTABLE)
 debug: $(EXECUTABLE)
 	./$(EXECUTABLE) $(INPUT) $(OUTPUT) -d1
 
-dot: $(EXECUTABLE)
+$(DOTFile): $(EXECUTABLE)
 	./$(EXECUTABLE) $(INPUT) $(OUTPUT) -p $(DOTFile)
 
 image: $(DOTFile)
@@ -69,6 +70,9 @@ pdf: $(DOTFile)
 
 r: $(EXECUTABLE)
 	./$(EXECUTABLE) $(INPUT) $(OUTPUT) -r $(VISUAL)
+
+s: $(EXECUTABLE)
+	./$(EXECUTABLE) $(INPUT) $(OUTPUT) -s $(S_EXPR)
 
 # Clean generated files
 clean:

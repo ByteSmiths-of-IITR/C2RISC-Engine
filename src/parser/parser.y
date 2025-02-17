@@ -89,6 +89,7 @@ int main(int argc, char **argv) {
         std::string debug_mode;
         std::string dot_file;
         std::string recursive_output_file;
+        std::string SExp_file;
 
         // Parse arguments
         for (int i = 3; i < argc; ++i) {
@@ -115,11 +116,20 @@ int main(int argc, char **argv) {
                 if (i + 1 < argc) {
                     recursive_output_file = argv[++i]; // Assign the next argument as the recursive output file
                 } else {
-                    std::cerr << "Error: Invalid argument.\n";
+                    std::cerr << "2Error: Invalid argument.\n";
+                    return 1;
+                }
+            } else if(arg == "-s"){
+                // Check if there is another argument after "-s"
+                if (i + 1 < argc) {
+                    SExp_file = argv[++i]; // Assign the next argument as the SExp output file
+                }
+                else {
+                    std::cerr << "1Error: Invalid argument.\n";
                     return 1;
                 }
             } else {
-                std::cerr << "Error: Invalid argument.\n";
+                std::cerr << "4Error: Invalid argument.\n";
                 return 1;
             }
         }
@@ -153,6 +163,11 @@ int main(int argc, char **argv) {
         if(!recursive_output_file.empty()){
             printASTToFile(root, recursive_output_file);
         }    
+
+    // Print S-Expression
+        if(!SExp_file.empty()){
+            writeASTToSExpression(root, SExp_file);
+        }
 
     // Print Normal AST
         if(DEBUGMODE){

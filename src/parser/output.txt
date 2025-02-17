@@ -1,4 +1,5 @@
 ..........Starting parsing..........
 Assignmenta = 90
-Assignmentb = 105
+Assignmentb = 1322
+Assignmentc = 90
 ..........Parsing complete..........
