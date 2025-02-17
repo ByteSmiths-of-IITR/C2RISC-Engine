@@ -456,6 +456,7 @@ char *yytext;
 #include <vector>
 #include <fstream>
 #include <ctime>
+#include "ast.h" 
 
 //-------------------------------------- Industry Grade Debug mode setup
 int DEBUGMODE = 0; // will be set to !0 if the program is run with -d flag
@@ -494,6 +495,9 @@ void HERE(){
 //-------------------------------------- End of Debug mode setup
 
 
+// AST Node
+extern ASTNode *root;
+
 
 //-------------------------------------- Forward declaration
 int handleToken(int token, YYSTYPE &yylval, char* yytext);
@@ -526,12 +530,9 @@ int handleToken(int token, YYSTYPE &yylval, char* yytext) {
 
     // Store the value of the token in the yylval union
     switch (token) {
-        case IDENTIFIER:
-            yylval.str = strdup(yytext);
-            HERE();
-            break;
+        case IDENTIFIER:   
         case NUMBER:
-            yylval.num = atoi(yytext);
+            yylval.str = strdup(yytext); // both IDENTIFIER and NUMBER are stored as strings
             break;
         default:
             break;
@@ -539,8 +540,8 @@ int handleToken(int token, YYSTYPE &yylval, char* yytext) {
     return token;
 }
 
-#line 542 "lex.yy.c"
 #line 543 "lex.yy.c"
+#line 544 "lex.yy.c"
 
 #define INITIAL 0
 
@@ -757,10 +758,10 @@ YY_DECL
 		}
 
 	{
-#line 98 "lexer.l"
+#line 99 "lexer.l"
 
 
-#line 763 "lex.yy.c"
+#line 764 "lex.yy.c"
 
 	while ( /*CONSTCOND*/1 )		/* loops until end-of-file is reached */
 		{
@@ -819,41 +820,41 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 100 "lexer.l"
+#line 101 "lexer.l"
 { return handleToken(IDENTIFIER, yylval, yytext);}
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 102 "lexer.l"
+#line 103 "lexer.l"
 { return handleToken(NUMBER, yylval, yytext);}
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 104 "lexer.l"
+#line 105 "lexer.l"
 { return handleToken(ASSIGN, yylval, yytext); }
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 105 "lexer.l"
+#line 106 "lexer.l"
 { return handleToken(SEMICOLON, yylval, yytext); }
 	YY_BREAK
 case 5:
 /* rule 5 can match eol */
 YY_RULE_SETUP
-#line 106 "lexer.l"
+#line 107 "lexer.l"
 { /* ignore whitespace */ }
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 107 "lexer.l"
+#line 108 "lexer.l"
 { return handleToken(UNKNOWN, yylval, yytext); }
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 110 "lexer.l"
+#line 111 "lexer.l"
 ECHO;
 	YY_BREAK
-#line 856 "lex.yy.c"
+#line 857 "lex.yy.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -1858,6 +1859,6 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 110 "lexer.l"
+#line 111 "lexer.l"
 
 

@@ -8,6 +8,7 @@
 #include <vector>
 #include <fstream>
 #include <ctime>
+#include "ast.h" 
 
 //-------------------------------------- Industry Grade Debug mode setup
 int DEBUGMODE = 0; // will be set to !0 if the program is run with -d flag
@@ -46,6 +47,9 @@ void HERE(){
 //-------------------------------------- End of Debug mode setup
 
 
+// AST Node
+extern ASTNode *root;
+
 
 //-------------------------------------- Forward declaration
 int handleToken(int token, YYSTYPE &yylval, char* yytext);
@@ -78,12 +82,9 @@ int handleToken(int token, YYSTYPE &yylval, char* yytext) {
 
     // Store the value of the token in the yylval union
     switch (token) {
-        case IDENTIFIER:
-            yylval.str = strdup(yytext);
-            HERE();
-            break;
+        case IDENTIFIER:   
         case NUMBER:
-            yylval.num = atoi(yytext);
+            yylval.str = strdup(yytext); // both IDENTIFIER and NUMBER are stored as strings
             break;
         default:
             break;
