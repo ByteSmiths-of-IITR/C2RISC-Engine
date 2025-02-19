@@ -5,346 +5,254 @@
 #define WORD_SIZE 4
 #define BYTE_SIZE 1
 
-// Here we will be designing the symbol table for the compiler
-
-/*
-Ideas:
-- We have a general class node for basic information - Name, SymbolType+Pointer_toThatNodeOfSymbolNode, scope
-- We have a class for each type of symbol - Variable, Function, [Later Struct, Enum, Union ]
-- For variable, we have - Type, Size, Offset, pointerFlag, ArrayInfo, InitializationValue
-- For function, we have - Return Type, parameterList(argType, argName), variadicFlag, recursiveFlag, FunctionAddress
-
-
-*/
-
+//Include all the necessary headers
 #include <iostream>
 #include <unordered_map>
-#include <std::vector>
+#include <vector>
 #include <string>
 #include <fstream>
 #include <stdexcept>
 #include <numeric>
 #include <algorithm>
+#include <initializer_list> 
 
+// Enum class for symbols types, data types and storage classes
 
-// Enum for symbol types
-enum class SymbolType { VARIABLE, FUNCTION, ARRAY/*, STRUCT, ENUM, UNION*/ };
+    enum class SymbolType {
+        VARIABLE, FUNCTION, ARRAY
+        /*,STRUCT, ENUM, UNION */
+    };
+    std::string getSymbolString(SymbolType st);
 
-// Enum for data types
-enum class DataType { 
-    VOID, CHAR, INT, FLOAT, DOUBLE // for pointer we will use the same with ptrLevel > 0
-}
+    enum class DataType {
+        VOID, CHAR, INT, FLOAT, DOUBLE, INVALID
+    };
+    std::string dTypeString(DataType dt);
+    DataType getDataType(const std::string& baseType);
 
-std::string dTypeString(DataType dt){
-    switch(dt){
-        case DataType::VOID: return "void";
-        case DataType::CHAR: return "char";
-        case DataType::INT: return "int";
-        case DataType::FLOAT: return "float";
-        case DataType::DOUBLE: return "double";
-        default: return "UNKNOWN";
-    }
-}
+    enum class StorageClass {
+        AUTO, STATIC, EXTERN
+    };
+    std::string getStorageClassString(StorageClass sc);
 
-// Enum for storage classes
-enum class StorageClass { AUTO, STATIC, EXTERN };
-
-// Base class for symbol-specific details (to be extended)
-class SymbolDetails {
-    int lineNo;
-public:
-    virtual ~SymbolDetails() = default;  // making it virtual to allow dynamic_cast
-};
-
+// DType Information class
 class DTypeInfo {
 public:
     DataType dataType;
     int ptrLevel;
     std::vector<bool> toWhichConst; // first for data, second for pointer, so on for multiple levels
 
-    DTypeInfo(DataType dt=DataType::VOID, int ptr=0) : dataType(dt), ptrLevel(ptr) {
-        toWhichConst.push_back(false);
-    }
 
-    DTypeInfo(const std::string& dtype){
+    DTypeInfo(DataType dt=DataType::VOID, int ptr=0);
+    DTypeInfo(const std::string& dtype); 
 
-        //---ToDo for multiple levels of pointers and const---
-        ptrLevel = count(dtype.begin(), dtype.end(), '*');
-        toWhichConst.resize(ptrLevel + 1, false);
-        std::string baseType = dtype.substr(0, dtype.find_first_of("* ") ); // Correct base type extraction
+    void setConst(int level=0, bool isConst=true); // level 0 means data is const
+    int getSize() const; // returns size of the data type
+    void isPointer(int level=1); // set ptrLevel to level [for multi-level pointers]
+    bool isConst(int level=0); // check if data is const at level
 
-        switch(baseType){
-            case "int": dataType = DataType::INT; break;
-            case "char": dataType = DataType::CHAR; break;
-            case "float": dataType = DataType::FLOAT; break;
-            case "double": dataType = DataType::DOUBLE; break;
-            case "void": dataType = DataType::VOID; break;
-            default: throw std::runtime_error("Invalid Data Type");
-        }
-    }
-
-    void setConst(bool isConst, int level=0){
-        if(level >= toWhichConst.size()){
-            toWhichConst.resize(level+1, false);
-        }
-        toWhichConst[level] = isConst;
-    }
-
-    int getSize() const {
-        if(ptrLevel > 0) return WORD_SIZE;
-
-        switch(dataType){
-            case DataType::VOID: return 0;
-            case DataType::CHAR: return BYTE_SIZE;
-            case DataType::INT: return WORD_SIZE;
-            case DataType::FLOAT: return WORD_SIZE;
-            case DataType::DOUBLE: return 2*WORD_SIZE;
-        }
-    }
-
-    void display(std::ofstream& out = std::cout) const {
-        out << "Data Type : " << dTypeString(dataType) << "\n";
-        for(int i=0; i<ptrLevel; ++i) out << "*";
-        out << " ";
-        out << "const-    :";
-        for(int i=0; i<toWhichConst.size(); ++i){
-            out << toWhichConst[i] << " ";
-        }
-    }
+    void display(std::ostream& out = std::cout) const;
 };
 
-// Derived class for variable information
+// Base class for symbol-specific details (to be extended)
+    class SymbolDetails {
+    protected:
+        std::string symbolName;
+        int lineNo;
+    public:
+        SymbolDetails(const std::string &name, int line);
+        virtual ~SymbolDetails() = default; // making it virtual to allow dynamic_cast
+    };
+
+// Variable Information class
+
 class VariableInfo : public SymbolDetails {
-public:
-    DTypeInfo dataTypeInfo; // dataType and ptrLevel
-    StorageClass storageClass; // AUTO by default
-    int size; // Size of the variable in bytes
-    int offset; //~~~~~ TODO in Code Generation Phase ~~~~~
-    std::string initValue; //----TODO (what if it's not a literal)----
+    public:
+    DTypeInfo variableType; // store dataType Info of the variable
+    StorageClass storageClass; // how the variable is stored [AUTO by default, STATIC - global, EXTERN - external]
+    int offset; // offset from the base pointer [will be calculated in Code Generation Phase]
 
-    VariableInfo( // Constructor with default values
-        const std::string& dtype="void",
+    // ------ToDo (Initialization Value is not simple string, it can be a complex expression)--
+    std::string initValue; // initial value of the variable [for initialization]
+
+
+    VariableInfo( 
+        const int lineNo,
+        const std::string& VarName,
+        const std::string& baseType="void",
         StorageClass sc=StorageClass::AUTO,
-        int sz=0,
         int off=0,
-        std::string initVal=""
-    )
-    {
-        // also check for pointer in std::string it can be anykind of pointer
-        dataTypeInfo = DTypeInfo(dtype);
-    }
+        const std::string& initVal=""
+    );
 
-    void setDataType(DataType dt) { dataType = dt; }
-    void setStorageClass(StorageClass sc) { storageClass = sc; }
-    void setSize(
-        int sz = dataTypeInfo.getSize() // if size is not given, it will be calculated from dataType
-    ) { size = sz; }
-    void setOffset(int off) { offset = off; }
-    void setConstant(const std::string& initVal) {
-        dataTypeInfo.setConst(true);
-        initValue = initVal; 
-    }
+    // Setter Functions
+    void setVarDType(DataType dt);
+    void setVarStorage(StorageClass sc=StorageClass::AUTO);
+    void setVarConst(int level=0, bool isConst=true);
 
-    void display(
-        std::ofstream& out=std::cout // default output stream is std::cout
-    ) const {
-        out << "Data Type     : " << dataTypeInfo.dataType << "\n";
-        out << "Pointer Level : " << dataTypeInfo.ptrLevel << "\n";
-        out << "Storage Class : " << static_cast<int>(storageClass) << "\n";
-        out << "Size          : " << size << "\n";
-        out << "Offset        : " << offset << "\n";
+    // Variable Specific Functions
+    void setInitialValue(const std::string& initVal);
+    void setOffset(int off); // [for Code Generation Phase]
+    void setDataConst(const std::string& initVal); // set data as constant
 
-        // ----ToDo for multiple levels of const----
-        out << "isConstant    : " << (dataTypeInfo.toWhichConst[0]) ? "YES" : "NO" << "\n";
-        out << "Init Value    : " << initValue << "\n";
-    }
-};
+    // Getter Functions
+    bool isDataConst() const;
+    bool isPtrConst() const ;
+    bool isConst(int level=0) const;
+    bool isPointer() const;
+    bool isInited() const;
 
-// Derived class for array information
-class ArrayInfo : public SymbolDetails {
-public:
-    DTypeInfo elementTypeInfo; // dataType and ptrLevel of elements
-    StorageClass storageClass; // AUTO by default
-    std::vector<int> dimensions; // Dimensions of the array
-    int totalSize; // Total size of the array in bytes
-    int offset; //~~~~~ TODO in Code Generation Phase ~~~~~
-    
-    ArrayInfo(
-        const std::string& dtype="void",
-        StorageClass sc=StorageClass::AUTO,
-        std::vector<int> dims={},
-        int off=0
-    )
-    {
-        elementTypeInfo = DTypeInfo(dtype);
-        dimensions = dims;
-        offset = off;
-        setTotalSize();
-    }
-
-    void setDataType(DataType dt) { dataType = dt; }
-    void setStorageClass(StorageClass sc) { storageClass = sc; }
-    void setDimensions(std::vector<int> dims) { dimensions = dims; }
-    void setTotalSize() {
-        totalSize = elementTypeInfo.getSize();
-        for(int dim : dimensions){
-            totalSize *= dim;
-        }
-    }
-    void setOffset(int off) { offset = off; }
-
-
-    void display(
-        std::ofstream& out=std::cout // default output stream is std::cout
-    ) const {
-        out << "Data Type     : " << elementTypeInfo.dataType << "\n";
-        out << "Pointer Level : " << elementTypeInfo.ptrLevel << "\n";
-        out << "Storage Class : " << static_cast<int>(storageClass) << "\n";
-        out << "Dimensions    : ";
-        for(int dim : dimensions){
-            out << dim << " ";
-        }
-        out << "\n";
-        out << "Total Size    : " << totalSize << "\n";
-        out << "Offset        : " << offset << "\n";
-    }
-
+    void display(std::ostream& out = std::cout) const;
 
 };
 
-// Derived class for function information
-class FunctionInfo : public SymbolDetails {
-public:
-    DTypeInfo returnType; // dataType and ptrLevel & const of return type
-    bool isConst; // const flag for function [means no modification of any variable inside]
-    bool variadic; // Variadic function flag
-    bool recursive; // Recursive function flag
-    std::vector<std::pair<std::string, DTypeInfo>> parameters; // List of parameters
-    bool defined; // Function definition flag
-    void* address; // Function address ------ In Code Generation Phase ------
+// ArrayInfo Class Declaration
+    class ArrayInfo : public SymbolDetails {
+        public:
+        DTypeInfo elementTypeInfo; // store dataType Info of the elements
+        StorageClass storageClass; // how the array is stored [AUTO by default, STATIC - global, EXTERN - external]
+        std::vector<int> dimensions; // [for multi-dimensional arrays]
+        int totalSize; 
+        int offset; // offset from the base pointer [will be calculated in Code Generation Phase]
+        bool isArrConst; // flag to check if array as a pointer is constant [not the data(that is stored in element's properties)]
 
-    FunctionInfo(
-        const std::string& dtype="void",
-        bool isConst=false,
-        bool var=false,
-        bool rec=false,
-        bool def=false,
-        void* addr=nullptr
-    ) : 
-        returnType(DTypeInfo(dtype)),
-        isConst(isConst),
-        variadic(var),
-        recursive(rec),
-        defined(def),
-        address(addr)
-    {}
+    // Array get's initialized with the default values
 
-    void setReturnType(DataType dt) { returnType.dataType = dt; }
-    void setConst(bool isConst) { isConst = isConst; }
-    void setVariadic(bool var) { variadic = var; }
-    void setRecursive(bool rec) { recursive = rec; }
-    void setDefined(bool def) { defined = def; }
-    void setAddress(void* addr) { address = addr; }
 
-    void addParameter(std::string name, std::string dtype) {
-        parameters.push_back({name, DTypeInfo(dtype)});
-    }
-
-    void display(
-        std::ofstream& out=std::cout // default output stream is std::cout
-    ) const {
-        out << "Return Type   : " << returnType.dataType << "\n";
-        out << "Pointer Level : " << returnType.ptrLevel << "\n";
-        out << "Storage Class : " << static_cast<int>(storageClass) << "\n";
-        out << "isConstant    : " << (returnType.toWhichConst[0]) ? "YES" : "NO" << "\n";
-        out << "Variadic      : " << variadic << "\n";
-        out << "Recursive     : " << recursive << "\n";
-        out << "Defined       : " << defined << "\n";
-        out << "Address       : " << address << "\n";
-        out << "Parameters    : \n";
-        for(auto& param : parameters){
-            out << "    Name : " << param.first << "\n";
-            out << "    Data Type : " << param.second.dataType << "\n";
-            out << "    Pointer Level : " << param.second.ptrLevel << "\n";
-            out << "    isConstant    : " << (param.second.toWhichConst[0]) ? "YES" : "NO" << "\n";
-        }
-    }
-
-};
-
-// Symbol Table Entry (Contains symbolKey, type, and pointer to details)
-class SymbolEntry {
-public:
-    std::string symbolKey;
-    /* Symbol Key Rules
-    - For variables, it's the variable name
-    - For functions, it's the function name
-        if variadic function, then name will be like "funcName_..."
-        else functionName+parameterType1+parameterType2+...
-    - For arrays, it's the array name
-    
-    // Scope will be handled by the indexed design of symbol table
-
+    /* Few points about const havoc
+    - if data element is const, then all dimensions are const [ ie - arr[0][0]++ is not allowed]
+    - if isArrConst it's about the pointer to array is const [ ie - arr++ is not allowed]
     */
 
-    SymbolType symbolType; // Type of the symbol
-    SymbolDetails* details; // Pointer to the details
+        ArrayInfo(
+            const int lineNo,
+            const std::string& arrayName,
+            const std::string& elementDType="void",
+            StorageClass sc=StorageClass::AUTO,
+            std::vector<int> dims={},
+            int off=0
+        );
 
-    SymbolEntry(
-        const std::string& key,
-        SymbolType type,
-        SymbolDetails* det
-    ) : symbolKey(key), symbolType(type), details(det) {}
+        // Setter Functions
+        void setElementType(const std::string& dtype);
+        void setElementTypeInfo(DTypeInfo dt);
+        void setElementAsPointer(int level=1);
+        void setElementAsConst(int level=0, bool isConst=true);
+        void setArrConst(bool isConst=true);
+        void setStorageClass(StorageClass sc=StorageClass::AUTO);
+        void setDimensions(std::vector<int> dims);
+        void addDimension(int dim);
+        void setTotalSize();
+        void setOffset(int off);
 
-    ~SymbolEntry() {
-        delete details;
-    }
+        // Getter Functions
+        // bool isArrConst();
+        bool isDataConst(int level=0);
+        bool isDataPointer();
+        std::vector<int> getDimensions();
+        int getTotalSize();
 
-    void display(
-        std::ofstream& out=std::cout // default output stream is std::cout
-    ) const {
-        out << "Symbol Key : " << symbolKey << "\n";
-        out << "Symbol Type: " << static_cast<int>(symbolType) << "\n";
-        switch(symbolType) {
-            case SymbolType::VARIABLE:
-                static_cast<VariableInfo*>(details)->display(out);
-                break;
-            case SymbolType::ARRAY:
-                static_cast<ArrayInfo*>(details)->display(out);
-                break;
-            case SymbolType::FUNCTION:
-                static_cast<FunctionInfo*>(details)->display(out);
-                break;
-        }
-    }
+        void display(std::ostream& out = std::cout) const;
+
 };
 
+class ArgumentInfo {
+    public:
+    std::string argName;
+    bool isPassedByRef;
+    DTypeInfo argType; // store baseType, ptrLevel, constLevel of the argument
+
+    ArgumentInfo(
+        const std::string& name,
+        const std::string& dtype,
+        bool isConst=false,
+        bool isRef=false
+    );
+
+    void setArgDType(const std::string& dtype);
+    void setArgAsPointer(int level);
+    void setArgAsConst(int level, bool isConst);
+    void setPassedByRef(bool isRef);
+
+    void display(std::ostream& out = std::cout) const;
+};
+
+// Function Information class
+class FunctionInfo : public SymbolDetails {
+    public:
+    DTypeInfo returnType; // store dataType Info of the return type
+    StorageClass storageClass; // how the function is stored [AUTO by default, STATIC - global, EXTERN - external]
+    bool isFuncConst; // const flag for function [means no modification of any variable inside]
+    bool isVariadic; // flag to check if function is variadic [can take variable number of arguments]
+    bool isRecursive; // flag to check if function is recursive
+    bool isDefined; // flag to check if function is defined
+    void* address; // Function address ------ In Code Generation Phase ------
+    std::vector<ArgumentInfo> parameters; // List of parameters
+
+    FunctionInfo(
+        const int lineNo,
+        const std::string& funcName,
+        const std::string& dtype="void",
+        bool isConst=false,
+        bool isVar=false,
+        bool isRec=false,
+        bool isDef=false,
+        void* addr=nullptr
+    );
+
+    // Setter Functions
+    void setReturnType(DataType dt);
+    void setFunctionAsConst(bool isConst=1);
+    void setVariadic(bool isVar=1);
+    void setRecursive(bool isRec=1);
+    void setDefined(bool isDef=1);
+    void setAddress(void* addr);
+    void addParameter(const std::string& name, const std::string& dtype, bool isConst=false, bool isRef=false, int ptrLevel=0);
+    void addParameter(const ArgumentInfo& arg);
+    
+    // Getter Functions
+    // bool isFunctionConst();
+    // bool isFunctionVariadic();
+    // bool isFunctionRecursive();
+    // bool isFunctionDefined();
+    void* getAddress();
+    std::vector<ArgumentInfo> getParameters();
+
+    void display(std::ostream& out = std::cout) const;
+};
+
+// Symbol Entry class
+    class SymbolEntry {
+        public:
+        std::string symbolKey; // Key of the symbol
+        SymbolType symbolType; // Type of the symbol
+        SymbolDetails* details; // Pointer to the details
+
+        SymbolEntry(
+            const std::string& key,
+            SymbolType type,
+            SymbolDetails* det
+        );
+
+        ~SymbolEntry();
+
+        void display(std::ostream& out=std::cout) const;
+    };
+    
 // Symbol Table Class
-class SymbolTable {
-private:
-    std::unordered_map<std::string, SymbolEntry*> table;
 
-public:
-    ~SymbolTable() {
-        for (auto& pair : table) delete pair.second;
-    }
+    class SymbolTable {
+        private:
+        std::unordered_map<std::string, SymbolEntry*> table;
 
-    void insert(SymbolEntry* entry) {
-        table[entry->symbolKey] = entry;
-    }
+        public:
+        ~SymbolTable();
 
-    SymbolEntry* lookup(const std::string& symbolKey) {
-        return table.count(symbolKey) ? table[symbolKey] : nullptr;
-    }
+        void insert(SymbolEntry* entry);
+        SymbolEntry* lookup(const std::string& symbolKey);
 
-    void display(
-        std::ofstream& out=std::cout // default output stream is std::cout
-    ) const {
-        for (auto& pair : table) {
-            pair.second->display(out);
-        }
-    }
-};
+        void display(std::ostream& out=std::cout) const;
+    };
 
 
 #endif // SYM_H

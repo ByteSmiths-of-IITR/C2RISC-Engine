@@ -1,39 +1,48 @@
 #include <iostream>
-#include <unordered_map>
-#include <vector>
-#include <string>
 
 #include "sym.h"
-
-using namespace std;
-
-
+// extern int DEBUGMODE;
 
 int main() {
     SymbolTable symTable;
 
-    // outputFile
-    string outputFile = "symbol_table.txt";
+    std::string outputFile = "symbol.txt";
     freopen(outputFile.c_str(), "w", stdout);
 
-    // Adding a variable
-    SymbolEntry* var1 = new SymbolEntry("x", SymbolType::VARIABLE, 
-        new VariableInfo(DataType::INT, StorageClass::AUTO, 4, 0, false));
-    symTable.insert(var1);
+    // Insert a variable
+    VariableInfo* var = new VariableInfo(1, "x", "int", StorageClass::AUTO);
+    SymbolEntry* varEntry = new SymbolEntry("x", SymbolType::VARIABLE, var);
+    symTable.insert(varEntry);
 
-    // Adding an integer array
-    SymbolEntry* arr = new SymbolEntry("arr", SymbolType::ARRAY, 
-        new ArrayInfo(DataType::INT, StorageClass::AUTO, {10, 20}));
-    symTable.insert(arr);
+    // Insert an array
+    std::vector<int> dims = {10, 20};
+    ArrayInfo* arr = new ArrayInfo(2, "arr", "int", StorageClass::STATIC, dims);
+    SymbolEntry* arrEntry = new SymbolEntry("arr", SymbolType::ARRAY, arr);
+    symTable.insert(arrEntry);
 
-    // Adding a function
-    FunctionInfo* funcInfo = new FunctionInfo(DataType::VOID, false, false);
-    funcInfo->addParameter("param1", DataType::INT);
-    SymbolEntry* func = new SymbolEntry("myFunc", SymbolType::FUNCTION, funcInfo);
-    symTable.insert(func);
+    // Insert a function
+    FunctionInfo* func = new FunctionInfo(3, "myFunc", "void");
+    func->addParameter("param1", "int", false, false);
+    SymbolEntry* funcEntry = new SymbolEntry("myFunc", SymbolType::FUNCTION, func);
+    symTable.insert(funcEntry);
 
-    // Displaying the table
-    symTable.display();
+    // Display the symbol table
+    std::cout << "\nSymbol Table Contents:\n";
+    // symTable.display();
+
+    // Lookup symbols
+    std::cout << "\nLookup Results:\n";
+    SymbolEntry* lookupVar = symTable.lookup("x");
+    if (lookupVar) lookupVar->display();
+    else std::cout << "Variable 'x' not found.\n";
+
+    // SymbolEntry* lookupArr = symTable.lookup("arr");
+    // if (lookupArr) lookupArr->display();
+    // else std::cout << "Array 'arr' not found.\n";
+
+    // SymbolEntry* lookupFunc = symTable.lookup("myFunc");
+    // if (lookupFunc) lookupFunc->display();
+    // else std::cout << "Function 'myFunc' not found.\n";
 
     return 0;
 }

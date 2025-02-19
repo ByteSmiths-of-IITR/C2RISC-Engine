@@ -8,7 +8,7 @@
 #include <fstream>
 #include <ctime>
 #include "ast.h"  // Ensure this is included
-#include "sym.h" 
+// #include "sym.h" 
 
 extern char *yytext;
 extern int DEBUGMODE;

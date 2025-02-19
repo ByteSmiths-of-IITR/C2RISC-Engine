@@ -1,0 +1,23 @@
+
+Symbol Table Contents:
+
+Lookup Results:
++==========================+
+|        Symbol : x      |
+|==========================|
+│ Symbol Key    :        x │
+│ Symbol Type   : Variable │
++--------------------------+
+│      Variable : x    │
+|--------------------------|
+│ Line No       :        1 │
+│ Base Type     :      int │
+│ Size          :        4 │
+│ isPointer     :       No │
+│ isConstant    :       No │
+|--------------------------|
+│ Storage Class :     auto │
+│ Offset        :        0 │
+│ Init Value    :     None │
++--------------------------+
++==========================+
