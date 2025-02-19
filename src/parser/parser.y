@@ -8,7 +8,7 @@
 #include <fstream>
 #include <ctime>
 #include "ast.h"  // Ensure this is included
-#include "sym.h" 
+// #include "sym.h" 
 
 extern char *yytext;
 extern int DEBUGMODE;
@@ -27,41 +27,144 @@ ASTNode *root;
     struct ASTNode *node;
 }
 
-%token <str> IDENTIFIER NUMBER
-%token ASSIGN SEMICOLON 
-%token <str> UNKNOWN
+%token <str> IDENTIFIER NUMBER STRING_LITERAL CHAR_LITERAL
+%token ASSIGN SEMICOLON COMMA
+%token PLUS MINUS MULTIPLY DIVIDE MODULO
+%token EQUAL NOT_EQUAL LESS GREATER LESS_EQUAL GREATER_EQUAL
+%token AND OR NOT
+%token IF ELSE WHILE DO FOR SWITCH CASE DEFAULT BREAK CONTINUE GOTO RETURN
+%token INT CHAR VOID STRUCT STATIC
+%token PRINTF SCANF
+%token AMPERSAND LBRACKET RBRACKET LPAREN RPAREN LBRACE RBRACE COLON
+%token UNKNOWN
 
-%type <node> statement statements
+//left and right shift
+%left LEFT_SHIFT RIGHT_SHIFT
+
+%left OR
+%left AND
+%left EQUAL NOT_EQUAL
+%left LESS GREATER LESS_EQUAL GREATER_EQUAL
+%left PLUS MINUS
+%left MULTIPLY DIVIDE MODULO
+%right NOT
+
+%type <node> statements statement expression term factor 
+%type <node> selection_statement iteration_statement jump_statement
+%type <node>  function_call  argument_list
+%type <node> declaration type_specifier array_declaration pointer_declaration
+%type <node> structure_declaration
+%type <node> function_definition
 
 %%
 
 statements:
-    statement                 { 
-        ASTNode *node = new ASTNode("statements"); 
-        node->addChild($1);
-        $$ = node;
-        root = node;
-    }
-    | statements statement     { 
-        ASTNode *node = new ASTNode("statements");
-        node->addChild($1);
-        node->addChild($2);
-        $$ = node;
-        root = node;
-    }
-    ;
+    statement { $$ = new ASTNode("statements"); $$->addChild($1); root = $$; }
+    | statements statement { $$ = $1; $$->addChild($2); }
+;
 
 statement:
-    IDENTIFIER ASSIGN NUMBER SEMICOLON {
-        ASTNode *node = new ASTNode("statement");
-        node->createChild("IDENTIFIER", $1);
-        node->createChild("ASSIGN", "="); // FIX: Corrected function name
-        node->createChild("NUMBER", $3);
-        node->createChild("SEMICOLON", ";");
-        $$ = node;
-        std::cout << "Assignment" << $1 << " = " << $3 << std::endl;
-    }
-    ;
+    declaration SEMICOLON { $$ = $1; }
+    | selection_statement { $$ = $1; }
+    | iteration_statement { $$ = $1; }
+    | jump_statement { $$ = $1; }
+    | function_call SEMICOLON { $$ = $1; }
+    | expression SEMICOLON { $$ = $1; }
+    | function_definition { $$ = $1; }  // Add this line to include function definitions
+;
+
+
+declaration:
+    type_specifier IDENTIFIER ASSIGN expression { $$ = new ASTNode("declaration"); $$->createChild("type", $1->type); $$->createChild("identifier", $2); $$->addChild($4); }
+    | type_specifier IDENTIFIER { $$ = new ASTNode("declaration"); $$->createChild("type", $1->type); $$->createChild("identifier", $2); }
+;
+
+
+type_specifier:
+    INT { $$ = new ASTNode("type"); $$->createChild("INT",""); }
+    | CHAR { $$ = new ASTNode("type"); $$->createChild("CHAR",""); }
+    | VOID { $$ = new ASTNode("type"); $$->createChild("VOID",""); }
+    | STRUCT IDENTIFIER { $$ = new ASTNode("type"); $$->createChild("STRUCT", $2); }
+    | STATIC type_specifier { $$ = new ASTNode("type"); $$->createChild("STATIC", ""); $$->addChild($2); }
+    | type_specifier AMPERSAND { $$ = new ASTNode("type"); $$->createChild("POINTER", ""); $$->addChild($1); }
+    | array_declaration { $$ = $1; }
+;
+
+selection_statement:
+    IF LPAREN expression RPAREN statement ELSE statement { $$ = new ASTNode("if-else"); $$->addChild($3); $$->addChild($5); $$->addChild($7); }
+    | IF LPAREN expression RPAREN statement { $$ = new ASTNode("if"); $$->addChild($3); $$->addChild($5); }
+;
+
+iteration_statement:
+    WHILE LPAREN expression RPAREN statement { $$ = new ASTNode("while"); $$->addChild($3); $$->addChild($5); }
+    | DO statement WHILE LPAREN expression RPAREN SEMICOLON { $$ = new ASTNode("do-while"); $$->addChild($2); $$->addChild($5); }
+    | FOR LPAREN expression SEMICOLON expression SEMICOLON expression RPAREN statement { $$ = new ASTNode("for"); $$->addChild($3); $$->addChild($5); $$->addChild($7); $$->addChild($9); }
+;
+
+jump_statement:
+    RETURN expression SEMICOLON { $$ = new ASTNode("return"); $$->addChild($2); }
+    | BREAK SEMICOLON { $$ = new ASTNode("break"); }
+    | CONTINUE SEMICOLON { $$ = new ASTNode("continue"); }
+    | GOTO IDENTIFIER SEMICOLON { $$ = new ASTNode("goto"); $$->createChild("label", $2); }
+;
+
+expression:
+    expression PLUS term { $$ = new ASTNode("+"); $$->addChild($1); $$->addChild($3); }
+    | expression MINUS term { $$ = new ASTNode("-"); $$->addChild($1); $$->addChild($3); }
+    | expression MULTIPLY term { $$ = new ASTNode("*"); $$->addChild($1); $$->addChild($3); }
+    | expression DIVIDE term { $$ = new ASTNode("/"); $$->addChild($1); $$->addChild($3); }
+    | expression MODULO term { $$ = new ASTNode("%"); $$->addChild($1); $$->addChild($3); }
+    | expression EQUAL term { $$ = new ASTNode("=="); $$->addChild($1); $$->addChild($3); }
+    | expression NOT_EQUAL term { $$ = new ASTNode("!="); $$->addChild($1); $$->addChild($3); }
+    | expression LESS term { $$ = new ASTNode("<"); $$->addChild($1); $$->addChild($3); }
+    | expression GREATER term { $$ = new ASTNode(">"); $$->addChild($1); $$->addChild($3); }
+    | expression LESS_EQUAL term { $$ = new ASTNode("<="); $$->addChild($1); $$->addChild($3); }
+    | expression GREATER_EQUAL term { $$ = new ASTNode(">="); $$->addChild($1); $$->addChild($3); }
+    | expression AND term { $$ = new ASTNode("&&"); $$->addChild($1); $$->addChild($3); }
+    | expression OR term { $$ = new ASTNode("||"); $$->addChild($1); $$->addChild($3); }
+    | NOT term { $$ = new ASTNode("!"); $$->addChild($2); }
+    | term { $$ = $1; }
+;
+
+term:
+    term MULTIPLY factor { $$ = new ASTNode("*"); $$->addChild($1); $$->addChild($3); }
+    | term DIVIDE factor { $$ = new ASTNode("/"); $$->addChild($1); $$->addChild($3); }
+    | factor { $$ = $1; }
+;
+
+factor:
+    NUMBER { $$ = new ASTNode("number"); $$->createChild("value", $1); }
+    | IDENTIFIER { $$ = new ASTNode("identifier"); $$->createChild("name", $1); }
+    | function_call { $$ = $1; }
+    | LPAREN expression RPAREN { $$ = $2; }
+;
+
+function_call:
+    IDENTIFIER LPAREN argument_list RPAREN { $$ = new ASTNode("function_call"); $$->createChild("name", $1); $$->addChild($3); }
+    | IDENTIFIER LPAREN RPAREN { $$ = new ASTNode("function_call"); $$->createChild("name", $1); }
+;
+
+argument_list:
+    expression { $$ = new ASTNode("arguments"); $$->addChild($1); }
+    | argument_list COMMA expression { $$ = $1; $$->addChild($3); }
+;
+
+function_definition:
+    type_specifier IDENTIFIER LPAREN RPAREN LBRACE statements RBRACE { $$ = new ASTNode("function_definition"); $$->createChild("return_type", $1->type); $$->createChild("name", $2); $$->addChild($6); }
+;
+
+array_declaration:
+    type_specifier IDENTIFIER LBRACKET NUMBER RBRACKET { $$ = new ASTNode("array"); $$->createChild("type", $1->type); $$->createChild("name", $2); $$->createChild("size", $4); }
+;
+
+pointer_declaration:
+    type_specifier AMPERSAND IDENTIFIER { $$ = new ASTNode("pointer"); $$->createChild("type", $1->type); $$->createChild("name", $3); }
+;
+
+structure_declaration:
+    STRUCT IDENTIFIER LBRACE statements RBRACE { $$ = new ASTNode("structure"); $$->createChild("name", $2); $$->addChild($4); }
+;
+
 
 
 %%
