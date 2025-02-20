@@ -1,6 +1,8 @@
 #include "utility.h"
 #include "parser.tab.h"
 
+#define EMPTY_VAL "!!EMPTY!!"
+
 //----------- ASTNode Class
     ASTNode::ASTNode(
         std::string type, 
@@ -23,9 +25,15 @@
         this->position = position;
     }
 
+    ASTNode::ASTNode(TokenAttribute* tokenAtr) {
+        this->type = getTokenName(tokenAtr->tokenType);
+        this->value = tokenAtr->value;
+        this->position = tokenAtr->position;
+    }
+
     ASTNode::ASTNode(std::string type) {
         this->type = type;
-        this->value = "NON_TERMINAL"; // Non-Terminal as per Grammar
+        this->value = EMPTY_VAL;
         this->position = std::make_pair(-1, -1); // Not valid position
     }
 
@@ -41,8 +49,22 @@
         children.push_back(child);
     }
 
+    
+
+    // Adds multiple children to the current node
+    void ASTNode::addChildren(std::vector<ASTNode *> children) {
+        for (ASTNode *child : children) {
+            addChild(child);
+        }
+    }
+
+    void ASTNode::addChild(TokenAttribute* tokenAtr) {
+        ASTNode *child = new ASTNode(tokenAtr);
+        addChild(child);
+    }
+
     // Creates a new child node with the given type and value
-    void ASTNode::createChild(
+    void ASTNode::addChild(
         std::string type, 
         std::string value,
         int line,
