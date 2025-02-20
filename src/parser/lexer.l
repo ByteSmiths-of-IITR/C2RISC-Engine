@@ -28,6 +28,10 @@ void yyerror(const char *s);
 
 %option noyywrap
 
+PREPROCESSOR_OP "#include"|"#define"|"#undef"|"#if"|"#ifdef"|"#ifndef"|"#else"|"#elif"|"#endif"|"#error"|"#pragma"|"#line"
+
+PREPROCESSOR_STATEMENT {PREPROCESSOR_OP}([^"//"\n"/*"])*
+
 DIGIT      [0-9]
 LETTER     [a-zA-Z_]
 ID         {LETTER}({LETTER}|{DIGIT})*
@@ -75,6 +79,7 @@ COMMENT2   "/*"([^*]|\*+[^*/])*\*+"/"
 
 %%
 
+{PREPROCESSOR_STATEMENT}        { /* Ignore preprocessor statements */ }
 
 {CHAR}                          { TOKEN(CONSTANT)  }
 {BINARY}                        { TOKEN(CONSTANT)  }

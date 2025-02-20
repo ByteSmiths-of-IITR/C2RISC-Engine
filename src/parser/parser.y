@@ -120,6 +120,9 @@ ASTNode *root;
 %type <astNode> function_declaration
 %type <astNode> function_definition
 
+/* %expect-rr 96 */
+/* %expect 2 */
+
 %start translation_unit
 %%
 
@@ -1680,9 +1683,9 @@ int main(int argc, char **argv) {
 
     //------------------------ Parsing ------------------------
 
-        std::cout << "..........Starting parsing..........\n";
-        yyparse();  // Call BISON's parser
-        std::cout << "..........Parsing complete..........\n";
+    
+    yyparse();  // Call BISON's parser
+    
 
 
 
@@ -1705,7 +1708,7 @@ int main(int argc, char **argv) {
             }
 
         // Print Normal AST
-            if(true){
+            if(false){
                 printAST(root);
             }
 

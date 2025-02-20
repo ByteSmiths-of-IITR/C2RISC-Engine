@@ -1,5 +1,5 @@
 # Compiler and flags
-CXX = clang++
+CXX = g++ -std=c++17 # Added Latest Version [Some error due to old compiler]
 CXXFLAGS = -w -lm
 
 # Input files
@@ -10,7 +10,7 @@ CERR = cerr.txt
 ## for debug we have a console log
 
 # Bison and Flex tools
-BISON = bison
+BISON = bison -Wnone
 FLEX = flex
 
 # Source files
@@ -56,11 +56,13 @@ run: $(EXECUTABLE)
 $(DOTFile): $(EXECUTABLE)
 	./$(EXECUTABLE) $(INPUT) $(OUTPUT) -p $(DOTFile)
 
-image: $(DOTFile)
-	$(DOT) -Tpng $(DOTFile) -o $(DOTImage)
+# PDF is better
+# image: $(DOTFile)
+# 	$(DOT) -Tpng $(DOTFile) -o $(DOTImage)
 
 pdf: $(DOTFile)
 	$(DOT) -Tpdf $(DOTFile) -o $(DOTPDF)
+	open $(DOTPDF)
 
 r: $(EXECUTABLE)
 	./$(EXECUTABLE) $(INPUT) $(OUTPUT) -r $(VISUAL)

@@ -111,7 +111,15 @@
         if(node->value == "!!EMPTY!!") {
             out << node->type;
         } else {
-            out << node->value;
+            // if the value is a string, escape the quotes
+            std::string value = node->value;
+            for (size_t i = 0; i < value.size(); ++i) {
+                if (value[i] == '\"') {
+                    value.insert(i, "\\");
+                    i++;
+                }
+            }
+            out << value;
         }
         out << "\"];\n";
 
