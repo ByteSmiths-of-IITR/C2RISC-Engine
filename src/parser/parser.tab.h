@@ -55,10 +55,90 @@ extern int yydebug;
     YYerror = 256,                 /* error  */
     YYUNDEF = 257,                 /* "invalid token"  */
     IDENTIFIER = 258,              /* IDENTIFIER  */
-    NUMBER = 259,                  /* NUMBER  */
-    ASSIGN = 260,                  /* ASSIGN  */
-    SEMICOLON = 261,               /* SEMICOLON  */
-    UNKNOWN = 262                  /* UNKNOWN  */
+    CONSTANT = 259,                /* CONSTANT  */
+    STRING_LITERAL = 260,          /* STRING_LITERAL  */
+    SIZEOF = 261,                  /* SIZEOF  */
+    PTR_OP = 262,                  /* PTR_OP  */
+    INC_OP = 263,                  /* INC_OP  */
+    DEC_OP = 264,                  /* DEC_OP  */
+    LEFT_OP = 265,                 /* LEFT_OP  */
+    RIGHT_OP = 266,                /* RIGHT_OP  */
+    LE_OP = 267,                   /* LE_OP  */
+    GE_OP = 268,                   /* GE_OP  */
+    EQ_OP = 269,                   /* EQ_OP  */
+    NE_OP = 270,                   /* NE_OP  */
+    AND_OP = 271,                  /* AND_OP  */
+    OR_OP = 272,                   /* OR_OP  */
+    MUL_ASSIGN = 273,              /* MUL_ASSIGN  */
+    DIV_ASSIGN = 274,              /* DIV_ASSIGN  */
+    MOD_ASSIGN = 275,              /* MOD_ASSIGN  */
+    ADD_ASSIGN = 276,              /* ADD_ASSIGN  */
+    SUB_ASSIGN = 277,              /* SUB_ASSIGN  */
+    LEFT_ASSIGN = 278,             /* LEFT_ASSIGN  */
+    RIGHT_ASSIGN = 279,            /* RIGHT_ASSIGN  */
+    AND_ASSIGN = 280,              /* AND_ASSIGN  */
+    XOR_ASSIGN = 281,              /* XOR_ASSIGN  */
+    OR_ASSIGN = 282,               /* OR_ASSIGN  */
+    TYPE_NAME = 283,               /* TYPE_NAME  */
+    LPAREN = 284,                  /* LPAREN  */
+    RPAREN = 285,                  /* RPAREN  */
+    LCURLY = 286,                  /* LCURLY  */
+    RCURLY = 287,                  /* RCURLY  */
+    LSQUARE = 288,                 /* LSQUARE  */
+    RSQUARE = 289,                 /* RSQUARE  */
+    DOT = 290,                     /* DOT  */
+    COMMA = 291,                   /* COMMA  */
+    BIT_AND = 292,                 /* BIT_AND  */
+    STAR = 293,                    /* STAR  */
+    PLUS = 294,                    /* PLUS  */
+    MINUS = 295,                   /* MINUS  */
+    BIT_NOT = 296,                 /* BIT_NOT  */
+    NOT_OP = 297,                  /* NOT_OP  */
+    DIVIDE = 298,                  /* DIVIDE  */
+    MOD = 299,                     /* MOD  */
+    LESSER_OP = 300,               /* LESSER_OP  */
+    GREATER_OP = 301,              /* GREATER_OP  */
+    XOR = 302,                     /* XOR  */
+    BIT_OR = 303,                  /* BIT_OR  */
+    QUESTION = 304,                /* QUESTION  */
+    COLON = 305,                   /* COLON  */
+    SEMI_COLON = 306,              /* SEMI_COLON  */
+    ASSIGN = 307,                  /* ASSIGN  */
+    TYPEDEF = 308,                 /* TYPEDEF  */
+    EXTERN = 309,                  /* EXTERN  */
+    STATIC = 310,                  /* STATIC  */
+    AUTO = 311,                    /* AUTO  */
+    REGISTER = 312,                /* REGISTER  */
+    CHAR = 313,                    /* CHAR  */
+    SHORT = 314,                   /* SHORT  */
+    INT = 315,                     /* INT  */
+    LONG = 316,                    /* LONG  */
+    SIGNED = 317,                  /* SIGNED  */
+    UNSIGNED = 318,                /* UNSIGNED  */
+    FLOAT = 319,                   /* FLOAT  */
+    DOUBLE = 320,                  /* DOUBLE  */
+    CONST = 321,                   /* CONST  */
+    VOLATILE = 322,                /* VOLATILE  */
+    VOID = 323,                    /* VOID  */
+    STRUCT = 324,                  /* STRUCT  */
+    UNION = 325,                   /* UNION  */
+    ENUM = 326,                    /* ENUM  */
+    ELLIPSIS = 327,                /* ELLIPSIS  */
+    CASE = 328,                    /* CASE  */
+    DEFAULT = 329,                 /* DEFAULT  */
+    IF = 330,                      /* IF  */
+    ELSE = 331,                    /* ELSE  */
+    SWITCH = 332,                  /* SWITCH  */
+    WHILE = 333,                   /* WHILE  */
+    DO = 334,                      /* DO  */
+    FOR = 335,                     /* FOR  */
+    GOTO = 336,                    /* GOTO  */
+    CONTINUE = 337,                /* CONTINUE  */
+    BREAK = 338,                   /* BREAK  */
+    RETURN = 339,                  /* RETURN  */
+    UNTIL = 340,                   /* UNTIL  */
+    INVALID_TOKEN = 341,           /* INVALID_TOKEN  */
+    UNKOWN_TOKEN = 342             /* UNKOWN_TOKEN  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
@@ -67,12 +147,12 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 26 "parser.y"
+#line 32 "parser.y"
 
-    char *str;
-    struct ASTNode *node;
+    struct TokenAttribute* tokenAtr;
+    struct ASTNode* astNode;
 
-#line 76 "parser.tab.h"
+#line 156 "parser.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

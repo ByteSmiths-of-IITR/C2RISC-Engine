@@ -7,8 +7,13 @@
 #include <vector>
 #include <fstream>
 #include <ctime>
-#include "ast.h"  
+#include "utility.h"  
 
+#define LINE std::cerr<<__LINE__<<std::endl;
+// #define LINE /**/
+
+// Macros for Recuding Code
+#define NewToken(i) ASTNode *node = new ASTNode(getTokenName($i->tokenType),$i->value,$i->position)
 
 extern char *yytext;
 void yyerror(const char *s);
@@ -21,24 +26,28 @@ std::ofstream PARSERlog("PARSER_debug.log", std::ios::trunc);
 
 ASTNode *root;
 
+
+
 %}
-    
+
 %union{
-    struct TokenInfo* tokenInfo;
+    struct TokenAttribute* tokenAtr;
     struct ASTNode* astNode;
 }
 
-%token <tokenInfo> IDENTIFIER CONSTANT STRING_LITERAL SIZEOF
-%token <tokenInfo> PTR_OP INC_OP DEC_OP LEFT_OP RIGHT_OP LE_OP GE_OP EQ_OP NE_OP
-%token <tokenInfo> AND_OP OR_OP MUL_ASSIGN DIV_ASSIGN MOD_ASSIGN ADD_ASSIGN
-%token <tokenInfo> SUB_ASSIGN LEFT_ASSIGN RIGHT_ASSIGN AND_ASSIGN
-%token <tokenInfo> XOR_ASSIGN OR_ASSIGN TYPE_NAME
-%token <tokenInfo> LPAREN RPAREN LCURLY RCURLY LSQUARE RSQUARE
-%token <tokenInfo> DOT COMMA BIT_AND STAR PLUS MINUS BIT_NOT NOT_OP DIVIDE MOD LESSER_OP GREATER_OP XOR BIT_OR QUESTION COLON SEMI_COLON ASSIGN
-%token <tokenInfo> TYPEDEF EXTERN STATIC AUTO REGISTER
-%token <tokenInfo> CHAR SHORT INT LONG SIGNED UNSIGNED FLOAT DOUBLE CONST VOLATILE VOID
-%token <tokenInfo> STRUCT UNION ENUM ELLIPSIS
-%token <tokenInfo> CASE DEFAULT IF ELSE SWITCH WHILE DO FOR GOTO CONTINUE BREAK RETURN UNTIL
+%token <tokenAtr> IDENTIFIER CONSTANT STRING_LITERAL SIZEOF
+%token <tokenAtr> PTR_OP INC_OP DEC_OP LEFT_OP RIGHT_OP LE_OP GE_OP EQ_OP NE_OP
+%token <tokenAtr> AND_OP OR_OP MUL_ASSIGN DIV_ASSIGN MOD_ASSIGN ADD_ASSIGN
+%token <tokenAtr> SUB_ASSIGN LEFT_ASSIGN RIGHT_ASSIGN AND_ASSIGN
+%token <tokenAtr> XOR_ASSIGN OR_ASSIGN TYPE_NAME
+%token <tokenAtr> LPAREN RPAREN LCURLY RCURLY LSQUARE RSQUARE
+%token <tokenAtr> DOT COMMA BIT_AND STAR PLUS MINUS BIT_NOT NOT_OP DIVIDE MOD LESSER_OP GREATER_OP XOR BIT_OR QUESTION COLON SEMI_COLON ASSIGN
+%token <tokenAtr> TYPEDEF EXTERN STATIC AUTO REGISTER
+%token <tokenAtr> CHAR SHORT INT LONG SIGNED UNSIGNED FLOAT DOUBLE CONST VOLATILE VOID
+%token <tokenAtr> STRUCT UNION ENUM ELLIPSIS
+%token <tokenAtr> CASE DEFAULT IF ELSE SWITCH WHILE DO FOR GOTO CONTINUE BREAK RETURN UNTIL
+
+%token <tokenAtr> INVALID_TOKEN UNKOWN_TOKEN
 
 %type <astNode> primary_expression
 %type <astNode> postfix_expression
@@ -110,25 +119,27 @@ ASTNode *root;
 
 primary_expression
     : IDENTIFIER 
-      { 
-        // cout << __LINE__ << endl;
-        $$ = new ASTNode($1->lineno, "Identifier", $1->value);
-      }
+        {   LINE
+            NewToken(i);
+            $$ = node;
+        }
     | CONSTANT 
-      { 
-        // cout << __LINE__ << endl;
-        $$ = new ASTNode($1->lineno, "Constant", $1->value);
-      }
+        { 
+            LINE
+            NewToken(1, "Constant");
+            $$ = node;
+        }
     | STRING_LITERAL 
-      { 
-        // cout << __LINE__ << endl;
-        $$ = new ASTNode($1->lineno, "StringLiteral", $1->value);
-      }
+        { 
+            LINE
+            NewToken(1, "StringLiteral");
+            $$ = node;
+        }
     | LPAREN expression RPAREN 
-      { 
-        // cout << __LINE__ << endl;
-        $$ = $2;
-      }
+        {   // Prarenthesis are not part of the AST
+            LINE
+            $$ = $2;
+        }
     ;
 
 postfix_expression

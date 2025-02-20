@@ -16,8 +16,8 @@ FLEX = flex
 # Source files
 LEXER = lexer.l
 PARSER = parser.y
-AST_H = ast.h
-AST_CPP = ast.cpp
+UTILITY_H = utility.h
+UTILITY_CPP = utility.cpp
 
 
 # Generated files
@@ -50,8 +50,8 @@ $(LEXER_C): $(LEXER)
 	$(FLEX) $(LEXER)
 
 # Step 3: Compile everything together into an executable
-$(EXECUTABLE): $(LEXER_C) $(PARSER_C) $(AST_CPP) 
-	$(CXX) $(LEXER_C) $(PARSER_C) $(AST_CPP)  -o $(EXECUTABLE) $(CXXFLAGS)
+$(EXECUTABLE): $(LEXER_C) $(PARSER_C) $(UTILITY_CPP) 
+	$(CXX) $(LEXER_C) $(PARSER_C) $(UTILITY_CPP)  -o $(EXECUTABLE) $(CXXFLAGS)
 
 
 run: $(EXECUTABLE)
