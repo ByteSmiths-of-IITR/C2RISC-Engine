@@ -77,21 +77,22 @@
 #include <vector>
 #include <fstream>
 #include <ctime>
-#include "ast.h"  // Ensure this is included
-// #include "sym.h" 
+#include "ast.h"  
+
 
 extern char *yytext;
-extern int DEBUGMODE;
 void yyerror(const char *s);
 extern int yylex();
 extern FILE *yyin;
 
 #define YYDEBUG 1
 
+std::ofstream PARSERlog("PARSER_debug.log", std::ios::trunc);
+
 ASTNode *root;
 
 
-#line 95 "parser.tab.c"
+#line 96 "parser.tab.c"
 
 # ifndef YY_CAST
 #  ifdef __cplusplus
@@ -516,7 +517,7 @@ static const yytype_int8 yytranslate[] =
 /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_int8 yyrline[] =
 {
-       0,    39,    39,    46,    57
+       0,    40,    40,    46,    56
 };
 #endif
 
@@ -1073,9 +1074,8 @@ yyreduce:
   switch (yyn)
     {
   case 2: /* statements: statement  */
-#line 39 "parser.y"
-                              {
-        std::cout << "1" << std::endl;
+#line 40 "parser.y"
+                              { 
         ASTNode *node = new ASTNode("statements"); 
         node->addChild((yyvsp[0].node));
         (yyval.node) = node;
@@ -1086,21 +1086,19 @@ yyreduce:
 
   case 3: /* statements: statements statement  */
 #line 46 "parser.y"
-                               {
-        std::cout << "2" << std::endl; 
+                               { 
         ASTNode *node = new ASTNode("statements");
         node->addChild((yyvsp[-1].node));
         node->addChild((yyvsp[0].node));
         (yyval.node) = node;
         root = node;
     }
-#line 1098 "parser.tab.c"
+#line 1097 "parser.tab.c"
     break;
 
   case 4: /* statement: IDENTIFIER ASSIGN NUMBER SEMICOLON  */
-#line 57 "parser.y"
+#line 56 "parser.y"
                                        {
-        std::cout << "3" << std::endl;
         ASTNode *node = new ASTNode("statement");
         node->createChild("IDENTIFIER", (yyvsp[-3].str));
         node->createChild("ASSIGN", "="); // FIX: Corrected function name
@@ -1109,11 +1107,11 @@ yyreduce:
         (yyval.node) = node;
         std::cout << "Assignment" << (yyvsp[-3].str) << " = " << (yyvsp[-1].str) << std::endl;
     }
-#line 1113 "parser.tab.c"
+#line 1111 "parser.tab.c"
     break;
 
 
-#line 1117 "parser.tab.c"
+#line 1115 "parser.tab.c"
 
       default: break;
     }
@@ -1306,7 +1304,7 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 70 "parser.y"
+#line 68 "parser.y"
 
 
 void yyerror(const char *s) {
@@ -1318,7 +1316,6 @@ void yyerror(const char *s) {
 // main function
 
 int main(int argc, char **argv) {
-
 
     //------------------------ cmd line arguments handling ------------------------
 
@@ -1338,12 +1335,7 @@ int main(int argc, char **argv) {
         for (int i = 3; i < argc; ++i) {
             std::string arg = argv[i];
             if (arg[0] == '-' && arg[1] == 'd') {
-                // Debug mode flag in the form of "-d<debug_mode>"
-                debug_mode = arg.substr(2); // Extract the debug mode value after "-d"
-
-                // Set the debug mode
-                DEBUGMODE = std::stoi(debug_mode);
-
+                // Ignore
             } else if (arg == "-p") {
                 // Check if there is another argument after "-p"
                 if (i + 1 < argc) {
@@ -1376,7 +1368,6 @@ int main(int argc, char **argv) {
                 return 1;
             }
         }
-
 
     //------------------------ input file handling ------------------------
         yyin = fopen(input_file.c_str(), "r");
@@ -1423,7 +1414,7 @@ int main(int argc, char **argv) {
             }
 
         // Print Normal AST
-            if(DEBUGMODE){
+            if(true){
                 printAST(root);
             }
 

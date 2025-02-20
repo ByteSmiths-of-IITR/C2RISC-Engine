@@ -7,16 +7,17 @@
 #include <vector>
 #include <fstream>
 #include <ctime>
-#include "ast.h"  // Ensure this is included
-// #include "sym.h" 
+#include "ast.h"  
+
 
 extern char *yytext;
-extern int DEBUGMODE;
 void yyerror(const char *s);
 extern int yylex();
 extern FILE *yyin;
 
 #define YYDEBUG 1
+
+std::ofstream PARSERlog("PARSER_debug.log", std::ios::trunc);
 
 ASTNode *root;
 
@@ -76,7 +77,6 @@ void yyerror(const char *s) {
 
 int main(int argc, char **argv) {
 
-
     //------------------------ cmd line arguments handling ------------------------
 
         if (argc < 3) {
@@ -95,12 +95,7 @@ int main(int argc, char **argv) {
         for (int i = 3; i < argc; ++i) {
             std::string arg = argv[i];
             if (arg[0] == '-' && arg[1] == 'd') {
-                // Debug mode flag in the form of "-d<debug_mode>"
-                debug_mode = arg.substr(2); // Extract the debug mode value after "-d"
-
-                // Set the debug mode
-                DEBUGMODE = std::stoi(debug_mode);
-
+                // Ignore
             } else if (arg == "-p") {
                 // Check if there is another argument after "-p"
                 if (i + 1 < argc) {
@@ -133,7 +128,6 @@ int main(int argc, char **argv) {
                 return 1;
             }
         }
-
 
     //------------------------ input file handling ------------------------
         yyin = fopen(input_file.c_str(), "r");
@@ -180,7 +174,7 @@ int main(int argc, char **argv) {
             }
 
         // Print Normal AST
-            if(DEBUGMODE){
+            if(true){
                 printAST(root);
             }
 

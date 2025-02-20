@@ -19,6 +19,7 @@ PARSER = parser.y
 AST_H = ast.h
 AST_CPP = ast.cpp
 
+
 # Generated files
 LEXER_C = lex.yy.c
 PARSER_C = parser.tab.c
@@ -49,8 +50,8 @@ $(LEXER_C): $(LEXER)
 	$(FLEX) $(LEXER)
 
 # Step 3: Compile everything together into an executable
-$(EXECUTABLE): $(LEXER_C) $(PARSER_C) $(AST_CPP)
-	$(CXX) $(LEXER_C) $(PARSER_C) $(AST_CPP) -o $(EXECUTABLE) $(CXXFLAGS)
+$(EXECUTABLE): $(LEXER_C) $(PARSER_C) $(AST_CPP) 
+	$(CXX) $(LEXER_C) $(PARSER_C) $(AST_CPP)  -o $(EXECUTABLE) $(CXXFLAGS)
 
 
 run: $(EXECUTABLE)

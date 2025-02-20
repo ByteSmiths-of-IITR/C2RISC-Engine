@@ -322,8 +322,6 @@ void yyfree ( void *  );
 	}
 #define YY_AT_BOL() (YY_CURRENT_BUFFER_LVALUE->yy_at_bol)
 
-/* Begin user sect3 */
-
 #define yywrap() (/*CONSTCOND*/1)
 #define YY_SKIP_YYWRAP
 typedef flex_uint8_t YY_CHAR;
@@ -366,8 +364,8 @@ struct yy_trans_info
 	};
 static const flex_int16_t yy_accept[14] =
     {   0,
-        0,    0,    8,    6,    5,    5,    2,    4,    3,    1,
-        2,    1,    0
+        0,    0,    8,    6,    5,    5,    1,    4,    3,    2,
+        1,    2,    0
     } ;
 
 static const YY_CHAR yy_ec[256] =
@@ -404,31 +402,31 @@ static const YY_CHAR yy_ec[256] =
 
 static const YY_CHAR yy_meta[8] =
     {   0,
-        1,    1,    1,    2,    1,    1,    2
+        1,    1,    1,    1,    1,    1,    1
     } ;
 
-static const flex_int16_t yy_base[15] =
+static const flex_int16_t yy_base[14] =
     {   0,
-        0,    0,   11,   12,   12,   12,    6,   12,   12,    0,
-        5,    0,   12,    6
+        0,    0,   12,   13,   13,   13,    6,   13,   13,    4,
+        5,    0,   13
     } ;
 
-static const flex_int16_t yy_def[15] =
+static const flex_int16_t yy_def[14] =
     {   0,
-       13,    1,   13,   13,   13,   13,   13,   13,   13,   14,
-       13,   14,    0,   13
+       13,    1,   13,   13,   13,   13,   13,   13,   13,   13,
+       13,   10,    0
     } ;
 
-static const flex_int16_t yy_nxt[20] =
+static const flex_int16_t yy_nxt[21] =
     {   0,
         4,    5,    6,    7,    8,    9,   10,   12,   11,   11,
-       13,    3,   13,   13,   13,   13,   13,   13,   13
+       12,   13,    3,   13,   13,   13,   13,   13,   13,   13
     } ;
 
-static const flex_int16_t yy_chk[20] =
+static const flex_int16_t yy_chk[21] =
     {   0,
-        1,    1,    1,    1,    1,    1,    1,   14,   11,    7,
-        3,   13,   13,   13,   13,   13,   13,   13,   13
+        1,    1,    1,    1,    1,    1,    1,   10,   11,    7,
+       10,    3,   13,   13,   13,   13,   13,   13,   13,   13
     } ;
 
 static yy_state_type yy_last_accepting_state;
@@ -458,90 +456,11 @@ char *yytext;
 #include <ctime>
 #include "ast.h" 
 
-//-------------------------------------- Industry Grade Debug mode setup
-int DEBUGMODE = 0; // will be set to !0 if the program is run with -d flag
-#define DEBUG 1
-#define INFO 2
-// 0-NoDebug
-// 1-Debug [Explicit Debugging the code (using HERE function)]
-// 2-Info  [Informational Messages]
-
-std::ofstream debug_log("debug.log", std::ios::trunc);
-// We need to truncate the log file every time we run the program
-
-void DEBUG_MSG(int logLevel, std::string msg){
-    if (logLevel <= DEBUGMODE){
-        // std::time_t t = std::time(0);
-        // std::tm* now = std::localtime(&t);
-        // debug_log << "[" << now->tm_year + 1900 << '-' << now->tm_mon + 1 << '-' << now->tm_mday << ' ' << now->tm_hour << ':' << now->tm_min << ':' << now->tm_sec << "] ";
-        switch (logLevel){
-            case DEBUG:
-                debug_log << "[DEBUG]  : ";
-                break;
-            case INFO:
-                debug_log << "[INFO]   : ";
-                break;
-            default:
-                debug_log << "[UNKNOWN]: ";
-                break;
-        }
-        debug_log << msg << std::endl;
-    }
-}
-
-void HERE(){
-    DEBUG_MSG(DEBUG, "Reaching here - " + std::to_string(__LINE__) + " in " + __FILE__);
-}
-//-------------------------------------- End of Debug mode setup
+std::ofstream LEXlog("LEXER_debug.log", std::ios::trunc);
 
 
-// AST Node
-extern ASTNode *root;
-
-
-//-------------------------------------- Forward declaration
-int handleToken(int token, YYSTYPE &yylval, char* yytext);
-// Make Sure to have yylval pass by reference
-
-std::string getTokenName(int token);
-
-
-//-------------------------------------- Function implementation
-std::string getTokenName(int token) {
-    switch (token) {
-        case IDENTIFIER:
-            return "IDENTIFIER";
-        case NUMBER:
-            return "NUMBER";
-        case ASSIGN:
-            return "ASSIGN";
-        case SEMICOLON:
-            return "SEMICOLON";
-        case UNKNOWN:
-            return "UNKNOWN";
-        default:
-            return "!!!INVALID TOKEN!!!";
-    }
-}
-
-int handleToken(int token, YYSTYPE &yylval, char* yytext) {
-    // Print the token and its value
-    DEBUG_MSG(INFO, "Token: " + getTokenName(token) + " Value: " + std::string(yytext));
-
-    // Store the value of the token in the yylval union
-    switch (token) {
-        case IDENTIFIER:   
-        case NUMBER:
-            yylval.str = strdup(yytext); // both IDENTIFIER and NUMBER are stored as strings
-            break;
-        default:
-            break;
-    }
-    return token;
-}
-
-#line 543 "lex.yy.c"
-#line 544 "lex.yy.c"
+#line 462 "lex.yy.c"
+#line 463 "lex.yy.c"
 
 #define INITIAL 0
 
@@ -758,10 +677,9 @@ YY_DECL
 		}
 
 	{
-#line 99 "lexer.l"
+#line 24 "lexer.l"
 
-
-#line 764 "lex.yy.c"
+#line 682 "lex.yy.c"
 
 	while ( /*CONSTCOND*/1 )		/* loops until end-of-file is reached */
 		{
@@ -794,7 +712,7 @@ yy_match:
 			yy_current_state = yy_nxt[yy_base[yy_current_state] + yy_c];
 			++yy_cp;
 			}
-		while ( yy_base[yy_current_state] != 12 );
+		while ( yy_base[yy_current_state] != 13 );
 
 yy_find_action:
 		yy_act = yy_accept[yy_current_state];
@@ -820,41 +738,54 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 101 "lexer.l"
-{ return handleToken(IDENTIFIER, yylval, yytext);}
+#line 25 "lexer.l"
+{   LEXlog << "Number token " << yytext << std::endl;
+                    yylval.str = strdup(yytext);
+                    return NUMBER;
+                }
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 103 "lexer.l"
-{ return handleToken(NUMBER, yylval, yytext);}
+#line 30 "lexer.l"
+{   LEXlog << "IDENTIFIER token: " << yytext << std::endl;
+                    yylval.str = strdup(yytext);
+                    return IDENTIFIER;
+                }
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 105 "lexer.l"
-{ return handleToken(ASSIGN, yylval, yytext); }
+#line 35 "lexer.l"
+{   LEXlog << "ASSIGN token: " << yytext << std::endl;
+                    return ASSIGN; 
+                }
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 106 "lexer.l"
-{ return handleToken(SEMICOLON, yylval, yytext); }
+#line 39 "lexer.l"
+{   LEXlog << "SEMICOLON token: " << yytext << std::endl;
+                    return SEMICOLON; 
+                }
 	YY_BREAK
 case 5:
 /* rule 5 can match eol */
 YY_RULE_SETUP
-#line 107 "lexer.l"
-{ /* ignore whitespace */ }
+#line 43 "lexer.l"
+; // Ignore whitespace
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 108 "lexer.l"
-{ return handleToken(UNKNOWN, yylval, yytext); }
+#line 45 "lexer.l"
+{   LEXlog << "UNKNOWN token: " << yytext << std::endl;
+                    yylval.str = strdup(yytext);
+                    return UNKNOWN;
+                }
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 111 "lexer.l"
+#line 49 "lexer.l"
 ECHO;
 	YY_BREAK
-#line 857 "lex.yy.c"
+#line 788 "lex.yy.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -1859,6 +1790,4 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 111 "lexer.l"
-
-
+#line 49 "lexer.l"

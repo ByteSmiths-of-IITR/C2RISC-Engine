@@ -1,8 +1,23 @@
 ..........Starting parsing..........
-3
 Assignmenta = 90
-1
-3
-Assignmentb = 0
-2
+Assignmentb = 1322
+Assignmentc = 90
 ..........Parsing complete..........
+statements : NON_TERMINAL
+  statements : NON_TERMINAL
+    statements : NON_TERMINAL
+      statement : NON_TERMINAL
+        IDENTIFIER : a
+        ASSIGN : =
+        NUMBER : 90
+        SEMICOLON : ;
+    statement : NON_TERMINAL
+      IDENTIFIER : b
+      ASSIGN : =
+      NUMBER : 1322
+      SEMICOLON : ;
+  statement : NON_TERMINAL
+    IDENTIFIER : c
+    ASSIGN : =
+    NUMBER : 90
+    SEMICOLON : ;
