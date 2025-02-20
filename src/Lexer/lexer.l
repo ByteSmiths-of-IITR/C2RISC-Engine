@@ -428,7 +428,6 @@ FLOAT          {FLOAT_BASE}[fF]
 DOUBLE         {FLOAT_BASE}
 LONG_DOUBLE    {FLOAT_BASE}[lL]
 
-
 CHAR       '([^'\\]|{ESCAPESEQ})'
 
 
