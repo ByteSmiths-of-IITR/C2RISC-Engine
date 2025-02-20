@@ -9,19 +9,21 @@
 #include <ctime>
 #include "utility.h"  
 
-#define LINE std::cerr<<__LINE__<<std::endl;
-// #define LINE /**/
+// #define LINE std::cerr<<__LINE__<<std::endl;
+#define LINE /**/
 
 // Global DS 
-std::vector<std::pair<std::pair<int,int>, std::pair<std::string, std::string>>> PARSER_TABLE;
+std::vector<std::pair<std::pair<int,int>, std::pair<std::string, std::string>> > PARSER_TABLE;
 
 
 // Handler Functions
-void StructORUnionDeclarationHandler(ASTNode* specifier, ASTNode* declaratorList);
+void Struct_Union_Declaration_Handler(ASTNode* specifierQualifierList, ASTNode* declaratorList);
 void Enum_Declaration_Handler(ASTNode* enumSpecifier);
 void Function_Def_Handler(ASTNode* declarator);
+void Declaration_Handler(ASTNode* declarationSpecifiers, ASTNode* initDeclaratorList);
 
-
+// Extern Variables
+extern int yylineno;
 extern char *yytext;
 void yyerror(const char *s);
 extern int yylex();
@@ -32,9 +34,6 @@ extern FILE *yyin;
 std::ofstream PARSERlog("PARSER_debug.log", std::ios::trunc);
 
 ASTNode *root;
-
-
-
 %}
 
 %union{
@@ -54,7 +53,7 @@ ASTNode *root;
 %token <tokenAtr> STRUCT UNION ENUM ELLIPSIS
 %token <tokenAtr> CASE DEFAULT IF ELSE SWITCH WHILE DO FOR GOTO CONTINUE BREAK RETURN UNTIL
 
-%token <tokenAtr> INVALID_TOKEN UNKOWN_TOKEN
+%token <tokenAtr> INVALID_TOKEN UNKNOWN_TOKEN
 
 %type <astNode> primary_expression
 %type <astNode> postfix_expression
@@ -150,15 +149,15 @@ primary_expression
 
 postfix_expression
     : primary_expression 
-      { 
+    { 
         LINE
         $$ = $1;
-      }
+    }
     | postfix_expression LSQUARE expression RSQUARE 
-      { 
+    { 
         LINE
         $$ = new ASTNode("ArrayAccess");
-      }
+    }
     | postfix_expression LPAREN RPAREN 
     { 
         LINE
@@ -184,7 +183,7 @@ postfix_expression
         LINE
         $$ = new ASTNode("PointerMemberAccess");
         $$->addChild($1);
-        // $$->addChild(new ASTNode($3->lineno, "Identifier", $3->value));
+        // $$->addChild(new ASTNode($3->position, "Identifier", $3->value));
         $$->addChild($3);
     }
     | postfix_expression INC_OP 
@@ -600,6 +599,98 @@ assignment_operator
     ;
 
 
+expression
+    : assignment_expression 
+    { 
+        LINE
+        $$ = $1;
+    }
+    | expression COMMA assignment_expression 
+    { 
+    LINE
+        $$ = new ASTNode("Expression"); 
+        $$->addChild($1); 
+        $$->addChild($3);
+    }
+    ;
+
+constant_expression
+    : conditional_expression {
+        LINE
+        $$ = $1;
+    }
+    ;
+
+declaration
+    : declaration_specifiers SEMI_COLON 
+    { 
+        LINE 
+        $$ = new ASTNode("Declaration"); 
+        $$->addChild($1); 
+    }
+    | declaration_specifiers init_declarator_list SEMI_COLON 
+    { 
+        LINE
+        $$ = new ASTNode("Declaration"); 
+        $$->addChild($1);  
+        $$->addChild($2);
+        Declaration_Handler($1, $2);
+    }
+    ;
+
+declaration_specifiers
+    : storage_class_specifier 
+    { 
+        LINE
+        $$ = $1;
+    }
+    | storage_class_specifier declaration_specifiers 
+    { 
+        LINE
+        $$ = $1;
+        $$->addChild($2);
+    }
+    | type_specifier 
+    { 
+        LINE
+        $$ = $1;
+    }
+    | type_specifier declaration_specifiers 
+    { 
+        LINE
+        $$ = $1;
+        $$->addChild($2);
+    }
+    | type_qualifier 
+    { 
+        LINE
+        $$ = $1;
+    }
+    | type_qualifier declaration_specifiers 
+    { 
+        LINE
+        $$ = $1;
+        $$->addChild($2);
+    }
+    ;
+
+
+    
+init_declarator_list
+    : init_declarator 
+    {
+        LINE
+        $$ = new ASTNode("InitDeclaratorList", "initDeclaratorList", $1->position);
+        $$->addChild($1); 
+    }
+    | init_declarator_list COMMA init_declarator
+    {
+        LINE
+        $$ = $1;
+        $$->addChild($3);
+    }
+    ;
+
 
 init_declarator
     : declarator 
@@ -712,7 +803,7 @@ struct_or_union_specifier
     {
         LINE 
         $$ = $1;
-        string isStruct = $1->value == "struct" ? "structIdentifier" : "unionIdentifier";
+        std::string isStruct = $1->value == "struct" ? "structIdentifier" : "unionIdentifier";
         $$->addChild(isStruct, $2->value,$2->position);
         $$->addChild($4); 
         PARSER_TABLE.push_back({$2->position, {$2->value, $1->value}});
@@ -727,7 +818,7 @@ struct_or_union_specifier
     {
         LINE 
         $$ = $1;
-        string isStruct = $1->value == "struct" ? "struct" : "union";
+        std::string isStruct = $1->value == "struct" ? "struct" : "union";
         $$->addChild(isStruct, $2->value,$2->position);
         PARSER_TABLE.push_back({$2->position, {$2->value, $1->value}});
     }
@@ -772,7 +863,7 @@ struct_declaration
         $$ = new ASTNode("StructOrUnionDeclaration");
         $$->addChild($1);
         $$->addChild($2);
-        StructORUnionDeclarationHandler($1, $2);
+        Struct_Union_Declaration_Handler($1, $2);
     }
     ;
 
@@ -849,7 +940,7 @@ enum_specifier
     | ENUM IDENTIFIER LCURLY enumerator_list RCURLY 
     { 
         LINE 
-        $$ = new ASTNode($1->lineno, "EnumSpecifier", "enumSpecifier"); 
+        $$ = new ASTNode("EnumSpecifier", "enumSpecifier", $1->position);
         $$->addChild("enumIdentifier", $2->value,$2->position);
         $$->addChild($4);
         Enum_Declaration_Handler($$);
@@ -1066,13 +1157,13 @@ identifier_list
     { 
         LINE 
         $$ = new ASTNode("IdentifierList", "identifierList");
-        $$->addChild($1)
+        $$->addChild($1);
     }
     | identifier_list COMMA IDENTIFIER 
     { 
         LINE 
         $$ = $1; 
-        $$->addChild($3)
+        $$->addChild($3);
     }
     ;
 
@@ -1516,12 +1607,6 @@ function_definition
 %%
 
 
-void yyerror(const char *s) {
-    fprintf(stderr, "Error: %s\n", s);
-}
-
-
-
 // main function
 
 int main(int argc, char **argv) {
@@ -1529,13 +1614,12 @@ int main(int argc, char **argv) {
     //------------------------ cmd line arguments handling ------------------------
 
         if (argc < 3) {
-            std::cerr << "Usage: " << argv[0] << " <input_file> <output_file> [-d<debug_mode>] [-p [<DOTFileName>] ] [-r <recursiveOutputFile]\n";
+            std::cerr << "Usage: " << argv[0] << " <input_file> <output_file> [-p [<DOTFileName>] ] [-r <recursiveOutputFile]\n";
             return 1;
         }
 
         std::string input_file = argv[1];
         std::string output_file = argv[2];
-        std::string debug_mode;
         std::string dot_file;
         std::string recursive_output_file;
         std::string SExp_file;
@@ -1543,9 +1627,7 @@ int main(int argc, char **argv) {
         // Parse arguments
         for (int i = 3; i < argc; ++i) {
             std::string arg = argv[i];
-            if (arg[0] == '-' && arg[1] == 'd') {
-                // Ignore
-            } else if (arg == "-p") {
+            if (arg == "-p") {
                 // Check if there is another argument after "-p"
                 if (i + 1 < argc) {
                     dot_file = argv[++i]; // Assign the next argument as the DOT file
@@ -1632,3 +1714,134 @@ int main(int argc, char **argv) {
         return 0;
 }
 
+// Error handling function
+void yyerror(const char* s) {
+    std::cerr<<"Line Number: "<<yylineno<<". Error: "<<s<<"."<<std::endl;
+}
+
+//Handler Functions
+int noOfPointers(ASTNode* node){
+    if(node->children.size()==0) return 1;
+
+    return 1+noOfPointers(node->children[0]);
+}
+
+void E_S_U_Declaration_Handler(ASTNode* declarationSpecifiers, ASTNode* initDeclaratorList,std::string s1,std::string s2){
+    for(auto item : initDeclaratorList->children){
+        if(item->type == "Initializer"){
+            PARSER_TABLE.push_back({item->children[0]->position,{item->children[0]->value, s2}});
+        } else {
+            PARSER_TABLE.push_back({item->position,{item->value, s2}});
+        }
+    }
+}
+
+void Declaration_Handler(ASTNode* declarationSpecifiers, ASTNode* initDeclaratorList){
+    std::string type="";
+    ASTNode* node = declarationSpecifiers;
+    
+    if(declarationSpecifiers->type == "EnumSpecifier"){
+        E_S_U_Declaration_Handler(declarationSpecifiers, initDeclaratorList, "enum", "enumItem");
+        return;
+    }
+
+    if(declarationSpecifiers->type == "Struct"){
+        E_S_U_Declaration_Handler(declarationSpecifiers, initDeclaratorList, "struct", "structInstance"); 
+        return;
+    }
+
+    if(declarationSpecifiers->type == "Union"){
+        E_S_U_Declaration_Handler(declarationSpecifiers, initDeclaratorList, "union", "unionInstance");
+        return;
+    }
+
+    int typeSpec=0, typeQual=0, storageClass=0;
+    while(node){
+        if(node->type == "TypeSpecifier"){
+            type = node->value;
+            typeSpec++;
+        }else if(node->type == "StorageClassSpecifier") {
+            storageClass++; 
+        }
+        node=(node->children.size())?node->children[0]:nullptr; //Move down the tree
+    }
+    if(typeSpec>1 || storageClass>1){
+        yyerror("Multiple type specifiers/qualifiers/storage classes in declaration");
+        return;
+    }
+    if(type == "") type = "int"; // default type is int
+    for(auto children : initDeclaratorList->children){
+        int pointCount=0, arrayCount=0;
+        ASTNode* tempNode = children;
+        if(children->type == "Initializer") tempNode = children->children[0];
+        if(tempNode->type == "PointerDeclarator"){
+            pointCount=noOfPointers(tempNode->children[0]);
+            std::cout<<pointCount<<std::endl;
+            tempNode=tempNode->children[1];
+        }
+        if(tempNode->type == "ArrayDeclaration"){
+            while(tempNode->type == "ArrayDeclaration"){
+            arrayCount++;
+            tempNode = tempNode->children[0];
+            }
+        }
+        PARSER_TABLE.push_back({tempNode->position,{tempNode->value, type+(pointCount?(" "+std::to_string(pointCount)+"-D ptr "):"")+(arrayCount?(" "+std::to_string(arrayCount)+"-D Arr "):"")}});
+    }
+}
+
+void Function_Def_Handler(ASTNode* declarator){
+    std::string functionName=declarator->value;
+    PARSER_TABLE.push_back({declarator->position, {functionName, "function"}});
+    declarator = declarator->children[0];
+    if(declarator->type == "EmptyList") return;
+    else if(declarator->type == "ParameterList"){
+        for(auto parameter: declarator->children){
+            std::string type="";
+            ASTNode* tempInitDeclList = new ASTNode("InitDeclaratorList", "initDeclaratorList");
+            tempInitDeclList->addChild(parameter->children[1]);
+            Declaration_Handler(parameter->children[0], tempInitDeclList);
+        }
+    }
+}
+
+void Struct_Union_Declaration_Handler(ASTNode* specifierQualifierList, ASTNode* structDeclaratorList){
+    std::string type="";
+    ASTNode* node = specifierQualifierList;
+    int typeSpec=0, typeQual=0, storageClass=0;
+    while(node){
+        if(node->type == "TypeSpecifier"){
+            type = node->value;
+            typeSpec++;
+        } else if(node->type == "StorageClassSpecifier") storageClass++;
+
+        node=(node->children.size())?node->children[0]:nullptr;
+    }
+    if(storageClass>1){
+        yyerror("Multiple storage classes in declaration");
+        return;
+    }
+    if(type == "") type = "int";
+    for(auto children : structDeclaratorList->children){
+        if(children->type == "StructOrUnionDeclarator"){
+            PARSER_TABLE.push_back({children->children[0]->position, {children->children[0]->value, type}});
+        }else if(children->type == "Identifier"){
+            PARSER_TABLE.push_back({children->position,{children->value, type}});
+        }
+    }
+}
+
+void Enum_Declaration_Handler(ASTNode* enumSpecifier){
+    for(auto children : enumSpecifier->children){
+        if(children->type == "enumIdentifier"){
+            PARSER_TABLE.push_back({children->position, {children->value, "enum"}});
+        } else if(children->type == "EnumList"){
+            for(auto item : children->children){
+                if(item->type == "EnumAssignment"){
+                    PARSER_TABLE.push_back({item->children[0]->position, {item->children[0]->value, "enumItem"}});
+                } else {
+                    PARSER_TABLE.push_back({item->position, {item->value, "enumItem"}});
+                }
+            }
+        }
+    }
+}

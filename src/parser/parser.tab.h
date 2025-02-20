@@ -138,7 +138,7 @@ extern int yydebug;
     RETURN = 339,                  /* RETURN  */
     UNTIL = 340,                   /* UNTIL  */
     INVALID_TOKEN = 341,           /* INVALID_TOKEN  */
-    UNKOWN_TOKEN = 342             /* UNKOWN_TOKEN  */
+    UNKNOWN_TOKEN = 342            /* UNKNOWN_TOKEN  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
@@ -147,7 +147,7 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 32 "parser.y"
+#line 39 "parser.y"
 
     struct TokenAttribute* tokenAtr;
     struct ASTNode* astNode;

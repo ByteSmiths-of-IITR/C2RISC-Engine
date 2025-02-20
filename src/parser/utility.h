@@ -6,6 +6,10 @@
 #include <fstream>
 #include <iostream>
 
+// Forward declaration
+class TokenAttribute;
+class ASTNode;
+
 
 // ASTNode class definition
 class ASTNode {
@@ -16,17 +20,19 @@ public:
     std::vector<ASTNode *> children;
 
     // Function used for TOKENS
+    ASTNode(TokenAttribute *tokenAtr);
+    ASTNode(std::string type, std::string value, std::pair<int, int> position);
     ASTNode(std::string type, std::string value,int line=-1, int column=-1); //default values for line and column [unset]
-    ASTNode(std::string type, std::string value, std::pair<int,int> position);
-    ASTNode(TokenAttribute* tokenAtr);
     // Function used for TYPES 
     ASTNode(std::string type);
     ~ASTNode();
 
     void addChild(ASTNode *child); // used by TYPES
     void addChildren(std::vector<ASTNode *> children);
+    void addChild(std::string type);
     // Used by TOKENS
     void addChild(std::string type, std::string value, int line=-1, int column=-1);
+    void addChild(std::string type, std::string value, std::pair<int, int> position);
     void addChild(TokenAttribute* tokenAtr);
 
     void print(int level);

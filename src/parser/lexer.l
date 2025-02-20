@@ -198,8 +198,3 @@ COMMENT2   "/*"([^*]|\*+[^*/])*\*+"/"
 .                            { printf("Unrecognized token: %s at line %d, column %d\n", yytext, line, column); COLUMN return UNKNOWN_TOKEN; }
 
 %%
-
-// Error handling function
-void yyerror(const char *s) {
-    fprintf(stderr, "Lexer Error: %s\n", s);
-}

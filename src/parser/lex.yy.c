@@ -698,10 +698,8 @@ char *yytext;
 
 // Some MACROS to reduce the Written Content in the Lexer
 #define COLUMN column+=yyleng;
-#define TOKEN_ATTR(t)                                              \
-	column += yyleng;                                              \
-	yylval.tokenAtr = new TokenAttribute(t, yytext, line, column); \
-	return t;
+#define TOKEN(t) column+=yyleng; yylval.tokenAtr = new TokenAttribute(t,yytext, line, column); return t;
+
 
 std::ofstream LEXlog("LEXER_debug.log", std::ios::trunc);
 
@@ -997,459 +995,459 @@ case 1:
 /* rule 1 can match eol */
 YY_RULE_SETUP
 #line 79 "lexer.l"
-{ TOKEN_ATTR(CONSTANT)  }
+{ TOKEN(CONSTANT)  }
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
 #line 80 "lexer.l"
-{ TOKEN_ATTR(CONSTANT)  }
+{ TOKEN(CONSTANT)  }
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
 #line 81 "lexer.l"
-{ TOKEN_ATTR(CONSTANT)  }
+{ TOKEN(CONSTANT)  }
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
 #line 82 "lexer.l"
-{ TOKEN_ATTR(CONSTANT)  }
+{ TOKEN(CONSTANT)  }
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
 #line 83 "lexer.l"
-{ TOKEN_ATTR(CONSTANT)  }
+{ TOKEN(CONSTANT)  }
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
 #line 84 "lexer.l"
-{ TOKEN_ATTR(CONSTANT)  }
+{ TOKEN(CONSTANT)  }
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
 #line 85 "lexer.l"
-{ TOKEN_ATTR(CONSTANT)  }
+{ TOKEN(CONSTANT)  }
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
 #line 86 "lexer.l"
-{ TOKEN_ATTR(CONSTANT)  }
+{ TOKEN(CONSTANT)  }
 	YY_BREAK
 case 9:
 /* rule 9 can match eol */
 YY_RULE_SETUP
 #line 88 "lexer.l"
-{ TOKEN_ATTR(STRING_LITERAL)  }
+{ TOKEN(STRING_LITERAL)  }
 	YY_BREAK
 case 10:
 /* rule 10 can match eol */
 YY_RULE_SETUP
 #line 89 "lexer.l"
-{ TOKEN_ATTR(STRING_LITERAL)  }
+{ TOKEN(STRING_LITERAL)  }
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
 #line 90 "lexer.l"
-{ TOKEN_ATTR(STRING_LITERAL)  }
+{ TOKEN(STRING_LITERAL)  }
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
 #line 92 "lexer.l"
-{ TOKEN_ATTR(LPAREN)  }
+{ TOKEN(LPAREN)  }
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
 #line 93 "lexer.l"
-{ TOKEN_ATTR(RPAREN)  }
+{ TOKEN(RPAREN)  }
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
 #line 94 "lexer.l"
-{ TOKEN_ATTR(LCURLY)  }
+{ TOKEN(LCURLY)  }
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
 #line 95 "lexer.l"
-{ TOKEN_ATTR(RCURLY)  }
+{ TOKEN(RCURLY)  }
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
 #line 96 "lexer.l"
-{ TOKEN_ATTR(LSQUARE)  }
+{ TOKEN(LSQUARE)  }
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
 #line 97 "lexer.l"
-{ TOKEN_ATTR(RSQUARE)  }
+{ TOKEN(RSQUARE)  }
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
 #line 98 "lexer.l"
-{ TOKEN_ATTR(DOT)  }
+{ TOKEN(DOT)  }
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
 #line 99 "lexer.l"
-{ TOKEN_ATTR(COMMA)  }
+{ TOKEN(COMMA)  }
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
 #line 100 "lexer.l"
-{ TOKEN_ATTR(BIT_AND)  }
+{ TOKEN(BIT_AND)  }
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
 #line 101 "lexer.l"
-{ TOKEN_ATTR(STAR)  }
+{ TOKEN(STAR)  }
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
 #line 102 "lexer.l"
-{ TOKEN_ATTR(PLUS)  }
+{ TOKEN(PLUS)  }
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
 #line 103 "lexer.l"
-{ TOKEN_ATTR(MINUS)  }
+{ TOKEN(MINUS)  }
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
 #line 104 "lexer.l"
-{ TOKEN_ATTR(BIT_NOT)  }
+{ TOKEN(BIT_NOT)  }
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
 #line 105 "lexer.l"
-{ TOKEN_ATTR(NOT_OP)  }
+{ TOKEN(NOT_OP)  }
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
 #line 106 "lexer.l"
-{ TOKEN_ATTR(DIVIDE)  }
+{ TOKEN(DIVIDE)  }
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
 #line 107 "lexer.l"
-{ TOKEN_ATTR(MOD)  }
+{ TOKEN(MOD)  }
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
 #line 108 "lexer.l"
-{ TOKEN_ATTR(LESSER_OP)  }
+{ TOKEN(LESSER_OP)  }
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
 #line 109 "lexer.l"
-{ TOKEN_ATTR(GREATER_OP)  }
+{ TOKEN(GREATER_OP)  }
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
 #line 110 "lexer.l"
-{ TOKEN_ATTR(XOR)  }
+{ TOKEN(XOR)  }
 	YY_BREAK
 case 31:
 YY_RULE_SETUP
 #line 111 "lexer.l"
-{ TOKEN_ATTR(BIT_OR)  }
+{ TOKEN(BIT_OR)  }
 	YY_BREAK
 case 32:
 YY_RULE_SETUP
 #line 112 "lexer.l"
-{ TOKEN_ATTR(QUESTION)  }
+{ TOKEN(QUESTION)  }
 	YY_BREAK
 case 33:
 YY_RULE_SETUP
 #line 113 "lexer.l"
-{ TOKEN_ATTR(COLON)  }
+{ TOKEN(COLON)  }
 	YY_BREAK
 case 34:
 YY_RULE_SETUP
 #line 114 "lexer.l"
-{ TOKEN_ATTR(SEMI_COLON)  }
+{ TOKEN(SEMI_COLON)  }
 	YY_BREAK
 case 35:
 YY_RULE_SETUP
 #line 115 "lexer.l"
-{ TOKEN_ATTR(ASSIGN)  }
+{ TOKEN(ASSIGN)  }
 	YY_BREAK
 case 36:
 YY_RULE_SETUP
 #line 117 "lexer.l"
-{ TOKEN_ATTR(SIZEOF)  }
+{ TOKEN(SIZEOF)  }
 	YY_BREAK
 case 37:
 YY_RULE_SETUP
 #line 118 "lexer.l"
-{ TOKEN_ATTR(PTR_OP)  }
+{ TOKEN(PTR_OP)  }
 	YY_BREAK
 case 38:
 YY_RULE_SETUP
 #line 119 "lexer.l"
-{ TOKEN_ATTR(INC_OP)  }
+{ TOKEN(INC_OP)  }
 	YY_BREAK
 case 39:
 YY_RULE_SETUP
 #line 120 "lexer.l"
-{ TOKEN_ATTR(DEC_OP)  }
+{ TOKEN(DEC_OP)  }
 	YY_BREAK
 case 40:
 YY_RULE_SETUP
 #line 121 "lexer.l"
-{ TOKEN_ATTR(LEFT_OP)  }
+{ TOKEN(LEFT_OP)  }
 	YY_BREAK
 case 41:
 YY_RULE_SETUP
 #line 122 "lexer.l"
-{ TOKEN_ATTR(RIGHT_OP)  }
+{ TOKEN(RIGHT_OP)  }
 	YY_BREAK
 case 42:
 YY_RULE_SETUP
 #line 123 "lexer.l"
-{ TOKEN_ATTR(LE_OP)  }
+{ TOKEN(LE_OP)  }
 	YY_BREAK
 case 43:
 YY_RULE_SETUP
 #line 124 "lexer.l"
-{ TOKEN_ATTR(GE_OP)  }
+{ TOKEN(GE_OP)  }
 	YY_BREAK
 case 44:
 YY_RULE_SETUP
 #line 125 "lexer.l"
-{ TOKEN_ATTR(EQ_OP)  }
+{ TOKEN(EQ_OP)  }
 	YY_BREAK
 case 45:
 YY_RULE_SETUP
 #line 126 "lexer.l"
-{ TOKEN_ATTR(NE_OP)  }
+{ TOKEN(NE_OP)  }
 	YY_BREAK
 case 46:
 YY_RULE_SETUP
 #line 127 "lexer.l"
-{ TOKEN_ATTR(AND_OP)  }
+{ TOKEN(AND_OP)  }
 	YY_BREAK
 case 47:
 YY_RULE_SETUP
 #line 128 "lexer.l"
-{ TOKEN_ATTR(OR_OP)  }
+{ TOKEN(OR_OP)  }
 	YY_BREAK
 case 48:
 YY_RULE_SETUP
 #line 129 "lexer.l"
-{ TOKEN_ATTR(MUL_ASSIGN)  }
+{ TOKEN(MUL_ASSIGN)  }
 	YY_BREAK
 case 49:
 YY_RULE_SETUP
 #line 130 "lexer.l"
-{ TOKEN_ATTR(DIV_ASSIGN)  }
+{ TOKEN(DIV_ASSIGN)  }
 	YY_BREAK
 case 50:
 YY_RULE_SETUP
 #line 131 "lexer.l"
-{ TOKEN_ATTR(MOD_ASSIGN)  }
+{ TOKEN(MOD_ASSIGN)  }
 	YY_BREAK
 case 51:
 YY_RULE_SETUP
 #line 132 "lexer.l"
-{ TOKEN_ATTR(ADD_ASSIGN)  }
+{ TOKEN(ADD_ASSIGN)  }
 	YY_BREAK
 case 52:
 YY_RULE_SETUP
 #line 133 "lexer.l"
-{ TOKEN_ATTR(SUB_ASSIGN)  }
+{ TOKEN(SUB_ASSIGN)  }
 	YY_BREAK
 case 53:
 YY_RULE_SETUP
 #line 134 "lexer.l"
-{ TOKEN_ATTR(LEFT_ASSIGN)  }
+{ TOKEN(LEFT_ASSIGN)  }
 	YY_BREAK
 case 54:
 YY_RULE_SETUP
 #line 135 "lexer.l"
-{ TOKEN_ATTR(RIGHT_ASSIGN)  }
+{ TOKEN(RIGHT_ASSIGN)  }
 	YY_BREAK
 case 55:
 YY_RULE_SETUP
 #line 136 "lexer.l"
-{ TOKEN_ATTR(AND_ASSIGN)  }
+{ TOKEN(AND_ASSIGN)  }
 	YY_BREAK
 case 56:
 YY_RULE_SETUP
 #line 137 "lexer.l"
-{ TOKEN_ATTR(XOR_ASSIGN)  }
+{ TOKEN(XOR_ASSIGN)  }
 	YY_BREAK
 case 57:
 YY_RULE_SETUP
 #line 138 "lexer.l"
-{ TOKEN_ATTR(OR_ASSIGN)  }
+{ TOKEN(OR_ASSIGN)  }
 	YY_BREAK
 case 58:
 YY_RULE_SETUP
 #line 140 "lexer.l"
-{ TOKEN_ATTR(TYPEDEF)  }
+{ TOKEN(TYPEDEF)  }
 	YY_BREAK
 case 59:
 YY_RULE_SETUP
 #line 141 "lexer.l"
-{ TOKEN_ATTR(EXTERN)  }
+{ TOKEN(EXTERN)  }
 	YY_BREAK
 case 60:
 YY_RULE_SETUP
 #line 142 "lexer.l"
-{ TOKEN_ATTR(STATIC)  }
+{ TOKEN(STATIC)  }
 	YY_BREAK
 case 61:
 YY_RULE_SETUP
 #line 143 "lexer.l"
-{ TOKEN_ATTR(AUTO)  }
+{ TOKEN(AUTO)  }
 	YY_BREAK
 case 62:
 YY_RULE_SETUP
 #line 144 "lexer.l"
-{ TOKEN_ATTR(REGISTER)  }
+{ TOKEN(REGISTER)  }
 	YY_BREAK
 case 63:
 YY_RULE_SETUP
 #line 145 "lexer.l"
-{ TOKEN_ATTR(CHAR)  }
+{ TOKEN(CHAR)  }
 	YY_BREAK
 case 64:
 YY_RULE_SETUP
 #line 146 "lexer.l"
-{ TOKEN_ATTR(SHORT)  }
+{ TOKEN(SHORT)  }
 	YY_BREAK
 case 65:
 YY_RULE_SETUP
 #line 147 "lexer.l"
-{ TOKEN_ATTR(INT)  }
+{ TOKEN(INT)  }
 	YY_BREAK
 case 66:
 YY_RULE_SETUP
 #line 148 "lexer.l"
-{ TOKEN_ATTR(LONG)  }
+{ TOKEN(LONG)  }
 	YY_BREAK
 case 67:
 YY_RULE_SETUP
 #line 149 "lexer.l"
-{ TOKEN_ATTR(SIGNED)  }
+{ TOKEN(SIGNED)  }
 	YY_BREAK
 case 68:
 YY_RULE_SETUP
 #line 150 "lexer.l"
-{ TOKEN_ATTR(UNSIGNED)  }
+{ TOKEN(UNSIGNED)  }
 	YY_BREAK
 case 69:
 YY_RULE_SETUP
 #line 151 "lexer.l"
-{ TOKEN_ATTR(FLOAT)  }
+{ TOKEN(FLOAT)  }
 	YY_BREAK
 case 70:
 YY_RULE_SETUP
 #line 152 "lexer.l"
-{ TOKEN_ATTR(DOUBLE)  }
+{ TOKEN(DOUBLE)  }
 	YY_BREAK
 case 71:
 YY_RULE_SETUP
 #line 153 "lexer.l"
-{ TOKEN_ATTR(CONST)  }
+{ TOKEN(CONST)  }
 	YY_BREAK
 case 72:
 YY_RULE_SETUP
 #line 154 "lexer.l"
-{ TOKEN_ATTR(VOLATILE)  }
+{ TOKEN(VOLATILE)  }
 	YY_BREAK
 case 73:
 YY_RULE_SETUP
 #line 155 "lexer.l"
-{ TOKEN_ATTR(VOID)  }
+{ TOKEN(VOID)  }
 	YY_BREAK
 case 74:
 YY_RULE_SETUP
 #line 156 "lexer.l"
-{ TOKEN_ATTR(STRUCT)  }
+{ TOKEN(STRUCT)  }
 	YY_BREAK
 case 75:
 YY_RULE_SETUP
 #line 157 "lexer.l"
-{ TOKEN_ATTR(UNION)  }
+{ TOKEN(UNION)  }
 	YY_BREAK
 case 76:
 YY_RULE_SETUP
 #line 158 "lexer.l"
-{ TOKEN_ATTR(ENUM)  }
+{ TOKEN(ENUM)  }
 	YY_BREAK
 case 77:
 YY_RULE_SETUP
 #line 159 "lexer.l"
-{ TOKEN_ATTR(ELLIPSIS)  }
+{ TOKEN(ELLIPSIS)  }
 	YY_BREAK
 case 78:
 YY_RULE_SETUP
 #line 160 "lexer.l"
-{ TOKEN_ATTR(CASE)  }
+{ TOKEN(CASE)  }
 	YY_BREAK
 case 79:
 YY_RULE_SETUP
 #line 161 "lexer.l"
-{ TOKEN_ATTR(DEFAULT)  }
+{ TOKEN(DEFAULT)  }
 	YY_BREAK
 case 80:
 YY_RULE_SETUP
 #line 162 "lexer.l"
-{ TOKEN_ATTR(IF)  }
+{ TOKEN(IF)  }
 	YY_BREAK
 case 81:
 YY_RULE_SETUP
 #line 163 "lexer.l"
-{ TOKEN_ATTR(ELSE)  }
+{ TOKEN(ELSE)  }
 	YY_BREAK
 case 82:
 YY_RULE_SETUP
 #line 164 "lexer.l"
-{ TOKEN_ATTR(SWITCH)  }
+{ TOKEN(SWITCH)  }
 	YY_BREAK
 case 83:
 YY_RULE_SETUP
 #line 165 "lexer.l"
-{ TOKEN_ATTR(WHILE)  }
+{ TOKEN(WHILE)  }
 	YY_BREAK
 case 84:
 YY_RULE_SETUP
 #line 166 "lexer.l"
-{ TOKEN_ATTR(DO)  }
+{ TOKEN(DO)  }
 	YY_BREAK
 case 85:
 YY_RULE_SETUP
 #line 167 "lexer.l"
-{ TOKEN_ATTR(FOR)  }
+{ TOKEN(FOR)  }
 	YY_BREAK
 case 86:
 YY_RULE_SETUP
 #line 168 "lexer.l"
-{ TOKEN_ATTR(GOTO)  }
+{ TOKEN(GOTO)  }
 	YY_BREAK
 case 87:
 YY_RULE_SETUP
 #line 169 "lexer.l"
-{ TOKEN_ATTR(CONTINUE)  }
+{ TOKEN(CONTINUE)  }
 	YY_BREAK
 case 88:
 YY_RULE_SETUP
 #line 170 "lexer.l"
-{ TOKEN_ATTR(BREAK)  }
+{ TOKEN(BREAK)  }
 	YY_BREAK
 case 89:
 YY_RULE_SETUP
 #line 171 "lexer.l"
-{ TOKEN_ATTR(RETURN)  }
+{ TOKEN(RETURN)  }
 	YY_BREAK
 case 90:
 YY_RULE_SETUP
 #line 172 "lexer.l"
-{ TOKEN_ATTR(UNTIL)  }
+{ TOKEN(UNTIL)  }
 	YY_BREAK
 case 91:
 YY_RULE_SETUP
 #line 174 "lexer.l"
-{ TOKEN_ATTR(IDENTIFIER)  }
+{ TOKEN(IDENTIFIER)  }
 	YY_BREAK
 case 92:
 YY_RULE_SETUP
@@ -2535,9 +2533,4 @@ void yyfree (void * ptr )
 
 #line 200 "lexer.l"
 
-
-// Error handling function
-void yyerror(const char *s) {
-    fprintf(stderr, "Lexer Error: %s\n", s);
-}
 

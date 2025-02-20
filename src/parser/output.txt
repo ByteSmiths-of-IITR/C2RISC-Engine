@@ -1,23 +1,13 @@
 ..........Starting parsing..........
-Assignmenta = 90
-Assignmentb = 1322
-Assignmentc = 90
 ..........Parsing complete..........
-statements : NON_TERMINAL
-  statements : NON_TERMINAL
-    statements : NON_TERMINAL
-      statement : NON_TERMINAL
-        IDENTIFIER : a
-        ASSIGN : =
-        NUMBER : 90
-        SEMICOLON : ;
-    statement : NON_TERMINAL
-      IDENTIFIER : b
-      ASSIGN : =
-      NUMBER : 1322
-      SEMICOLON : ;
-  statement : NON_TERMINAL
-    IDENTIFIER : c
-    ASSIGN : =
-    NUMBER : 90
-    SEMICOLON : ;
+TranslationUnit : translationUnit
+  FunctionDefinition : !!EMPTY!!
+    IDENTIFIER : main
+      EmptyParameterList : emptyParameterList
+    CompoundStatement : {}
+      Declaration : !!EMPTY!!
+        TypeSpecifier : int
+        InitDeclaratorList : initDeclaratorList
+          Initializer : =
+            IDENTIFIER : a
+            CONSTANT : 9

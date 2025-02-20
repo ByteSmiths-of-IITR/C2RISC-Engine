@@ -1,11 +1,11 @@
 # Compiler and flags
-CXX = g++
+CXX = clang++
 CXXFLAGS = -w -lm
 
 # Input files
-INPUT = input.txt
+INPUT = input.c
 OUTPUT = output.txt
-## cerr to console {for now we will handle it}
+CERR = cerr.txt
 
 ## for debug we have a console log
 
@@ -19,13 +19,11 @@ PARSER = parser.y
 UTILITY_H = utility.h
 UTILITY_CPP = utility.cpp
 
-
 # Generated files
 LEXER_C = lex.yy.c
 PARSER_C = parser.tab.c
 PARSER_H = parser.tab.h
 EXECUTABLE = parser
-
 
 # Result dot (graphviz) tool
 DOT = dot
@@ -36,7 +34,6 @@ DOTPDF = ast.pdf
 # Result recursive print
 VISUAL = visual.txt
 S_EXPR = s_expr.txt
-
 
 # Default target
 all: $(EXECUTABLE)
@@ -53,12 +50,8 @@ $(LEXER_C): $(LEXER)
 $(EXECUTABLE): $(LEXER_C) $(PARSER_C) $(UTILITY_CPP) 
 	$(CXX) $(LEXER_C) $(PARSER_C) $(UTILITY_CPP)  -o $(EXECUTABLE) $(CXXFLAGS)
 
-
 run: $(EXECUTABLE)
-	./$(EXECUTABLE) $(INPUT) $(OUTPUT)
-
-debug: $(EXECUTABLE)
-	./$(EXECUTABLE) $(INPUT) $(OUTPUT) -d1
+	./$(EXECUTABLE) $(INPUT) $(OUTPUT) 2> $(CERR)
 
 $(DOTFile): $(EXECUTABLE)
 	./$(EXECUTABLE) $(INPUT) $(OUTPUT) -p $(DOTFile)

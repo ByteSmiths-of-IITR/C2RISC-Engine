@@ -49,7 +49,10 @@
         children.push_back(child);
     }
 
-    
+    void ASTNode::addChild(std::string type) {
+        ASTNode *child = new ASTNode(type);
+        addChild(child);
+    }
 
     // Adds multiple children to the current node
     void ASTNode::addChildren(std::vector<ASTNode *> children) {
@@ -60,6 +63,15 @@
 
     void ASTNode::addChild(TokenAttribute* tokenAtr) {
         ASTNode *child = new ASTNode(tokenAtr);
+        addChild(child);
+    }
+
+    void ASTNode::addChild(
+        std::string type,
+        std::string value,
+        std::pair<int,int> position
+    ){
+        ASTNode *child = new ASTNode(type, value, position);
         addChild(child);
     }
 
@@ -96,7 +108,7 @@
 
         int currentId = nodeCount++;
         out << "    node" << currentId << " [label=\"";
-        if(node->value == "NON_TERMINAL") {
+        if(node->value == "!!EMPTY!!") {
             out << node->type;
         } else {
             out << node->value;
@@ -142,7 +154,7 @@
     outputFile << "(";
     
     // Print node type or value
-    if (root->value == "NON_TERMINAL") {
+    if (root->value == "!!EMPTY!!") {
         outputFile << root->type;
     } else {
         outputFile << root->value;
@@ -194,7 +206,7 @@
             outFile << "├── ";  // Not the last node in the branch
         }
 
-        if (node->value == "NON_TERMINAL") {
+        if (node->value == "!!EMPTY!!") {
             outFile << "(" << node->type << ")\n";  // Node with type only
         } else {
             outFile << "\"" << node->value << "\"\n";  // Node with value (e.g., variable or literal)
