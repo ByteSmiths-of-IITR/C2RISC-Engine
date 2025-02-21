@@ -9,11 +9,6 @@ int main()
     int *ptr = NULL;
     int arr[3] = {1, 2, 3};
 
-    // Multi-Dimensional Array
-    int matrix[2][2] = {{1, 2}, {3, 4}};
-    printf("Multi-Dimensional Array:\n");
-    printf("  %d %d\n", matrix[0][0], matrix[0][1]);
-
     // Bitwise Operations
     int a = 5, b = 3;
     int and_op = a & b;

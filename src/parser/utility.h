@@ -25,6 +25,7 @@ public:
     ASTNode(std::string type, std::string value,int line=-1, int column=-1); //default values for line and column [unset]
     // Function used for TYPES 
     ASTNode(std::string type);
+    ASTNode(ASTNode *child);
     ~ASTNode();
 
     void addChild(ASTNode *child); // used by TYPES

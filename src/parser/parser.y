@@ -7,12 +7,24 @@
 #include <vector>
 #include <fstream>
 #include <ctime>
+#include <signal.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+
 #include "utility.h"  
 
 #define EMPTY_VAL "!!EMPTY!!"
 
+#define LINE std::cerr<<__LINE__<<std::endl;
+// #define LINE /**/
+
 // #define LINE std::cerr<<__LINE__<<std::endl;
 #define LINE /**/
+
+#define PARSERLOGHEADER "----------------------------------- PARSER LOG -----------------------------------"
+#define LOGFOOTER       "----------------------------------- END OF LOG -----------------------------------"
+#define LEXERLOGHEADER  "----------------------------------- LEXER LOG ------------------------------------"
 
 // Global DS 
 std::vector<std::pair<std::pair<int,int>, std::pair<std::string, std::string>> > PARSER_TABLE;
@@ -24,6 +36,8 @@ void Enum_Declaration_Handler(ASTNode* enumSpecifier);
 void Function_Def_Handler(ASTNode* declarator);
 void Declaration_Handler(ASTNode* declarationSpecifiers, ASTNode* initDeclaratorList);
 void printParserTable(std::ostream& out);
+void writeLatexTable(std::ostream& out);
+
 
 // Extern Variables
 extern int yylineno;
@@ -32,13 +46,20 @@ void yyerror(const char *s);
 extern int yylex();
 extern FILE *yyin;
 
-extern TokenAttribute* tokenAtr_global;
+extern std::vector<std::string> lexerLOG;
+std::vector<std::string> parserLOG;
 
-bool parseError = false;
+extern std::string lastToken;
+
+
+bool bisonError = false;
+bool customError = false;
+
+std::ofstream* output = nullptr;  // Global pointer
 
 #define YYDEBUG 1
 
-std::ofstream PARSERlog("parser.log", std::ios::trunc);
+// std::ofstream PARSERlog("parser.log", std::ios::trunc); // [[NOt in use]]
 
 std::string getPosition(TokenAttribute* token){
     return std::to_string(token->position.first) + ":" + std::to_string(token->position.second);
@@ -48,9 +69,47 @@ std::string getPosition(ASTNode* node){
     return std::to_string(node->position.first) + ":" + std::to_string(node->position.second);
 }
 
+
+void ourError(const std::string& msg) {
+    std::string error = "Syntax Error at line " + std::to_string(yylineno) + " near token: " + lastToken;
+    error += " | Error Description: " + msg;
+    parserLOG.push_back(error);
+    customError = true;
+}
+
+void initOutputFile(const std::string& filename) {
+    output = new std::ofstream(filename);
+    if (!output->is_open()) {
+        delete output;
+        std::cerr << "Error: Unable to open file " << filename << std::endl;
+        output = nullptr;
+    }
+}
+
+void closeOutputFile() {
+    if (output) {
+        output->close();
+        delete output;
+        output = nullptr;
+    }
+}
+
 void signalHandler(int signum) {
-    std::cerr << "Segmentation fault detected! Signal: " << signum << std::endl;
-    exit(signum);
+    *output << "\U0001F6A8 * Input Program failed in the PARSE stage \U0001F6A8\n" << std::endl;
+    // cerr the log
+    *output << PARSERLOGHEADER << std::endl;
+    for (auto& log : parserLOG) {
+        *output << log << std::endl;
+        if(parserLOG.size()==0){
+            *output << "$ Syntax Error at line " << yylineno << " near token: " << lastToken << std::endl;
+        }
+    }
+    *output << LOGFOOTER << std::endl;
+    *output << std::endl;
+
+    *output << "--- No Further Processing will be done ---" << std::endl;
+    closeOutputFile();
+    exit(0); // Clean Exit
 }
 
 
@@ -75,6 +134,9 @@ ASTNode *root;
 %token <tokenAtr> CASE DEFAULT IF ELSE SWITCH WHILE DO FOR GOTO CONTINUE BREAK RETURN UNTIL
 
 %token <tokenAtr> INVALID_TOKEN UNKNOWN_TOKEN
+
+%type <astNode> identifier constant semi_colon
+%type <astNode> rparen rcurly rsquare
 
 %type <astNode> primary_expression
 %type <astNode> postfix_expression
@@ -147,13 +209,105 @@ ASTNode *root;
 %start translation_unit
 %%
 
-primary_expression
+
+//Adding ERRORS
+
+identifier
     : IDENTIFIER 
+        { 
+            LINE
+            $$ = new ASTNode($1);
+        }
+    | error 
+        { 
+            LINE
+            $$ = new ASTNode("Error", "Identifier");
+            ourError("Expected an ID or Expression");
+        }
+    ;
+
+constant 
+    : CONSTANT 
+        { 
+            LINE
+            $$ = new ASTNode($1);
+        }
+    | error 
+        { 
+            LINE
+            $$ = new ASTNode("Error", "Constant");
+            ourError("Expected a Constant or Expression");
+        }
+    ;
+
+semi_colon
+    : SEMI_COLON 
+        { 
+            LINE
+            $$ = new ASTNode($1);
+        }
+    | error 
+        { 
+            LINE
+            $$ = new ASTNode("Error", "SemiColon");
+            ourError("Expected a SemiColon");
+        }
+    ;
+
+rparen
+    : RPAREN 
+        { 
+            LINE
+            $$ = new ASTNode($1);
+        }
+    | error 
+        { 
+            LINE
+            $$ = new ASTNode("Error", "RParen");
+            ourError("Expected a Right Parenthesis");
+        }
+    ;
+
+rcurly
+    : RCURLY 
+        { 
+            LINE
+            $$ = new ASTNode($1);
+        }
+    | error 
+        { 
+            LINE
+            $$ = new ASTNode("Error", "RCurly");
+            ourError("Expected a Right Curly Brace");
+        }
+    ;
+
+rsquare
+    : RSQUARE 
+        { 
+            LINE
+            $$ = new ASTNode($1);
+        }
+    | error 
+        { 
+            LINE
+            $$ = new ASTNode("Error", "RSquare");
+            ourError("Expected a Right Square Bracket");
+        }
+    ;
+
+
+
+
+//////////////////////// ORIGINAL GRAMMAR ////////////////////////////////////////////////////////////////
+
+primary_expression
+    : identifier 
         {   
             LINE
             $$ = new ASTNode($1);
         }
-    | CONSTANT 
+    | constant 
         { 
             LINE
             $$ = new ASTNode($1);
@@ -163,7 +317,7 @@ primary_expression
             LINE
             $$ = new ASTNode($1);
         }
-    | LPAREN expression RPAREN 
+    | LPAREN expression rparen 
         {   
             // Parenthesis are not part of the AST
             LINE
@@ -177,19 +331,19 @@ postfix_expression
         LINE
         $$ = $1;
     }
-    | postfix_expression LSQUARE expression RSQUARE 
+    | postfix_expression LSQUARE expression rsquare 
     { 
         LINE
         $$ = new ASTNode("ArrayAccess");
     }
-    | postfix_expression LPAREN RPAREN 
+    | postfix_expression LPAREN rparen 
     { 
         LINE
         $$ = new ASTNode("Function Call");
         $$->addChild($1);
         PARSER_TABLE.push_back({$1->position, {$1->value, "function call"}});
     }
-    | postfix_expression LPAREN argument_expression_list RPAREN 
+    | postfix_expression LPAREN argument_expression_list rparen 
     { 
         LINE
         $$ = new ASTNode("Function Call");
@@ -197,14 +351,14 @@ postfix_expression
         $$->addChild($3);
         PARSER_TABLE.push_back({$1->position, {$1->value, "function call"}});
     }
-    | postfix_expression DOT IDENTIFIER 
+    | postfix_expression DOT identifier 
     { 
         LINE
         $$ = new ASTNode("Member Access");
         $$->addChild($1);
         $$->addChild($3);
     }
-    | postfix_expression PTR_OP IDENTIFIER 
+    | postfix_expression PTR_OP identifier 
     { 
         LINE
         $$ = new ASTNode("Pointer Member Access");
@@ -271,7 +425,7 @@ unary_expression
         $$ = new ASTNode("SizeofExpr");
         $$->addChild($2);
     }
-    | SIZEOF LPAREN type_name RPAREN 
+    | SIZEOF LPAREN type_name rparen 
     { 
         LINE
         $$ = new ASTNode("SizeofType");
@@ -319,7 +473,7 @@ cast_expression
         LINE 
         $$ = $1;
     }
-    | LPAREN type_name RPAREN cast_expression 
+    | LPAREN type_name rparen cast_expression 
     { 
         LINE 
         $$ = new ASTNode("TypeCast");
@@ -648,13 +802,13 @@ constant_expression
     ;
 
 declaration
-    : declaration_specifiers SEMI_COLON 
+    : declaration_specifiers semi_colon 
     { 
         LINE 
         $$ = new ASTNode("Declaration"); 
         $$->addChild($1); 
     }
-    | declaration_specifiers init_declarator_list SEMI_COLON 
+    | declaration_specifiers init_declarator_list semi_colon 
     { 
         LINE
         $$ = new ASTNode("Declaration"); 
@@ -825,7 +979,7 @@ type_specifier
     ;
 
 struct_or_union_specifier
-    : struct_or_union IDENTIFIER LCURLY struct_declaration_list RCURLY 
+    : struct_or_union identifier LCURLY struct_declaration_list rcurly 
     {
         LINE 
         $$ = $1;
@@ -834,13 +988,13 @@ struct_or_union_specifier
         $$->addChild($4); 
         PARSER_TABLE.push_back({$2->position, {$2->value, $1->value}});
     }
-    | struct_or_union LCURLY struct_declaration_list RCURLY 
+    | struct_or_union LCURLY struct_declaration_list rcurly 
     {
         LINE 
         $$ = $1; 
         $$->addChild($3);  
     }
-    | struct_or_union IDENTIFIER 
+    | struct_or_union identifier 
     {
         LINE 
         $$ = $1;
@@ -883,7 +1037,7 @@ struct_declaration_list
 
 
 struct_declaration
-    : specifier_qualifier_list struct_declarator_list SEMI_COLON 
+    : specifier_qualifier_list struct_declarator_list semi_colon 
     {
         LINE 
         $$ = new ASTNode("Struct or Union Declaration");
@@ -956,14 +1110,14 @@ struct_declarator
     ;
 
 enum_specifier
-    : ENUM LCURLY enumerator_list RCURLY 
+    : ENUM LCURLY enumerator_list rcurly 
     { 
         LINE 
         $$ = new ASTNode("Enum Specifier", EMPTY_VAL, $1->position);
         $$->addChild($3);
         Enum_Declaration_Handler($$);
     }
-    | ENUM IDENTIFIER LCURLY enumerator_list RCURLY 
+    | ENUM identifier LCURLY enumerator_list rcurly 
     { 
         LINE 
         $$ = new ASTNode("Enum Specifier", EMPTY_VAL, $1->position);
@@ -971,7 +1125,7 @@ enum_specifier
         $$->addChild($4);
         Enum_Declaration_Handler($$);
     }
-    | ENUM IDENTIFIER 
+    | ENUM identifier 
     { 
         LINE 
         $$ = new ASTNode("Enum Specifier", EMPTY_VAL); 
@@ -997,12 +1151,12 @@ enumerator_list
     ;
 
 enumerator
-    : IDENTIFIER 
+    : identifier 
     { 
         LINE 
         $$ = new ASTNode("Enum Element", $1->value, $1->position);
     }
-    | IDENTIFIER ASSIGN constant_expression 
+    | identifier ASSIGN constant_expression 
     { 
         LINE 
         $$ = new ASTNode("Enum Assignment",EMPTY_VAL , $2->position);
@@ -1040,42 +1194,42 @@ declarator
     ;
 
 direct_declarator
-    : IDENTIFIER
+    : identifier
     {
         LINE
         $$ = new ASTNode($1);
     }
-    | LPAREN declarator RPAREN
+    | LPAREN declarator rparen
     {
         LINE
         $$ = $2;
     }
-    | direct_declarator LSQUARE constant_expression RSQUARE
+    | direct_declarator LSQUARE constant_expression rsquare
     {
         LINE
         $$ = new ASTNode("Array Declaration");
         $$->addChild($1);
         $$->addChild($3);
     }
-    | direct_declarator LSQUARE RSQUARE
+    | direct_declarator LSQUARE rsquare
     {
         LINE
         $$ = new ASTNode("Array Declaration");
         $$->addChild($1);
     }
-    | direct_declarator LPAREN parameter_type_list RPAREN
+    | direct_declarator LPAREN parameter_type_list rparen
     {
         LINE
         $$ = $1;
         $$->addChild($3);
     }
-    | direct_declarator LPAREN identifier_list RPAREN
+    | direct_declarator LPAREN identifier_list rparen
     {
         LINE
         $$ = $1;
         $$->addChild($3);
     }
-    | direct_declarator LPAREN RPAREN
+    | direct_declarator LPAREN rparen
     {
         LINE
         $$ = $1;
@@ -1179,13 +1333,13 @@ parameter_declaration
     ;
 
 identifier_list
-    : IDENTIFIER 
+    : identifier 
     { 
         LINE 
         $$ = new ASTNode("IdentifierList", "identifierList");
         $$->addChild($1);
     }
-    | identifier_list COMMA IDENTIFIER 
+    | identifier_list COMMA identifier 
     { 
         LINE 
         $$ = $1; 
@@ -1227,52 +1381,52 @@ abstract_declarator
     ;
 
 direct_abstract_declarator
-    : LPAREN abstract_declarator RPAREN
+    : LPAREN abstract_declarator rparen
     {
         LINE
         $$ = $2;  
     }
-    | LSQUARE RSQUARE
+    | LSQUARE rsquare
     {
         LINE
         $$ = new ASTNode("Array Declaration"); 
     }
-    | LSQUARE constant_expression RSQUARE
+    | LSQUARE constant_expression rsquare
     {
         LINE
         $$ = new ASTNode("Array Declaration");  
         $$->addChild($2); 
     }
-    | direct_abstract_declarator LSQUARE RSQUARE
+    | direct_abstract_declarator LSQUARE rsquare
     {
         LINE
         $$ = $1;  
         $$->addChild("Array Declaration");  
     }
-    | direct_abstract_declarator LSQUARE constant_expression RSQUARE
+    | direct_abstract_declarator LSQUARE constant_expression rsquare
     {
         LINE
         $$ = $1;  
         $$->addChild(new ASTNode("Array Declaration"));  
         $$->addChild($3);
     }
-    | LPAREN RPAREN
+    | LPAREN rparen
     {
         LINE
         $$ = new ASTNode("Parameter List", EMPTY_VAL); 
     }
-    | LPAREN parameter_type_list RPAREN
+    | LPAREN parameter_type_list rparen
     {
         LINE
         $$ = $2; 
     }
-    | direct_abstract_declarator LPAREN RPAREN
+    | direct_abstract_declarator LPAREN rparen
     {
         LINE
         $$ = $1; 
         $$->addChild("Parameter List", EMPTY_VAL); 
     }
-    | direct_abstract_declarator LPAREN parameter_type_list RPAREN
+    | direct_abstract_declarator LPAREN parameter_type_list rparen
     {
         LINE
         $$ = $1; 
@@ -1286,12 +1440,12 @@ initializer
         LINE
         $$ = $1;
     }
-    | LCURLY initializer_list RCURLY
+    | LCURLY initializer_list rcurly
     {
         LINE
         $$ = $2; 
     }
-    | LCURLY initializer_list COMMA RCURLY
+    | LCURLY initializer_list COMMA rcurly
     {
         LINE
         $$ = $2;  
@@ -1353,7 +1507,7 @@ statement
 
 
 labeled_statement
-    : IDENTIFIER COLON statement
+    : identifier COLON statement
     {
         LINE
         $$ = new ASTNode("Labeled Statement", $1->value, $1->position);
@@ -1375,24 +1529,24 @@ labeled_statement
     ;
 
 compound_statement
-    : LCURLY RCURLY 
+    : LCURLY rcurly 
     { 
         LINE 
         $$ = new ASTNode("Compound Statement", "{  }"); 
     }
-    | LCURLY statement_list RCURLY 
-    { 
-        LINE 
-        $$ = new ASTNode("Compound Statement", "{  }"); 
-        $$->addChildren($2->children); 
-    }
-    | LCURLY declaration_list RCURLY 
+    | LCURLY statement_list rcurly 
     { 
         LINE 
         $$ = new ASTNode("Compound Statement", "{  }"); 
         $$->addChildren($2->children); 
     }
-    | LCURLY declaration_list statement_list RCURLY 
+    | LCURLY declaration_list rcurly 
+    { 
+        LINE 
+        $$ = new ASTNode("Compound Statement", "{  }"); 
+        $$->addChildren($2->children); 
+    }
+    | LCURLY declaration_list statement_list rcurly 
     { 
         LINE 
         $$ = new ASTNode("Compound Statement", "{  }"); 
@@ -1432,12 +1586,12 @@ statement_list
 
     //---------Done till here
 expression_statement
-    : SEMI_COLON 
+    : semi_colon 
     { 
         LINE 
         $$ = new ASTNode("Expression Statement", ";"); 
     }
-    | expression SEMI_COLON 
+    | expression semi_colon 
     { 
         LINE 
         $$ = $1; 
@@ -1445,14 +1599,14 @@ expression_statement
     ;
 
 selection_statement
-    : IF LPAREN expression RPAREN statement 
+    : IF LPAREN expression rparen statement 
     { 
         LINE 
         $$ = new ASTNode("If Statement", "if", $1->position);
         $$->addChild($3); 
         $$->addChild($5); 
     }
-    | IF LPAREN expression RPAREN statement ELSE statement 
+    | IF LPAREN expression rparen statement ELSE statement 
     { 
         LINE 
         $$ = new ASTNode("If Else Statement", "if-else", $1->position);
@@ -1460,7 +1614,7 @@ selection_statement
         $$->addChild($5); 
         $$->addChild($7); 
     }
-    | SWITCH LPAREN expression RPAREN statement 
+    | SWITCH LPAREN expression rparen statement 
     { 
         LINE 
         $$ = new ASTNode("Switch Statement", "switch", $1->position);
@@ -1470,28 +1624,28 @@ selection_statement
     ;
 
 iteration_statement
-    : WHILE LPAREN expression RPAREN statement 
+    : WHILE LPAREN expression rparen statement 
     { 
         LINE 
         $$ = new ASTNode("While Loop", "while", $1->position);
         $$->addChild($3); 
         $$->addChild($5); 
     }
-    | UNTIL LPAREN expression RPAREN statement 
+    | UNTIL LPAREN expression rparen statement 
     { 
         LINE 
         $$ = new ASTNode("Until Loop", "until", $1->position);
         $$->addChild($3); 
         $$->addChild($5); 
     }
-    | DO statement WHILE LPAREN expression RPAREN SEMI_COLON 
+    | DO statement WHILE LPAREN expression rparen semi_colon 
     { 
         LINE 
         $$ = new ASTNode("DoWhile Loop", "do-while", $1->position);
         $$->addChild($2); 
         $$->addChild($5); 
     }
-    | FOR LPAREN expression_statement expression_statement RPAREN statement 
+    | FOR LPAREN expression_statement expression_statement rparen statement 
     { 
         LINE 
         $$ = new ASTNode("For Loop", "for", $1->position); 
@@ -1499,7 +1653,7 @@ iteration_statement
         $$->addChild($4); 
         $$->addChild($6); 
     }
-    | FOR LPAREN expression_statement expression_statement expression RPAREN statement 
+    | FOR LPAREN expression_statement expression_statement expression rparen statement 
     { 
         LINE 
         $$ = new ASTNode("For Loop", "for", $1->position);
@@ -1508,7 +1662,7 @@ iteration_statement
         $$->addChild($5); 
         $$->addChild($7); 
     }
-    | FOR LPAREN declaration expression_statement expression RPAREN statement 
+    | FOR LPAREN declaration expression_statement expression rparen statement 
     { 
         LINE 
         $$ = new ASTNode("For Loop", "for", $1->position); 
@@ -1520,28 +1674,28 @@ iteration_statement
     ;
 
 jump_statement
-    : GOTO IDENTIFIER SEMI_COLON 
+    : GOTO identifier semi_colon 
     { 
         LINE 
         $$ = new ASTNode("Goto Statement", "goto", $1->position); 
         $$->addChild($2);
     }
-    | CONTINUE SEMI_COLON 
+    | CONTINUE semi_colon 
     { 
         LINE 
         $$ = new ASTNode("Continue Statement", "continue", $1->position);
     }
-    | BREAK SEMI_COLON 
+    | BREAK semi_colon 
     { 
         LINE 
         $$ = new ASTNode("Break Statement", "break", $1->position);
     }
-    | RETURN SEMI_COLON 
+    | RETURN semi_colon 
     { 
         LINE 
         $$ = new ASTNode("Return Statement", "return", $1->position);
     }
-    | RETURN expression SEMI_COLON 
+    | RETURN expression semi_colon 
     { 
         LINE 
         $$ = new ASTNode("Return Statement", "return", $1->position); 
@@ -1564,7 +1718,7 @@ translation_unit
         $$ = $1; 
         $$->addChild($2); 
     }
-    /* | error SEMI_COLON
+    /* | error semi_colon
     {
         LINE
         PARSERlog << "Error: " << getPosition($2) << std::endl;
@@ -1592,7 +1746,7 @@ external_declaration
     ;
 
 function_declaration
-    : declaration_specifiers declarator SEMI_COLON
+    : declaration_specifiers declarator semi_colon
     {
         LINE
         $$ = new ASTNode("Function Declaration");
@@ -1649,136 +1803,178 @@ int main(int argc, char **argv) {
 
     //------------------------ cmd line arguments handling ------------------------
 
+        std::string inputInstructions = "Usage: " + std::string(argv[0]) + " <input_file> <output_file> [-ast <dot_file>] [-r] [-pt] [-s] \n";
+        inputInstructions += "Options: \n";
+        inputInstructions += "[-ast <dot_file>] : Generate AST as DOT file\n";
+        inputInstructions += "[-r] : Generate Recursive Output\n";
+        inputInstructions += "[-pt <parser_table_file>] : Generate Parser Table\n";
+        inputInstructions += "[-s <SExp_file>] : Generate S-Expression\n";
+
+        /* std::cout << "argc: " << argc << std::endl; */
         if (argc < 2) {
-            std::cerr << "Usage: " << argv[0] << " <input_file> [-pt <ParseTableFile ] [-p [<DOTFileName>] ] [-r <recursiveOutputFile]\n";
+            std::cerr << "Usage: " << argv[0] << " <input_file> <output_file> [-ast <dot_file>] [-r] [-pt] [-s] \n";
             return 1;
         }
 
         std::string input_file = argv[1];
-        std::string dot_file;
-        std::string parser_table_file = "parser_table.txt"; // Default name for the parser table file
-        std::string recursive_output_file;
-        std::string SExp_file;
+        std::string output_file = argv[2];
+        std::string dot_file = "ast_graph.dot";
+        std::string recursive_output_file = "recursive_output.txt";
+        std::string parser_table_file = "parser_table.txt";
+        std::string SExp_file = "SExp.txt";
+        std::string LaTeXParserTable = "parser_table.tex";    
 
-        // Parse arguments
-        for (int i = 2; i < argc; ++i) {
-            std::string arg = argv[i];
-            if (arg == "-p") {
-                // Check if there is another argument after "-p"
+        bool ast_flag = false;
+        bool recursive_flag = false;
+        bool parser_table_flag = false;
+        bool SExp_flag = false;
+
+        // Open default output file
+        yyin = fopen(input_file.c_str(), "r");
+        if (!yyin) {
+            std::cerr << "Error: Unable to open input file\n";
+            return 1;
+        }
+        LINE
+        initOutputFile(output_file); // open output file
+
+        LINE
+
+        // Parse command line arguments
+        for (int i = 3; i < argc; i++) {
+            if (std::string(argv[i]) == "-ast") {
+                ast_flag = true;
                 if (i + 1 < argc) {
-                    dot_file = argv[++i]; // Assign the next argument as the DOT file
+                    dot_file = argv[i + 1];
+                    i++;
                 } else {
-                    // If name is not provided after "-p"
-                    // Create a default name for the DOT file
-                    std::string base_name = input_file.substr(0, input_file.find_last_of("."));
-                    dot_file = base_name + ".dot";
-                }
-            }else if(arg == "-r"){
-                // Check if there is another argument after "-r"
-                if (i + 1 < argc) {
-                    recursive_output_file = argv[++i]; // Assign the next argument as the recursive output file
-                } else {
-                    std::cerr << "2Error: Invalid argument.\n";
+                    std::cerr << "Error: Missing argument for -ast\n";
+                    std::cerr << inputInstructions;
                     return 1;
                 }
-            } else if(arg == "-s"){
-                // Check if there is another argument after "-s"
-                if (i + 1 < argc) {
-                    SExp_file = argv[++i]; // Assign the next argument as the SExp output file
-                }
-                else {
-                    std::cerr << "1Error: Invalid argument.\n";
-                    return 1;
-                }
-            } else if(arg == "-pt"){
-                // Check if there is another argument after "-pt"
-                if (i + 1 < argc) {
-                    parser_table_file = argv[++i]; // Assign the next argument as the Parse Table file
-                }
-            else {
-                std::cerr << "4Error: Invalid argument.\n";
+            } else if (std::string(argv[i]) == "-r") {
+                recursive_flag = true;
+            } else if (std::string(argv[i]) == "-pt") {
+                parser_table_flag = true;
+                
+            } else if (std::string(argv[i]) == "-s") {
+                SExp_flag = true;
+            } else {
+                std::cerr << "Error: Invalid argument\n";
+                std::cerr << inputInstructions;
                 return 1;
             }
         }
-        }
-
-    //------------------------ input file handling ------------------------
-        yyin = fopen(input_file.c_str(), "r");
-        if (!yyin) {
-            std::cerr << "E12rror: Unable to open input file.\n";
-            return 1;
-        }
-
-    //------------------------ Output File Handling ------------------------
-    // stdout is printed to console
-    // stderr is printed to debug.log
-    // PARSERlog is printed to parser.log
-
 
     // ------------------------ Symbol Table ------------------------
         // Create a new symbol table
         /* SymbolTable *symTable = new SymbolTable(); */
 
-
+    LINE
     //------------------------ Parsing ------------------------
 
-    
     yyparse();  // Call BISON's parser
     
+    LINE
+    // ------------------------- Parser Phase Completion Checks ------------------------
 
+    bool lexerFailed = (lexerLOG.size() > 0);
+    bool parseError = (parserLOG.size() > 0);
+    parseError = parseError || lexerFailed || bisonError;
+
+    if(lexerFailed){
+        *output << "\U0001F6A8 Input Program failed in Lexical Analysis Phase \U0001F6A8\n" << std::endl;
+        *output << LEXERLOGHEADER << std::endl;
+        for(auto log : lexerLOG){
+            *output << log << std::endl;
+        }
+        *output << LOGFOOTER << std::endl;
+        *output << std::endl;
+
+        *output << "----No Further Processing----\n";
+        // Clean Up
+        fclose(yyin);
+        closeOutputFile();
+        return 0;
+    }
+
+    if(parseError){
+        *output << "\U0001F6A8 Input Program failed in Syntax Analysis Phase \U0001F6A8\n" << std::endl;
+        *output << PARSERLOGHEADER << std::endl;
+        for(auto log : parserLOG){
+            *output << log << std::endl;
+        }
+
+        if(!customError){
+            // NO CUSTOM ERROR
+            *output << "!!Syntax Error at Line: " << yylineno << " near tokne: " << yytext << "!!\n";
+        }
+
+        *output << LOGFOOTER << std::endl;
+        *output << std::endl;
+
+        *output << "----No Further Processing----\n";
+        // Clean Up
+        fclose(yyin);
+        closeOutputFile();
+        return 0;
+    }
+    LINE
+
+    // Success message
+    *output << "\U0001F44D Input Program passed Syntax Analysis Phase \U0001F44D\n" << std::endl;
 
 
     // ------------------------- Printing Various Outputs ------------------------
-    if(parseError){
-        std::cout << "\U000026A0 Error: Parsing Failed \U0001F41E\n";
-        return 0; //For Clean Exit
-    } else {
-        std::cout << "\U0001F44D Parsing Successful \U0001F44D\n";
+
+    if(ast_flag){
+        // Print AST to DOT file
+        generateDOT(root, dot_file);
+        *output << "\U0001F53A AST generated as DOT file: " << dot_file << " can be visualized using Graphviz\n";
     }
 
+    if(recursive_flag){
+        // Print Recursive Output
+        printASTToFile(root, recursive_output_file);
+        *output << "\U0001F53A Recursive Output generated as: " << recursive_output_file << "\n";
+    }
 
-    // Printing PARSER_TABLE [either to default file or user provided file]
-    std::ofstream parser_table_out(parser_table_file);
-    printParserTable(parser_table_out);
+    if(SExp_flag){
+        // Print S-Expression
+        writeASTToSExpression(root, SExp_file);
+        *output << "\U0001F53A S-Expression generated as: " << SExp_file << "\n";
+    }
 
-    // Print AST as DOT file
-        if(!dot_file.empty()){
-            generateDOT(root, dot_file);
-        }
+    if(parser_table_flag){
+        // Print Parser Table
+        std::ofstream parser_table;
+        parser_table.open(parser_table_file);
+        printParserTable(parser_table);
+        parser_table.close();
+        *output << "\U0001F53A Parser Table (TXT) generated as: " << parser_table_file << "\n";
+    }
+    LINE
+    // MUST PRINT PARSER_LaTeX_TABLE
+    std::ofstream LaTeXTable;
+    LaTeXTable.open(LaTeXParserTable);
+    writeLatexTable(LaTeXTable);
+    LaTeXTable.close();
+    *output << "\U00002B55 Parser Table (LaTeX) generated as: " << LaTeXParserTable << " can be visualized using LaTeX\n";
 
-    // Print Recursive Output
-        if(!recursive_output_file.empty()){
-            printASTToFile(root, recursive_output_file);
-        }    
-
-    // Print S-Expression
-        if(!SExp_file.empty()){
-            writeASTToSExpression(root, SExp_file);
-        }
-
-    // Print Normal AST
-        /* if(!parseError){
-            printAST(root);
-        }  */
-
-
+    LINE
     //------------------------- Cleanup ------------------------
-        if (yyin) fclose(yyin);  // Close the input file if opened
-        return 0;
+    if (yyin) fclose(yyin);  // Close the input file if opened
+    closeOutputFile();  // Close the output file
+    return 0;
 }
 
 // Error handling function
 void yyerror(const char* s) {
     /* yyclearin; */
-    std::string error = s;
 
-    // Multiple Syntax Errors is not handled
-    PARSERlog << "First Syntax Error at line " << yylineno << " near token \"" << (tokenAtr_global->value) << "\"";
-    if(error != "syntax error") {
-        PARSERlog << " | Error Description: " << s;
-    }
-    PARSERlog << std::endl;
-    parseError = true; // Makes sure no Printing of any AST happens
+    // This Won't print anything
+    
+    bisonError = true; // Makes sure no Printing of any AST happens
 }
 
 //Handler Functions
@@ -1828,7 +2024,7 @@ void Declaration_Handler(ASTNode* declarationSpecifiers, ASTNode* initDeclarator
         node=(node->children.size())?node->children[0]:nullptr; //Move down the tree
     }
     if(typeSpec>1 || storageClass>1){
-        yyerror("NOT-ALLOWED | Multiple type specifiers/qualifiers/storage classes in declaration");
+        ourError("NOT-ALLOWED | Multiple type specifiers/qualifiers/storage classes in declaration");
         return;
     }
     if(type == "") type = "int"; // default type is int
@@ -1879,7 +2075,7 @@ void Struct_Union_Declaration_Handler(ASTNode* specifierQualifierList, ASTNode* 
         node=(node->children.size())?node->children[0]:nullptr;
     }
     if(storageClass>1){
-        yyerror("Multiple storage classes in declaration");
+        ourError("Multiple storage classes in declaration");
         return;
     }
     if(type == "") type = "int";
@@ -1956,4 +2152,50 @@ void printParserTable(std::ostream& out) {
         << "+" << std::string(idNameWidth + 2, '-') 
         << "+" << std::string(idTypeWidth + 2, '-') 
         << "+" << std::endl;
+}
+
+void writeLatexTable(std::ostream &out) {
+    // LaTeX document header
+    out << "\\documentclass{article}\n";
+    out << "\\usepackage[a4paper,margin=1in]{geometry}\n";
+    out << "\\usepackage{longtable}\n";
+    out << "\\usepackage[table]{xcolor}\n";
+    out << "\\definecolor{headercolor}{RGB}{79, 129, 189}\n";
+    out << "\\definecolor{rowcolor}{RGB}{217, 225, 242}\n";
+    out << "\\begin{document}\n\n";
+    out << "\\begin{center}\n";
+    out << "    {\\LARGE \\textbf{Parser Table of Input Program}} \\\\[10pt]\n";
+    out << "\\end{center}\n\n";
+    out << "\\renewcommand{\\arraystretch}{1.3}\n";
+    out << "\\setlength{\\arrayrulewidth}{0.7mm}\n";
+    out << "\\rowcolors{2}{rowcolor}{white}\n";
+
+    
+    // Begin table
+    out << "\\begin{longtable}{|l|c|c|}\n";
+    out << "    \\hline\n";
+    out << "    \\rowcolor{headercolor} \\textbf{lineNo:columnNo} & \\textbf{Identifier Name} & \\textbf{Identifier Type} \\\\ \n";
+    out << "    \\hline\n";
+    out << "    \\endfirsthead\n";
+    out << "    \\hline\n";
+    out << "    \\rowcolor{headercolor} \\textbf{lineNo:columnNo} & \\textbf{Identifier Name} & \\textbf{Identifier Type} \\\\ \n";
+    out << "    \\hline\n";
+    out << "    \\endhead\n";
+    // Populate table rows from PARSER_TABLE
+    for (const auto &entry : PARSER_TABLE) {
+        std::string correctTokenName;
+        // Replace _ with \\_
+        for (char c : entry.second.first) {
+            if (c == '_') correctTokenName += "\\_";
+            else correctTokenName += c;
+        }
+        out << "    " << entry.first.first << ":" << entry.first.second << " & "
+            << correctTokenName << " & "
+            << entry.second.second << " \\\\ \n";
+        out << "    \\hline\n";
+    }
+
+    // End table and document
+    out << "\\end{longtable}\n\n";
+    out << "\\end{document}\n";
 }

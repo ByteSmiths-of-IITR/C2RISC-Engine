@@ -4,10 +4,8 @@ CXXFLAGS = -w -lm
 
 # Input and output files
 INPUT = input.c
-# OUTPUT to console
+OUTPUT = output.txt
 CERR = stderr.log
-LEXLog = lexer.log
-PARSERLog = parser.log
 
 ## for debug we have a console log
 
@@ -29,16 +27,19 @@ EXECUTABLE = parser
 
 # Result dot (graphviz) tool
 DOT = dot
-DOTFile = ast.dot
-DOTImage = ast.png
-DOTPDF = ast.pdf
+DOTFile = ast_graph.dot
+# DOTImage = ast_graph.png [Not used]
+DOTPDF = ast_graph.pdf
+
+#More Result FIle
+S_EXPR = s_expr.txt
+Recursive = recursive_output.txt
 
 #Result PARSER TABLE
-PARSER_TABLE = parser_table.txt
+LaTeXFile = parser_table.tex
+LaTeX_OUTPUT = parser_table
 
-# Result recursive print
-VISUAL = visual.txt
-S_EXPR = s_expr.txt
+
 
 # Default target
 all: $(EXECUTABLE)
@@ -56,45 +57,56 @@ $(LEXER_C): $(LEXER)
 $(EXECUTABLE): $(LEXER_C) $(PARSER_C) $(UTILITY_CPP) 
 	$(CXX) $(LEXER_C) $(PARSER_C) $(UTILITY_CPP)  -o $(EXECUTABLE) $(CXXFLAGS)
 
-
-
-run: $(EXECUTABLE) $(INPUT) 
+$(CERR):
 	touch $(CERR)
-	./$(EXECUTABLE) $(INPUT) 2> $(CERR)
+
+$(OUTPUT):
+	touch $(OUTPUT)
+
+run: $(EXECUTABLE) $(INPUT) $(OUTPUT) $(CERR)
+	./$(EXECUTABLE) $(INPUT) $(OUTPUT) 2> $(CERR) 
+
+# This will only run the parser and generate the output file [NO RESULT]
+
 
 $(DOTFile): $(EXECUTABLE)
-	./$(EXECUTABLE) $(INPUT) -p $(DOTFile) 2> $(CERR)
+	./$(EXECUTABLE) $(INPUT) 
 
 # PDF is better
 # image: $(DOTFile)
 # 	$(DOT) -Tpng $(DOTFile) -o $(DOTImage)
 
-pdf: $(DOTFile) $(INPUT)
-	./$(EXECUTABLE) $(INPUT) -p $(DOTFile) 2> $(CERR)
+## For Visualizing the AST
+ast: $(INPUT) $(OUTPUT)
+	./$(EXECUTABLE) $(INPUT) $(OUTPUT) -ast $(DOTFile)
 	$(DOT) -Tpdf $(DOTFile) -o $(DOTPDF)
 	open $(DOTPDF)
 
-r: $(EXECUTABLE) $(INPUT)
-	./$(EXECUTABLE) $(INPUT) -r $(VISUAL)
+
+r: $(EXECUTABLE) $(INPUT) $(OUTPUT)
+	./$(EXECUTABLE) $(INPUT) $(OUTPUT) -r 2> $(CERR)
 
 s: $(EXECUTABLE) $(INPUT)
-	./$(EXECUTABLE) $(INPUT) -s $(S_EXPR)
+	./$(EXECUTABLE) $(INPUT) $(OUTPUT) -s $(S_EXPR) 2> $(CERR)
+
+$(LaTeXFile): $(EXECUTABLE)
+	./$(EXECUTABLE) $(INPUT) $(OUTPUT) 2> $(CERR)
+
+# For PDF printing the Parser Table
+table: $(EXECUTABLE) $(INPUT) $(LaTeXFile)
+	./$(EXECUTABLE) $(INPUT) $(OUTPUT) 2> $(CERR)
+	pdflatex -jobname=$(LaTeX_OUTPUT) $(LaTeXFile) > /dev/null 2>&1
+	open $(LaTeX_OUTPUT).pdf
+	
+# rm $(LaTeX_OUTPUT).aux $(LaTeX_OUTPUT).log 
 
 # Clean generated files
 clean:
-	rm -f $(LEXER_C) \
-		$(PARSER_C) \
-		$(PARSER_H) \
-		$(EXECUTABLE) \
-		$(DOTFile) \
-		$(DOTImage) \
-		$(DOTPDF) \
-		$(VISUAL) \
-		$(S_EXPR) \
-		$(CERR) \
-		$(LEXLog) \
-		$(PARSERLog) \
-		$(PARSER_TABLE)
+	rm -f $(LEXER_C) $(PARSER_C) $(PARSER_H) $(EXECUTABLE) $(OUTPUT) \
+	$(CERR) $(DOTFile) $(DOTPDF) \
+	$(S_EXPR) $(Recursive) $(LaTeX_OUTPUT).pdf $(LaTeXFile) $(LaTeX_OUTPUT).aux $(LaTeX_OUTPUT).log
+	latexmk -CA > /dev/null 2>&1
+
 
 again:
 	rm -f $(EXECUTABLE) \

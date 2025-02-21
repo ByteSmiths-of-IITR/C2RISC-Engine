@@ -37,6 +37,13 @@
         this->position = std::make_pair(-1, -1); // Not valid position
     }
 
+    ASTNode::ASTNode(ASTNode* child) {
+        this->type = child->type;
+        this->value = child->value;
+        this->position = child->position;
+        this->children = child->children;
+    }
+
     // Destructor that deletes child nodes
     ASTNode::~ASTNode() {
         for (ASTNode *child : children) {

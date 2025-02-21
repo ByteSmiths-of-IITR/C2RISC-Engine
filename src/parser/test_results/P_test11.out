@@ -1,0 +1,10 @@
+🚨 Input Program failed in Syntax Analysis Phase 🚨
+
+----------------------------------- PARSER LOG -----------------------------------
+Syntax Error at line 20 near token: operation | Error Description: Expected a SemiColon
+Syntax Error at line 20 near token: = | Error Description: Expected an ID or Expression
+Syntax Error at line 20 near token: = | Error Description: Expected a SemiColon
+Syntax Error at line 20 near token: subtract | Error Description: Expected a SemiColon
+----------------------------------- END OF LOG -----------------------------------
+
+----No Further Processing----

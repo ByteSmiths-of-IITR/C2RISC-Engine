@@ -12,17 +12,20 @@
 
 // Some MACROS to reduce the Written Content in the Lexer
 #define COLUMN column+=yyleng;
-#define TOKEN(t) tokenAtr_global=new TokenAttribute(t,yytext, line, column); yylval.tokenAtr=tokenAtr_global; column+=yyleng; return t;
+#define TOKEN(t) lastToken=currentToken; currentToken=std::string(yytext); yylval.tokenAtr=new TokenAttribute(t,yytext, yylineno, column); column+=yyleng; return t;
 
 
-std::ofstream LEXlog("lexer.log", std::ios::trunc);
+// std::ofstream LEXlog("lexer.log", std::ios::trunc);
 
 //Position of the token
-int line = 1;
+// int line = 1; using yylineno
 int column = 1;
 
+std::string currentToken;
+std::string lastToken;
 
-TokenAttribute* tokenAtr_global = NULL;
+
+std::vector<std::string> lexerLOG;
 
 // Function to handle errors
 void yyerror(const char *s);
@@ -183,27 +186,26 @@ COMMENT2   "/*"([^*]|\*+[^*/])*\*+"/"
 
 {WHITESPACE}                    { COLUMN /* Ignore spaces and tabs */ }
 
-{NEWLINE}                       { line++; column = 1; yylineno++;/* Ignore newlines */ }
+{NEWLINE}                       { column = 1; yylineno++;/* Ignore newlines */ }
 
 {COMMENT1}                      { COLUMN /* Ignore single-line comments */ }
 {COMMENT2}                      { 
                                     for (int i = 0; yytext[i] != '\0'; i++) {
                                         if (yytext[i] == '\n') {
-                                            line++;
                                             yylineno++;
                                         }
                                     }
                                     COLUMN /* Ignore multi-line comments */ 
                                 }
 
-{INVALID_ID}                 { LEXlog << "Invalid identifier: " << yytext << " at line " << line << ", column " << column << std::endl; COLUMN return INVALID_TOKEN; }
-{INVALID_MULTILINE_STRING}   { LEXlog << "Invalid multi-line string: " << yytext << " at line " << line << ", column " << column << std::endl; COLUMN return INVALID_TOKEN; }
-{INVALID_STRING}             { LEXlog << "Invalid string: " << yytext << " at line " << line << ", column " << column << std::endl; COLUMN  return INVALID_TOKEN; }
-{INVALID_CHAR}               { LEXlog << "Invalid char: " << yytext << " at line " << line << ", column " << column << std::endl; COLUMN return INVALID_TOKEN; }
-{UNCLOSED_STRING}            { LEXlog << "Unclosed string: " << yytext << " at line " << line << ", column " << column << std::endl; COLUMN  return INVALID_TOKEN; }
-{UNCLOSED_CHAR}              { LEXlog << "Unclosed char: " << yytext << " at line " << line << ", column " << column << std::endl; COLUMN return INVALID_TOKEN; }
-{UNCLOSED_COMMENT2}          { LEXlog << "Unclosed comment: " << yytext << " at line " << line << ", column " << column << std::endl; COLUMN return INVALID_TOKEN; }
+{INVALID_ID}                 { lexerLOG.push_back("Invalid identifier: " + std::string(yytext) + " at line " + std::to_string(yylineno) + ", column " + std::to_string(column)); COLUMN return INVALID_TOKEN; }
+{INVALID_MULTILINE_STRING}   { lexerLOG.push_back("Invalid multi-line string: " + std::string(yytext) + " at line " + std::to_string(yylineno) + ", column " + std::to_string(column)); COLUMN return INVALID_TOKEN; }
+{INVALID_STRING}             { lexerLOG.push_back("Invalid string: " + std::string(yytext) + " at line " + std::to_string(yylineno) + ", column " + std::to_string(column)); COLUMN return INVALID_TOKEN; }
+{INVALID_CHAR}               { lexerLOG.push_back("Invalid char: " + std::string(yytext) + " at line " + std::to_string(yylineno) + ", column " + std::to_string(column)); COLUMN return INVALID_TOKEN; }
+{UNCLOSED_STRING}            { lexerLOG.push_back("Unclosed string: " + std::string(yytext) + " at line " + std::to_string(yylineno) + ", column " + std::to_string(column)); COLUMN return INVALID_TOKEN; }
+{UNCLOSED_CHAR}              { lexerLOG.push_back("Unclosed char: " + std::string(yytext) + " at line " + std::to_string(yylineno) + ", column " + std::to_string(column)); COLUMN return INVALID_TOKEN; }
+{UNCLOSED_COMMENT2}          { lexerLOG.push_back("Unclosed comment: " + std::string(yytext) + " at line " + std::to_string(yylineno) + ", column " + std::to_string(column)); COLUMN return INVALID_TOKEN; }
 
-.                            { LEXlog << "Unrecognized token: " << yytext << " at line " << line << ", column " << column << std::endl; COLUMN return UNKNOWN_TOKEN; }
+.                            { lexerLOG.push_back("Unrecognized token: " + std::string(yytext) + " at line " + std::to_string(yylineno) + ", column " + std::to_string(column)); COLUMN return UNKNOWN_TOKEN; }
 
 %%

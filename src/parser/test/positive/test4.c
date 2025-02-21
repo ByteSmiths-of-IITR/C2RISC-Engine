@@ -13,6 +13,7 @@ int main()
     int matrix[2][2] = {{1, 2}, {3, 4}};
     printf("Multi-Dimensional Array:\n");
     printf("  %d %d\n", matrix[0][0], matrix[0][1]);
+    
 
     // Bitwise Operations
     int a = 5, b = 3;

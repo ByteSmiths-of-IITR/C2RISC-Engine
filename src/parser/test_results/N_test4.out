@@ -1,0 +1,8 @@
+🚨 Input Program failed in Syntax Analysis Phase 🚨
+
+----------------------------------- PARSER LOG -----------------------------------
+Syntax Error at line 2 near token: = | Error Description: Expected an ID or Expression
+Syntax Error at line 4 near token: + | Error Description: Expected an ID or Expression
+----------------------------------- END OF LOG -----------------------------------
+
+----No Further Processing----
