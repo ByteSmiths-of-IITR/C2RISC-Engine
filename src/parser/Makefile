@@ -2,10 +2,12 @@
 CXX = g++ -std=c++17 # Added Latest Version [Some error due to old compiler]
 CXXFLAGS = -w -lm
 
-# Input files
+# Input and output files
 INPUT = input.c
-OUTPUT = output.txt
-CERR = cerr.txt
+# OUTPUT to console
+CERR = stderr.log
+LEXLog = lexer.log
+PARSERLog = parser.log
 
 ## for debug we have a console log
 
@@ -31,6 +33,9 @@ DOTFile = ast.dot
 DOTImage = ast.png
 DOTPDF = ast.pdf
 
+#Result PARSER TABLE
+PARSER_TABLE = parser_table.txt
+
 # Result recursive print
 VISUAL = visual.txt
 S_EXPR = s_expr.txt
@@ -53,25 +58,27 @@ $(EXECUTABLE): $(LEXER_C) $(PARSER_C) $(UTILITY_CPP)
 
 
 
-run: $(EXECUTABLE) $(INPUT)
-	./$(EXECUTABLE) $(INPUT) $(OUTPUT) 2> $(CERR)
+run: $(EXECUTABLE) $(INPUT) 
+	touch $(CERR)
+	./$(EXECUTABLE) $(INPUT) 2> $(CERR)
 
 $(DOTFile): $(EXECUTABLE)
-	./$(EXECUTABLE) $(INPUT) $(OUTPUT) -p $(DOTFile) 2> $(CERR)
+	./$(EXECUTABLE) $(INPUT) -p $(DOTFile) 2> $(CERR)
 
 # PDF is better
 # image: $(DOTFile)
 # 	$(DOT) -Tpng $(DOTFile) -o $(DOTImage)
 
 pdf: $(DOTFile) $(INPUT)
+	./$(EXECUTABLE) $(INPUT) -p $(DOTFile) 2> $(CERR)
 	$(DOT) -Tpdf $(DOTFile) -o $(DOTPDF)
 	open $(DOTPDF)
 
 r: $(EXECUTABLE) $(INPUT)
-	./$(EXECUTABLE) $(INPUT) $(OUTPUT) -r $(VISUAL)
+	./$(EXECUTABLE) $(INPUT) -r $(VISUAL)
 
 s: $(EXECUTABLE) $(INPUT)
-	./$(EXECUTABLE) $(INPUT) $(OUTPUT) -s $(S_EXPR)
+	./$(EXECUTABLE) $(INPUT) -s $(S_EXPR)
 
 # Clean generated files
 clean:
@@ -84,7 +91,10 @@ clean:
 		$(DOTPDF) \
 		$(VISUAL) \
 		$(S_EXPR) \
-		$(OUTPUT)
+		$(CERR) \
+		$(LEXLog) \
+		$(PARSERLog) \
+		$(PARSER_TABLE)
 
 again:
 	rm -f $(EXECUTABLE) \

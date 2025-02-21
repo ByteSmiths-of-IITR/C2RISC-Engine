@@ -11,8 +11,8 @@
 
 #define EMPTY_VAL "!!EMPTY!!"
 
-#define LINE std::cerr<<__LINE__<<std::endl;
-// #define LINE /**/
+// #define LINE std::cerr<<__LINE__<<std::endl;
+#define LINE /**/
 
 // Global DS 
 std::vector<std::pair<std::pair<int,int>, std::pair<std::string, std::string>> > PARSER_TABLE;
@@ -32,9 +32,13 @@ void yyerror(const char *s);
 extern int yylex();
 extern FILE *yyin;
 
+extern TokenAttribute* tokenAtr_global;
+
+bool parseError = false;
+
 #define YYDEBUG 1
 
-std::ofstream PARSERlog("PARSER_debug.log", std::ios::trunc);
+std::ofstream PARSERlog("parser.log", std::ios::trunc);
 
 std::string getPosition(TokenAttribute* token){
     return std::to_string(token->position.first) + ":" + std::to_string(token->position.second);
@@ -1645,19 +1649,19 @@ int main(int argc, char **argv) {
 
     //------------------------ cmd line arguments handling ------------------------
 
-        if (argc < 3) {
-            std::cerr << "Usage: " << argv[0] << " <input_file> <output_file> [-p [<DOTFileName>] ] [-r <recursiveOutputFile]\n";
+        if (argc < 2) {
+            std::cerr << "Usage: " << argv[0] << " <input_file> [-pt <ParseTableFile ] [-p [<DOTFileName>] ] [-r <recursiveOutputFile]\n";
             return 1;
         }
 
         std::string input_file = argv[1];
-        std::string output_file = argv[2];
         std::string dot_file;
+        std::string parser_table_file = "parser_table.txt"; // Default name for the parser table file
         std::string recursive_output_file;
         std::string SExp_file;
 
         // Parse arguments
-        for (int i = 3; i < argc; ++i) {
+        for (int i = 2; i < argc; ++i) {
             std::string arg = argv[i];
             if (arg == "-p") {
                 // Check if there is another argument after "-p"
@@ -1686,10 +1690,16 @@ int main(int argc, char **argv) {
                     std::cerr << "1Error: Invalid argument.\n";
                     return 1;
                 }
-            } else {
+            } else if(arg == "-pt"){
+                // Check if there is another argument after "-pt"
+                if (i + 1 < argc) {
+                    parser_table_file = argv[++i]; // Assign the next argument as the Parse Table file
+                }
+            else {
                 std::cerr << "4Error: Invalid argument.\n";
                 return 1;
             }
+        }
         }
 
     //------------------------ input file handling ------------------------
@@ -1699,11 +1709,11 @@ int main(int argc, char **argv) {
             return 1;
         }
 
-        freopen(output_file.c_str(), "w", stdout); // stdout will be redirected to output file
-        
-        //------ToDo[Later]: Redirect cerr to error.txt file------
-        // cerr is not redirected to output file it will be printed to console 
-        // When we need to show parser errors to the user, we can use cerr to a error.txt file (not now)
+    //------------------------ Output File Handling ------------------------
+    // stdout is printed to console
+    // stderr is printed to debug.log
+    // PARSERlog is printed to parser.log
+
 
     // ------------------------ Symbol Table ------------------------
         // Create a new symbol table
@@ -1719,31 +1729,38 @@ int main(int argc, char **argv) {
 
 
     // ------------------------- Printing Various Outputs ------------------------
+    if(parseError){
+        std::cout << "\U000026A0 Error: Parsing Failed \U0001F41E\n";
+        return 0; //For Clean Exit
+    } else {
+        std::cout << "\U0001F44D Parsing Successful \U0001F44D\n";
+    }
 
-        // Printing PARSER_TABLE
-        std::string parser_table_file = output_file.substr(0, output_file.find_last_of(".")) + "_parser_table.txt";
-        std::ofstream parser_table_out(parser_table_file);
-        printParserTable(parser_table_out);
 
-        // Print AST as DOT file
-            if(!dot_file.empty()){
-                generateDOT(root, dot_file);
-            }
+    // Printing PARSER_TABLE [either to default file or user provided file]
+    std::ofstream parser_table_out(parser_table_file);
+    printParserTable(parser_table_out);
 
-        // Print Recursive Output
-            if(!recursive_output_file.empty()){
-                printASTToFile(root, recursive_output_file);
-            }    
+    // Print AST as DOT file
+        if(!dot_file.empty()){
+            generateDOT(root, dot_file);
+        }
 
-        // Print S-Expression
-            if(!SExp_file.empty()){
-                writeASTToSExpression(root, SExp_file);
-            }
+    // Print Recursive Output
+        if(!recursive_output_file.empty()){
+            printASTToFile(root, recursive_output_file);
+        }    
 
-        // Print Normal AST
-            if(true){
-                printAST(root);
-            }
+    // Print S-Expression
+        if(!SExp_file.empty()){
+            writeASTToSExpression(root, SExp_file);
+        }
+
+    // Print Normal AST
+        /* if(!parseError){
+            printAST(root);
+        }  */
+
 
     //------------------------- Cleanup ------------------------
         if (yyin) fclose(yyin);  // Close the input file if opened
@@ -1753,9 +1770,16 @@ int main(int argc, char **argv) {
 // Error handling function
 void yyerror(const char* s) {
     /* yyclearin; */
-    std::cerr<<"Line Number: "<<yylineno<<". Error: "<<s<<"."<<std::endl;
-}
+    std::string error = s;
 
+    // Multiple Syntax Errors is not handled
+    PARSERlog << "First Syntax Error at line " << yylineno << " near token \"" << (tokenAtr_global->value) << "\"";
+    if(error != "syntax error") {
+        PARSERlog << " | Error Description: " << s;
+    }
+    PARSERlog << std::endl;
+    parseError = true; // Makes sure no Printing of any AST happens
+}
 
 //Handler Functions
 int noOfPointers(ASTNode* node){
@@ -1814,7 +1838,7 @@ void Declaration_Handler(ASTNode* declarationSpecifiers, ASTNode* initDeclarator
         if(children->type == "Initializer") tempNode = children->children[0];
         if(tempNode->type == "Pointer Declarator"){
             pointCount=noOfPointers(tempNode->children[0]);
-            std::cout<<pointCount<<std::endl;
+            /* std::cout<<pointCount<<std::endl; */
             tempNode=tempNode->children[1];
         }
         if(tempNode->type == "Array Declaration"){

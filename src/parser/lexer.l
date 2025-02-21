@@ -12,15 +12,17 @@
 
 // Some MACROS to reduce the Written Content in the Lexer
 #define COLUMN column+=yyleng;
-#define TOKEN(t) column+=yyleng; yylval.tokenAtr = new TokenAttribute(t,yytext, line, column); return t;
+#define TOKEN(t) tokenAtr_global=new TokenAttribute(t,yytext, line, column); yylval.tokenAtr=tokenAtr_global; column+=yyleng; return t;
 
 
-std::ofstream LEXlog("LEXER_debug.log", std::ios::trunc);
+std::ofstream LEXlog("lexer.log", std::ios::trunc);
 
 //Position of the token
 int line = 1;
 int column = 1;
 
+
+TokenAttribute* tokenAtr_global = NULL;
 
 // Function to handle errors
 void yyerror(const char *s);
@@ -66,6 +68,7 @@ INVALID_MULTILINE_STRING \"(.*[\n])*\"
 
 /* NOT in USE */
 INVALID_ESCAPESEQ \\[^abfnrtv\\'"]
+
 
 
 
@@ -180,26 +183,27 @@ COMMENT2   "/*"([^*]|\*+[^*/])*\*+"/"
 
 {WHITESPACE}                    { COLUMN /* Ignore spaces and tabs */ }
 
-{NEWLINE}                       { line++; column = 1; /* Ignore newlines */ }
+{NEWLINE}                       { line++; column = 1; yylineno++;/* Ignore newlines */ }
 
 {COMMENT1}                      { COLUMN /* Ignore single-line comments */ }
 {COMMENT2}                      { 
                                     for (int i = 0; yytext[i] != '\0'; i++) {
                                         if (yytext[i] == '\n') {
                                             line++;
+                                            yylineno++;
                                         }
                                     }
                                     COLUMN /* Ignore multi-line comments */ 
                                 }
 
-{INVALID_ID}                 { printf("Invalid identifier: %s at line %d, column %d\n", yytext, line, column); COLUMN return INVALID_TOKEN; }
-{INVALID_MULTILINE_STRING}   { printf("Invalid multi-line string: %s at line %d, column %d\n", yytext, line, column); COLUMN return INVALID_TOKEN; }
-{INVALID_STRING}             { printf("Invalid string: %s at line %d, column %d\n", yytext, line, column); COLUMN  return INVALID_TOKEN; }
-{INVALID_CHAR}               { printf("Invalid char: %s at line %d, column %d\n", yytext, line, column); COLUMN return INVALID_TOKEN; }
-{UNCLOSED_STRING}            { printf("Unclosed string: %s at line %d, column %d\n", yytext, line, column);COLUMN  return INVALID_TOKEN; }
-{UNCLOSED_CHAR}              { printf("Unclosed char: %s at line %d, column %d\n", yytext, line, column); COLUMN return INVALID_TOKEN; }
-{UNCLOSED_COMMENT2}          { printf("Unclosed comment: %s at line %d, column %d\n", yytext, line, column); COLUMN return INVALID_TOKEN; }
+{INVALID_ID}                 { LEXlog << "Invalid identifier: " << yytext << " at line " << line << ", column " << column << std::endl; COLUMN return INVALID_TOKEN; }
+{INVALID_MULTILINE_STRING}   { LEXlog << "Invalid multi-line string: " << yytext << " at line " << line << ", column " << column << std::endl; COLUMN return INVALID_TOKEN; }
+{INVALID_STRING}             { LEXlog << "Invalid string: " << yytext << " at line " << line << ", column " << column << std::endl; COLUMN  return INVALID_TOKEN; }
+{INVALID_CHAR}               { LEXlog << "Invalid char: " << yytext << " at line " << line << ", column " << column << std::endl; COLUMN return INVALID_TOKEN; }
+{UNCLOSED_STRING}            { LEXlog << "Unclosed string: " << yytext << " at line " << line << ", column " << column << std::endl; COLUMN  return INVALID_TOKEN; }
+{UNCLOSED_CHAR}              { LEXlog << "Unclosed char: " << yytext << " at line " << line << ", column " << column << std::endl; COLUMN return INVALID_TOKEN; }
+{UNCLOSED_COMMENT2}          { LEXlog << "Unclosed comment: " << yytext << " at line " << line << ", column " << column << std::endl; COLUMN return INVALID_TOKEN; }
 
-.                            { printf("Unrecognized token: %s at line %d, column %d\n", yytext, line, column); COLUMN return UNKNOWN_TOKEN; }
+.                            { LEXlog << "Unrecognized token: " << yytext << " at line " << line << ", column " << column << std::endl; COLUMN return UNKNOWN_TOKEN; }
 
 %%

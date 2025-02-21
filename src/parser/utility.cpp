@@ -122,10 +122,10 @@ std::string ASTStyle(ASTNode* node) {
     // Constants and literals
     else if (param == "CONSTANT")
     {
-        return "shape=ellipse, style=diagonals, fillcolor=orange";
+        return "shape=Mcircle, style=filled, fillcolor=coral";
     }
     else if (param == "STRING_LITERAL"){
-        return "shape=note, style=diagonals, fillcolor=lightcoral";
+        return "shape=box, style=rounded, fillcolor=lightcoral";
     }
 
     // Root 
