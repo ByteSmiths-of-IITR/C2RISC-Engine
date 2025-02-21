@@ -11,8 +11,8 @@
 
 #define EMPTY_VAL "!!EMPTY!!"
 
-// #define LINE std::cerr<<__LINE__<<std::endl;
-#define LINE /**/
+#define LINE std::cerr<<__LINE__<<std::endl;
+// #define LINE /**/
 
 // Global DS 
 std::vector<std::pair<std::pair<int,int>, std::pair<std::string, std::string>> > PARSER_TABLE;
@@ -23,6 +23,7 @@ void Struct_Union_Declaration_Handler(ASTNode* specifierQualifierList, ASTNode* 
 void Enum_Declaration_Handler(ASTNode* enumSpecifier);
 void Function_Def_Handler(ASTNode* declarator);
 void Declaration_Handler(ASTNode* declarationSpecifiers, ASTNode* initDeclaratorList);
+void printParserTable(std::ostream& out);
 
 // Extern Variables
 extern int yylineno;
@@ -34,6 +35,20 @@ extern FILE *yyin;
 #define YYDEBUG 1
 
 std::ofstream PARSERlog("PARSER_debug.log", std::ios::trunc);
+
+std::string getPosition(TokenAttribute* token){
+    return std::to_string(token->position.first) + ":" + std::to_string(token->position.second);
+}
+
+std::string getPosition(ASTNode* node){
+    return std::to_string(node->position.first) + ":" + std::to_string(node->position.second);
+}
+
+void signalHandler(int signum) {
+    std::cerr << "Segmentation fault detected! Signal: " << signum << std::endl;
+    exit(signum);
+}
+
 
 ASTNode *root;
 %}
@@ -166,15 +181,17 @@ postfix_expression
     | postfix_expression LPAREN RPAREN 
     { 
         LINE
-        $$ = new ASTNode("FunctionCall");
+        $$ = new ASTNode("Function Call");
         $$->addChild($1);
+        PARSER_TABLE.push_back({$1->position, {$1->value, "function call"}});
     }
     | postfix_expression LPAREN argument_expression_list RPAREN 
     { 
         LINE
-        $$ = new ASTNode("FunctionCall");
+        $$ = new ASTNode("Function Call");
         $$->addChild($1);
         $$->addChild($3);
+        PARSER_TABLE.push_back({$1->position, {$1->value, "function call"}});
     }
     | postfix_expression DOT IDENTIFIER 
     { 
@@ -1528,6 +1545,7 @@ jump_statement
     }
     ;
 
+// START
 translation_unit
     : external_declaration 
     { 
@@ -1542,6 +1560,13 @@ translation_unit
         $$ = $1; 
         $$->addChild($2); 
     }
+    /* | error SEMI_COLON
+    {
+        LINE
+        PARSERlog << "Error: " << getPosition($2) << std::endl;
+        yyerrok; yyclearin;
+    }
+     */
     ;
 
 external_declaration
@@ -1615,6 +1640,8 @@ function_definition
 // main function
 
 int main(int argc, char **argv) {
+
+    signal(SIGSEGV, signalHandler); // Catch segmentation fault
 
     //------------------------ cmd line arguments handling ------------------------
 
@@ -1691,9 +1718,13 @@ int main(int argc, char **argv) {
 
 
 
-
     // ------------------------- Printing Various Outputs ------------------------
-    
+
+        // Printing PARSER_TABLE
+        std::string parser_table_file = output_file.substr(0, output_file.find_last_of(".")) + "_parser_table.txt";
+        std::ofstream parser_table_out(parser_table_file);
+        printParserTable(parser_table_out);
+
         // Print AST as DOT file
             if(!dot_file.empty()){
                 generateDOT(root, dot_file);
@@ -1721,8 +1752,10 @@ int main(int argc, char **argv) {
 
 // Error handling function
 void yyerror(const char* s) {
+    /* yyclearin; */
     std::cerr<<"Line Number: "<<yylineno<<". Error: "<<s<<"."<<std::endl;
 }
+
 
 //Handler Functions
 int noOfPointers(ASTNode* node){
@@ -1746,17 +1779,17 @@ void Declaration_Handler(ASTNode* declarationSpecifiers, ASTNode* initDeclarator
     ASTNode* node = declarationSpecifiers;
     
     if(declarationSpecifiers->type == "Enum Specifier"){
-        E_S_U_Declaration_Handler(declarationSpecifiers, initDeclaratorList, "enum", "enumElement");
+        E_S_U_Declaration_Handler(declarationSpecifiers, initDeclaratorList, "enum", "enum Element");
         return;
     }
 
     if(declarationSpecifiers->type == "Struct"){
-        E_S_U_Declaration_Handler(declarationSpecifiers, initDeclaratorList, "struct", "structInstance"); 
+        E_S_U_Declaration_Handler(declarationSpecifiers, initDeclaratorList, "struct", "struct Instance"); 
         return;
     }
 
     if(declarationSpecifiers->type == "Union"){
-        E_S_U_Declaration_Handler(declarationSpecifiers, initDeclaratorList, "union", "unionInstance");
+        E_S_U_Declaration_Handler(declarationSpecifiers, initDeclaratorList, "union", "union Instance");
         return;
     }
 
@@ -1796,7 +1829,7 @@ void Declaration_Handler(ASTNode* declarationSpecifiers, ASTNode* initDeclarator
 
 void Function_Def_Handler(ASTNode* declarator){
     std::string functionName=declarator->value;
-    PARSER_TABLE.push_back({declarator->position, {functionName, "function"}});
+    PARSER_TABLE.push_back({declarator->position, {functionName, "function declaration"}});
     declarator = declarator->children[0];
     if(declarator->type == "EmptyList") return;
     else if(declarator->type == "Parameter List"){
@@ -1842,11 +1875,61 @@ void Enum_Declaration_Handler(ASTNode* enumSpecifier){
         } else if(children->type == "Enum List"){
             for(auto item : children->children){
                 if(item->type == "Enum Assignment"){
-                    PARSER_TABLE.push_back({item->children[0]->position, {item->children[0]->value, "enumElement"}});
+                    PARSER_TABLE.push_back({item->children[0]->position, {item->children[0]->value, "enum Element"}});
                 } else {
-                    PARSER_TABLE.push_back({item->position, {item->value, "enumElement"}});
+                    PARSER_TABLE.push_back({item->position, {item->value, "enum Element"}});
                 }
             }
         }
     }
+}
+
+// PARSER_TABLE
+void printParserTable(std::ostream& out) {
+    // Sort by (lineNo, columnNo)
+    std::sort(PARSER_TABLE.begin(), PARSER_TABLE.end(), 
+        [](const auto& a, const auto& b) {
+            return (a.first.first < b.first.first) || 
+                   (a.first.first == b.first.first && a.first.second < b.first.second);
+        });
+
+    // Set dynamic column widths
+    int positionWidth = 14;   // Width for "LineNo:Column"
+    int idNameWidth = 20;     // Width for Identifier Name
+    int idTypeWidth = 35;     // Width for Identifier Type
+
+    // Print table header
+    out << "+" << std::string(positionWidth + 2, '-') 
+        << "+" << std::string(idNameWidth + 2, '-') 
+        << "+" << std::string(idTypeWidth + 2, '-') 
+        << "+" << std::endl;
+
+    out << "| " << std::setw(positionWidth) << std::left << "Position"
+        << " | " << std::setw(idNameWidth) << std::left << "Identifier Name"
+        << " | " << std::setw(idTypeWidth) << std::left << "Identifier Type"
+        << " |" << std::endl;
+
+    out << "+" << std::string(positionWidth + 2, '-') 
+        << "+" << std::string(idNameWidth + 2, '-') 
+        << "+" << std::string(idTypeWidth + 2, '-') 
+        << "+" << std::endl;
+
+    // Print each entry
+    for (const auto& entry : PARSER_TABLE) {
+        int line = entry.first.first;
+        int column = entry.first.second;
+        std::string idName = entry.second.first;
+        std::string idType = entry.second.second;
+
+        out << "| " << std::setw(positionWidth) << std::left << (std::to_string(line) + ":" + std::to_string(column))
+            << " | " << std::setw(idNameWidth) << std::left << idName
+            << " | " << std::setw(idTypeWidth) << std::left << idType
+            << " |" << std::endl;
+    }
+
+    // Print table footer
+    out << "+" << std::string(positionWidth + 2, '-') 
+        << "+" << std::string(idNameWidth + 2, '-') 
+        << "+" << std::string(idTypeWidth + 2, '-') 
+        << "+" << std::endl;
 }

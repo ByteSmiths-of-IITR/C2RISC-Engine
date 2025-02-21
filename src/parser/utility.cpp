@@ -104,6 +104,8 @@
 
 std::string ASTStyle(ASTNode* node) {
     std::string param = node->type;
+
+    // IDs
     if (param == "IDENTIFIER") {
         return "shape=egg, style=filled, fillcolor=seagreen1";
     }
@@ -116,18 +118,23 @@ std::string ASTStyle(ASTNode* node) {
     else if (param == "enumID"){
         return "shape=egg, style=filled, fillcolor=seagreen4";
     } 
+
+    // Constants and literals
     else if (param == "CONSTANT")
     {
-        return "shape=Mcircle, style=filled, fillcolor=orange";
+        return "shape=ellipse, style=diagonals, fillcolor=orange";
     }
     else if (param == "STRING_LITERAL"){
-        return "shape=plain, style=dashed, fillcolor=lightcoral";
+        return "shape=note, style=diagonals, fillcolor=lightcoral";
     }
-    else if (param == "TranslationUnit")
+
+    // Root 
+    else if (param == "Translation Unit")
     {
-        // this is the root node
         return "shape=doubleoctagon, style=filled, fillcolor=lightcoral";
     }
+
+    // Struct Union Enum
     else if(param =="Struct"){
         return "shape=box3d, style=filled, fillcolor=olivedrab1";
     }
@@ -137,34 +144,48 @@ std::string ASTStyle(ASTNode* node) {
     else if(param =="Enum"){
         return "shape=box3d, style=filled, fillcolor=olivedrab3";
     }
+
+    // Functions
     else if(param =="Function Definition"){
-        return "shape=invhouse, style=filled, fillcolor=lightblue";
+        return "shape=cylinder, style=filled, fillcolor=lawngreen";
     }
+    else if(param=="Function Declaration"){
+        return "shape=cylinder, style=filled, fillcolor=deeppink";
+    }
+    else if(param =="Function Call"){
+        return "shape=cylinder, style=filled, fillcolor=blanchedalmond";
+    }
+
+
     else if(param =="Declaration"){
         return "shape=invtrapezium, style=filled, fillcolor=lightblue";
     }
 
     // List
     else if(param == "Struct or Union Declarator List"){
-        return "shape=component, style=striped, fillcolor=lightblue";
+        return "shape=component, style=rounded, fillcolor=salmon";
     }
-    else if (param == "Empty Parameter List"){
-        return "shape=component, style=striped, fillcolor=lightblue";
+    else if (param == "Struct or Union Declaration List"){
+        return "shape=component, style=rounded, fillcolor=salmon";
+    }
+    else if (param == "Empty Parameter List")
+    {
+        return "shape=component, style=rounded, fillcolor=salmon";
     }
     else if(param == "Parameter List"){
-        return "shape=component, style=striped, fillcolor=lightblue";
+        return "shape=component, style=rounded, fillcolor=salmon";
     }
     else if(param == "Argument List"){
-        return "shape=component, style=striped, fillcolor=lightblue";
+        return "shape=component, style=rounded, fillcolor=salmon";
     }
     else if (param == "Initialization or Declaration List"){
-        return "shape=component, style=striped, fillcolor=lightblue";
+        return "shape=component, style=rounded, fillcolor=salmon";
     }
     else if(param =="Enum List"){
-        return "shape=component, style=striped, fillcolor=lightblue";
+        return "shape=component, style=rounded, fillcolor=salmon";
     }
     else if(param=="Statement List"){
-        return "shape=component, style=striped, fillcolor=lightblue";
+        return "shape=component, style=rounded, fillcolor=salmon";
     }
 
     // Member Access

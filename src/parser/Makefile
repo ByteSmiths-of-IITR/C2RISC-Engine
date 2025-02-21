@@ -38,6 +38,7 @@ S_EXPR = s_expr.txt
 # Default target
 all: $(EXECUTABLE)
 
+
 # Step 1: Generate parser files from Bison
 $(PARSER_C) $(PARSER_H): $(PARSER)
 	$(BISON) -d $(PARSER)
@@ -50,24 +51,26 @@ $(LEXER_C): $(LEXER)
 $(EXECUTABLE): $(LEXER_C) $(PARSER_C) $(UTILITY_CPP) 
 	$(CXX) $(LEXER_C) $(PARSER_C) $(UTILITY_CPP)  -o $(EXECUTABLE) $(CXXFLAGS)
 
-run: $(EXECUTABLE)
+
+
+run: $(EXECUTABLE) $(INPUT)
 	./$(EXECUTABLE) $(INPUT) $(OUTPUT) 2> $(CERR)
 
 $(DOTFile): $(EXECUTABLE)
-	./$(EXECUTABLE) $(INPUT) $(OUTPUT) -p $(DOTFile)
+	./$(EXECUTABLE) $(INPUT) $(OUTPUT) -p $(DOTFile) 2> $(CERR)
 
 # PDF is better
 # image: $(DOTFile)
 # 	$(DOT) -Tpng $(DOTFile) -o $(DOTImage)
 
-pdf: $(DOTFile)
+pdf: $(DOTFile) $(INPUT)
 	$(DOT) -Tpdf $(DOTFile) -o $(DOTPDF)
 	open $(DOTPDF)
 
-r: $(EXECUTABLE)
+r: $(EXECUTABLE) $(INPUT)
 	./$(EXECUTABLE) $(INPUT) $(OUTPUT) -r $(VISUAL)
 
-s: $(EXECUTABLE)
+s: $(EXECUTABLE) $(INPUT)
 	./$(EXECUTABLE) $(INPUT) $(OUTPUT) -s $(S_EXPR)
 
 # Clean generated files
@@ -82,3 +85,10 @@ clean:
 		$(VISUAL) \
 		$(S_EXPR) \
 		$(OUTPUT)
+
+again:
+	rm -f $(EXECUTABLE) \
+		$(PARSER_C) \
+		$(PARSER_H)
+	make all
+	

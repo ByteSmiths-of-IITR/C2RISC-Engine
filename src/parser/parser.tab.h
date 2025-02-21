@@ -147,7 +147,7 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 41 "parser.y"
+#line 56 "parser.y"
 
     struct TokenAttribute* tokenAtr;
     struct ASTNode* astNode;

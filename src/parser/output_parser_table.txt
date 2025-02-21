@@ -1,0 +1,19 @@
++----------------+----------------------+-------------------------------------+
+| Position       | Identifier Name      | Identifier Type                     |
++----------------+----------------------+-------------------------------------+
+| 3:9            | main                 | function declaration                |
+| 6:14           | arr2d                | int 2-D Arr                         |
+| 11:11          | printf               | function call                       |
+| 12:15          | i                    | int                                 |
+| 14:19          | j                    | int                                 |
+| 16:19          | printf               | function call                       |
+| 18:15          | printf               | function call                       |
+| 22:14          | arr3d                | int 3-D Arr                         |
+| 30:11          | printf               | function call                       |
+| 31:15          | i                    | int                                 |
+| 33:19          | j                    | int                                 |
+| 35:23          | k                    | int                                 |
+| 37:23          | printf               | function call                       |
+| 39:19          | printf               | function call                       |
+| 41:15          | printf               | function call                       |
++----------------+----------------------+-------------------------------------+
