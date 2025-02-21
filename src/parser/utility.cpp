@@ -89,7 +89,7 @@
     // Prints the ASTNode and its children recursively
     void ASTNode::print(int level) {
         for (int i = 0; i < level; i++) {
-            std::cout << "  ";
+            // std::cout << "  ";
         }
         std::cout << type << " : " << value << std::endl;
         for (ASTNode *child : children) {
@@ -100,6 +100,107 @@
     // Prints the AST by calling print() on the root node
     void printAST(ASTNode *root) {
         root->print(0);
+    }
+
+std::string ASTStyle(ASTNode* node) {
+    std::string param = node->type;
+    if (param == "IDENTIFIER") {
+        return "shape=egg, style=filled, fillcolor=seagreen1";
+    }
+    else if (param == "structID"){
+        return "shape=egg, style=filled, fillcolor=seagreen2";
+    }
+    else if (param == "unionID"){
+        return "shape=egg, style=filled, fillcolor=seagreen3";
+    }
+    else if (param == "enumID"){
+        return "shape=egg, style=filled, fillcolor=seagreen4";
+    } 
+    else if (param == "CONSTANT")
+    {
+        return "shape=Mcircle, style=filled, fillcolor=orange";
+    }
+    else if (param == "STRING_LITERAL"){
+        return "shape=plain, style=dashed, fillcolor=lightcoral";
+    }
+    else if (param == "TranslationUnit")
+    {
+        // this is the root node
+        return "shape=doubleoctagon, style=filled, fillcolor=lightcoral";
+    }
+    else if(param =="Struct"){
+        return "shape=box3d, style=filled, fillcolor=olivedrab1";
+    }
+    else if(param =="Union"){
+        return "shape=box3d, style=filled, fillcolor=olivedrab1";
+    }
+    else if(param =="Enum"){
+        return "shape=box3d, style=filled, fillcolor=olivedrab3";
+    }
+    else if(param =="Function Definition"){
+        return "shape=invhouse, style=filled, fillcolor=lightblue";
+    }
+    else if(param =="Declaration"){
+        return "shape=invtrapezium, style=filled, fillcolor=lightblue";
+    }
+
+    // List
+    else if(param == "Struct or Union Declarator List"){
+        return "shape=component, style=striped, fillcolor=lightblue";
+    }
+    else if (param == "Empty Parameter List"){
+        return "shape=component, style=striped, fillcolor=lightblue";
+    }
+    else if(param == "Parameter List"){
+        return "shape=component, style=striped, fillcolor=lightblue";
+    }
+    else if(param == "Argument List"){
+        return "shape=component, style=striped, fillcolor=lightblue";
+    }
+    else if (param == "Initialization or Declaration List"){
+        return "shape=component, style=striped, fillcolor=lightblue";
+    }
+    else if(param =="Enum List"){
+        return "shape=component, style=striped, fillcolor=lightblue";
+    }
+    else if(param=="Statement List"){
+        return "shape=component, style=striped, fillcolor=lightblue";
+    }
+
+    // Member Access
+    else if(param=="Member Access"){
+
+    }
+    else if(param=="Pointer Member Access"){
+
+    }
+
+
+
+
+    else if (param == "Type Specifier")
+    {
+            return "shape=parallelogram, style=filled, fillcolor=orange";
+    }
+    else if(param =="Type Qualifier"){
+        return "shape=parallelogram, style=filled, fillcolor=orangered";
+    }
+    else if(param =="Storage Class Specifier"){
+        return "shape=parallelogram, style=filled, fillcolor=orchid";
+    }
+
+
+    else if(param =="Struct Declaration List"){
+        return "shape=box, style=filled, fillcolor=lightblue";
+    }
+    else if(param =="Struct Declaration"){
+        return "shape=box, style=filled, fillcolor=lightblue";
+    }
+    else if(param =="Specifie Qualifier List"){
+        return "shape=box, style=filled, fillcolor=lightblue";
+    }
+
+    return "shape=oval, style=filled, fillcolor=bisque";
     }
 
 //--------------- Writes the AST to a DOT format file recursively
@@ -121,7 +222,8 @@
             }
             out << value;
         }
-        out << "\"];\n";
+        std::string styleSettings = ASTStyle(node);
+        out << "\", " << styleSettings << "];\n";
 
         if (parentId != -1) {
             out << "    node" << parentId << " -> node" << currentId << ";\n";
@@ -141,7 +243,7 @@
         }
 
         out << "digraph AST {\n";
-        out << "    node [shape=oval, style=filled, fillcolor=lightgray];\n";
+        out << "    node [shape=oval, style=filled, fillcolor=bisque];\n";
 
         int nodeCount = 0;
         writeNode(out, root, -1, nodeCount); 

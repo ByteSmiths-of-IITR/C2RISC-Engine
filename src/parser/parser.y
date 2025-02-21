@@ -9,6 +9,8 @@
 #include <ctime>
 #include "utility.h"  
 
+#define EMPTY_VAL "!!EMPTY!!"
+
 // #define LINE std::cerr<<__LINE__<<std::endl;
 #define LINE /**/
 
@@ -177,14 +179,14 @@ postfix_expression
     | postfix_expression DOT IDENTIFIER 
     { 
         LINE
-        $$ = new ASTNode("MemberAccess");
+        $$ = new ASTNode("Member Access");
         $$->addChild($1);
         $$->addChild($3);
     }
     | postfix_expression PTR_OP IDENTIFIER 
     { 
         LINE
-        $$ = new ASTNode("PointerMemberAccess");
+        $$ = new ASTNode("Pointer Member Access");
         $$->addChild($1);
         // $$->addChild(new ASTNode($3->position, "Identifier", $3->value));
         $$->addChild($3);
@@ -207,7 +209,7 @@ argument_expression_list
     : assignment_expression 
     { 
         LINE
-        $$ = new ASTNode("ArgumentList");
+        $$ = new ASTNode("Argument List");
         $$->addChild($1);
     }
     | argument_expression_list COMMA assignment_expression 
@@ -521,7 +523,7 @@ conditional_expression
     | logical_or_expression QUESTION expression COLON conditional_expression 
     { 
         LINE
-        $$ = new ASTNode("ConditionalExpression"); 
+        $$ = new ASTNode("Conditional_Expression"); 
         $$->addChild($1); 
         $$->addChild($3); 
         $$->addChild($5);
@@ -683,7 +685,7 @@ init_declarator_list
     : init_declarator 
     {
         LINE
-        $$ = new ASTNode("InitDeclaratorList", "initDeclaratorList", $1->position);
+        $$ = new ASTNode("Initialization or Declaration List", EMPTY_VAL, $1->position);
         $$->addChild($1); 
     }
     | init_declarator_list COMMA init_declarator
@@ -714,27 +716,27 @@ storage_class_specifier
     : TYPEDEF 
     {
         LINE 
-        $$ = new ASTNode("StorageClassSpecifier", "typedef", $1->position);
+        $$ = new ASTNode("Storage Class Specifier", "typedef", $1->position);
     }
     | EXTERN 
     {
         LINE 
-        $$ = new ASTNode("StorageClassSpecifier", "extern", $1->position);
+        $$ = new ASTNode("Storage Class Specifier", "extern", $1->position);
     }
     | STATIC 
     {
         LINE 
-        $$ = new ASTNode("StorageClassSpecifier", "static", $1->position);
+        $$ = new ASTNode("Storage Class Specifier", "static", $1->position);
     }
     | AUTO 
     {
         LINE 
-        $$ = new ASTNode("StorageClassSpecifier", "auto", $1->position);
+        $$ = new ASTNode("Storage Class Specifier", "auto", $1->position);
     }
     | REGISTER 
     {
         LINE 
-        $$ = new ASTNode("StorageClassSpecifier", "register", $1->position);
+        $$ = new ASTNode("Storage Class Specifier", "register", $1->position);
     }
     ;
 
@@ -742,47 +744,47 @@ type_specifier
     : VOID 
     {
         LINE 
-        $$ = new ASTNode("TypeSpecifier", "void", $1->position);
+        $$ = new ASTNode("Type Specifier", "void", $1->position);
     }
     | CHAR 
     {
         LINE
-        $$ = new ASTNode("TypeSpecifier", "char", $1->position);
+        $$ = new ASTNode("Type Specifier", "char", $1->position);
     }
     | SHORT 
     {
         LINE 
-        $$ = new ASTNode("TypeSpecifier", "short", $1->position);
+        $$ = new ASTNode("Type Specifier", "short", $1->position);
     }
     | INT 
     {
         LINE 
-        $$ = new ASTNode("TypeSpecifier", "int", $1->position);
+        $$ = new ASTNode("Type Specifier", "int", $1->position);
     }
     | LONG 
     {
         LINE 
-        $$ = new ASTNode("TypeSpecifier", "long", $1->position);
+        $$ = new ASTNode("Type Specifier", "long", $1->position);
     }
     | FLOAT 
     {
         LINE
-        $$ = new ASTNode("TypeSpecifier", "float", $1->position);
+        $$ = new ASTNode("Type Specifier", "float", $1->position);
     }
     | DOUBLE 
     {
         LINE
-        $$ = new ASTNode("TypeSpecifier", "double", $1->position);
+        $$ = new ASTNode("Type Specifier", "double", $1->position);
     }
     | SIGNED 
     {
         LINE
-        $$ = new ASTNode("TypeSpecifier", "signed", $1->position);
+        $$ = new ASTNode("Type Specifier", "signed", $1->position);
     }
     | UNSIGNED 
     {
         LINE
-        $$ = new ASTNode("TypeSpecifier", "unsigned", $1->position);
+        $$ = new ASTNode("Type Specifier", "unsigned", $1->position);
     }
     | struct_or_union_specifier 
     {
@@ -797,7 +799,7 @@ type_specifier
     | TYPE_NAME 
     {
         LINE 
-        $$ = new ASTNode("TypeSpecifier", "TypeName", $1->position);
+        $$ = new ASTNode("Type Specifier", "TypeName", $1->position);
     }
     ;
 
@@ -806,7 +808,7 @@ struct_or_union_specifier
     {
         LINE 
         $$ = $1;
-        std::string isStruct = $1->value == "struct" ? "structIdentifier" : "unionIdentifier";
+        std::string isStruct = $1->value == "struct" ? "structID" : "unionID";
         $$->addChild(isStruct, $2->value,$2->position);
         $$->addChild($4); 
         PARSER_TABLE.push_back({$2->position, {$2->value, $1->value}});
@@ -846,13 +848,13 @@ struct_declaration_list
     : struct_declaration 
     {
         LINE 
-        $$ = new ASTNode("StructOrUnionDeclarationList");
+        $$ = new ASTNode("Struct or Union Declaration List");
         $$->addChild($1);
     }
     | struct_declaration_list struct_declaration 
     {
         LINE 
-        $$ = new ASTNode("StructOrUnionDeclarationList");
+        $$ = new ASTNode("Struct or Union Declaration List");
         $$->addChildren($1->children);
         $$->addChild($2); 
     }
@@ -863,7 +865,7 @@ struct_declaration
     : specifier_qualifier_list struct_declarator_list SEMI_COLON 
     {
         LINE 
-        $$ = new ASTNode("StructOrUnionDeclaration");
+        $$ = new ASTNode("Struct or Union Declaration");
         $$->addChild($1);
         $$->addChild($2);
         Struct_Union_Declaration_Handler($1, $2);
@@ -899,13 +901,13 @@ struct_declarator_list
     : struct_declarator 
     { 
         LINE 
-        $$ = new ASTNode("StructOrUnionDeclarator_List");
+        $$ = new ASTNode("Struct or Union Declarator List");
         $$->addChild($1); 
     }
     | struct_declarator_list COMMA struct_declarator 
     { 
         LINE 
-        $$ = new ASTNode("StructOrUnionDeclarator_List");
+        $$ = new ASTNode("Struct or Union Declarator List");
         $$->addChildren($1->children);
         $$->addChild($3);
     }
@@ -920,13 +922,13 @@ struct_declarator
     | COLON constant_expression 
     { 
         LINE 
-        $$ = new ASTNode("StructOrUnionDeclarator", ":", $1->position); 
+        $$ = new ASTNode("Struct or Union Declarator", ":", $1->position); 
         $$->addChild($2); 
     }
     | declarator COLON constant_expression 
     { 
         LINE 
-        $$ = new ASTNode("StructOrUnionDeclarator", ":", $2->position);
+        $$ = new ASTNode("Struct or Union Declarator", ":", $2->position);
         $$->addChild($1);
         $$->addChild($3);
     }
@@ -936,23 +938,23 @@ enum_specifier
     : ENUM LCURLY enumerator_list RCURLY 
     { 
         LINE 
-        $$ = new ASTNode("EnumSpecifier", "enumSpecifier", $1->position);
+        $$ = new ASTNode("Enum Specifier", EMPTY_VAL, $1->position);
         $$->addChild($3);
         Enum_Declaration_Handler($$);
     }
     | ENUM IDENTIFIER LCURLY enumerator_list RCURLY 
     { 
         LINE 
-        $$ = new ASTNode("EnumSpecifier", "enumSpecifier", $1->position);
-        $$->addChild("enumIdentifier", $2->value,$2->position);
+        $$ = new ASTNode("Enum Specifier", EMPTY_VAL, $1->position);
+        $$->addChild("enumID", $2->value,$2->position);
         $$->addChild($4);
         Enum_Declaration_Handler($$);
     }
     | ENUM IDENTIFIER 
     { 
         LINE 
-        $$ = new ASTNode("EnumSpecifier", "enumSpecifier"); 
-        $$->addChild("enumIdentifier", $2->value,$2->position);
+        $$ = new ASTNode("Enum Specifier", EMPTY_VAL); 
+        $$->addChild("enumID", $2->value,$2->position);
         Enum_Declaration_Handler($$);
     }
     ;
@@ -961,13 +963,13 @@ enumerator_list
     : enumerator 
     {
         LINE 
-        $$ = new ASTNode("EnumList");
+        $$ = new ASTNode("Enum List");
         $$->addChild($1);
     }
     | enumerator_list COMMA enumerator 
     {
         LINE 
-        $$ = new ASTNode("EnumList");
+        $$ = new ASTNode("Enum List");
         $$->addChildren($1->children);
         $$->addChild($3);
     }
@@ -977,13 +979,13 @@ enumerator
     : IDENTIFIER 
     { 
         LINE 
-        $$ = new ASTNode("EnumItem", $1->value, $1->position);
+        $$ = new ASTNode("Enum Element", $1->value, $1->position);
     }
     | IDENTIFIER ASSIGN constant_expression 
     { 
         LINE 
-        $$ = new ASTNode("EnumAssignment", "=", $2->position);
-        $$->addChild("EnumItem", $1->value,$1->position); 
+        $$ = new ASTNode("Enum Assignment",EMPTY_VAL , $2->position);
+        $$->addChild("Enum Element", $1->value,$1->position); 
         $$->addChild($3);  
     }
     ;
@@ -992,12 +994,12 @@ type_qualifier
     : CONST
     {
         LINE
-        $$ = new ASTNode("TypeQualifier", "const", $1->position);
+        $$ = new ASTNode("Type Qualifier", "const", $1->position);
     }
     | VOLATILE
     {
         LINE
-        $$ = new ASTNode("TypeQualifier", "volatile", $1->position);
+        $$ = new ASTNode("Type Qualifier", "volatile", $1->position);
     }
     ;
 
@@ -1005,7 +1007,7 @@ declarator
     : pointer direct_declarator
     {
         LINE
-        $$ = new ASTNode("PointerDeclarator", "pointerDeclarator");
+        $$ = new ASTNode("Pointer Declarator", EMPTY_VAL);
         $$->addChild($1); 
         $$->addChild($2); 
     }
@@ -1030,14 +1032,14 @@ direct_declarator
     | direct_declarator LSQUARE constant_expression RSQUARE
     {
         LINE
-        $$ = new ASTNode("ArrayDeclaration");
+        $$ = new ASTNode("Array Declaration");
         $$->addChild($1);
         $$->addChild($3);
     }
     | direct_declarator LSQUARE RSQUARE
     {
         LINE
-        $$ = new ASTNode("ArrayDeclaration");
+        $$ = new ASTNode("Array Declaration");
         $$->addChild($1);
     }
     | direct_declarator LPAREN parameter_type_list RPAREN
@@ -1056,7 +1058,7 @@ direct_declarator
     {
         LINE
         $$ = $1;
-        $1->addChild("EmptyParameterList", "emptyParameterList", $1->position);
+        $1->addChild("Empty Parameter List", EMPTY_VAL, $1->position);
     }
     ;
 
@@ -1121,7 +1123,7 @@ parameter_list
     : parameter_declaration 
     { 
         LINE 
-        $$ = new ASTNode("ParameterList", "parameterList");
+        $$ = new ASTNode("Parameter List", EMPTY_VAL);
         $$->addChild($1); 
     }
     | parameter_list COMMA parameter_declaration 
@@ -1136,21 +1138,21 @@ parameter_declaration
     : declaration_specifiers declarator
     {
         LINE
-        $$ = new ASTNode("ParameterDeclaration", "parameterDeclaration");
+        $$ = new ASTNode("Parameter Declaration", "parameterDeclaration");
         $$->addChild($1); 
         $$->addChild($2);  
     }
     | declaration_specifiers abstract_declarator
     {
         LINE
-        $$ = new ASTNode("ParameterDeclaration", "parameterDeclaration");
+        $$ = new ASTNode("Parameter Declaration", "parameterDeclaration");
         $$->addChild($1);  
         $$->addChild($2);  
     }
     | declaration_specifiers
     {
         LINE
-        $$ = new ASTNode("ParameterDeclaration", "parameterDeclaration");
+        $$ = new ASTNode("Parameter Declaration", "parameterDeclaration");
         $$->addChild($1); 
     }
     ;
@@ -1212,31 +1214,31 @@ direct_abstract_declarator
     | LSQUARE RSQUARE
     {
         LINE
-        $$ = new ASTNode("ArrayDeclaration"); 
+        $$ = new ASTNode("Array Declaration"); 
     }
     | LSQUARE constant_expression RSQUARE
     {
         LINE
-        $$ = new ASTNode("ArrayDeclaration");  
+        $$ = new ASTNode("Array Declaration");  
         $$->addChild($2); 
     }
     | direct_abstract_declarator LSQUARE RSQUARE
     {
         LINE
         $$ = $1;  
-        $$->addChild("ArrayDeclaration");  
+        $$->addChild("Array Declaration");  
     }
     | direct_abstract_declarator LSQUARE constant_expression RSQUARE
     {
         LINE
         $$ = $1;  
-        $$->addChild(new ASTNode("ArrayDeclaration"));  
+        $$->addChild(new ASTNode("Array Declaration"));  
         $$->addChild($3);
     }
     | LPAREN RPAREN
     {
         LINE
-        $$ = new ASTNode("ParameterList", "parameterList"); 
+        $$ = new ASTNode("Parameter List", EMPTY_VAL); 
     }
     | LPAREN parameter_type_list RPAREN
     {
@@ -1247,7 +1249,7 @@ direct_abstract_declarator
     {
         LINE
         $$ = $1; 
-        $$->addChild("ParameterList", "parameterList"); 
+        $$->addChild("Parameter List", EMPTY_VAL); 
     }
     | direct_abstract_declarator LPAREN parameter_type_list RPAREN
     {
@@ -1333,20 +1335,20 @@ labeled_statement
     : IDENTIFIER COLON statement
     {
         LINE
-        $$ = new ASTNode("LabeledStatement", $1->value, $1->position);
+        $$ = new ASTNode("Labeled Statement", $1->value, $1->position);
         $$->addChild($3); 
     }
     | CASE constant_expression COLON statement
     {
         LINE
-        $$ = new ASTNode("CaseStatement", "Case", $1->position);
+        $$ = new ASTNode("Case Statement", "Case", $1->position);
         $$->addChild($2); 
         $$->addChild($4);
     }
     | DEFAULT COLON statement
     {
         LINE
-        $$ = new ASTNode("DefaultStatement", "Default", $1->position);
+        $$ = new ASTNode("Default Statement", "Default", $1->position);
         $$->addChild($3); 
     }
     ;
@@ -1355,24 +1357,24 @@ compound_statement
     : LCURLY RCURLY 
     { 
         LINE 
-        $$ = new ASTNode("CompoundStatement", "{}"); 
+        $$ = new ASTNode("Compound Statement", "{  }"); 
     }
     | LCURLY statement_list RCURLY 
     { 
         LINE 
-        $$ = new ASTNode("CompoundStatement", "{}"); 
+        $$ = new ASTNode("Compound Statement", "{  }"); 
         $$->addChildren($2->children); 
     }
     | LCURLY declaration_list RCURLY 
     { 
         LINE 
-        $$ = new ASTNode("CompoundStatement", "{}"); 
+        $$ = new ASTNode("Compound Statement", "{  }"); 
         $$->addChildren($2->children); 
     }
     | LCURLY declaration_list statement_list RCURLY 
     { 
         LINE 
-        $$ = new ASTNode("CompoundStatement", "{}"); 
+        $$ = new ASTNode("Compound Statement", "{  }"); 
         $$->addChildren($2->children); 
         $$->addChildren($3->children); 
     }
@@ -1396,7 +1398,7 @@ statement_list
     : statement 
     { 
         LINE 
-        $$ = new ASTNode("StatementList"); 
+        $$ = new ASTNode("Statement List"); 
         $$->addChild($1); 
     }
     | statement_list statement 
@@ -1412,7 +1414,7 @@ expression_statement
     : SEMI_COLON 
     { 
         LINE 
-        $$ = new ASTNode("ExpressionStatement", ";"); 
+        $$ = new ASTNode("Expression Statement", ";"); 
     }
     | expression SEMI_COLON 
     { 
@@ -1425,14 +1427,14 @@ selection_statement
     : IF LPAREN expression RPAREN statement 
     { 
         LINE 
-        $$ = new ASTNode("IfStatement", "if", $1->position);
+        $$ = new ASTNode("If Statement", "if", $1->position);
         $$->addChild($3); 
         $$->addChild($5); 
     }
     | IF LPAREN expression RPAREN statement ELSE statement 
     { 
         LINE 
-        $$ = new ASTNode("IfElseStatement", "if-else", $1->position);
+        $$ = new ASTNode("If Else Statement", "if-else", $1->position);
         $$->addChild($3); 
         $$->addChild($5); 
         $$->addChild($7); 
@@ -1440,7 +1442,7 @@ selection_statement
     | SWITCH LPAREN expression RPAREN statement 
     { 
         LINE 
-        $$ = new ASTNode("SwitchStatement", "switch", $1->position);
+        $$ = new ASTNode("Switch Statement", "switch", $1->position);
         $$->addChild($3); 
         $$->addChild($5); 
     }
@@ -1450,28 +1452,28 @@ iteration_statement
     : WHILE LPAREN expression RPAREN statement 
     { 
         LINE 
-        $$ = new ASTNode("WhileLoop", "while", $1->position);
+        $$ = new ASTNode("While Loop", "while", $1->position);
         $$->addChild($3); 
         $$->addChild($5); 
     }
     | UNTIL LPAREN expression RPAREN statement 
     { 
         LINE 
-        $$ = new ASTNode("UntilLoop", "until", $1->position);
+        $$ = new ASTNode("Until Loop", "until", $1->position);
         $$->addChild($3); 
         $$->addChild($5); 
     }
     | DO statement WHILE LPAREN expression RPAREN SEMI_COLON 
     { 
         LINE 
-        $$ = new ASTNode("DoWhileLoop", "do-while", $1->position);
+        $$ = new ASTNode("DoWhile Loop", "do-while", $1->position);
         $$->addChild($2); 
         $$->addChild($5); 
     }
     | FOR LPAREN expression_statement expression_statement RPAREN statement 
     { 
         LINE 
-        $$ = new ASTNode("ForLoop", "for", $1->position); 
+        $$ = new ASTNode("For Loop", "for", $1->position); 
         $$->addChild($3); 
         $$->addChild($4); 
         $$->addChild($6); 
@@ -1479,7 +1481,7 @@ iteration_statement
     | FOR LPAREN expression_statement expression_statement expression RPAREN statement 
     { 
         LINE 
-        $$ = new ASTNode("ForLoop", "for", $1->position);
+        $$ = new ASTNode("For Loop", "for", $1->position);
         $$->addChild($3); 
         $$->addChild($4); 
         $$->addChild($5); 
@@ -1488,7 +1490,7 @@ iteration_statement
     | FOR LPAREN declaration expression_statement expression RPAREN statement 
     { 
         LINE 
-        $$ = new ASTNode("ForLoop", "for", $1->position); 
+        $$ = new ASTNode("For Loop", "for", $1->position); 
         $$->addChild($3); 
         $$->addChild($4); 
         $$->addChild($5); 
@@ -1500,28 +1502,28 @@ jump_statement
     : GOTO IDENTIFIER SEMI_COLON 
     { 
         LINE 
-        $$ = new ASTNode("GotoStatement", "goto", $1->position); 
+        $$ = new ASTNode("Goto Statement", "goto", $1->position); 
         $$->addChild($2);
     }
     | CONTINUE SEMI_COLON 
     { 
         LINE 
-        $$ = new ASTNode("ContinueStatement", "continue", $1->position);
+        $$ = new ASTNode("Continue Statement", "continue", $1->position);
     }
     | BREAK SEMI_COLON 
     { 
         LINE 
-        $$ = new ASTNode("BreakStatement", "break", $1->position);
+        $$ = new ASTNode("Break Statement", "break", $1->position);
     }
     | RETURN SEMI_COLON 
     { 
         LINE 
-        $$ = new ASTNode("ReturnStatement", "return", $1->position);
+        $$ = new ASTNode("Return Statement", "return", $1->position);
     }
     | RETURN expression SEMI_COLON 
     { 
         LINE 
-        $$ = new ASTNode("ReturnStatement", "return", $1->position); 
+        $$ = new ASTNode("Return Statement", "return", $1->position); 
         $$->addChild($2); 
     }
     ;
@@ -1530,7 +1532,7 @@ translation_unit
     : external_declaration 
     { 
         LINE 
-        $$ = new ASTNode("TranslationUnit", "translationUnit");
+        $$ = new ASTNode("Translation Unit", EMPTY_VAL);
         $$->addChild($1); 
         root = $$;
     }
@@ -1564,7 +1566,7 @@ function_declaration
     : declaration_specifiers declarator SEMI_COLON
     {
         LINE
-        $$ = new ASTNode("FunctionDeclaration");
+        $$ = new ASTNode("Function Declaration");
         $$->addChild($1);
         $$->addChild($2);
         Function_Def_Handler($2);
@@ -1576,7 +1578,7 @@ function_definition
     /* declaration_specifiers declarator declaration_list compound_statement 
     { 
         LINE  
-        $$ = new ASTNode("FunctionDefinition"); 
+        $$ = new ASTNode("Function Definition"); 
         $$->addChild($2); 
         $$->addChildren($3->children); 
         $$->addChild($4); 
@@ -1585,7 +1587,7 @@ function_definition
     declaration_specifiers declarator compound_statement 
     { 
         LINE
-        $$ = new ASTNode("FunctionDefinition"); 
+        $$ = new ASTNode("Function Definition"); 
         $$->addChild($2); 
         $$->addChild($3); 
         Function_Def_Handler($2);
@@ -1593,7 +1595,7 @@ function_definition
     /* | declarator declaration_list compound_statement 
     { 
         LINE
-        $$ = new ASTNode("FunctionDefinition"); 
+        $$ = new ASTNode("Function Definition"); 
         $$->addChild($1); 
         $$->addChildren($2->children); 
         $$->addChild($3); 
@@ -1601,7 +1603,7 @@ function_definition
     /* | declarator compound_statement 
     { 
         LINE
-        $$ = new ASTNode("FunctionDefinition"); 
+        $$ = new ASTNode("Function Definition"); 
         $$->addChild($1); 
         $$->addChild($2); 
       } */
@@ -1708,7 +1710,7 @@ int main(int argc, char **argv) {
             }
 
         // Print Normal AST
-            if(false){
+            if(true){
                 printAST(root);
             }
 
@@ -1743,8 +1745,8 @@ void Declaration_Handler(ASTNode* declarationSpecifiers, ASTNode* initDeclarator
     std::string type="";
     ASTNode* node = declarationSpecifiers;
     
-    if(declarationSpecifiers->type == "EnumSpecifier"){
-        E_S_U_Declaration_Handler(declarationSpecifiers, initDeclaratorList, "enum", "enumItem");
+    if(declarationSpecifiers->type == "Enum Specifier"){
+        E_S_U_Declaration_Handler(declarationSpecifiers, initDeclaratorList, "enum", "enumElement");
         return;
     }
 
@@ -1760,16 +1762,16 @@ void Declaration_Handler(ASTNode* declarationSpecifiers, ASTNode* initDeclarator
 
     int typeSpec=0, typeQual=0, storageClass=0;
     while(node){
-        if(node->type == "TypeSpecifier"){
+        if(node->type == "Type Specifier"){
             type = node->value;
             typeSpec++;
-        }else if(node->type == "StorageClassSpecifier") {
+        }else if(node->type == "Storage Class Specifier") {
             storageClass++; 
         }
         node=(node->children.size())?node->children[0]:nullptr; //Move down the tree
     }
     if(typeSpec>1 || storageClass>1){
-        yyerror("Multiple type specifiers/qualifiers/storage classes in declaration");
+        yyerror("NOT-ALLOWED | Multiple type specifiers/qualifiers/storage classes in declaration");
         return;
     }
     if(type == "") type = "int"; // default type is int
@@ -1777,13 +1779,13 @@ void Declaration_Handler(ASTNode* declarationSpecifiers, ASTNode* initDeclarator
         int pointCount=0, arrayCount=0;
         ASTNode* tempNode = children;
         if(children->type == "Initializer") tempNode = children->children[0];
-        if(tempNode->type == "PointerDeclarator"){
+        if(tempNode->type == "Pointer Declarator"){
             pointCount=noOfPointers(tempNode->children[0]);
             std::cout<<pointCount<<std::endl;
             tempNode=tempNode->children[1];
         }
-        if(tempNode->type == "ArrayDeclaration"){
-            while(tempNode->type == "ArrayDeclaration"){
+        if(tempNode->type == "Array Declaration"){
+            while(tempNode->type == "Array Declaration"){
             arrayCount++;
             tempNode = tempNode->children[0];
             }
@@ -1797,10 +1799,10 @@ void Function_Def_Handler(ASTNode* declarator){
     PARSER_TABLE.push_back({declarator->position, {functionName, "function"}});
     declarator = declarator->children[0];
     if(declarator->type == "EmptyList") return;
-    else if(declarator->type == "ParameterList"){
+    else if(declarator->type == "Parameter List"){
         for(auto parameter: declarator->children){
             std::string type="";
-            ASTNode* tempInitDeclList = new ASTNode("InitDeclaratorList", "initDeclaratorList");
+            ASTNode* tempInitDeclList = new ASTNode("Initialization or Declaration List", "initDeclaratorList");
             tempInitDeclList->addChild(parameter->children[1]);
             Declaration_Handler(parameter->children[0], tempInitDeclList);
         }
@@ -1812,10 +1814,10 @@ void Struct_Union_Declaration_Handler(ASTNode* specifierQualifierList, ASTNode* 
     ASTNode* node = specifierQualifierList;
     int typeSpec=0, typeQual=0, storageClass=0;
     while(node){
-        if(node->type == "TypeSpecifier"){
+        if(node->type == "Type Specifier"){
             type = node->value;
             typeSpec++;
-        } else if(node->type == "StorageClassSpecifier") storageClass++;
+        } else if(node->type == "Storage Class Specifier") storageClass++;
 
         node=(node->children.size())?node->children[0]:nullptr;
     }
@@ -1825,7 +1827,7 @@ void Struct_Union_Declaration_Handler(ASTNode* specifierQualifierList, ASTNode* 
     }
     if(type == "") type = "int";
     for(auto children : structDeclaratorList->children){
-        if(children->type == "StructOrUnionDeclarator"){
+        if(children->type == "Struct or Union Declarator"){
             PARSER_TABLE.push_back({children->children[0]->position, {children->children[0]->value, type}});
         }else if(children->type == "Identifier"){
             PARSER_TABLE.push_back({children->position,{children->value, type}});
@@ -1835,14 +1837,14 @@ void Struct_Union_Declaration_Handler(ASTNode* specifierQualifierList, ASTNode* 
 
 void Enum_Declaration_Handler(ASTNode* enumSpecifier){
     for(auto children : enumSpecifier->children){
-        if(children->type == "enumIdentifier"){
+        if(children->type == "enumID"){
             PARSER_TABLE.push_back({children->position, {children->value, "enum"}});
-        } else if(children->type == "EnumList"){
+        } else if(children->type == "Enum List"){
             for(auto item : children->children){
-                if(item->type == "EnumAssignment"){
-                    PARSER_TABLE.push_back({item->children[0]->position, {item->children[0]->value, "enumItem"}});
+                if(item->type == "Enum Assignment"){
+                    PARSER_TABLE.push_back({item->children[0]->position, {item->children[0]->value, "enumElement"}});
                 } else {
-                    PARSER_TABLE.push_back({item->position, {item->value, "enumItem"}});
+                    PARSER_TABLE.push_back({item->position, {item->value, "enumElement"}});
                 }
             }
         }

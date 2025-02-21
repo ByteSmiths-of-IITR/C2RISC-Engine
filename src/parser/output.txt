@@ -1,0 +1,188 @@
+Translation Unit : !!EMPTY!!
+Declaration : !!EMPTY!!
+Struct : struct
+structID : Date
+Struct or Union Declaration List : !!EMPTY!!
+Struct or Union Declaration : !!EMPTY!!
+Type Specifier : int
+Struct or Union Declarator List : !!EMPTY!!
+IDENTIFIER : day
+Struct or Union Declaration : !!EMPTY!!
+Type Specifier : int
+Struct or Union Declarator List : !!EMPTY!!
+IDENTIFIER : month
+Struct or Union Declaration : !!EMPTY!!
+Type Specifier : int
+Struct or Union Declarator List : !!EMPTY!!
+IDENTIFIER : year
+Declaration : !!EMPTY!!
+Struct : struct
+structID : Employee
+Struct or Union Declaration List : !!EMPTY!!
+Struct or Union Declaration : !!EMPTY!!
+Type Specifier : char
+Struct or Union Declarator List : !!EMPTY!!
+Array Declaration : !!EMPTY!!
+IDENTIFIER : name
+CONSTANT : 50
+Struct or Union Declaration : !!EMPTY!!
+Type Specifier : int
+Struct or Union Declarator List : !!EMPTY!!
+IDENTIFIER : salary
+Struct or Union Declaration : !!EMPTY!!
+Struct : struct
+struct : Date
+Struct or Union Declarator List : !!EMPTY!!
+IDENTIFIER : joinDate
+Struct or Union Declaration : !!EMPTY!!
+Type Specifier : int
+Struct or Union Declarator List : !!EMPTY!!
+Array Declaration : !!EMPTY!!
+Array Declaration : !!EMPTY!!
+IDENTIFIER : performance
+CONSTANT : 2
+CONSTANT : 3
+Function Definition : !!EMPTY!!
+IDENTIFIER : main
+Empty Parameter List : !!EMPTY!!
+Compound Statement : {  }
+Declaration : !!EMPTY!!
+Struct : struct
+struct : Employee
+Initialization or Declaration List : !!EMPTY!!
+IDENTIFIER : emp
+FunctionCall : !!EMPTY!!
+IDENTIFIER : strcpy
+Argument List : !!EMPTY!!
+Member Access : !!EMPTY!!
+IDENTIFIER : emp
+IDENTIFIER : name
+STRING_LITERAL : "John Doe"
+AssignmentExpression : =
+Member Access : !!EMPTY!!
+IDENTIFIER : emp
+IDENTIFIER : salary
+CONSTANT : 50000
+AssignmentExpression : =
+Member Access : !!EMPTY!!
+Member Access : !!EMPTY!!
+IDENTIFIER : emp
+IDENTIFIER : joinDate
+IDENTIFIER : day
+CONSTANT : 15
+AssignmentExpression : =
+Member Access : !!EMPTY!!
+Member Access : !!EMPTY!!
+IDENTIFIER : emp
+IDENTIFIER : joinDate
+IDENTIFIER : month
+CONSTANT : 6
+AssignmentExpression : =
+Member Access : !!EMPTY!!
+Member Access : !!EMPTY!!
+IDENTIFIER : emp
+IDENTIFIER : joinDate
+IDENTIFIER : year
+CONSTANT : 2020
+Declaration : !!EMPTY!!
+Type Specifier : int
+Initialization or Declaration List : !!EMPTY!!
+Initializer : =
+IDENTIFIER : counter
+CONSTANT : 1
+For Loop : for
+Declaration : !!EMPTY!!
+Type Specifier : int
+Initialization or Declaration List : !!EMPTY!!
+Initializer : =
+IDENTIFIER : i
+CONSTANT : 0
+Lesser : <
+IDENTIFIER : i
+CONSTANT : 2
+PostIncrement : !!EMPTY!!
+IDENTIFIER : i
+Compound Statement : {  }
+For Loop : for
+Declaration : !!EMPTY!!
+Type Specifier : int
+Initialization or Declaration List : !!EMPTY!!
+Initializer : =
+IDENTIFIER : j
+CONSTANT : 0
+Lesser : <
+IDENTIFIER : j
+CONSTANT : 3
+PostIncrement : !!EMPTY!!
+IDENTIFIER : j
+Compound Statement : {  }
+AssignmentExpression : =
+ArrayAccess : !!EMPTY!!
+PostIncrement : !!EMPTY!!
+IDENTIFIER : counter
+FunctionCall : !!EMPTY!!
+IDENTIFIER : printf
+Argument List : !!EMPTY!!
+STRING_LITERAL : "Employee: %s\nSalary: %d\nJoin Date: %02d/%02d/%4d\n"
+Member Access : !!EMPTY!!
+IDENTIFIER : emp
+IDENTIFIER : name
+Member Access : !!EMPTY!!
+IDENTIFIER : emp
+IDENTIFIER : salary
+Member Access : !!EMPTY!!
+Member Access : !!EMPTY!!
+IDENTIFIER : emp
+IDENTIFIER : joinDate
+IDENTIFIER : day
+Member Access : !!EMPTY!!
+Member Access : !!EMPTY!!
+IDENTIFIER : emp
+IDENTIFIER : joinDate
+IDENTIFIER : month
+Member Access : !!EMPTY!!
+Member Access : !!EMPTY!!
+IDENTIFIER : emp
+IDENTIFIER : joinDate
+IDENTIFIER : year
+FunctionCall : !!EMPTY!!
+IDENTIFIER : printf
+Argument List : !!EMPTY!!
+STRING_LITERAL : "Performance Metrics:\n"
+For Loop : for
+Declaration : !!EMPTY!!
+Type Specifier : int
+Initialization or Declaration List : !!EMPTY!!
+Initializer : =
+IDENTIFIER : i
+CONSTANT : 0
+Lesser : <
+IDENTIFIER : i
+CONSTANT : 2
+PostIncrement : !!EMPTY!!
+IDENTIFIER : i
+Compound Statement : {  }
+For Loop : for
+Declaration : !!EMPTY!!
+Type Specifier : int
+Initialization or Declaration List : !!EMPTY!!
+Initializer : =
+IDENTIFIER : j
+CONSTANT : 0
+Lesser : <
+IDENTIFIER : j
+CONSTANT : 3
+PostIncrement : !!EMPTY!!
+IDENTIFIER : j
+Compound Statement : {  }
+FunctionCall : !!EMPTY!!
+IDENTIFIER : printf
+Argument List : !!EMPTY!!
+STRING_LITERAL : "%d "
+ArrayAccess : !!EMPTY!!
+FunctionCall : !!EMPTY!!
+IDENTIFIER : printf
+Argument List : !!EMPTY!!
+STRING_LITERAL : "\n"
+Return Statement : return
+CONSTANT : 0

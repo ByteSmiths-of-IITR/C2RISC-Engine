@@ -53,6 +53,7 @@ class TokenAttribute {
 
 // Function declarations
 void printAST(ASTNode *root);
+std::string ASTStyle(ASTNode *node);
 void writeNode(std::ofstream &out, ASTNode *node, int parentId, int &nodeCount);
 void generateDOT(ASTNode *root, const std::string &filename);
 void printSExpression(ASTNode *root, std::ofstream &outputFile, int indent = 0);
