@@ -2023,7 +2023,7 @@ void Declaration_Handler(ASTNode* declarationSpecifiers, ASTNode* initDeclarator
         }
         node=(node->children.size())?node->children[0]:nullptr; //Move down the tree
     }
-    if(typeSpec>1 || storageClass>1){
+    if(storageClass>1){
         ourError("NOT-ALLOWED | Multiple type specifiers/qualifiers/storage classes in declaration");
         return;
     }

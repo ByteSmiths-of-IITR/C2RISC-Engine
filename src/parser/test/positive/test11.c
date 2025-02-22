@@ -1,30 +1,25 @@
 #include <stdio.h>
 
-// Function prototypes
-int add(int a, int b)
-{
-    return a + b;
+// Function to perform fast exponentiation
+long long fastExpo(long long base, long long exp, long long mod) {
+    long long result = 1;
+    while (exp > 0) {
+        if (exp % 2 == 1) {
+            result = (result * base) % mod;
+        }
+        base = (base * base) % mod;
+        exp /= 2;
+    }
+    return result;
 }
 
-int subtract(int a, int b)
-{
-    return a - b;
-}
+int main() {
+    long long base, exp, mod;
+    printf("Enter base, exponent and modulus: ");
+    scanf("%lld %lld %lld", &base, &exp, &mod);
 
-// Function pointer typedef
-typedef int (*operation)(int, int);
-
-int main()
-{
-    // Function pointer array
-    operation operations[2] = {add, subtract};
-
-    printf("Addition: %d + %d = %d\n", 10, 5, operations[0](10, 5));
-    printf("Subtraction: %d - %d = %d\n", 10, 5, operations[1](10, 5));
-
-    // Multi-level function pointer
-    operation *ptrToFunc = operations;
-    printf("Using pointer to function pointer for addition: %d + %d = %d\n", 20, 10, (*ptrToFunc)(20, 10));
+    long long result = fastExpo(base, exp, mod);
+    printf("Result: %lld\n", result);
 
     return 0;
 }

@@ -1,6 +1,3 @@
-🚨 * Input Program failed in the PARSE stage 🚨
+👍 Input Program passed Syntax Analysis Phase 👍
 
------------------------------------ PARSER LOG -----------------------------------
------------------------------------ END OF LOG -----------------------------------
-
---- No Further Processing will be done ---
+⭕ Parser Table (LaTeX) generated as: parser_table.tex can be visualized using LaTeX

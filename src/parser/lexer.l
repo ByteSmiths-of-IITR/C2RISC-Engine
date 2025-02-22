@@ -41,7 +41,7 @@ DIGIT      [0-9]
 LETTER     [a-zA-Z_]
 ID         {LETTER}({LETTER}|{DIGIT})*
 INVALID_ID ({LETTER}|{DIGIT})*
-ESCAPESEQ  \\[abfnrtv\\'"]
+ESCAPESEQ  \\[0abfnrtv\\'"]
 
 DECIMAL    {DIGIT}+
 BINARY     0b[01]+
