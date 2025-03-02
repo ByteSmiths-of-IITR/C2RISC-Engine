@@ -100,6 +100,7 @@ void signalHandler(int signum) {
     *output << PARSERLOGHEADER << std::endl;
     for (auto& log : parserLOG) {
         *output << log << std::endl;
+        // TODO ------------ Handle this [ Not printing the logs of parser ]
         if(parserLOG.size()==0){
             *output << "$ Syntax Error at line " << yylineno << " near token: " << lastToken << std::endl;
         }

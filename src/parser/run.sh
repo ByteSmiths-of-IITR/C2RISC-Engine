@@ -64,7 +64,7 @@ read -r response
 mkdir -p "$AST_results_dir"
 
 if [ "$response" = "y" ]; then
-    echo "🌳 Generating ASTs..."
+    echo -n "🌳 Generating ASTs..."
     for test_file in $(find "$Ptest_dir" -type f -name "*.c"); do
         test_name=$(basename "$test_file" .c)
         output_file="$results_dir/P_${test_name}.out"
