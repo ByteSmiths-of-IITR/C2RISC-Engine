@@ -62,4 +62,11 @@ void writeASTToSExpression(ASTNode *root, const std::string &outputFileName);
 void printASTRecursive(ASTNode *node, std::ofstream &outFile, const std::string &prefix, bool isLast);
 void printASTToFile(ASTNode *root, const std::string &outputFileName);
 
+
+
+//------------Symbol Table Implementation----------------
+
+// class Variables{
+// };
+
 #endif // UTILITY_H

@@ -116,14 +116,18 @@ std::string ASTStyle(ASTNode* node) {
     if (param == "IDENTIFIER") {
         return "shape=egg, style=filled, fillcolor=seagreen1";
     }
-    else if (param == "structID"){
-        return "shape=egg, style=filled, fillcolor=seagreen2";
+    if (param == "Typedef D-Type") {
+        return "shape=parallelogram, style=filled, fillcolor=seagreen1";
+    }
+    else if (param == "structID")
+    {
+        return "shape=parallelogram, style=filled, fillcolor=seagreen2";
     }
     else if (param == "unionID"){
-        return "shape=egg, style=filled, fillcolor=seagreen3";
+        return "shape=parallelogram, style=filled, fillcolor=seagreen3";
     }
     else if (param == "enumID"){
-        return "shape=egg, style=filled, fillcolor=seagreen4";
+        return "shape=parallelogram, style=filled, fillcolor=seagreen4";
     } 
 
     // Constants and literals
@@ -173,7 +177,7 @@ std::string ASTStyle(ASTNode* node) {
         return "shape=component, style=rounded, fillcolor=salmon";
     }
     else if (param == "Struct or Union Declaration List"){
-        return "shape=component, style=rounded, fillcolor=salmon";
+        return "shape=component, style=rounded, fillcolor=salmon2";
     }
     else if (param == "Empty Parameter List")
     {
@@ -271,7 +275,7 @@ std::string ASTStyle(ASTNode* node) {
         }
 
         out << "digraph AST {\n";
-        out << "    node [shape=oval, style=filled, fillcolor=bisque];\n";
+        out << "    node [shape=oval, style=filled, fillcolor=bisque, fontname=\"Cochin\"];\n";
 
         int nodeCount = 0;
         writeNode(out, root, -1, nodeCount); 

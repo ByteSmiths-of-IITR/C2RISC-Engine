@@ -39,6 +39,8 @@ Recursive = recursive_output.txt
 LaTeXFile = parser_table.tex
 LaTeX_OUTPUT = parser_table
 
+#Txt File for the output
+TABLE = parser_table.txt
 
 
 # Default target
@@ -64,7 +66,7 @@ $(OUTPUT):
 	touch $(OUTPUT)
 
 run: $(EXECUTABLE) $(INPUT) $(OUTPUT) $(CERR)
-	./$(EXECUTABLE) $(INPUT) $(OUTPUT) 2> $(CERR) 
+	./$(EXECUTABLE) $(INPUT) $(OUTPUT) -pt 2> $(CERR) 
 
 # This will only run the parser and generate the output file [NO RESULT]
 
@@ -77,8 +79,8 @@ $(DOTFile): $(EXECUTABLE)
 # 	$(DOT) -Tpng $(DOTFile) -o $(DOTImage)
 
 ## For Visualizing the AST
-ast: $(INPUT) $(OUTPUT)
-	./$(EXECUTABLE) $(INPUT) $(OUTPUT) -ast $(DOTFile)
+ast: $(INPUT) $(OUTPUT) $(EXECUTABLE)
+	./$(EXECUTABLE) $(INPUT) $(OUTPUT) -ast $(DOTFile) 2> $(CERR)
 	$(DOT) -Tpdf $(DOTFile) -o $(DOTPDF)
 	open $(DOTPDF)
 
