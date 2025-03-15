@@ -999,7 +999,7 @@ struct_or_union_specifier
     {
         LINE 
         $$ = $1;
-        std::string isStruct = $1->value == "struct" ? "struct" : "union";
+        std::string isStruct = $1->value == "struct" ? "structID" : "unionID";
         $$->addChild(isStruct, $2->value,$2->position);
         PARSER_TABLE.push_back({$2->position, {$2->value, $1->value}});
     }
@@ -1585,7 +1585,6 @@ statement_list
     }
     ;
 
-    //---------Done till here
 expression_statement
     : semi_colon 
     { 

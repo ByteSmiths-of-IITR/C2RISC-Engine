@@ -1,0 +1,117 @@
+digraph Grammar {
+    node[shape=box, style=filled];
+
+    // Primary Expressions
+    primary_expression[label="Primary Expression"];
+    identifier[label="Identifier"];
+    constant[label="Constant"];
+    string_literal[label="String Literal"];
+    parenthesized_expression[label="Parenthesized Expression"];
+
+    primary_expression -> identifier;
+    primary_expression -> constant;
+    primary_expression -> string_literal;
+    primary_expression -> parenthesized_expression;
+
+    // Postfix Expressions
+    postfix_expression[label="Postfix Expression"];
+    array_access[label="Array Access"];
+    function_call[label="Function Call"];
+    member_access[label="Member Access"];
+    pointer_access[label="Pointer Access"];
+    increment[label="Increment"];
+    decrement[label="Decrement"];
+
+    postfix_expression -> primary_expression;
+    postfix_expression -> array_access;
+    postfix_expression -> function_call;
+    postfix_expression -> member_access;
+    postfix_expression -> pointer_access;
+    postfix_expression -> increment;
+    postfix_expression -> decrement;
+
+    // Unary Expressions
+    unary_expression[label="Unary Expression"];
+    unary_operator[label="Unary Operator"];
+    sizeof_expression[label="Sizeof Expression"];
+
+    unary_expression -> postfix_expression;
+    unary_expression -> unary_operator;
+    unary_expression -> sizeof_expression;
+
+    // Multiplicative Expressions
+    multiplicative_expression[label="Multiplicative Expression"];
+    multiplication[label="Multiplication"];
+    division[label="Division"];
+    modulus[label="Modulus"];
+
+    multiplicative_expression -> cast_expression;
+    multiplicative_expression -> multiplication;
+    multiplicative_expression -> division;
+    multiplicative_expression -> modulus;
+
+    // Additive Expressions
+    additive_expression[label="Additive Expression"];
+    addition[label="Addition"];
+    subtraction[label="Subtraction"];
+
+    additive_expression -> multiplicative_expression;
+    additive_expression -> addition;
+    additive_expression -> subtraction;
+
+    // Relational Expressions
+    relational_expression[label="Relational Expression"];
+    less_than[label="Less Than"];
+    greater_than[label="Greater Than"];
+    less_than_or_equal[label="Less Than or Equal"];
+    greater_than_or_equal[label="Greater Than or Equal"];
+
+    relational_expression -> shift_expression;
+    relational_expression -> less_than;
+    relational_expression -> greater_than;
+    relational_expression -> less_than_or_equal;
+    relational_expression -> greater_than_or_equal;
+
+    // Equality Expressions
+    equality_expression[label="Equality Expression"];
+    equal[label="Equal"];
+    not_equal[label="Not Equal"];
+
+    equality_expression -> relational_expression;
+    equality_expression -> equal;
+    equality_expression -> not_equal;
+
+    // Logical Expressions
+    logical_and_expression[label="Logical And Expression"];
+    logical_or_expression[label="Logical Or Expression"];
+    and_operator[label="And Operator"];
+    or_operator[label="Or Operator"];
+
+    logical_and_expression -> inclusive_or_expression;
+    logical_and_expression -> and_operator;
+    logical_or_expression -> logical_and_expression;
+    logical_or_expression -> or_operator;
+
+    // Assignment Expressions
+    assignment_expression[label="Assignment Expression"];
+    assignment_operator[label="Assignment Operator"];
+
+    assignment_expression -> conditional_expression;
+    assignment_expression -> assignment_operator;
+
+    // Statements
+    statement[label="Statement"];
+    labeled_statement[label="Labeled Statement"];
+    compound_statement[label="Compound Statement"];
+    expression_statement[label="Expression Statement"];
+    selection_statement[label="Selection Statement"];
+    iteration_statement[label="Iteration Statement"];
+    jump_statement[label="Jump Statement"];
+
+    statement -> labeled_statement;
+    statement -> compound_statement;
+    statement -> expression_statement;
+    statement -> selection_statement;
+    statement -> iteration_statement;
+    statement -> jump_statement;
+}

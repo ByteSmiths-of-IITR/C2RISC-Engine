@@ -1,14 +1,16 @@
-#include <stdio.h>
 
-int main(){
-    int a = 0;
-    int b = 1;
-    int c = 2;
-    c = a + b;
-    a++;
-    b--;
-
-    int d = a + b;
-
-    return 0;
+int funct(int a, int b) {
+    return a + b;
 }
+
+int (*funct_ptr)(int, int);
+
+// Checking storage class specifiers
+// const NUM num2 = 20;
+const int num3 = 30;
+
+// volatile NUM num4 = 40;
+// const volatile NUM num5 = 50;
+
+// static NUM num6 = 60;
+
