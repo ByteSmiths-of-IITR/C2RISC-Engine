@@ -1,0 +1,44 @@
+
+# Ignore log files
+*.log
+
+# Ignore build directories
+dist/
+build/
+
+# Ignore OS generated files
+.DS_Store
+Thumbs.db
+
+# Ignore environment variable files
+.env
+
+# Ignore IDE specific files
+.vscode/
+.idea/
+
+# Ignore compiled files
+*.out
+*.o
+*.class
+
+# Ignore Python cache files
+__pycache__/
+*.pyc
+
+# Ignore temporary files
+*.tmp
+*.swp
+*.bak
+
+# Ignore latex files
+*.aux
+*.bbl
+*.blg
+*.log
+*.fls
+*.fdb_latexmk
+
+#Ignore test files
+parser/test
+parser/test_results
