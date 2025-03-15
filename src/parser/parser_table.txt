@@ -1,11 +1,9 @@
 +----------------+----------------------+-------------------------------------+
 | Position       | Identifier Name      | Identifier Type                     |
 +----------------+----------------------+-------------------------------------+
-| 5:5            | main                 | function declaration                |
-| 5:14           | argc                 | int                                 |
-| 5:26           | argv                 | char 1-D ptr  1-D Arr               |
-| 6:9            | a                    | int                                 |
-| 7:9            | b                    | int                                 |
-| 8:5            | func                 | function call                       |
-| 11:9           | printf               | function call                       |
+| 3:7            | Ramanujan            | union                               |
+| 8:5            | main                 | function declaration                |
+| 9:11           | Ramanujan            | union                               |
+| 9:21           | r                    | union Instance                      |
+| 12:5           | printf               | function call                       |
 +----------------+----------------------+-------------------------------------+

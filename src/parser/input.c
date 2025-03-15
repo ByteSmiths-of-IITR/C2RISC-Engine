@@ -1,15 +1,14 @@
-// int func(int a, int b);
+#include <stdio.h>
 
+int main(){
+    int a = 0;
+    int b = 1;
+    int c = 2;
+    c = a + b;
+    a++;
+    b--;
 
-
-int main(int argc, char *argv[]) {
-    int a = 1;
-    int b = 2;
-    func(a, b);
-
-    until (1) {
-        printf("Hello, World!\n");
-    }
+    int d = a + b;
 
     return 0;
 }
