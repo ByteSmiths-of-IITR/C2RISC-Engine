@@ -35,12 +35,12 @@ DOTPDF = ast_graph.pdf
 S_EXPR = s_expr.txt
 Recursive = recursive_output.txt
 
-#Result PARSER TABLE
-LaTeXFile = parser_table.tex
-LaTeX_OUTPUT = parser_table
+# #Result PARSER TABLE
+# LaTeXFile = parser_table.tex
+# LaTeX_OUTPUT = parser_table
 
 #Txt File for the output
-TABLE = parser_table.txt
+# TABLE = parser_table.txt
 
 
 # Default target
@@ -94,11 +94,11 @@ s: $(EXECUTABLE) $(INPUT)
 $(LaTeXFile): $(EXECUTABLE)
 	./$(EXECUTABLE) $(INPUT) $(OUTPUT) 2> $(CERR)
 
-# For PDF printing the Parser Table
-table: $(EXECUTABLE) $(INPUT) $(LaTeXFile)
-	./$(EXECUTABLE) $(INPUT) $(OUTPUT) 2> $(CERR)
-	pdflatex -jobname=$(LaTeX_OUTPUT) $(LaTeXFile) > /dev/null 2>&1
-	open $(LaTeX_OUTPUT).pdf
+# For PDF printing the Parser Table [Feature Not Needed in IR Code Gen]
+# table: $(EXECUTABLE) $(INPUT) $(LaTeXFile)
+# 	./$(EXECUTABLE) $(INPUT) $(OUTPUT) 2> $(CERR)
+# 	pdflatex -jobname=$(LaTeX_OUTPUT) $(LaTeXFile) > /dev/null 2>&1
+# 	open $(LaTeX_OUTPUT).pdf
 	
 # rm $(LaTeX_OUTPUT).aux $(LaTeX_OUTPUT).log 
 
@@ -106,8 +106,8 @@ table: $(EXECUTABLE) $(INPUT) $(LaTeXFile)
 clean:
 	rm -f $(LEXER_C) $(PARSER_C) $(PARSER_H) $(EXECUTABLE) $(OUTPUT) \
 	$(CERR) $(DOTFile) $(DOTPDF) *.dot *.out \
-	$(S_EXPR) $(Recursive) $(LaTeX_OUTPUT).pdf $(LaTeXFile) $(LaTeX_OUTPUT).aux $(LaTeX_OUTPUT).log
-	latexmk -CA > /dev/null 2>&1
+	$(S_EXPR) $(Recursive)
+	# latexmk -CA > /dev/null 2>&1
 
 
 again:

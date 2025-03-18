@@ -16,15 +16,14 @@
 
 #define EMPTY_VAL "!!EMPTY!!"
 
-#define LINE std::cerr<<__LINE__<<std::endl;
-// #define LINE /**/
 
 std::string whereWasILast;
 
 
-#define LINE std::cerr<< "Production - " << __LINE__<<std::endl;
-// #define LINE /**/
-#define LINE1 std::cerr<< __LINE__<<std::endl;
+// #define LINE std::cerr<< "Production - " << __LINE__<<std::endl;
+#define LINE /**/
+// #define LINE1 std::cerr<< __LINE__<<std::endl;
+#define LINE1 /**/
 
 #define PARSERLOGHEADER "----------------------------------- PARSER LOG -----------------------------------"
 #define LOGFOOTER       "----------------------------------- END OF LOG -----------------------------------"
@@ -2074,7 +2073,9 @@ int main(int argc, char **argv) {
             } else if (std::string(argv[i]) == "-r") {
                 recursive_flag = true;
             } else if (std::string(argv[i]) == "-pt") {
-                parser_table_flag = true;
+                std::cerr << "This feature is Removed\n";
+                return 0;
+                /* parser_table_flag = true; */
                 
             } else if (std::string(argv[i]) == "-s") {
                 SExp_flag = true;
@@ -2173,12 +2174,14 @@ int main(int argc, char **argv) {
         *output << "\U0001F53A Parser Table (TXT) generated as: " << parser_table_file << "\n";
     }
     LINE
-    // MUST PRINT PARSER_LaTeX_TABLE
+
+    // Removing PARSE_TABLE
+    /* // MUST PRINT PARSER_LaTeX_TABLE
     std::ofstream LaTeXTable;
     LaTeXTable.open(LaTeXParserTable);
     writeLatexTable(LaTeXTable);
     LaTeXTable.close();
-    *output << "\U00002B55 Parser Table (LaTeX) generated as: " << LaTeXParserTable << " can be visualized using LaTeX\n";
+    *output << "\U00002B55 Parser Table (LaTeX) generated as: " << LaTeXParserTable << " can be visualized using LaTeX\n"; */
 
     LINE
     //------------------------- Cleanup ------------------------
