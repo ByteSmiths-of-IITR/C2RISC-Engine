@@ -1,0 +1,4 @@
+👍 Input Program passed Syntax Analysis Phase 👍
+
+🔺 AST generated as DOT file: ast_graph.dot can be visualized using Graphviz
+⭕ Parser Table (LaTeX) generated as: parser_table.tex can be visualized using LaTeX

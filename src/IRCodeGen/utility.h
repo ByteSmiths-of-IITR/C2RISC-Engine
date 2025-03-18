@@ -66,7 +66,7 @@ void printASTToFile(ASTNode *root, const std::string &outputFileName);
 
 //------------Symbol Table Implementation----------------
 
-// class Variables{
-// };
+
+
 
 #endif // UTILITY_H

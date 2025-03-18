@@ -19,8 +19,12 @@
 #define LINE std::cerr<<__LINE__<<std::endl;
 // #define LINE /**/
 
-// #define LINE std::cerr<<__LINE__<<std::endl;
-#define LINE /**/
+std::string whereWasILast;
+
+
+#define LINE std::cerr<< "Production - " << __LINE__<<std::endl;
+// #define LINE /**/
+#define LINE1 std::cerr<< __LINE__<<std::endl;
 
 #define PARSERLOGHEADER "----------------------------------- PARSER LOG -----------------------------------"
 #define LOGFOOTER       "----------------------------------- END OF LOG -----------------------------------"
@@ -95,7 +99,9 @@ void closeOutputFile() {
 }
 
 void signalHandler(int signum) {
-    *output << "\U0001F6A8 * Input Program failed in the PARSE stage \U0001F6A8\n" << std::endl;
+    *output << "\U0001F6A8 * Input Program failed in the PARSE stage \U0001F6A8" << std::endl;
+    *output << "Where was I Last: " << whereWasILast << std::endl;
+    *output << std::endl;
     // cerr the log
     *output << PARSERLOGHEADER << std::endl;
     for (auto& log : parserLOG) {
@@ -201,7 +207,7 @@ ASTNode *root;
 %type <astNode> jump_statement
 %type <astNode> translation_unit
 %type <astNode> external_declaration
-%type <astNode> function_declaration
+/* %type <astNode> function_declaration */
 %type <astNode> function_definition
 
 /* %expect-rr 96 */
@@ -306,23 +312,28 @@ primary_expression
     : identifier 
         {   
             LINE
-            $$ = new ASTNode($1);
+            $$ = new ASTNode("primary_expression");
+            $$->addChild($1);
         }
     | constant 
         { 
             LINE
-            $$ = new ASTNode($1);
+            $$ = new ASTNode("primary_expression");
+            $$->addChild($1);
         }
     | STRING_LITERAL 
         { 
             LINE
-            $$ = new ASTNode($1);
+            $$ = new ASTNode("primary_expression");
+            $$->addChild($1);
         }
     | LPAREN expression rparen 
         {   
-            // Parenthesis are not part of the AST
             LINE
-            $$ = $2;
+            $$ = new ASTNode("primary_expression");
+            $$->addChild($1);
+            $$->addChild($2);
+            $$->addChild($3);
         }
     ;
 
@@ -330,54 +341,66 @@ postfix_expression
     : primary_expression 
     { 
         LINE
-        $$ = $1;
+        $$ = new ASTNode("postfix_expression");
+        $$->addChild($1);
     }
     | postfix_expression LSQUARE expression rsquare 
     { 
         LINE
-        $$ = new ASTNode("ArrayAccess");
+        $$ = new ASTNode("postfix_expression");
+        $$->addChild($1);
+        $$->addChild($2);
+        $$->addChild($3);
+        $$->addChild($4);
     }
     | postfix_expression LPAREN rparen 
     { 
         LINE
-        $$ = new ASTNode("Function Call");
+        $$ = new ASTNode("postfix_expression");
         $$->addChild($1);
-        PARSER_TABLE.push_back({$1->position, {$1->value, "function call"}});
+        $$->addChild($2);
+        $$->addChild($3);
+        //-
+        //PARSER_TABLE.push_back({$1->position, {$1->value, "function call"}});
     }
     | postfix_expression LPAREN argument_expression_list rparen 
     { 
         LINE
-        $$ = new ASTNode("Function Call");
+        $$ = new ASTNode("postfix_expression");
         $$->addChild($1);
+        $$->addChild($2);
         $$->addChild($3);
-        PARSER_TABLE.push_back({$1->position, {$1->value, "function call"}});
+        $$->addChild($4);
     }
     | postfix_expression DOT identifier 
     { 
         LINE
-        $$ = new ASTNode("Member Access");
+        $$ = new ASTNode("postfix_expression");
         $$->addChild($1);
+        $$->addChild($2);
         $$->addChild($3);
     }
     | postfix_expression PTR_OP identifier 
     { 
         LINE
-        $$ = new ASTNode("Pointer Member Access");
+        $$ = new ASTNode("postfix_expression");
         $$->addChild($1);
-        // $$->addChild(new ASTNode($3->position, "Identifier", $3->value));
+        $$->addChild($2);
         $$->addChild($3);
     }
     | postfix_expression INC_OP 
     { 
         LINE
-        $$ = new ASTNode("PostIncrement");
+        $$ = new ASTNode("postfix_expression");
         $$->addChild($1);
+        $$->addChild($2);
     }
     | postfix_expression DEC_OP 
     { 
         LINE
-        $$ = new ASTNode("PostDecrement");
+        $$ = new ASTNode("postfix_expression");
         $$->addChild($1);
+        $$->addChild($2);
     }
     ;
 
@@ -385,13 +408,15 @@ argument_expression_list
     : assignment_expression 
     { 
         LINE
-        $$ = new ASTNode("Argument List");
+        $$ = new ASTNode("argument_expression_list");
         $$->addChild($1);
     }
     | argument_expression_list COMMA assignment_expression 
     { 
         LINE
-        $$ = $1;
+        $$ = new ASTNode("argument_expression_list");
+        $$->addChild($1);
+        $$->addChild($2);
         $$->addChild($3);
     }
     ;
@@ -400,71 +425,84 @@ unary_expression
     : postfix_expression 
     { 
         LINE
-        $$ = $1;
+        $$ = new ASTNode("unary_expression");
+        $$->addChild($1);
     }
     | INC_OP unary_expression 
     { 
         LINE
-        $$ = new ASTNode("PreIncrement");
+        $$ = new ASTNode("unary_expression");
+        $$->addChild($1);
         $$->addChild($2);
     }
     | DEC_OP unary_expression 
     { 
         LINE
-        $$ = new ASTNode("PreDecrement");
+        $$ = new ASTNode("unary_expression");
+        $$->addChild($1);
         $$->addChild($2);
     }
     | unary_operator cast_expression 
     { 
         LINE
-        $$ = new ASTNode("UnaryOperation",$1->value,$1->position);
+        $$ = new ASTNode("unary_expression");
+        $$->addChild($1);
         $$->addChild($2);
     }
     | SIZEOF unary_expression 
     { 
         LINE
-        $$ = new ASTNode("SizeofExpr");
+        $$ = new ASTNode("unary_expression");
+        $$->addChild($1);
         $$->addChild($2);
     }
     | SIZEOF LPAREN type_name rparen 
     { 
         LINE
-        $$ = new ASTNode("SizeofType");
+        $$ = new ASTNode("unary_expression");
+        $$->addChild($1);
+        $$->addChild($2);
         $$->addChild($3);
+        $$->addChild($4);
     }
     ;
-
 
 unary_operator
     : BIT_AND 
     {
         LINE 
-        $$ = new ASTNode($1);
+        $$ = new ASTNode("unary_operator");
+        $$->addChild($1);
     }
     | STAR 
     {
         LINE 
-        $$ = new ASTNode($1); 
+        $$ = new ASTNode("unary_operator");
+        $$->addChild($1); 
     }
     | PLUS 
     {
         LINE 
-        $$ = new ASTNode($1); 
+        $$ = new ASTNode("unary_operator");
+        $$->addChild($1); 
     }
     | MINUS 
     {
         LINE 
-        $$ = new ASTNode($1); 
+        $$ = new ASTNode("unary_operator");
+        $$->addChild($1); 
     }
     | BIT_NOT 
     {
         LINE 
-        $$ = new ASTNode($1); 
+        $$ = new ASTNode("unary_operator");
+        $$->addChild($1); 
     }
     | NOT_OP 
     {
         LINE 
-        $$ = new ASTNode($1); 
+        $$ = new ASTNode("unary_operator");
+        $$->addChild($1); 
     }
     ;
 
@@ -472,13 +510,16 @@ cast_expression
     : unary_expression 
     { 
         LINE 
-        $$ = $1;
+        $$ = new ASTNode("cast_expression");
+        $$->addChild($1);
     }
     | LPAREN type_name rparen cast_expression 
     { 
         LINE 
-        $$ = new ASTNode("TypeCast");
+        $$ = new ASTNode("cast_expression");
+        $$->addChild($1);
         $$->addChild($2);
+        $$->addChild($3);
         $$->addChild($4);
     }
     ;
@@ -488,27 +529,31 @@ multiplicative_expression
     : cast_expression 
     { 
         LINE 
-        $$ = $1;
+        $$ = new ASTNode("multiplicative_expression");
+        $$->addChild($1);
     }
     | multiplicative_expression STAR cast_expression 
     { 
         LINE 
-        $$ = new ASTNode("Multiplication", "*", $2->position); 
+        $$ = new ASTNode("multiplicative_expression");
         $$->addChild($1); 
+        $$->addChild($2);
         $$->addChild($3);
     }
     | multiplicative_expression DIVIDE cast_expression 
     { 
         LINE 
-        $$ = new ASTNode("Division", "/", $2->position); 
+        $$ = new ASTNode("multiplicative_expression");
         $$->addChild($1); 
+        $$->addChild($2);
         $$->addChild($3);
     }
     | multiplicative_expression MOD cast_expression 
     { 
         LINE 
-        $$ = new ASTNode("Modulus", "%", $2->position);
+        $$ = new ASTNode("multiplicative_expression");
         $$->addChild($1); 
+        $$->addChild($2);
         $$->addChild($3);
     }
     ;
@@ -517,20 +562,23 @@ additive_expression
     : multiplicative_expression 
     { 
         LINE 
-        $$ = $1;
+        $$ = new ASTNode("additive_expression");
+        $$->addChild($1);
     }
     | additive_expression PLUS multiplicative_expression 
     { 
         LINE 
-        $$ = new ASTNode("Addition", "+", $2->position);
+        $$ = new ASTNode("additive_expression");
         $$->addChild($1); 
+        $$->addChild($2);
         $$->addChild($3);
     }
     | additive_expression MINUS multiplicative_expression 
     { 
         LINE 
-        $$ = new ASTNode("Subtraction", "-", $2->position); 
+        $$ = new ASTNode("additive_expression");
         $$->addChild($1); 
+        $$->addChild($2);
         $$->addChild($3);
     }
     ;
@@ -539,20 +587,23 @@ shift_expression
     : additive_expression 
     { 
         LINE 
-        $$ = $1;
+        $$ = new ASTNode("shift_expression");
+        $$->addChild($1);
     }
     | shift_expression LEFT_OP additive_expression 
     { 
         LINE 
-        $$ = new ASTNode("LeftShift", "<<", $2->position); 
+        $$ = new ASTNode("shift_expression");
         $$->addChild($1); 
+        $$->addChild($2);
         $$->addChild($3);
     }
     | shift_expression RIGHT_OP additive_expression 
     { 
         LINE 
-        $$ = new ASTNode("RightShift", ">>", $2->position); 
+        $$ = new ASTNode("shift_expression");
         $$->addChild($1); 
+        $$->addChild($2);
         $$->addChild($3);
     }
     ;
@@ -561,34 +612,39 @@ relational_expression
     : shift_expression 
     { 
         LINE 
-        $$ = $1;
+        $$ = new ASTNode("relational_expression");
+        $$->addChild($1);
     }
     | relational_expression LESSER_OP shift_expression 
     { 
         LINE 
-        $$ = new ASTNode("Lesser", "<", $2->position); 
+        $$ = new ASTNode("relational_expression");
         $$->addChild($1); 
+        $$->addChild($2);
         $$->addChild($3);
     }
     | relational_expression GREATER_OP shift_expression 
     { 
         LINE 
-        $$ = new ASTNode("Greater", ">", $2->position); 
+        $$ = new ASTNode("relational_expression");
         $$->addChild($1); 
+        $$->addChild($2);
         $$->addChild($3);
     }
     | relational_expression LE_OP shift_expression 
     { 
         LINE 
-        $$ = new ASTNode("LesserEqual", "<=", $2->position); 
+        $$ = new ASTNode("relational_expression");
         $$->addChild($1); 
+        $$->addChild($2);
         $$->addChild($3);
     }
     | relational_expression GE_OP shift_expression 
     { 
         LINE 
-        $$ = new ASTNode("GreaterEqual", ">=", $2->position); 
+        $$ = new ASTNode("relational_expression");
         $$->addChild($1); 
+        $$->addChild($2);
         $$->addChild($3);
     }
     ;
@@ -597,20 +653,23 @@ equality_expression
     : relational_expression 
     { 
         LINE 
-        $$ = $1;
+        $$ = new ASTNode("equality_expression");
+        $$->addChild($1);
     }
     | equality_expression EQ_OP relational_expression 
     { 
         LINE 
-        $$ = new ASTNode("Equal", "==", $2->position); 
+        $$ = new ASTNode("equality_expression");
         $$->addChild($1); 
+        $$->addChild($2);
         $$->addChild($3);
     }
     | equality_expression NE_OP relational_expression 
     { 
         LINE 
-        $$ = new ASTNode("NotEqual", "!=", $2->position); 
+        $$ = new ASTNode("equality_expression");
         $$->addChild($1); 
+        $$->addChild($2);
         $$->addChild($3);
     }
     ;
@@ -619,13 +678,15 @@ and_expression
     : equality_expression 
     { 
         LINE 
-        $$ = $1;
+        $$ = new ASTNode("and_expression");
+        $$->addChild($1);
     }
     | and_expression BIT_AND equality_expression 
     { 
         LINE 
-        $$ = new ASTNode("BitwiseAnd", "&", $2->position); 
+        $$ = new ASTNode("and_expression");
         $$->addChild($1); 
+        $$->addChild($2);
         $$->addChild($3);
     }
     ;
@@ -634,13 +695,15 @@ exclusive_or_expression
     : and_expression 
     { 
         LINE 
-        $$ = $1;
+        $$ = new ASTNode("exclusive_or_expression");
+        $$->addChild($1);
     }       
     | exclusive_or_expression XOR and_expression 
     { 
         LINE 
-        $$ = new ASTNode("BitwiseXor", "^", $2->position); 
+        $$ = new ASTNode("exclusive_or_expression");
         $$->addChild($1); 
+        $$->addChild($2);
         $$->addChild($3);
     }
     ;
@@ -649,13 +712,15 @@ inclusive_or_expression
     : exclusive_or_expression 
     { 
         LINE 
-        $$ = $1;
+        $$ = new ASTNode("inclusive_or_expression");
+        $$->addChild($1);
     }
     | inclusive_or_expression BIT_OR exclusive_or_expression 
     { 
         LINE 
-        $$ = new ASTNode("BitwiseOr", "|", $2->position); 
+        $$ = new ASTNode("inclusive_or_expression");
         $$->addChild($1); 
+        $$->addChild($2);
         $$->addChild($3);
     }
     ;
@@ -664,13 +729,15 @@ logical_and_expression
     : inclusive_or_expression 
     { 
         LINE 
-        $$ = $1;
+        $$ = new ASTNode("logical_and_expression");
+        $$->addChild($1);
     }
     | logical_and_expression AND_OP inclusive_or_expression 
     { 
         LINE 
-        $$ = new ASTNode("LogicalAnd", "&&", $2->position); 
+        $$ = new ASTNode("logical_and_expression");
         $$->addChild($1); 
+        $$->addChild($2);
         $$->addChild($3);
     }
     ;
@@ -679,13 +746,15 @@ logical_or_expression
     : logical_and_expression 
     { 
         LINE 
-        $$ = $1;
+        $$ = new ASTNode("logical_or_expression");
+        $$->addChild($1);
     }
     | logical_or_expression OR_OP logical_and_expression 
     { 
         LINE 
-        $$ = new ASTNode("LogicalOr", "||", $2->position); 
+        $$ = new ASTNode("logical_or_expression");
         $$->addChild($1); 
+        $$->addChild($2);
         $$->addChild($3);
     }
     ;
@@ -694,14 +763,17 @@ conditional_expression
     : logical_or_expression 
     { 
         LINE  
-        $$ = $1;
+        $$ = new ASTNode("conditional_expression");
+        $$->addChild($1);
     }
     | logical_or_expression QUESTION expression COLON conditional_expression 
     { 
         LINE
-        $$ = new ASTNode("Conditional_Expression"); 
+        $$ = new ASTNode("conditional_expression");
         $$->addChild($1); 
-        $$->addChild($3); 
+        $$->addChild($2);
+        $$->addChild($3);
+        $$->addChild($4);
         $$->addChild($5);
     }
     ;
@@ -710,13 +782,15 @@ assignment_expression
     : conditional_expression 
     { 
         LINE 
-        $$ = $1;
+        $$ = new ASTNode("assignment_expression");
+        $$->addChild($1);
     }
     | unary_expression assignment_operator assignment_expression 
     { 
         LINE 
-        $$ = new ASTNode("AssignmentExpression", $2->value, $2->position); 
+        $$ = new ASTNode("assignment_expression");
         $$->addChild($1); 
+        $$->addChild($2);
         $$->addChild($3);
     }
     ;
@@ -725,57 +799,68 @@ assignment_operator
     : ASSIGN 
     { 
         LINE 
-        $$ = new ASTNode($1);
+        $$ = new ASTNode("assignment_operator");
+        $$->addChild($1);
     }
     | MUL_ASSIGN 
     { 
         LINE 
-        $$ = new ASTNode($1);
+        $$ = new ASTNode("assignment_operator");
+        $$->addChild($1);
     }
     | DIV_ASSIGN 
     { 
         LINE 
-        $$ = new ASTNode($1);
+        $$ = new ASTNode("assignment_operator");
+        $$->addChild($1);
     }
     | MOD_ASSIGN 
     { 
         LINE 
-        $$ = new ASTNode($1);
+        $$ = new ASTNode("assignment_operator");
+        $$->addChild($1);
     }
     | ADD_ASSIGN 
     { 
         LINE 
-        $$ = new ASTNode($1);
+        $$ = new ASTNode("assignment_operator");
+        $$->addChild($1);
     }
     | SUB_ASSIGN 
     { 
         LINE 
-        $$ = new ASTNode($1);
+        $$ = new ASTNode("assignment_operator");
+        $$->addChild($1);
     }
     | LEFT_ASSIGN 
     { 
         LINE 
-        $$ = new ASTNode($1);
+        $$ = new ASTNode("assignment_operator");
+        $$->addChild($1);
     }
     | RIGHT_ASSIGN 
     { 
         LINE 
-        $$ = new ASTNode($1);
+        $$ = new ASTNode("assignment_operator");
+        $$->addChild($1);
     }
     | AND_ASSIGN 
     { 
         LINE 
-        $$ = new ASTNode($1);
+        $$ = new ASTNode("assignment_operator");
+        $$->addChild($1);
     }
     | XOR_ASSIGN 
     { 
         LINE 
-        $$ = new ASTNode($1);
+        $$ = new ASTNode("assignment_operator");
+        $$->addChild($1);
     }
     | OR_ASSIGN 
     { 
         LINE 
-        $$ = new ASTNode($1);
+        $$ = new ASTNode("assignment_operator");
+        $$->addChild($1);
     }
     ;
 
@@ -784,21 +869,25 @@ expression
     : assignment_expression 
     { 
         LINE
-        $$ = $1;
+        $$ = new ASTNode("expression");
+        $$->addChild($1);
     }
     | expression COMMA assignment_expression 
     { 
-    LINE
-        $$ = new ASTNode("Expression"); 
+        LINE
+        $$ = new ASTNode("expression"); 
         $$->addChild($1); 
+        $$->addChild($2);
         $$->addChild($3);
     }
     ;
 
 constant_expression
-    : conditional_expression {
+    : conditional_expression 
+    {
         LINE
-        $$ = $1;
+        $$ = new ASTNode("constant_expression");
+        $$->addChild($1);
     }
     ;
 
@@ -806,15 +895,17 @@ declaration
     : declaration_specifiers semi_colon 
     { 
         LINE 
-        $$ = new ASTNode("Declaration"); 
+        $$ = new ASTNode("declaration"); 
         $$->addChild($1); 
+        $$->addChild($2);
     }
     | declaration_specifiers init_declarator_list semi_colon 
     { 
         LINE
-        $$ = new ASTNode("Declaration"); 
+        $$ = new ASTNode("declaration"); 
         $$->addChild($1);  
         $$->addChild($2);
+        $$->addChild($3);
         Declaration_Handler($1, $2);
     }
     ;
@@ -823,67 +914,74 @@ declaration_specifiers
     : storage_class_specifier 
     { 
         LINE
-        $$ = $1;
+        $$ = new ASTNode("declaration_specifiers");
+        $$->addChild($1);
     }
     | storage_class_specifier declaration_specifiers 
     { 
         LINE
-        $$ = $1;
+        $$ = new ASTNode("declaration_specifiers");
+        $$->addChild($1);
         $$->addChild($2);
     }
     | type_specifier 
     { 
         LINE
-        $$ = $1;
+        $$ = new ASTNode("declaration_specifiers");
+        $$->addChild($1);
     }
     | type_specifier declaration_specifiers 
     { 
         LINE
-        $$ = $1;
+        $$ = new ASTNode("declaration_specifiers");
+        $$->addChild($1);
         $$->addChild($2);
     }
     | type_qualifier 
     { 
         LINE
-        $$ = $1;
+        $$ = new ASTNode("declaration_specifiers");
+        $$->addChild($1);
     }
     | type_qualifier declaration_specifiers 
     { 
         LINE
-        $$ = $1;
+        $$ = new ASTNode("declaration_specifiers");
+        $$->addChild($1);
         $$->addChild($2);
     }
     ;
 
-
-    
 init_declarator_list
     : init_declarator 
     {
         LINE
-        $$ = new ASTNode("Initialization or Declaration List", EMPTY_VAL, $1->position);
+        $$ = new ASTNode("init_declarator_list");
         $$->addChild($1); 
     }
     | init_declarator_list COMMA init_declarator
     {
         LINE
-        $$ = $1;
+        $$ = new ASTNode("init_declarator_list");
+        $$->addChild($1);
+        $$->addChild($2);
         $$->addChild($3);
     }
     ;
-
 
 init_declarator
     : declarator 
     {
         LINE  
-        $$ = $1; 
+        $$ = new ASTNode("init_declarator");
+        $$->addChild($1); 
     }
     | declarator ASSIGN initializer 
     {
         LINE 
-        $$ = new ASTNode("Initializer", "=", $2->position); 
+        $$ = new ASTNode("init_declarator"); 
         $$->addChild($1); 
+        $$->addChild($2); 
         $$->addChild($3); 
     }
     ;
@@ -892,27 +990,32 @@ storage_class_specifier
     : TYPEDEF 
     {
         LINE 
-        $$ = new ASTNode("Storage Class Specifier", "typedef", $1->position);
+        $$ = new ASTNode("storage_class_specifier");
+        $$->addChild($1);
     }
     | EXTERN 
     {
         LINE 
-        $$ = new ASTNode("Storage Class Specifier", "extern", $1->position);
+        $$ = new ASTNode("storage_class_specifier");
+        $$->addChild($1);
     }
     | STATIC 
     {
         LINE 
-        $$ = new ASTNode("Storage Class Specifier", "static", $1->position);
+        $$ = new ASTNode("storage_class_specifier");
+        $$->addChild($1);
     }
     | AUTO 
     {
         LINE 
-        $$ = new ASTNode("Storage Class Specifier", "auto", $1->position);
+        $$ = new ASTNode("storage_class_specifier");
+        $$->addChild($1);
     }
     | REGISTER 
     {
         LINE 
-        $$ = new ASTNode("Storage Class Specifier", "register", $1->position);
+        $$ = new ASTNode("storage_class_specifier");
+        $$->addChild($1);
     }
     ;
 
@@ -920,62 +1023,74 @@ type_specifier
     : VOID 
     {
         LINE 
-        $$ = new ASTNode("Type Specifier", "void", $1->position);
+        $$ = new ASTNode("type_specifier");
+        $$->addChild($1);
     }
     | CHAR 
     {
         LINE
-        $$ = new ASTNode("Type Specifier", "char", $1->position);
+        $$ = new ASTNode("type_specifier");
+        $$->addChild($1);
     }
     | SHORT 
     {
         LINE 
-        $$ = new ASTNode("Type Specifier", "short", $1->position);
+        $$ = new ASTNode("type_specifier");
+        $$->addChild($1);
     }
     | INT 
     {
         LINE 
-        $$ = new ASTNode("Type Specifier", "int", $1->position);
+        $$ = new ASTNode("type_specifier");
+        $$->addChild($1);
     }
     | LONG 
     {
         LINE 
-        $$ = new ASTNode("Type Specifier", "long", $1->position);
+        $$ = new ASTNode("type_specifier");
+        $$->addChild($1);
     }
     | FLOAT 
     {
         LINE
-        $$ = new ASTNode("Type Specifier", "float", $1->position);
+        $$ = new ASTNode("type_specifier");
+        $$->addChild($1);
     }
     | DOUBLE 
     {
         LINE
-        $$ = new ASTNode("Type Specifier", "double", $1->position);
+        $$ = new ASTNode("type_specifier");
+        $$->addChild($1);
     }
     | SIGNED 
     {
         LINE
-        $$ = new ASTNode("Type Specifier", "signed", $1->position);
+        $$ = new ASTNode("type_specifier");
+        $$->addChild($1);
     }
     | UNSIGNED 
     {
         LINE
-        $$ = new ASTNode("Type Specifier", "unsigned", $1->position);
+        $$ = new ASTNode("type_specifier");
+        $$->addChild($1);
     }
     | struct_or_union_specifier 
     {
         LINE
-        $$ = $1;
+        $$ = new ASTNode("type_specifier");
+        $$->addChild($1);
     }
     | enum_specifier 
     {
         LINE 
-        $$ = $1;
+        $$ = new ASTNode("type_specifier");
+        $$->addChild($1);
     }
     | TYPE_NAME 
     {
         LINE 
-        $$ = new ASTNode("Type Specifier", "TypeName", $1->position);
+        $$ = new ASTNode("type_specifier");
+        $$->addChild($1);
     }
     ;
 
@@ -983,67 +1098,72 @@ struct_or_union_specifier
     : struct_or_union identifier LCURLY struct_declaration_list rcurly 
     {
         LINE 
-        $$ = $1;
-        std::string isStruct = $1->value == "struct" ? "structID" : "unionID";
-        $$->addChild(isStruct, $2->value,$2->position);
-        $$->addChild($4); 
+        $$ = new ASTNode("struct_or_union_specifier");
+        $$->addChild($1);
+        $$->addChild($2);
+        $$->addChild($3);
+        $$->addChild($4);
+        $$->addChild($5);
         PARSER_TABLE.push_back({$2->position, {$2->value, $1->value}});
     }
     | struct_or_union LCURLY struct_declaration_list rcurly 
     {
         LINE 
-        $$ = $1; 
-        $$->addChild($3);  
+        $$ = new ASTNode("struct_or_union_specifier");
+        $$->addChild($1);
+        $$->addChild($2);
+        $$->addChild($3);
+        $$->addChild($4);
     }
     | struct_or_union identifier 
     {
         LINE 
-        $$ = $1;
-        std::string isStruct = $1->value == "struct" ? "structID" : "unionID";
-        $$->addChild(isStruct, $2->value,$2->position);
+        $$ = new ASTNode("struct_or_union_specifier");
+        $$->addChild($1);
+        $$->addChild($2);
         PARSER_TABLE.push_back({$2->position, {$2->value, $1->value}});
     }
     ;
-
 
 struct_or_union
     : STRUCT 
     {
         LINE 
-        $$ = new ASTNode("Struct", "struct", $1->position);
+        $$ = new ASTNode("struct_or_union");
+        $$->addChild($1);
     }
     | UNION 
     {
         LINE 
-        $$ = new ASTNode("Union", "union", $1->position);
+        $$ = new ASTNode("struct_or_union");
+        $$->addChild($1);
     }
     ;
-
 
 struct_declaration_list
     : struct_declaration 
     {
         LINE 
-        $$ = new ASTNode("Struct or Union Declaration List");
+        $$ = new ASTNode("struct_declaration_list");
         $$->addChild($1);
     }
     | struct_declaration_list struct_declaration 
     {
         LINE 
-        $$ = new ASTNode("Struct or Union Declaration List");
+        $$ = new ASTNode("struct_declaration_list");
         $$->addChildren($1->children);
-        $$->addChild($2); 
+        $$->addChild($2);
     }
     ;
-
 
 struct_declaration
     : specifier_qualifier_list struct_declarator_list semi_colon 
     {
         LINE 
-        $$ = new ASTNode("Struct or Union Declaration");
+        $$ = new ASTNode("struct_declaration");
         $$->addChild($1);
         $$->addChild($2);
+        $$->addChild($3);
         Struct_Union_Declaration_Handler($1, $2);
     }
     ;
@@ -1052,24 +1172,28 @@ specifier_qualifier_list
     : type_specifier specifier_qualifier_list
     {
         LINE
-        $$ = $1;
+        $$ = new ASTNode("specifier_qualifier_list");
+        $$->addChild($1);
         $$->addChild($2);
     }
     | type_specifier
     {
         LINE
-        $$ = $1;
+        $$ = new ASTNode("specifier_qualifier_list");
+        $$->addChild($1);
     }
     | type_qualifier specifier_qualifier_list
     {
         LINE
-        $$ = $1;
+        $$ = new ASTNode("specifier_qualifier_list");
+        $$->addChild($1);
         $$->addChild($2);
     }
     | type_qualifier
     {
         LINE
-        $$ = $1;
+        $$ = new ASTNode("specifier_qualifier_list");
+        $$->addChild($1);
     }
     ;
 
@@ -1077,14 +1201,15 @@ struct_declarator_list
     : struct_declarator 
     { 
         LINE 
-        $$ = new ASTNode("Struct or Union Declarator List");
-        $$->addChild($1); 
+        $$ = new ASTNode("struct_declarator_list");
+        $$->addChild($1);
     }
     | struct_declarator_list COMMA struct_declarator 
     { 
         LINE 
-        $$ = new ASTNode("Struct or Union Declarator List");
+        $$ = new ASTNode("struct_declarator_list");
         $$->addChildren($1->children);
+        $$->addChild($2);
         $$->addChild($3);
     }
     ;
@@ -1093,19 +1218,22 @@ struct_declarator
     : declarator 
     { 
         LINE 
-        $$ = $1;
+        $$ = new ASTNode("struct_declarator");
+        $$->addChild($1);
     }
     | COLON constant_expression 
     { 
         LINE 
-        $$ = new ASTNode("Struct or Union Declarator", ":", $1->position); 
-        $$->addChild($2); 
+        $$ = new ASTNode("struct_declarator");
+        $$->addChild($1);
+        $$->addChild($2);
     }
     | declarator COLON constant_expression 
     { 
         LINE 
-        $$ = new ASTNode("Struct or Union Declarator", ":", $2->position);
+        $$ = new ASTNode("struct_declarator");
         $$->addChild($1);
+        $$->addChild($2);
         $$->addChild($3);
     }
     ;
@@ -1114,39 +1242,49 @@ enum_specifier
     : ENUM LCURLY enumerator_list rcurly 
     { 
         LINE 
-        $$ = new ASTNode("Enum Specifier", EMPTY_VAL, $1->position);
+        $$ = new ASTNode("enum_specifier");
+        $$->addChild($1);
+        $$->addChild($2);
         $$->addChild($3);
+        $$->addChild($4);
         Enum_Declaration_Handler($$);
     }
     | ENUM identifier LCURLY enumerator_list rcurly 
     { 
         LINE 
-        $$ = new ASTNode("Enum Specifier", EMPTY_VAL, $1->position);
-        $$->addChild("enumID", $2->value,$2->position);
+        $$ = new ASTNode("enum_specifier");
+        $$->addChild($1);
+        $$->addChild($2);
+        $$->addChild($3);
         $$->addChild($4);
+        $$->addChild($5);
         Enum_Declaration_Handler($$);
     }
     | ENUM identifier 
     { 
         LINE 
-        $$ = new ASTNode("Enum Specifier", EMPTY_VAL); 
-        $$->addChild("enumID", $2->value,$2->position);
+        $$ = new ASTNode("enum_specifier");
+        $$->addChild($1);
+        $$->addChild($2);
         Enum_Declaration_Handler($$);
     }
     ;
+
+
 
 enumerator_list
     : enumerator 
     {
         LINE 
-        $$ = new ASTNode("Enum List");
+        $$ = new ASTNode("enumerator_list");
         $$->addChild($1);
     }
     | enumerator_list COMMA enumerator 
     {
         LINE 
-        $$ = new ASTNode("Enum List");
+        $$ = new ASTNode("enumerator_list");
         $$->addChildren($1->children);
+        $$->addChild($2);
         $$->addChild($3);
     }
     ;
@@ -1155,14 +1293,16 @@ enumerator
     : identifier 
     { 
         LINE 
-        $$ = new ASTNode("Enum Element", $1->value, $1->position);
+        $$ = new ASTNode("enumerator");
+        $$->addChild($1);
     }
     | identifier ASSIGN constant_expression 
     { 
         LINE 
-        $$ = new ASTNode("Enum Assignment",EMPTY_VAL , $2->position);
-        $$->addChild("Enum Element", $1->value,$1->position); 
-        $$->addChild($3);  
+        $$ = new ASTNode("enumerator");
+        $$->addChild($1);
+        $$->addChild($2);
+        $$->addChild($3);
     }
     ;
 
@@ -1170,12 +1310,14 @@ type_qualifier
     : CONST
     {
         LINE
-        $$ = new ASTNode("Type Qualifier", "const", $1->position);
+        $$ = new ASTNode("type_qualifier");
+        $$->addChild($1);
     }
     | VOLATILE
     {
         LINE
-        $$ = new ASTNode("Type Qualifier", "volatile", $1->position);
+        $$ = new ASTNode("type_qualifier");
+        $$->addChild($1);
     }
     ;
 
@@ -1183,14 +1325,15 @@ declarator
     : pointer direct_declarator
     {
         LINE
-        $$ = new ASTNode("Pointer Declarator", EMPTY_VAL);
+        $$ = new ASTNode("declarator");
         $$->addChild($1); 
         $$->addChild($2); 
     }
     | direct_declarator
     {
         LINE
-        $$ = $1;
+        $$ = new ASTNode("declarator");
+        $$->addChild($1);
     }
     ;
 
@@ -1198,70 +1341,88 @@ direct_declarator
     : identifier
     {
         LINE
-        $$ = new ASTNode($1);
+        $$ = new ASTNode("direct_declarator");
+        $$->addChild($1);
     }
     | LPAREN declarator rparen
     {
         LINE
-        $$ = $2;
+        $$ = new ASTNode("direct_declarator");
+        $$->addChild($1);
+        $$->addChild($2);
+        $$->addChild($3);
     }
     | direct_declarator LSQUARE constant_expression rsquare
     {
         LINE
-        $$ = new ASTNode("Array Declaration");
+        $$ = new ASTNode("direct_declarator");
         $$->addChild($1);
+        $$->addChild($2);
         $$->addChild($3);
+        $$->addChild($4);
     }
     | direct_declarator LSQUARE rsquare
     {
         LINE
-        $$ = new ASTNode("Array Declaration");
+        $$ = new ASTNode("direct_declarator");
         $$->addChild($1);
+        $$->addChild($2);
+        $$->addChild($3);
     }
     | direct_declarator LPAREN parameter_type_list rparen
     {
         LINE
-        $$ = $1;
+        $$ = new ASTNode("direct_declarator");
+        $$->addChild($1);
+        $$->addChild($2);
         $$->addChild($3);
+        $$->addChild($4);
     }
     | direct_declarator LPAREN identifier_list rparen
     {
         LINE
-        $$ = $1;
+        $$ = new ASTNode("direct_declarator");
+        $$->addChild($1);
+        $$->addChild($2);
         $$->addChild($3);
+        $$->addChild($4);
     }
     | direct_declarator LPAREN rparen
     {
         LINE
-        $$ = $1;
-        $1->addChild("Empty Parameter List", EMPTY_VAL, $1->position);
+        $$ = new ASTNode("direct_declarator");
+        $$->addChild($1);
+        $$->addChild($2);
+        $$->addChild($3);
     }
     ;
-
-    
 
 pointer
     : STAR
     {
         LINE
-        $$ = new ASTNode("Pointer", "*", $1->position);
+        $$ = new ASTNode("pointer");
+        $$->addChild($1);
     }
     | STAR type_qualifier_list
     {
         LINE
-        $$ = new ASTNode("Pointer", "*", $1->position);
+        $$ = new ASTNode("pointer");
+        $$->addChild($1);
         $$->addChild($2);
     }
     | STAR pointer
     {
         LINE
-        $$ = new ASTNode("Pointer", "*", $1->position);
+        $$ = new ASTNode("pointer");
+        $$->addChild($1);
         $$->addChild($2);
     }
     | STAR type_qualifier_list pointer
     {
         LINE
-        $$ = new ASTNode("Pointer", "*", $1->position);
+        $$ = new ASTNode("pointer");
+        $$->addChild($1);
         $$->addChild($2);
         $$->addChild($3);
     }
@@ -1271,12 +1432,14 @@ type_qualifier_list
     : type_qualifier
     {
         LINE
-        $$ = $1;
+        $$ = new ASTNode("type_qualifier_list");
+        $$->addChild($1);
     }
     | type_qualifier_list type_qualifier
     {
         LINE
-        $$ = $1;
+        $$ = new ASTNode("type_qualifier_list");
+        $$->addChildren($1->children);
         $$->addChild($2);
     }
     ;
@@ -1285,13 +1448,16 @@ parameter_type_list
     : parameter_list 
     { 
         LINE 
-        $$ = $1; 
+        $$ = new ASTNode("parameter_type_list");
+        $$->addChild($1); 
     }
     | parameter_list COMMA ELLIPSIS 
     { 
         LINE 
-        $$ = $1; 
-        $$->addChild("Ellipsis", "...", $3->position); 
+        $$ = new ASTNode("parameter_type_list");
+        $$->addChild($1);
+        $$->addChild($2);
+        $$->addChild($3);
     }
     ;
 
@@ -1299,36 +1465,39 @@ parameter_list
     : parameter_declaration 
     { 
         LINE 
-        $$ = new ASTNode("Parameter List", EMPTY_VAL);
+        $$ = new ASTNode("parameter_list");
         $$->addChild($1); 
     }
     | parameter_list COMMA parameter_declaration 
     { 
         LINE 
-        $$ = $1;
-        $$->addChild($3); 
+        $$ = new ASTNode("parameter_list");
+        $$->addChildren($1->children);
+        $$->addChild($2);
+        $$->addChild($3);
     }
     ;
+
 
 parameter_declaration
     : declaration_specifiers declarator
     {
         LINE
-        $$ = new ASTNode("Parameter Declaration", "parameterDeclaration");
+        $$ = new ASTNode("parameter_declaration");
         $$->addChild($1); 
         $$->addChild($2);  
     }
     | declaration_specifiers abstract_declarator
     {
         LINE
-        $$ = new ASTNode("Parameter Declaration", "parameterDeclaration");
+        $$ = new ASTNode("parameter_declaration");
         $$->addChild($1);  
         $$->addChild($2);  
     }
     | declaration_specifiers
     {
         LINE
-        $$ = new ASTNode("Parameter Declaration", "parameterDeclaration");
+        $$ = new ASTNode("parameter_declaration");
         $$->addChild($1); 
     }
     ;
@@ -1337,13 +1506,14 @@ identifier_list
     : identifier 
     { 
         LINE 
-        $$ = new ASTNode("IdentifierList", "identifierList");
+        $$ = new ASTNode("identifier_list");
         $$->addChild($1);
     }
     | identifier_list COMMA identifier 
     { 
         LINE 
         $$ = $1; 
+        $$->addChild($2);
         $$->addChild($3);
     }
     ;
@@ -1352,12 +1522,14 @@ type_name
     : specifier_qualifier_list 
     { 
         LINE 
-        $$ = $1; 
+        $$ = new ASTNode("type_name");
+        $$->addChild($1); 
     }
     | specifier_qualifier_list abstract_declarator 
     { 
         LINE 
-        $$ = $1; 
+        $$ = new ASTNode("type_name");
+        $$->addChild($1); 
         $$->addChild($2); 
     }
     ;
@@ -1366,17 +1538,20 @@ abstract_declarator
     : pointer 
     { 
         LINE 
-        $$ = $1; 
+        $$ = new ASTNode("abstract_declarator");
+        $$->addChild($1); 
     }
     | direct_abstract_declarator 
     { 
         LINE 
-        $$ = $1; 
+        $$ = new ASTNode("abstract_declarator");
+        $$->addChild($1); 
     }
     | pointer direct_abstract_declarator 
     { 
         LINE 
-        $$ = $1; 
+        $$ = new ASTNode("abstract_declarator");
+        $$->addChild($1); 
         $$->addChild($2); 
     }
     ;
@@ -1385,53 +1560,70 @@ direct_abstract_declarator
     : LPAREN abstract_declarator rparen
     {
         LINE
-        $$ = $2;  
+        $$ = new ASTNode("direct_abstract_declarator");
+        $$->addChild($1);
+        $$->addChild($2);
+        $$->addChild($3);
     }
     | LSQUARE rsquare
     {
         LINE
-        $$ = new ASTNode("Array Declaration"); 
+        $$ = new ASTNode("direct_abstract_declarator");
+        $$->addChild($1);
+        $$->addChild($2);
     }
     | LSQUARE constant_expression rsquare
     {
         LINE
-        $$ = new ASTNode("Array Declaration");  
-        $$->addChild($2); 
+        $$ = new ASTNode("direct_abstract_declarator");
+        $$->addChild($1);
+        $$->addChild($2);
+        $$->addChild($3);
     }
     | direct_abstract_declarator LSQUARE rsquare
     {
         LINE
         $$ = $1;  
-        $$->addChild("Array Declaration");  
+        $$->addChild($2);
+        $$->addChild($3);
     }
     | direct_abstract_declarator LSQUARE constant_expression rsquare
     {
         LINE
         $$ = $1;  
-        $$->addChild(new ASTNode("Array Declaration"));  
+        $$->addChild($2);
         $$->addChild($3);
+        $$->addChild($4);
     }
     | LPAREN rparen
     {
         LINE
-        $$ = new ASTNode("Parameter List", EMPTY_VAL); 
+        $$ = new ASTNode("direct_abstract_declarator");
+        $$->addChild($1);
+        $$->addChild($2);
     }
     | LPAREN parameter_type_list rparen
     {
         LINE
-        $$ = $2; 
+        $$ = new ASTNode("direct_abstract_declarator");
+        $$->addChild($1);
+        $$->addChild($2);
+        $$->addChild($3);
     }
     | direct_abstract_declarator LPAREN rparen
     {
         LINE
         $$ = $1; 
-        $$->addChild("Parameter List", EMPTY_VAL); 
+        $$->addChild($2);
+        $$->addChild($3);
     }
     | direct_abstract_declarator LPAREN parameter_type_list rparen
     {
         LINE
         $$ = $1; 
-        $$->addChild($3); 
+        $$->addChild($2);
+        $$->addChild($3);
+        $$->addChild($4);
     }
     ;
 
@@ -1439,32 +1631,41 @@ initializer
     : assignment_expression
     {
         LINE
-        $$ = $1;
+        $$ = new ASTNode("initializer");
+        $$->addChild($1);
     }
     | LCURLY initializer_list rcurly
     {
         LINE
-        $$ = $2; 
+        $$ = new ASTNode("initializer");
+        $$->addChild($1);
+        $$->addChild($2);
+        $$->addChild($3);
     }
     | LCURLY initializer_list COMMA rcurly
     {
         LINE
-        $$ = $2;  
+        $$ = new ASTNode("initializer");
+        $$->addChild($1);
+        $$->addChild($2);
+        $$->addChild($3);
+        $$->addChild($4);
     }
     ;
-
 
 initializer_list
     : initializer 
     { 
         LINE 
-        $$ = $1; 
+        $$ = new ASTNode("initializer_list");
+        $$->addChild($1); 
     }
     | initializer_list COMMA initializer 
     { 
         LINE 
         $$ = $1; 
-        $$->addChild($3); 
+        $$->addChild($2);
+        $$->addChild($3);
     }
     ;
 
@@ -1472,60 +1673,72 @@ statement
     : labeled_statement 
     { 
         LINE 
-        $$ = $1; 
+        $$ = new ASTNode("statement");
+        $$->addChild($1); 
     }
     | compound_statement 
     { 
         LINE 
-        $$ = $1; 
+        $$ = new ASTNode("statement");
+        $$->addChild($1); 
     }
     | expression_statement 
     { 
         LINE 
-        $$ = $1; 
+        $$ = new ASTNode("statement");
+        $$->addChild($1); 
     }
     | selection_statement 
     { 
         LINE 
-        $$ = $1; 
+        $$ = new ASTNode("statement");
+        $$->addChild($1); 
     }
     | iteration_statement 
     { 
         LINE 
-        $$ = $1; 
+        $$ = new ASTNode("statement");
+        $$->addChild($1); 
     }
     | jump_statement 
     { 
         LINE 
-        $$ = $1; 
+        $$ = new ASTNode("statement");
+        $$->addChild($1); 
     }
     | declaration 
     { 
         LINE 
-        $$ = $1; 
+        $$ = new ASTNode("statement");
+        $$->addChild($1); 
     }
     ;
-
 
 labeled_statement
     : identifier COLON statement
     {
         LINE
-        $$ = new ASTNode("Labeled Statement", $1->value, $1->position);
-        $$->addChild($3); 
+        $$ = new ASTNode("labeled_statement");
+        $$->addChild($1);
+        $$->addChild($2);
+        $$->addChild($3);
     }
     | CASE constant_expression COLON statement
     {
         LINE
-        $$ = new ASTNode("Case Statement", "Case", $1->position);
-        $$->addChild($2); 
+        $$ = new ASTNode("labeled_statement");
+        $$->addChild($1);
+        $$->addChild($2);
+        $$->addChild($3);
         $$->addChild($4);
     }
     | DEFAULT COLON statement
     {
         LINE
-        $$ = new ASTNode("Default Statement", "Default", $1->position);
-        $$->addChild($3); 
+        $$ = new ASTNode("labeled_statement");
+        $$->addChild($1);
+        $$->addChild($2);
+        $$->addChild($3);
     }
     ;
 
@@ -1533,26 +1746,34 @@ compound_statement
     : LCURLY rcurly 
     { 
         LINE 
-        $$ = new ASTNode("Compound Statement", "{  }"); 
+        $$ = new ASTNode("compound_statement");
+        $$->addChild($1);
+        $$->addChild($2);
     }
     | LCURLY statement_list rcurly 
     { 
         LINE 
-        $$ = new ASTNode("Compound Statement", "{  }"); 
-        $$->addChildren($2->children); 
+        $$ = new ASTNode("compound_statement");
+        $$->addChild($1);
+        $$->addChild($2);
+        $$->addChild($3);
     }
     | LCURLY declaration_list rcurly 
     { 
         LINE 
-        $$ = new ASTNode("Compound Statement", "{  }"); 
-        $$->addChildren($2->children); 
+        $$ = new ASTNode("compound_statement");
+        $$->addChild($1);
+        $$->addChild($2);
+        $$->addChild($3);
     }
     | LCURLY declaration_list statement_list rcurly 
     { 
         LINE 
-        $$ = new ASTNode("Compound Statement", "{  }"); 
-        $$->addChildren($2->children); 
-        $$->addChildren($3->children); 
+        $$ = new ASTNode("compound_statement");
+        $$->addChild($1);
+        $$->addChild($2);
+        $$->addChild($3);
+        $$->addChild($4);
     }
     ;
 
@@ -1560,7 +1781,8 @@ declaration_list
     : declaration 
     { 
         LINE 
-        $$ = $1; 
+        $$ = new ASTNode("declaration_list");
+        $$->addChild($1); 
     }
     | declaration_list declaration 
     { 
@@ -1570,17 +1792,19 @@ declaration_list
     }
     ;
 
+//-----
 statement_list
     : statement 
     { 
         LINE 
-        $$ = new ASTNode("Statement List"); 
+        $$ = new ASTNode("statement_list"); 
         $$->addChild($1); 
     }
     | statement_list statement 
     { 
         LINE 
-        $$ = $1; 
+        $$ = new ASTNode("statement_list");
+        $$->addChild($1);
         $$->addChild($2); 
     }
     ;
@@ -1589,12 +1813,15 @@ expression_statement
     : semi_colon 
     { 
         LINE 
-        $$ = new ASTNode("Expression Statement", ";"); 
+        $$ = new ASTNode("expression_statement"); 
+        $$->addChild($1);
     }
     | expression semi_colon 
     { 
         LINE 
-        $$ = $1; 
+        $$ = new ASTNode("expression_statement");
+        $$->addChild($1);
+        $$->addChild($2);
     }
     ;
 
@@ -1602,23 +1829,33 @@ selection_statement
     : IF LPAREN expression rparen statement 
     { 
         LINE 
-        $$ = new ASTNode("If Statement", "if", $1->position);
+        $$ = new ASTNode("selection_statement");
+        $$->addChild($1);
+        $$->addChild($2);
         $$->addChild($3); 
+        $$->addChild($4);
         $$->addChild($5); 
     }
     | IF LPAREN expression rparen statement ELSE statement 
     { 
         LINE 
-        $$ = new ASTNode("If Else Statement", "if-else", $1->position);
+        $$ = new ASTNode("selection_statement");
+        $$->addChild($1);
+        $$->addChild($2);
         $$->addChild($3); 
+        $$->addChild($4);
         $$->addChild($5); 
+        $$->addChild($6);
         $$->addChild($7); 
     }
     | SWITCH LPAREN expression rparen statement 
     { 
         LINE 
-        $$ = new ASTNode("Switch Statement", "switch", $1->position);
+        $$ = new ASTNode("selection_statement");
+        $$->addChild($1);
+        $$->addChild($2);
         $$->addChild($3); 
+        $$->addChild($4);
         $$->addChild($5); 
     }
     ;
@@ -1627,48 +1864,68 @@ iteration_statement
     : WHILE LPAREN expression rparen statement 
     { 
         LINE 
-        $$ = new ASTNode("While Loop", "while", $1->position);
+        $$ = new ASTNode("iteration_statement");
+        $$->addChild($1);
+        $$->addChild($2);
         $$->addChild($3); 
+        $$->addChild($4);
         $$->addChild($5); 
     }
     | UNTIL LPAREN expression rparen statement 
     { 
         LINE 
-        $$ = new ASTNode("Until Loop", "until", $1->position);
+        $$ = new ASTNode("iteration_statement");
+        $$->addChild($1);
+        $$->addChild($2);
         $$->addChild($3); 
+        $$->addChild($4);
         $$->addChild($5); 
     }
     | DO statement WHILE LPAREN expression rparen semi_colon 
     { 
         LINE 
-        $$ = new ASTNode("DoWhile Loop", "do-while", $1->position);
-        $$->addChild($2); 
+        $$ = new ASTNode("iteration_statement");
+        $$->addChild($1);
+        $$->addChild($2);
+        $$->addChild($3); 
+        $$->addChild($4);
         $$->addChild($5); 
+        $$->addChild($6);
+        $$->addChild($7); 
     }
     | FOR LPAREN expression_statement expression_statement rparen statement 
     { 
         LINE 
-        $$ = new ASTNode("For Loop", "for", $1->position); 
+        $$ = new ASTNode("iteration_statement");
+        $$->addChild($1);
+        $$->addChild($2);
         $$->addChild($3); 
-        $$->addChild($4); 
+        $$->addChild($4);
+        $$->addChild($5); 
         $$->addChild($6); 
     }
     | FOR LPAREN expression_statement expression_statement expression rparen statement 
     { 
         LINE 
-        $$ = new ASTNode("For Loop", "for", $1->position);
+        $$ = new ASTNode("iteration_statement");
+        $$->addChild($1);
+        $$->addChild($2);
         $$->addChild($3); 
-        $$->addChild($4); 
+        $$->addChild($4);
         $$->addChild($5); 
+        $$->addChild($6);
         $$->addChild($7); 
     }
     | FOR LPAREN declaration expression_statement expression rparen statement 
     { 
         LINE 
-        $$ = new ASTNode("For Loop", "for", $1->position); 
+        $$ = new ASTNode("iteration_statement");
+        $$->addChild($1);
+        $$->addChild($2);
         $$->addChild($3); 
-        $$->addChild($4); 
+        $$->addChild($4);
         $$->addChild($5); 
+        $$->addChild($6);
         $$->addChild($7); 
     }
     ;
@@ -1677,88 +1934,98 @@ jump_statement
     : GOTO identifier semi_colon 
     { 
         LINE 
-        $$ = new ASTNode("Goto Statement", "goto", $1->position); 
+        $$ = new ASTNode("jump_statement");
+        $$->addChild($1);
         $$->addChild($2);
+        $$->addChild($3);
     }
     | CONTINUE semi_colon 
     { 
         LINE 
-        $$ = new ASTNode("Continue Statement", "continue", $1->position);
+        $$ = new ASTNode("jump_statement");
+        $$->addChild($1);
+        $$->addChild($2);
     }
     | BREAK semi_colon 
     { 
         LINE 
-        $$ = new ASTNode("Break Statement", "break", $1->position);
+        $$ = new ASTNode("jump_statement");
+        $$->addChild($1);
+        $$->addChild($2);
     }
     | RETURN semi_colon 
     { 
         LINE 
-        $$ = new ASTNode("Return Statement", "return", $1->position);
+        $$ = new ASTNode("jump_statement");
+        $$->addChild($1);
+        $$->addChild($2);
     }
     | RETURN expression semi_colon 
     { 
         LINE 
-        $$ = new ASTNode("Return Statement", "return", $1->position); 
-        $$->addChild($2); 
+        $$ = new ASTNode("jump_statement");
+        $$->addChild($1);
+        $$->addChild($2);
+        $$->addChild($3);
     }
     ;
+
 
 // START
 translation_unit
     : external_declaration 
     { 
         LINE 
-        $$ = new ASTNode("Translation Unit", EMPTY_VAL);
+        $$ = new ASTNode("translation_unit");
         $$->addChild($1); 
         root = $$;
     }
     | translation_unit external_declaration 
     { 
         LINE 
-        $$ = $1; 
+        $$ = new ASTNode("translation_unit");
+        $$->addChild($1); 
         $$->addChild($2); 
     }
-    /* | error semi_colon
-    {
-        LINE
-        PARSERlog << "Error: " << getPosition($2) << std::endl;
-        yyerrok; yyclearin;
-    }
-     */
     ;
 
 external_declaration
     : function_definition 
     { 
         LINE 
-        $$ = $1; 
+        $$ = new ASTNode("external_declaration");
+        $$->addChild($1); 
     }
     | declaration 
     { 
         LINE 
-        $$ = $1; 
+        $$ = new ASTNode("external_declaration");
+        $$->addChild($1); 
     }
-    | function_declaration
+    /*| function_declaration
     {
         LINE
-        $$ = $1;
-    }
+        $$ = new ASTNode("external_declaration");
+        $$->addChild($1);
+    } */
     ;
 
-function_declaration
+
+/* function_declaration
     : declaration_specifiers declarator semi_colon
     {
         LINE
-        $$ = new ASTNode("Function Declaration");
+        $$ = new ASTNode("function_declaration");
         $$->addChild($1);
         $$->addChild($2);
+        $$->addChild($3);
         Function_Def_Handler($2);
     }
-    ;
+    ; */
 
 function_definition
     :
-    /* declaration_specifiers declarator declaration_list compound_statement 
+    declaration_specifiers declarator declaration_list compound_statement 
     { 
         LINE  
         $$ = new ASTNode("Function Definition"); 
@@ -1766,30 +2033,31 @@ function_definition
         $$->addChildren($3->children); 
         $$->addChild($4); 
     }
-    |  */
+    | 
     declaration_specifiers declarator compound_statement 
     { 
         LINE
-        $$ = new ASTNode("Function Definition"); 
+        $$ = new ASTNode("function_definition"); 
+        $$->addChild($1);
         $$->addChild($2); 
         $$->addChild($3); 
-        Function_Def_Handler($2);
+        // Function_Def_Handler($2);
     }
-    /* | declarator declaration_list compound_statement 
+    | declarator declaration_list compound_statement 
     { 
         LINE
         $$ = new ASTNode("Function Definition"); 
         $$->addChild($1); 
         $$->addChildren($2->children); 
         $$->addChild($3); 
-      } */
-    /* | declarator compound_statement 
+    }
+    | declarator compound_statement 
     { 
         LINE
         $$ = new ASTNode("Function Definition"); 
         $$->addChild($1); 
         $$->addChild($2); 
-      } */
+    } 
     ;
 
 %%
@@ -1798,6 +2066,7 @@ function_definition
 // main function
 
 int main(int argc, char **argv) {
+    whereWasILast = "main";
 
     signal(SIGSEGV, signalHandler); // Catch segmentation fault
 
@@ -1979,12 +2248,14 @@ void yyerror(const char* s) {
 
 //Handler Functions
 int noOfPointers(ASTNode* node){
+    whereWasILast = "noOfPointers";
     if(node->children.size()==0) return 1;
 
     return 1+noOfPointers(node->children[0]);
 }
 
 void E_S_U_Declaration_Handler(ASTNode* declarationSpecifiers, ASTNode* initDeclaratorList,std::string s1,std::string s2){
+    whereWasILast = "E_S_U_Declaration_Handler";
     for(auto item : initDeclaratorList->children){
         if(item->type == "Initializer"){
             PARSER_TABLE.push_back({item->children[0]->position,{item->children[0]->value, s2}});
@@ -1995,6 +2266,7 @@ void E_S_U_Declaration_Handler(ASTNode* declarationSpecifiers, ASTNode* initDecl
 }
 
 void Declaration_Handler(ASTNode* declarationSpecifiers, ASTNode* initDeclaratorList){
+    whereWasILast = "Declaration_Handler";
     std::string type="";
     ASTNode* node = declarationSpecifiers;
     
@@ -2048,9 +2320,15 @@ void Declaration_Handler(ASTNode* declarationSpecifiers, ASTNode* initDeclarator
 }
 
 void Function_Def_Handler(ASTNode* declarator){
+    return;
+    whereWasILast = "Function_Def_Handler";
+    LINE1
     std::string functionName=declarator->value;
+    LINE1
     PARSER_TABLE.push_back({declarator->position, {functionName, "function declaration"}});
+    LINE1
     declarator = declarator->children[0];
+    LINE1
     if(declarator->type == "EmptyList") return;
     else if(declarator->type == "Parameter List"){
         for(auto parameter: declarator->children){
@@ -2063,6 +2341,7 @@ void Function_Def_Handler(ASTNode* declarator){
 }
 
 void Struct_Union_Declaration_Handler(ASTNode* specifierQualifierList, ASTNode* structDeclaratorList){
+    whereWasILast = "Struct_Union_Declaration_Handler";
     std::string type="";
     ASTNode* node = specifierQualifierList;
     int typeSpec=0, typeQual=0, storageClass=0;
@@ -2089,6 +2368,8 @@ void Struct_Union_Declaration_Handler(ASTNode* specifierQualifierList, ASTNode* 
 }
 
 void Enum_Declaration_Handler(ASTNode* enumSpecifier){
+    whereWasILast = "Enum_Declaration_Handler";
+
     for(auto children : enumSpecifier->children){
         if(children->type == "enumID"){
             PARSER_TABLE.push_back({children->position, {children->value, "enum"}});
