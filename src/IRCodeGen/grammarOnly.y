@@ -121,6 +121,9 @@ rsquare
     : RSQUARE
     ;
 
+//Expressions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
 primary_expression
     : identifier
     | constant
@@ -258,6 +261,8 @@ constant_expression
     : conditional_expression
     ;
 
+// End of Expressions~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 declaration
     : declaration_specifiers semi_colon
     | declaration_specifiers init_declarator_list semi_colon
@@ -344,9 +349,9 @@ struct_declarator
     ;
 
 enum_specifier
-    : ENUM LCURLY enumerator_list rcurly
-    | ENUM identifier LCURLY enumerator_list rcurly
-    | ENUM identifier
+    : ENUM LCURLY enumerator_list rcurly //On-Spot Usage
+    | ENUM identifier LCURLY enumerator_list rcurly //Identifier given can also be used later as a type
+    | ENUM identifier // Forward Declaration of Enum, can be used later as a type
     ;
 
 enumerator_list
