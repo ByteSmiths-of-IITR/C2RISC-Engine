@@ -341,8 +341,7 @@ postfix_expression
     : primary_expression 
     { 
         LINE
-        $$ = new ASTNode("postfix_expression");
-        $$->addChild($1);
+        $$ = $1;
     }
     | postfix_expression LSQUARE expression rsquare 
     { 
@@ -414,8 +413,7 @@ argument_expression_list
     | argument_expression_list COMMA assignment_expression 
     { 
         LINE
-        $$ = new ASTNode("argument_expression_list");
-        $$->addChild($1);
+        $$ = $1;
         $$->addChild($2);
         $$->addChild($3);
     }
@@ -425,8 +423,7 @@ unary_expression
     : postfix_expression 
     { 
         LINE
-        $$ = new ASTNode("unary_expression");
-        $$->addChild($1);
+        $$ = $1;
     }
     | INC_OP unary_expression 
     { 
@@ -471,38 +468,32 @@ unary_operator
     : BIT_AND 
     {
         LINE 
-        $$ = new ASTNode("unary_operator");
-        $$->addChild($1);
+        $$ = new ASTNode("unary_operator", $1->value);
     }
     | STAR 
     {
         LINE 
-        $$ = new ASTNode("unary_operator");
-        $$->addChild($1); 
+        $$ = new ASTNode("unary_operator", $1->value);
     }
     | PLUS 
     {
         LINE 
-        $$ = new ASTNode("unary_operator");
-        $$->addChild($1); 
+        $$ = new ASTNode("unary_operator", $1->value);
     }
     | MINUS 
     {
         LINE 
-        $$ = new ASTNode("unary_operator");
-        $$->addChild($1); 
+        $$ = new ASTNode("unary_operator", $1->value); 
     }
     | BIT_NOT 
     {
         LINE 
-        $$ = new ASTNode("unary_operator");
-        $$->addChild($1); 
+        $$ = new ASTNode("unary_operator", $1->value); 
     }
     | NOT_OP 
     {
         LINE 
-        $$ = new ASTNode("unary_operator");
-        $$->addChild($1); 
+        $$ = new ASTNode("unary_operator", $1->value); 
     }
     ;
 
@@ -510,8 +501,7 @@ cast_expression
     : unary_expression 
     { 
         LINE 
-        $$ = new ASTNode("cast_expression");
-        $$->addChild($1);
+        $$ = $1;
     }
     | LPAREN type_name rparen cast_expression 
     { 
@@ -528,9 +518,8 @@ cast_expression
 multiplicative_expression
     : cast_expression 
     { 
-        LINE 
-        $$ = new ASTNode("multiplicative_expression");
-        $$->addChild($1);
+        LINE
+        $$ = $1;
     }
     | multiplicative_expression STAR cast_expression 
     { 
@@ -562,8 +551,7 @@ additive_expression
     : multiplicative_expression 
     { 
         LINE 
-        $$ = new ASTNode("additive_expression");
-        $$->addChild($1);
+        $$ = $1;
     }
     | additive_expression PLUS multiplicative_expression 
     { 
@@ -587,8 +575,7 @@ shift_expression
     : additive_expression 
     { 
         LINE 
-        $$ = new ASTNode("shift_expression");
-        $$->addChild($1);
+        $$ = $1;
     }
     | shift_expression LEFT_OP additive_expression 
     { 
@@ -612,8 +599,7 @@ relational_expression
     : shift_expression 
     { 
         LINE 
-        $$ = new ASTNode("relational_expression");
-        $$->addChild($1);
+        $$ = $1;
     }
     | relational_expression LESSER_OP shift_expression 
     { 
@@ -653,8 +639,7 @@ equality_expression
     : relational_expression 
     { 
         LINE 
-        $$ = new ASTNode("equality_expression");
-        $$->addChild($1);
+        $$ = $1;
     }
     | equality_expression EQ_OP relational_expression 
     { 
@@ -678,8 +663,7 @@ and_expression
     : equality_expression 
     { 
         LINE 
-        $$ = new ASTNode("and_expression");
-        $$->addChild($1);
+        $$ = $1;
     }
     | and_expression BIT_AND equality_expression 
     { 
@@ -695,8 +679,7 @@ exclusive_or_expression
     : and_expression 
     { 
         LINE 
-        $$ = new ASTNode("exclusive_or_expression");
-        $$->addChild($1);
+        $$ = $1;
     }       
     | exclusive_or_expression XOR and_expression 
     { 
@@ -711,9 +694,8 @@ exclusive_or_expression
 inclusive_or_expression
     : exclusive_or_expression 
     { 
-        LINE 
-        $$ = new ASTNode("inclusive_or_expression");
-        $$->addChild($1);
+        LINE
+        $$ = $1;
     }
     | inclusive_or_expression BIT_OR exclusive_or_expression 
     { 
@@ -729,8 +711,7 @@ logical_and_expression
     : inclusive_or_expression 
     { 
         LINE 
-        $$ = new ASTNode("logical_and_expression");
-        $$->addChild($1);
+        $$ = $1;
     }
     | logical_and_expression AND_OP inclusive_or_expression 
     { 
@@ -746,8 +727,7 @@ logical_or_expression
     : logical_and_expression 
     { 
         LINE 
-        $$ = new ASTNode("logical_or_expression");
-        $$->addChild($1);
+        $$ = $1;
     }
     | logical_or_expression OR_OP logical_and_expression 
     { 
@@ -762,9 +742,8 @@ logical_or_expression
 conditional_expression
     : logical_or_expression 
     { 
-        LINE  
-        $$ = new ASTNode("conditional_expression");
-        $$->addChild($1);
+        LINE 
+        $$ = $1;
     }
     | logical_or_expression QUESTION expression COLON conditional_expression 
     { 
@@ -782,8 +761,7 @@ assignment_expression
     : conditional_expression 
     { 
         LINE 
-        $$ = new ASTNode("assignment_expression");
-        $$->addChild($1);
+        $$ = $1;
     }
     | unary_expression assignment_operator assignment_expression 
     { 
@@ -799,68 +777,57 @@ assignment_operator
     : ASSIGN 
     { 
         LINE 
-        $$ = new ASTNode("assignment_operator");
-        $$->addChild($1);
+        $$ = new ASTNode("assignment_operator", $1->value);
     }
     | MUL_ASSIGN 
     { 
         LINE 
-        $$ = new ASTNode("assignment_operator");
-        $$->addChild($1);
+        $$ = new ASTNode("assignment_operator", $1->value);;
     }
     | DIV_ASSIGN 
     { 
         LINE 
-        $$ = new ASTNode("assignment_operator");
-        $$->addChild($1);
+        $$ = new ASTNode("assignment_operator", $1->value);;
     }
     | MOD_ASSIGN 
     { 
         LINE 
-        $$ = new ASTNode("assignment_operator");
-        $$->addChild($1);
+        $$ = new ASTNode("assignment_operator", $1->value);;
     }
     | ADD_ASSIGN 
     { 
         LINE 
-        $$ = new ASTNode("assignment_operator");
-        $$->addChild($1);
+        $$ = new ASTNode("assignment_operator", $1->value);
     }
     | SUB_ASSIGN 
     { 
         LINE 
-        $$ = new ASTNode("assignment_operator");
-        $$->addChild($1);
+        $$ = new ASTNode("assignment_operator", $1->value);
     }
     | LEFT_ASSIGN 
     { 
         LINE 
-        $$ = new ASTNode("assignment_operator");
-        $$->addChild($1);
+        $$ = new ASTNode("assignment_operator", $1->value);
     }
     | RIGHT_ASSIGN 
     { 
         LINE 
-        $$ = new ASTNode("assignment_operator");
-        $$->addChild($1);
+        $$ = new ASTNode("assignment_operator", $1->value);
     }
     | AND_ASSIGN 
     { 
         LINE 
-        $$ = new ASTNode("assignment_operator");
-        $$->addChild($1);
+        $$ = new ASTNode("assignment_operator", $1->value);
     }
     | XOR_ASSIGN 
     { 
         LINE 
-        $$ = new ASTNode("assignment_operator");
-        $$->addChild($1);
+        $$ = new ASTNode("assignment_operator", $1->value);
     }
     | OR_ASSIGN 
     { 
         LINE 
-        $$ = new ASTNode("assignment_operator");
-        $$->addChild($1);
+        $$ = new ASTNode("assignment_operator", $1->value);
     }
     ;
 
@@ -869,8 +836,7 @@ expression
     : assignment_expression 
     { 
         LINE
-        $$ = new ASTNode("expression");
-        $$->addChild($1);
+        $$ = $1;
     }
     | expression COMMA assignment_expression 
     { 
@@ -886,8 +852,10 @@ constant_expression
     : conditional_expression 
     {
         LINE
-        $$ = new ASTNode("constant_expression");
-        $$->addChild($1);
+        // $$ = new ASTNode("constant_expression");
+        // $$->addChild($1);
+        // ShortHand
+        $$ = $1;
     }
     ;
 
@@ -922,7 +890,7 @@ declaration_specifiers
         LINE
         $$ = new ASTNode("declaration_specifiers");
         $$->addChild($1);
-        $$->addChild($2);
+        $$->addChildren($2->children);
     }
     | type_specifier 
     { 
@@ -935,7 +903,7 @@ declaration_specifiers
         LINE
         $$ = new ASTNode("declaration_specifiers");
         $$->addChild($1);
-        $$->addChild($2);
+        $$->addChildren($2->children);
     }
     | type_qualifier 
     { 
@@ -948,7 +916,7 @@ declaration_specifiers
         LINE
         $$ = new ASTNode("declaration_specifiers");
         $$->addChild($1);
-        $$->addChild($2);
+        $$->addChildren($2->children);
     }
     ;
 
@@ -962,8 +930,7 @@ init_declarator_list
     | init_declarator_list COMMA init_declarator
     {
         LINE
-        $$ = new ASTNode("init_declarator_list");
-        $$->addChild($1);
+        $$ = $1;
         $$->addChild($2);
         $$->addChild($3);
     }
@@ -987,92 +954,83 @@ init_declarator
     ;
 
 storage_class_specifier
-    : TYPEDEF 
+    : /*TYPEDEF 
     {
         LINE 
         $$ = new ASTNode("storage_class_specifier");
         $$->addChild($1);
     }
-    | EXTERN 
+    |*/ EXTERN 
     {
         LINE 
         $$ = new ASTNode("storage_class_specifier");
-        $$->addChild($1);
+        $$->addChild($1);    
     }
     | STATIC 
     {
         LINE 
         $$ = new ASTNode("storage_class_specifier");
-        $$->addChild($1);
+        $$->addChild($1);    
     }
     | AUTO 
     {
         LINE 
         $$ = new ASTNode("storage_class_specifier");
-        $$->addChild($1);
+        $$->addChild($1);    
     }
     | REGISTER 
     {
         LINE 
         $$ = new ASTNode("storage_class_specifier");
-        $$->addChild($1);
+        $$->addChild($1);    
     }
     ;
 
 type_specifier
     : VOID 
     {
-        LINE 
-        $$ = new ASTNode("type_specifier");
-        $$->addChild($1);
+        LINE
+        $$ = new ASTNode("type_specifier", $1->value);
     }
     | CHAR 
     {
         LINE
-        $$ = new ASTNode("type_specifier");
-        $$->addChild($1);
+        $$ = new ASTNode("type_specifier", $1->value);
     }
     | SHORT 
     {
         LINE 
-        $$ = new ASTNode("type_specifier");
-        $$->addChild($1);
+        $$ = new ASTNode("type_specifier", $1->value);
     }
     | INT 
     {
         LINE 
-        $$ = new ASTNode("type_specifier");
-        $$->addChild($1);
+        $$ = new ASTNode("type_specifier", $1->value);
     }
     | LONG 
     {
         LINE 
-        $$ = new ASTNode("type_specifier");
-        $$->addChild($1);
+        $$ = new ASTNode("type_specifier", $1->value);
     }
     | FLOAT 
     {
         LINE
-        $$ = new ASTNode("type_specifier");
-        $$->addChild($1);
+        $$ = new ASTNode("type_specifier", $1->value);
     }
     | DOUBLE 
     {
         LINE
-        $$ = new ASTNode("type_specifier");
-        $$->addChild($1);
+        $$ = new ASTNode("type_specifier", $1->value);
     }
     | SIGNED 
     {
         LINE
-        $$ = new ASTNode("type_specifier");
-        $$->addChild($1);
+        $$ = new ASTNode("type_specifier", $1->value);
     }
     | UNSIGNED 
     {
         LINE
-        $$ = new ASTNode("type_specifier");
-        $$->addChild($1);
+        $$ = new ASTNode("type_specifier", $1->value);
     }
     | struct_or_union_specifier 
     {
@@ -1100,7 +1058,7 @@ struct_or_union_specifier
         LINE 
         $$ = new ASTNode("struct_or_union_specifier");
         $$->addChild($1);
-        $$->addChild($2);
+        $$->addChild(new ASTNode("struct_UnionID", $2->value));
         $$->addChild($3);
         $$->addChild($4);
         $$->addChild($5);
@@ -1120,7 +1078,7 @@ struct_or_union_specifier
         LINE 
         $$ = new ASTNode("struct_or_union_specifier");
         $$->addChild($1);
-        $$->addChild($2);
+        $$->addChild(new ASTNode("struct_UnionID", $2->value));
         PARSER_TABLE.push_back({$2->position, {$2->value, $1->value}});
     }
     ;
@@ -1129,14 +1087,12 @@ struct_or_union
     : STRUCT 
     {
         LINE 
-        $$ = new ASTNode("struct_or_union");
-        $$->addChild($1);
+        $$ = new ASTNode("Struct", "struct");
     }
     | UNION 
     {
         LINE 
-        $$ = new ASTNode("struct_or_union");
-        $$->addChild($1);
+        $$ = new ASTNode("Union", "union");
     }
     ;
 
@@ -1150,8 +1106,7 @@ struct_declaration_list
     | struct_declaration_list struct_declaration 
     {
         LINE 
-        $$ = new ASTNode("struct_declaration_list");
-        $$->addChildren($1->children);
+        $$ = $1;
         $$->addChild($2);
     }
     ;
@@ -1174,7 +1129,7 @@ specifier_qualifier_list
         LINE
         $$ = new ASTNode("specifier_qualifier_list");
         $$->addChild($1);
-        $$->addChild($2);
+        $$->addChildren($2->children);
     }
     | type_specifier
     {
@@ -1187,7 +1142,7 @@ specifier_qualifier_list
         LINE
         $$ = new ASTNode("specifier_qualifier_list");
         $$->addChild($1);
-        $$->addChild($2);
+        $$->addChildren($2->children);
     }
     | type_qualifier
     {
@@ -1207,8 +1162,7 @@ struct_declarator_list
     | struct_declarator_list COMMA struct_declarator 
     { 
         LINE 
-        $$ = new ASTNode("struct_declarator_list");
-        $$->addChildren($1->children);
+        $$ = $1;
         $$->addChild($2);
         $$->addChild($3);
     }
@@ -1282,8 +1236,7 @@ enumerator_list
     | enumerator_list COMMA enumerator 
     {
         LINE 
-        $$ = new ASTNode("enumerator_list");
-        $$->addChildren($1->children);
+        $$ = $1;
         $$->addChild($2);
         $$->addChild($3);
     }
@@ -1438,8 +1391,7 @@ type_qualifier_list
     | type_qualifier_list type_qualifier
     {
         LINE
-        $$ = new ASTNode("type_qualifier_list");
-        $$->addChildren($1->children);
+        $$ = $1;
         $$->addChild($2);
     }
     ;
@@ -1471,8 +1423,7 @@ parameter_list
     | parameter_list COMMA parameter_declaration 
     { 
         LINE 
-        $$ = new ASTNode("parameter_list");
-        $$->addChildren($1->children);
+        $$ = $1;
         $$->addChild($2);
         $$->addChild($3);
     }
@@ -1803,8 +1754,7 @@ statement_list
     | statement_list statement 
     { 
         LINE 
-        $$ = new ASTNode("statement_list");
-        $$->addChild($1);
+        $$ = $1;
         $$->addChild($2); 
     }
     ;
@@ -1977,15 +1927,15 @@ translation_unit
     { 
         LINE 
         $$ = new ASTNode("translation_unit");
-        $$->addChild($1); 
+        $$->addChild($1);
         root = $$;
     }
     | translation_unit external_declaration 
     { 
         LINE 
-        $$ = new ASTNode("translation_unit");
-        $$->addChild($1); 
+        $$ = $1;
         $$->addChild($2); 
+        root = $$;
     }
     ;
 
@@ -2028,9 +1978,9 @@ function_definition
     declaration_specifiers declarator declaration_list compound_statement 
     { 
         LINE  
-        $$ = new ASTNode("Function Definition"); 
+        $$ = new ASTNode("function_definition"); 
         $$->addChild($2); 
-        $$->addChildren($3->children); 
+        $$->addChild($3);
         $$->addChild($4); 
     }
     | 
@@ -2046,15 +1996,15 @@ function_definition
     | declarator declaration_list compound_statement 
     { 
         LINE
-        $$ = new ASTNode("Function Definition"); 
+        $$ = new ASTNode("function_definition"); 
         $$->addChild($1); 
-        $$->addChildren($2->children); 
+        $$->addChild($2);
         $$->addChild($3); 
     }
     | declarator compound_statement 
     { 
         LINE
-        $$ = new ASTNode("Function Definition"); 
+        $$ = new ASTNode("function_definition"); 
         $$->addChild($1); 
         $$->addChild($2); 
     } 

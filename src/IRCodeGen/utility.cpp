@@ -119,13 +119,13 @@ std::string ASTStyle(ASTNode* node) {
     if (param == "Typedef D-Type") {
         return "shape=parallelogram, style=filled, fillcolor=seagreen1";
     }
-    else if (param == "structID")
+    else if (param == "struct_UnionID")
     {
         return "shape=parallelogram, style=filled, fillcolor=seagreen2";
     }
-    else if (param == "unionID"){
-        return "shape=parallelogram, style=filled, fillcolor=seagreen3";
-    }
+    // else if (param == "unionID"){
+    //     return "shape=parallelogram, style=filled, fillcolor=seagreen3";
+    // }
     else if (param == "enumID"){
         return "shape=parallelogram, style=filled, fillcolor=seagreen4";
     } 
@@ -210,17 +210,17 @@ std::string ASTStyle(ASTNode* node) {
 
 
 
-    else if (param == "Type Specifier")
+    else if (param == "type_specifier")
     {
             return "shape=parallelogram, style=filled, fillcolor=orange";
     }
-    else if(param =="Type Qualifier"){
+    else if(param =="type_qualifier"){
         return "shape=parallelogram, style=filled, fillcolor=orangered";
     }
-    else if(param =="Storage Class Specifier"){
+    else if (param == "storage_class_specifier")
+    {
         return "shape=parallelogram, style=filled, fillcolor=orchid";
     }
-
 
     else if(param =="Struct Declaration List"){
         return "shape=box, style=filled, fillcolor=lightblue";
@@ -231,8 +231,12 @@ std::string ASTStyle(ASTNode* node) {
     else if(param =="Specifie Qualifier List"){
         return "shape=box, style=filled, fillcolor=lightblue";
     }
+    else if(node->value != EMPTY_VAL){
+        // It's a leaf node with a value
+        return "shape=box, style=filled, fillcolor=lightblue";
+    }
 
-    return "shape=oval, style=filled, fillcolor=bisque";
+    return "shape=box, style=filled, fillcolor=bisque";
     }
 
 //--------------- Writes the AST to a DOT format file recursively
