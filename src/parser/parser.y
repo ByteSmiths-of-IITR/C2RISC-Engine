@@ -2050,7 +2050,9 @@ void Declaration_Handler(ASTNode* declarationSpecifiers, ASTNode* initDeclarator
 void Function_Def_Handler(ASTNode* declarator){
     std::string functionName=declarator->value;
     PARSER_TABLE.push_back({declarator->position, {functionName, "function declaration"}});
-    declarator = declarator->children[0];
+
+    declarator = (declarator->children.size()) ?declarator->children[0] : nullptr;
+    if(declarator==nullptr) return;
     if(declarator->type == "EmptyList") return;
     else if(declarator->type == "Parameter List"){
         for(auto parameter: declarator->children){
