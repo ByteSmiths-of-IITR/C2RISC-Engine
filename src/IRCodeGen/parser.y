@@ -19,25 +19,34 @@
 
 std::string whereWasILast;
 
+#define TERMINAL_MESSAGE true // if you wish to check if successful parsing from terminal itself
 
-// #define LINE std::cerr<< "Production - " << __LINE__<<std::endl;
-#define LINE /**/
+bool TURN_OFF = false; // Turn off the custom error messages
+
+int noOfyyerrorCalls = 0; 
+
+#define LINE std::cerr<< "Production - " << __LINE__<<std::endl;
+// #define LINE /**/
 // #define LINE1 std::cerr<< __LINE__<<std::endl;
 #define LINE1 /**/
 
 #define PARSERLOGHEADER "----------------------------------- PARSER LOG -----------------------------------"
 #define LOGFOOTER       "----------------------------------- END OF LOG -----------------------------------"
 #define LEXERLOGHEADER  "----------------------------------- LEXER LOG ------------------------------------"
+#define BISONLOGHEADER  "----------------------------------- BISON LOG ------------------------------------"
 
 // Global DS 
 std::vector<std::pair<std::pair<int,int>, std::pair<std::string, std::string>> > PARSER_TABLE;
 
 
-// Handler Functions
-void Struct_Union_Declaration_Handler(ASTNode* specifierQualifierList, ASTNode* declaratorList);
-void Enum_Declaration_Handler(ASTNode* enumSpecifier);
-void Function_Def_Handler(ASTNode* declarator);
-void Declaration_Handler(ASTNode* declarationSpecifiers, ASTNode* initDeclaratorList);
+// Handler Functions [Removed]
+// void Struct_Union_Declaration_Handler(ASTNode* specifierQualifierList, ASTNode* declaratorList);
+// void Enum_Declaration_Handler(ASTNode* enumSpecifier);
+// void Function_Def_Handler(ASTNode* declarator);
+// void Declaration_Handler(ASTNode* declarationSpecifiers, ASTNode* initDeclaratorList);
+
+
+// Utility Functions
 void printParserTable(std::ostream& out);
 void writeLatexTable(std::ostream& out);
 
@@ -51,11 +60,12 @@ extern FILE *yyin;
 
 extern std::vector<std::string> lexerLOG;
 std::vector<std::string> parserLOG;
+std::vector<std::string> bisonLOG;
 
 extern std::string lastToken;
 
+bool stopYYERROR = false;
 
-bool bisonError = false;
 bool customError = false;
 
 std::ofstream* output = nullptr;  // Global pointer
@@ -77,7 +87,6 @@ void ourError(const std::string& msg) {
     std::string error = "Syntax Error at line " + std::to_string(yylineno) + " near token: " + lastToken;
     error += " | Error Description: " + msg;
     parserLOG.push_back(error);
-    customError = true;
 }
 
 void initOutputFile(const std::string& filename) {
@@ -98,16 +107,20 @@ void closeOutputFile() {
 }
 
 void signalHandler(int signum) {
+
+    // Don't Think will be needed anymore [since we removed the handlerFunctions, which were cause of segFaults]
+
+
     *output << "\U0001F6A8 * Input Program failed in the PARSE stage \U0001F6A8" << std::endl;
     *output << "Where was I Last: " << whereWasILast << std::endl;
     *output << std::endl;
     // cerr the log
-    *output << PARSERLOGHEADER << std::endl;
+    *output << ((parserLOG.size() > 0) ? PARSERLOGHEADER : BISONLOGHEADER) << std::endl;
     for (auto& log : parserLOG) {
         *output << log << std::endl;
         // TODO ------------ Handle this [ Not printing the logs of parser ]
         if(parserLOG.size()==0){
-            *output << "$ Syntax Error at line " << yylineno << " near token: " << lastToken << std::endl;
+            *output << "$(SignalHandler) Syntax Error at line " << yylineno << " near token: " << lastToken << std::endl;
         }
     }
     *output << LOGFOOTER << std::endl;
@@ -216,7 +229,8 @@ ASTNode *root;
 %%
 
 
-//Adding ERRORS
+//////////////// Adding Error Production //////////////////////////////////////////////////////////
+
 
 identifier
     : IDENTIFIER 
@@ -224,10 +238,10 @@ identifier
             LINE
             $$ = new ASTNode($1);
         }
-    | error 
+    | {stopYYERROR=true;} error 
         { 
             LINE
-            $$ = new ASTNode("Error", "Identifier");
+            $$ = new ASTNode("Error", "\U0001F6A8 Identifier");
             ourError("Expected an ID or Expression");
         }
     ;
@@ -238,11 +252,12 @@ constant
             LINE
             $$ = new ASTNode($1);
         }
-    | error 
+    |{stopYYERROR=true;} error 
         { 
             LINE
-            $$ = new ASTNode("Error", "Constant");
+            $$ = new ASTNode("Error", "\U0001F6A8 Constant");
             ourError("Expected a Constant or Expression");
+
         }
     ;
 
@@ -252,11 +267,14 @@ semi_colon
             LINE
             $$ = new ASTNode($1);
         }
-    | error 
+    | {stopYYERROR=true;} error 
         { 
             LINE
-            $$ = new ASTNode("Error", "SemiColon");
+            // Program comes here after calling yy error()
+
+            $$ = new ASTNode("Error", "\U0001F6A8 SemiColon");
             ourError("Expected a SemiColon");
+            
         }
     ;
 
@@ -266,11 +284,12 @@ rparen
             LINE
             $$ = new ASTNode($1);
         }
-    | error 
+    |{stopYYERROR=true;} error 
         { 
             LINE
-            $$ = new ASTNode("Error", "RParen");
+            $$ = new ASTNode("Error", "\U0001F6A8 RParen");
             ourError("Expected a Right Parenthesis");
+
         }
     ;
 
@@ -280,11 +299,12 @@ rcurly
             LINE
             $$ = new ASTNode($1);
         }
-    | error 
+    | {stopYYERROR=true;} error 
         { 
             LINE
-            $$ = new ASTNode("Error", "RCurly");
+            $$ = new ASTNode("Error", "\U0001F6A8 RCurly");
             ourError("Expected a Right Curly Brace");
+
         }
     ;
 
@@ -294,17 +314,69 @@ rsquare
             LINE
             $$ = new ASTNode($1);
         }
-    | error 
+    |{stopYYERROR=true;} error 
         { 
             LINE
-            $$ = new ASTNode("Error", "RSquare");
+            $$ = new ASTNode("Error", "\U0001F6A8 RSquare");
             ourError("Expected a Right Square Bracket");
+
         }
     ;
 
 
 
+//////////////////////// TurnOff CustomErrors /////////////////////////////////////////////////////////////
+/*
 
+identifier
+    : IDENTIFIER 
+        { 
+            LINE
+            $$ = new ASTNode($1);
+        }
+    ;
+
+constant
+    : CONSTANT 
+        { 
+            LINE
+            $$ = new ASTNode($1);
+        }
+    ;
+
+semi_colon
+    : SEMI_COLON 
+        { 
+            LINE
+            $$ = new ASTNode($1);
+        }
+    ;
+
+rparen
+    : RPAREN 
+        { 
+            LINE
+            $$ = new ASTNode($1);
+        }
+    ;
+
+rcurly
+    : RCURLY 
+        { 
+            LINE
+            $$ = new ASTNode($1);
+        }
+    ;   
+
+rsquare
+    : RSQUARE 
+        { 
+            LINE
+            $$ = new ASTNode($1);
+        }
+    ;   
+
+*/
 //////////////////////// ORIGINAL GRAMMAR ////////////////////////////////////////////////////////////////
 
 primary_expression
@@ -873,7 +945,7 @@ declaration
         $$->addChild($1);  
         $$->addChild($2);
         $$->addChild($3);
-        Declaration_Handler($1, $2);
+        // Declaration_Handler($1, $2);
     }
     ;
 
@@ -1118,7 +1190,7 @@ struct_declaration
         $$->addChild($1);
         $$->addChild($2);
         $$->addChild($3);
-        Struct_Union_Declaration_Handler($1, $2);
+        // Struct_Union_Declaration_Handler($1, $2);
     }
     ;
 
@@ -1200,7 +1272,7 @@ enum_specifier
         $$->addChild($2);
         $$->addChild($3);
         $$->addChild($4);
-        Enum_Declaration_Handler($$);
+        // Enum_Declaration_Handler($$);
     }
     | ENUM identifier LCURLY enumerator_list rcurly 
     { 
@@ -1211,7 +1283,7 @@ enum_specifier
         $$->addChild($3);
         $$->addChild($4);
         $$->addChild($5);
-        Enum_Declaration_Handler($$);
+        // Enum_Declaration_Handler($$);
     }
     | ENUM identifier 
     { 
@@ -1219,7 +1291,7 @@ enum_specifier
         $$ = new ASTNode("enum_specifier");
         $$->addChild($1);
         $$->addChild($2);
-        Enum_Declaration_Handler($$);
+        // Enum_Declaration_Handler($$);
     }
     ;
 
@@ -1936,6 +2008,7 @@ translation_unit
         $$->addChild($2); 
         root = $$;
     }
+    /* | error { yyerrok; } */
     ;
 
 external_declaration
@@ -1951,26 +2024,8 @@ external_declaration
         $$ = new ASTNode("external_declaration");
         $$->addChild($1); 
     }
-    /*| function_declaration
-    {
-        LINE
-        $$ = new ASTNode("external_declaration");
-        $$->addChild($1);
-    } */
+    /* | error { yyerrok; } */
     ;
-
-
-/* function_declaration
-    : declaration_specifiers declarator semi_colon
-    {
-        LINE
-        $$ = new ASTNode("function_declaration");
-        $$->addChild($1);
-        $$->addChild($2);
-        $$->addChild($3);
-        Function_Def_Handler($2);
-    }
-    ; */
 
 function_definition
     :
@@ -2099,11 +2154,18 @@ int main(int argc, char **argv) {
     // ------------------------- Parser Phase Completion Checks ------------------------
 
     bool lexerFailed = (lexerLOG.size() > 0);
+
     bool parseError = (parserLOG.size() > 0);
-    parseError = parseError || lexerFailed || bisonError;
+    bool bisonError = (bisonLOG.size() > 0);
+
+    bool syntaxError = parseError || lexerFailed || bisonError;
 
     if(lexerFailed){
         *output << "\U0001F6A8 Input Program failed in Lexical Analysis Phase \U0001F6A8\n" << std::endl;
+        if(TERMINAL_MESSAGE){
+            std::cout << "\U0001F6A8 Input Program failed in Lexical Analysis Phase \U0001F6A8" << std::endl;
+        }
+        
         *output << LEXERLOGHEADER << std::endl;
         for(auto log : lexerLOG){
             *output << log << std::endl;
@@ -2118,33 +2180,58 @@ int main(int argc, char **argv) {
         return 0;
     }
 
-    if(parseError){
+    if(syntaxError){
         *output << "\U0001F6A8 Input Program failed in Syntax Analysis Phase \U0001F6A8\n" << std::endl;
-        *output << PARSERLOGHEADER << std::endl;
-        for(auto log : parserLOG){
-            *output << log << std::endl;
+        
+        *output << "\U0001F6A8 yyerror() was called " << noOfyyerrorCalls << " times \U0001F6A8\n" << std::endl;
+
+        if(TERMINAL_MESSAGE){
+            std::cout << "\U0001F6A8 Input Program failed in Syntax Analysis Phase \U0001F6A8" << std::endl;
         }
 
-        if(!customError){
-            // NO CUSTOM ERROR
-            *output << "!!Syntax Error at Line: " << yylineno << " near tokne: " << yytext << "!!\n";
-        }
+        // We print ourCustom Error Only if Bison-don't Report any Error
 
-        *output << LOGFOOTER << std::endl;
+        if(parseError){
+            *output << PARSERLOGHEADER << std::endl;
+            for(auto log : parserLOG){
+                *output << log << std::endl;
+            }
+
+            *output << LOGFOOTER << std::endl;
+            *output << std::endl;
+        }
+        
+        if(bisonError){
+            *output << BISONLOGHEADER << std::endl;
+            for(auto log : bisonLOG){
+                *output << log << std::endl;
+            }
+            *output << LOGFOOTER << std::endl;
+        }
+        
         *output << std::endl;
 
-        *output << "----No Further Processing----\n";
-        // Clean Up
-        fclose(yyin);
-        closeOutputFile();
-        return 0;
+        if(!bisonError){
+            *output << "----No Further Processing----\n";
+
+        // If we only have custom error - i.e no bison error then we can print the AST
+            // Clean Up
+            fclose(yyin);
+            closeOutputFile();
+            return 0; // For now even if there is a syntax error, we will continue to print the AST
+        }
     }
     LINE
 
     // Success message
-    *output << "\U0001F44D Input Program passed Syntax Analysis Phase \U0001F44D\n" << std::endl;
+    
+    if(!syntaxError){
+        *output << "\U0001F44D Input Program passed Syntax Analysis Phase \U0001F44D\n" << std::endl;
 
-
+        if(TERMINAL_MESSAGE){
+            std::cout << "\U0001F44D Input Program passed Syntax Analysis Phase \U0001F44D" << std::endl;
+        }
+    }
     // ------------------------- Printing Various Outputs ------------------------
 
     if(ast_flag){
@@ -2192,151 +2279,17 @@ int main(int argc, char **argv) {
 
 // Error handling function
 void yyerror(const char* s) {
-    /* yyclearin; */
+    // We stop Custom Error Handling 
+    // add to bison LOG
+    noOfyyerrorCalls++;
+    if(!TURN_OFF && stopYYERROR) return;
 
-    // This Won't print anything
-    
-    bisonError = true; // Makes sure no Printing of any AST happens
+    std::string error = "Syntax Error: " + std::string(s) + " at Line: " + std::to_string(yylineno) + " near Token: " + yytext;
+    bisonLOG.push_back(error);
+    /* yyclearin; // Clear the buffer */
 }
 
-//Handler Functions
-int noOfPointers(ASTNode* node){
-    whereWasILast = "noOfPointers";
-    if(node->children.size()==0) return 1;
-
-    return 1+noOfPointers(node->children[0]);
-}
-
-void E_S_U_Declaration_Handler(ASTNode* declarationSpecifiers, ASTNode* initDeclaratorList,std::string s1,std::string s2){
-    whereWasILast = "E_S_U_Declaration_Handler";
-    for(auto item : initDeclaratorList->children){
-        if(item->type == "Initializer"){
-            PARSER_TABLE.push_back({item->children[0]->position,{item->children[0]->value, s2}});
-        } else {
-            PARSER_TABLE.push_back({item->position,{item->value, s2}});
-        }
-    }
-}
-
-void Declaration_Handler(ASTNode* declarationSpecifiers, ASTNode* initDeclaratorList){
-    whereWasILast = "Declaration_Handler";
-    std::string type="";
-    ASTNode* node = declarationSpecifiers;
-    
-    if(declarationSpecifiers->type == "Enum Specifier"){
-        E_S_U_Declaration_Handler(declarationSpecifiers, initDeclaratorList, "enum", "enum Element");
-        return;
-    }
-
-    if(declarationSpecifiers->type == "Struct"){
-        E_S_U_Declaration_Handler(declarationSpecifiers, initDeclaratorList, "struct", "struct Instance"); 
-        return;
-    }
-
-    if(declarationSpecifiers->type == "Union"){
-        E_S_U_Declaration_Handler(declarationSpecifiers, initDeclaratorList, "union", "union Instance");
-        return;
-    }
-
-    int typeSpec=0, typeQual=0, storageClass=0;
-    while(node){
-        if(node->type == "Type Specifier"){
-            type = node->value;
-            typeSpec++;
-        }else if(node->type == "Storage Class Specifier") {
-            storageClass++; 
-        }
-        node=(node->children.size())?node->children[0]:nullptr; //Move down the tree
-    }
-    if(storageClass>1){
-        ourError("NOT-ALLOWED | Multiple type specifiers/qualifiers/storage classes in declaration");
-        return;
-    }
-    if(type == "") type = "int"; // default type is int
-    for(auto children : initDeclaratorList->children){
-        int pointCount=0, arrayCount=0;
-        ASTNode* tempNode = children;
-        if(children->type == "Initializer") tempNode = children->children[0];
-        if(tempNode->type == "Pointer Declarator"){
-            pointCount=noOfPointers(tempNode->children[0]);
-            /* std::cout<<pointCount<<std::endl; */
-            tempNode=tempNode->children[1];
-        }
-        if(tempNode->type == "Array Declaration"){
-            while(tempNode->type == "Array Declaration"){
-            arrayCount++;
-            tempNode = tempNode->children[0];
-            }
-        }
-        PARSER_TABLE.push_back({tempNode->position,{tempNode->value, type+(pointCount?(" "+std::to_string(pointCount)+"-D ptr "):"")+(arrayCount?(" "+std::to_string(arrayCount)+"-D Arr "):"")}});
-    }
-}
-
-void Function_Def_Handler(ASTNode* declarator){
-    return;
-    whereWasILast = "Function_Def_Handler";
-    LINE1
-    std::string functionName=declarator->value;
-    LINE1
-    PARSER_TABLE.push_back({declarator->position, {functionName, "function declaration"}});
-    LINE1
-    declarator = declarator->children[0];
-    LINE1
-    if(declarator->type == "EmptyList") return;
-    else if(declarator->type == "Parameter List"){
-        for(auto parameter: declarator->children){
-            std::string type="";
-            ASTNode* tempInitDeclList = new ASTNode("Initialization or Declaration List", "initDeclaratorList");
-            tempInitDeclList->addChild(parameter->children[1]);
-            Declaration_Handler(parameter->children[0], tempInitDeclList);
-        }
-    }
-}
-
-void Struct_Union_Declaration_Handler(ASTNode* specifierQualifierList, ASTNode* structDeclaratorList){
-    whereWasILast = "Struct_Union_Declaration_Handler";
-    std::string type="";
-    ASTNode* node = specifierQualifierList;
-    int typeSpec=0, typeQual=0, storageClass=0;
-    while(node){
-        if(node->type == "Type Specifier"){
-            type = node->value;
-            typeSpec++;
-        } else if(node->type == "Storage Class Specifier") storageClass++;
-
-        node=(node->children.size())?node->children[0]:nullptr;
-    }
-    if(storageClass>1){
-        ourError("Multiple storage classes in declaration");
-        return;
-    }
-    if(type == "") type = "int";
-    for(auto children : structDeclaratorList->children){
-        if(children->type == "Struct or Union Declarator"){
-            PARSER_TABLE.push_back({children->children[0]->position, {children->children[0]->value, type}});
-        }else if(children->type == "Identifier"){
-            PARSER_TABLE.push_back({children->position,{children->value, type}});
-        }
-    }
-}
-
-void Enum_Declaration_Handler(ASTNode* enumSpecifier){
-    whereWasILast = "Enum_Declaration_Handler";
-
-    for(auto children : enumSpecifier->children){
-        if(children->type == "enumID"){
-            PARSER_TABLE.push_back({children->position, {children->value, "enum"}});
-        } else if(children->type == "Enum List"){
-            for(auto item : children->children){
-                if(item->type == "Enum Assignment"){
-                    PARSER_TABLE.push_back({item->children[0]->position, {item->children[0]->value, "enum Element"}});
-                } else {
-                    PARSER_TABLE.push_back({item->position, {item->value, "enum Element"}});
-                }
-            }
-        }
-    }
-}
+// Handler Functions Removed
 
 // PARSER_TABLE
 void printParserTable(std::ostream& out) {

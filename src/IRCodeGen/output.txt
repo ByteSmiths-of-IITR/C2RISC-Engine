@@ -1,3 +1,2 @@
 👍 Input Program passed Syntax Analysis Phase 👍
 
-🔺 S-Expression generated as: SExp.txt

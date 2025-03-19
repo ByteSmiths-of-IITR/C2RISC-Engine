@@ -1,46 +1,66 @@
-// Pointers
+#include <stdio.h>
 
-// Rules written in obsidian notes - "The pointer & const confusion"
+int main()
+{
+    // Variable Declarations
+    char c = 'A';
+    float x = 10.5, y = 2.3;
+    double d = 3.14159;
+    int *ptr = NULL;
+    int arr[3] = {1, 2, 3};
 
-const int long* ptr1;
+    // Multi-Dimensional Array
+    int matrix[2][2] = {{1, 2}, {3, 4}};
+    printf("Multi-Dimensional Array:\n");
+    printf("  %d %d\n", matrix[0][0], matrix[0][1]);
 
-int* const ptr2;
+    // Bitwise Operations
+    int a = 5, b = 3;
+    int and_op = a & b;
+    int or_op = a | b;
+    int xor_op = a ^ b;
+    int left_shift = a << 1;
+    int right_shift = b >> 1;
+    printf("Bitwise Operations:\n");
+    printf("  %d & %d = %d\n", a, b, and_op);
+    printf("  %d | %d = %d\n", a, b, or_op);
+    printf("  %d ^ %d = %d\n", a, b, xor_op);
+    printf("  %d << 1 = %d\n", a, left_shift);
+    printf("  %d >> 1 = %d\n\n", b, right_shift);
 
-int* ptr3;
+    // Switch case
+    int num = 2;
+    switch (num)
+    {
+    case 1:
+        printf("Number is 1\n");
+        break;
+    case 2:
+        printf("Number is 2\n");
+        break;
+    default:
+        printf("Number is unknown\n");
+    }
 
-const int* const ptr4;
+    // Nested Loops: Multiplication Table
+    printf("Multiplication Table (1-3):\n");
+    for (int i = 1; i <= 3; i++)
+    {
+        for (int j = 1; j <= 3; j++)
+        {
+            printf("%d x %d = %d\t", i, j, i * j);
+        }
+        printf("\n");
+    }
 
-// const int*  const const *const *ptr5; // This throws a warning
+    // Ternary Operator
+    int min = (a < b) ? a : b;
+    printf("Minimum of %d and %d is %d\n\n", a, b, min);
 
-const int* ptr71;
-const int *ptr19; // Both are same [the parser removes the space]
+    // Function Pointer
+    void (*funcPtr)();
+    funcPtr = main;
+    printf("Function pointer assigned\n\n");
 
-// const int const *ptr2; // This also throws a warning 
-// General Rule - a const can only appear before the type specifier and after the pointer
-// The const just after the pointer get's binded to it
-// and the const just before int get's binded to int-data type
-
-int *const *ptr23;
-int **const ptr41; //both are not-same
-
-int *volatile const *ptr53;
-
-// ptr3 is a pointer to a constant pointer to an int
-// Rule the last * is the top-level pointer the ptr itself
-// and as we move left the higherlevel pointer appears.
-
-// Decide which the int-data or the top-pointer sit's at level0 in multi-level pointer
-
-// Easy Rule - Read from right to left 
-
-int **ptr5;
-
-int* ptr6[10]; // Array of pointers
-
-int (*ptr7)[10]; // Pointer to an array(arrays are itself pointers) [Thus a 2-dim pointer]
-
-int (*functionPtr)(int, int); // Pointer to a function
-
-int main() {
     return 0;
 }

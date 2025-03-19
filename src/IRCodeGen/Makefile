@@ -66,7 +66,7 @@ $(OUTPUT):
 	touch $(OUTPUT)
 
 run: $(EXECUTABLE) $(INPUT) $(OUTPUT) $(CERR)
-	./$(EXECUTABLE) $(INPUT) $(OUTPUT) -pt 2> $(CERR) 
+	./$(EXECUTABLE) $(INPUT) $(OUTPUT) 2> $(CERR) 
 
 # This will only run the parser and generate the output file [NO RESULT]
 
@@ -104,10 +104,10 @@ $(LaTeXFile): $(EXECUTABLE)
 
 # Clean generated files
 clean:
-	rm -f $(LEXER_C) $(PARSER_C) $(PARSER_H) $(EXECUTABLE) $(OUTPUT) \
+	@rm -f $(LEXER_C) $(PARSER_C) $(PARSER_H) $(EXECUTABLE) $(OUTPUT) \
 	$(CERR) $(DOTFile) $(DOTPDF) *.dot *.out \
 	$(S_EXPR) $(Recursive)
-	# latexmk -CA > /dev/null 2>&1
+	@# latexmk -CA > /dev/null 2>&1
 
 
 again:
@@ -115,4 +115,21 @@ again:
 		$(PARSER_C) \
 		$(PARSER_H)
 	make all
-	
+
+
+semantic: $(EXECUTABLE) $(INPUT) $(OUTPUT)
+	@echo "-------------------------------------------Our Syntax Analysis-------------------------------------------"
+	@./$(EXECUTABLE) $(INPUT) $(OUTPUT) 2> $(CERR)
+	@echo "---------------------------------------------GCC Compilation---------------------------------------------"
+	@gcc $(INPUT) -o runner
+	@echo "---------------------------------------Executing GCC compiled Code---------------------------------------"
+	@./runner
+
+sem_ast: $(EXECUTABLE) $(INPUT) $(OUTPUT)
+	@echo "-------------------------------------------Our Syntax Analysis-------------------------------------------"
+	@./$(EXECUTABLE) $(INPUT) $(OUTPUT) -ast $(DOTFile) 2> $(CERR)
+	@echo "---------------------------------------GCC Compilation & Execution---------------------------------------"
+	@-gcc $(INPUT) -o runner && ./runner
+	@echo "Opening Parse Tree"
+	@$(DOT) -Tpdf $(DOTFile) -o $(DOTPDF)
+	@open $(DOTPDF)
