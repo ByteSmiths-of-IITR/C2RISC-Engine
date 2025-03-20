@@ -11,6 +11,10 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <algorithm>
+#include <map>
+#include <set>
+#include <iomanip>
 
 #include "utility.h"  
 

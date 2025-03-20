@@ -1,3 +1,0 @@
-digraph AST {
-    node [shape=oval, style=filled, fillcolor=bisque, fontname="Cochin"];
-}
