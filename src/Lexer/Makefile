@@ -20,6 +20,9 @@ $(LEX_GEN_C): $(LEX_FILE)
 $(EXECUTABLE): $(LEX_GEN_C)
 	$(CXX) $(LEX_GEN_C) -w -o $(EXECUTABLE)
 
+run: $(EXECUTABLE)
+	./$(EXECUTABLE) test.cpp
+
 
 clean:
 	rm -f $(LEX_GEN_C) $(EXECUTABLE)

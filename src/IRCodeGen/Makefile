@@ -1,5 +1,5 @@
 # Compiler and flags
-CXX = gcc -std=c++17 # Added Latest Version [Some error due to old compiler]
+CXX = g++ -std=c++17 # Added Latest Version [Some error due to old compiler]
 CXXFLAGS = -w -lm
 
 # Input and output files
@@ -121,7 +121,7 @@ semantic: $(EXECUTABLE) $(INPUT) $(OUTPUT)
 	@echo "-------------------------------------------Our Syntax Analysis-------------------------------------------"
 	@./$(EXECUTABLE) $(INPUT) $(OUTPUT) 2> $(CERR)
 	@echo "---------------------------------------------GCC Compilation---------------------------------------------"
-	@gcc $(INPUT) -o runner
+	@gcc $(INPUT) -o runner && echo "✅ Successfully Compiled by GCC"
 	@echo "---------------------------------------Executing GCC compiled Code---------------------------------------"
 	@./runner
 
@@ -129,8 +129,15 @@ sem_ast: $(EXECUTABLE) $(INPUT) $(OUTPUT)
 	@echo "-------------------------------------------Our Syntax Analysis-------------------------------------------"
 	@./$(EXECUTABLE) $(INPUT) $(OUTPUT) -ast $(DOTFile) 2> $(CERR)
 	@echo "---------------------------------------GCC Compilation & Execution---------------------------------------"
-	@-gcc $(INPUT) -o runner && ./runner
-	@echo "Opening Parse Tree"
+	@-gcc $(INPUT) -o runner &&  echo "✅ Successfully Compiled by GCC" && ./runner
 	@$(DOT) -Tpdf $(DOTFile) -o $(DOTPDF)
 	@open $(DOTPDF)
 
+ASSEMBLY = input.s
+
+assembly: $(INPUT)
+	@clang -S -target riscv32-unknown-elf -march=rv32i $(INPUT) -o $(ASSEMBLY)
+
+
+astdump: $(INPUT)
+	@clang -Xclang -ast-dump -fsyntax-only $(INPUT)

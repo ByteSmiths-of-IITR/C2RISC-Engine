@@ -4,6 +4,7 @@ int a;
 char b;
 float c;
 double d;
+
 // void
 short e;
 long f32;

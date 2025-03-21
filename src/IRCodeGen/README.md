@@ -1,9 +1,22 @@
 ## Instructions on how to run
 
 Put your code into the `input.c` file
+and Result is stored in `output.txt` file
 
-and run `make ast` to generate the AST
+### To just Run
+`make run`
 
-The General Information of output will be in `output.txt`
+### To Run and see the ast
+`make ast`
 
-We also have other command although not needed now, you can explore the `makefile` for more information
+### To See ast by clang
+`make astdump`
+
+### To Have a Semantic View
+`make semantic`
+
+### To Have a semantic view with ast
+`make sem_ast`
+
+### To Generate RISC-V Assembly
+`make assembly`

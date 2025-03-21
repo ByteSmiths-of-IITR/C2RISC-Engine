@@ -29,8 +29,8 @@ bool TURN_OFF = true; // Turn off the custom error messages
 
 int noOfyyerrorCalls = 0; 
 
-#define LINE std::cerr<< "Production - " << __LINE__<<std::endl;
-// #define LINE /**/
+// #define LINE std::cerr<< "Production - " << __LINE__<<std::endl;
+#define LINE /**/
 // #define LINE1 std::cerr<< __LINE__<<std::endl;
 #define LINE1 /**/
 
@@ -88,6 +88,11 @@ std::string getPosition(ASTNode* node){
 
 
 void ourError(const std::string& msg) {
+
+    if(TURN_OFF){
+        return;
+    }
+
     std::string error = "Syntax Error at line " + std::to_string(yylineno) + " near token: " + lastToken;
     error += " | Error Description: " + msg;
     parserLOG.push_back(error);
@@ -2290,7 +2295,7 @@ void yyerror(const char* s) {
 
     std::string error = "Syntax Error: " + std::string(s) + " at Line: " + std::to_string(yylineno) + " near Token: " + yytext;
     bisonLOG.push_back(error);
-    /* yyclearin; // Clear the buffer */
+    yyclearin; // Clear the buffer
 }
 
 // Handler Functions Removed
