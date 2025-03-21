@@ -120,25 +120,26 @@ extern int yydebug;
     CONST = 321,                   /* CONST  */
     VOLATILE = 322,                /* VOLATILE  */
     VOID = 323,                    /* VOID  */
-    STRUCT = 324,                  /* STRUCT  */
-    UNION = 325,                   /* UNION  */
-    ENUM = 326,                    /* ENUM  */
-    ELLIPSIS = 327,                /* ELLIPSIS  */
-    CASE = 328,                    /* CASE  */
-    DEFAULT = 329,                 /* DEFAULT  */
-    IF = 330,                      /* IF  */
-    ELSE = 331,                    /* ELSE  */
-    SWITCH = 332,                  /* SWITCH  */
-    WHILE = 333,                   /* WHILE  */
-    DO = 334,                      /* DO  */
-    FOR = 335,                     /* FOR  */
-    GOTO = 336,                    /* GOTO  */
-    CONTINUE = 337,                /* CONTINUE  */
-    BREAK = 338,                   /* BREAK  */
-    RETURN = 339,                  /* RETURN  */
-    UNTIL = 340,                   /* UNTIL  */
-    INVALID_TOKEN = 341,           /* INVALID_TOKEN  */
-    UNKNOWN_TOKEN = 342            /* UNKNOWN_TOKEN  */
+    VA_LIST = 324,                 /* VA_LIST  */
+    STRUCT = 325,                  /* STRUCT  */
+    UNION = 326,                   /* UNION  */
+    ENUM = 327,                    /* ENUM  */
+    ELLIPSIS = 328,                /* ELLIPSIS  */
+    CASE = 329,                    /* CASE  */
+    DEFAULT = 330,                 /* DEFAULT  */
+    IF = 331,                      /* IF  */
+    ELSE = 332,                    /* ELSE  */
+    SWITCH = 333,                  /* SWITCH  */
+    WHILE = 334,                   /* WHILE  */
+    DO = 335,                      /* DO  */
+    FOR = 336,                     /* FOR  */
+    GOTO = 337,                    /* GOTO  */
+    CONTINUE = 338,                /* CONTINUE  */
+    BREAK = 339,                   /* BREAK  */
+    RETURN = 340,                  /* RETURN  */
+    UNTIL = 341,                   /* UNTIL  */
+    INVALID_TOKEN = 342,           /* INVALID_TOKEN  */
+    UNKNOWN_TOKEN = 343            /* UNKNOWN_TOKEN  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
@@ -152,7 +153,7 @@ union YYSTYPE
     struct TokenAttribute* tokenAtr;
     struct ASTNode* astNode;
 
-#line 156 "parser.tab.h"
+#line 157 "parser.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

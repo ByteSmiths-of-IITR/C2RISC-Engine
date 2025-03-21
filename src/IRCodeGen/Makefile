@@ -121,15 +121,16 @@ semantic: $(EXECUTABLE) $(INPUT) $(OUTPUT)
 	@echo "-------------------------------------------Our Syntax Analysis-------------------------------------------"
 	@./$(EXECUTABLE) $(INPUT) $(OUTPUT) 2> $(CERR)
 	@echo "---------------------------------------------GCC Compilation---------------------------------------------"
-	@gcc $(INPUT) -o runner && echo "✅ Successfully Compiled by GCC"
-	@echo "---------------------------------------Executing GCC compiled Code---------------------------------------"
-	@./runner
+	@gcc -fsyntax-only $(INPUT) && echo "✅ Successfully Compiled by GCC"
+
+execute: $(EXECUTABLE) $(INPUT) $(OUTPUT)
+	@gcc $(INPUT) -o runner && ./runner
 
 sem_ast: $(EXECUTABLE) $(INPUT) $(OUTPUT)
 	@echo "-------------------------------------------Our Syntax Analysis-------------------------------------------"
 	@./$(EXECUTABLE) $(INPUT) $(OUTPUT) -ast $(DOTFile) 2> $(CERR)
-	@echo "---------------------------------------GCC Compilation & Execution---------------------------------------"
-	@-gcc $(INPUT) -o runner &&  echo "✅ Successfully Compiled by GCC" && ./runner
+	@echo "---------------------------------------GCC Compilation---------------------------------------"
+	@-gcc -fsyntax-only $(INPUT) && echo "✅ Successfully Compiled by GCC"
 	@$(DOT) -Tpdf $(DOTFile) -o $(DOTPDF)
 	@open $(DOTPDF)
 

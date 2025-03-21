@@ -158,6 +158,7 @@ COMMENT2   "/*"([^*]|\*+[^*/])*\*+"/"
 "char"                          { TOKEN(CHAR)  }
 "short"                         { TOKEN(SHORT)  }
 "int"                           { TOKEN(INT)  }
+"va_list"                       { TOKEN(VA_LIST)  }
 "long"                          { TOKEN(LONG)  }
 "signed"                        { TOKEN(SIGNED)  }
 "unsigned"                      { TOKEN(UNSIGNED)  }

@@ -158,6 +158,7 @@ ASTNode *root;
 %token <tokenAtr> DOT COMMA BIT_AND STAR PLUS MINUS BIT_NOT NOT_OP DIVIDE MOD LESSER_OP GREATER_OP XOR BIT_OR QUESTION COLON SEMI_COLON ASSIGN
 %token <tokenAtr> TYPEDEF EXTERN STATIC AUTO REGISTER
 %token <tokenAtr> CHAR SHORT INT LONG SIGNED UNSIGNED FLOAT DOUBLE CONST VOLATILE VOID
+%token <tokenAtr> VA_LIST
 %token <tokenAtr> STRUCT UNION ENUM ELLIPSIS
 %token <tokenAtr> CASE DEFAULT IF ELSE SWITCH WHILE DO FOR GOTO CONTINUE BREAK RETURN UNTIL
 
@@ -1067,7 +1068,12 @@ storage_class_specifier
     ;
 
 type_specifier
-    : VOID 
+    : VA_LIST 
+    {
+        LINE 
+        $$ = new ASTNode("type_specifier", $1->value);
+    }
+    | VOID 
     {
         LINE
         $$ = new ASTNode("type_specifier", $1->value);
@@ -2037,7 +2043,7 @@ external_declaration
     ;
 
 function_definition
-    :
+    : // This in not supported [ToHandle]
     declaration_specifiers declarator declaration_list compound_statement 
     { 
         LINE  
@@ -2056,6 +2062,7 @@ function_definition
         $$->addChild($3); 
         // Function_Def_Handler($2);
     }
+    //This is Depriecated [ToHandle]
     | declarator declaration_list compound_statement 
     { 
         LINE
@@ -2063,14 +2070,15 @@ function_definition
         $$->addChild($1); 
         $$->addChild($2);
         $$->addChild($3); 
-    }
+    } 
+    // This is Depriecated [ToHandle]
     | declarator compound_statement 
     { 
         LINE
         $$ = new ASTNode("function_definition"); 
         $$->addChild($1); 
         $$->addChild($2); 
-    } 
+    }
     ;
 
 %%

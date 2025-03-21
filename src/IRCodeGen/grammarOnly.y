@@ -88,7 +88,6 @@
 %type <astNode> jump_statement
 %type <astNode> translation_unit
 %type <astNode> external_declaration
-%type <astNode> function_declaration
 %type <astNode> function_definition
 
 /* %expect-rr 96 */
@@ -520,13 +519,11 @@ translation_unit
 external_declaration
     : function_definition
     | declaration
-    | function_declaration
-    ;
-
-function_declaration
-    : declaration_specifiers declarator semi_colon
     ;
 
 function_definition
-    : declaration_specifiers declarator compound_statement
+    : declaration_specifiers declarator declaration_list compound_statement
+    | declaration_specifiers declarator compound_statement
+    | declarator declaration_list compound_statement
+    | declarator compound_statement // Pre-ASCII C [To be checked in Semantic Phase]
     ;

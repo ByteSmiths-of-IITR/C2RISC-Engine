@@ -20,3 +20,7 @@ Possible Solution : Remove the custom error and use the default error message.
 Another Solution - To Check if Bison Gives AnyErorr - We stop Custom Error Handler
 
 Things Getting TOOOO MUCH Complicated, first read about error and yyerrok and yyerror and then only think how to handle things.
+
+- To support varadic function we need to make changes in the grammar.
+Put the varadics.c code into `input.c` and run `make semantic`
+You can see the parsing is failed, althought gcc accepts it.
