@@ -1,10 +1,12 @@
-const int long a = 1;
+struct Person;
 
-struct Pserson {
-    struct {
-        int a;
-        int b;
-    } temp;
-    int c;
+struct Person p1;
+
+int main(){
+    // struct Person p2;
+}
+
+struct Person{
+    int age;
+    char name[20];
 };
-

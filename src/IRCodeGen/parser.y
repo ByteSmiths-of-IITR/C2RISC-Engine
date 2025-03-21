@@ -25,7 +25,7 @@ std::string whereWasILast;
 
 #define TERMINAL_MESSAGE true // if you wish to check if successful parsing from terminal itself
 
-bool TURN_OFF = false; // Turn off the custom error messages
+bool TURN_OFF = true; // Turn off the custom error messages
 
 int noOfyyerrorCalls = 0; 
 
@@ -2195,7 +2195,7 @@ int main(int argc, char **argv) {
 
         // We print ourCustom Error Only if Bison-don't Report any Error
 
-        if(parseError){
+        if(parseError && !TURN_OFF){
             *output << PARSERLOGHEADER << std::endl;
             for(auto log : parserLOG){
                 *output << log << std::endl;

@@ -48,7 +48,9 @@ BINARY     0b[01]+
 OCTAL      0[0-7]+
 HEX        0[xX][0-9a-fA-F]+
 
-FLOAT_BASE     {DECIMAL}?(\.{DECIMAL})?([eE][-+]?{DECIMAL})?
+FLOAT_BASE  ({DECIMAL}\.{DECIMAL}*|\.{DECIMAL}+|{DECIMAL})([eE][-+]?{DECIMAL})?
+
+/* FLOAT_BASE     {DECIMAL}?(\.{DECIMAL})?([eE][-+]?{DECIMAL})? */
 FLOAT          {FLOAT_BASE}[fF]
 DOUBLE         {FLOAT_BASE}
 LONG_DOUBLE    {FLOAT_BASE}[lL]

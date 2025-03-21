@@ -1,5 +1,5 @@
 # Compiler and flags
-CXX = g++ -std=c++17 # Added Latest Version [Some error due to old compiler]
+CXX = gcc -std=c++17 # Added Latest Version [Some error due to old compiler]
 CXXFLAGS = -w -lm
 
 # Input and output files
@@ -133,3 +133,4 @@ sem_ast: $(EXECUTABLE) $(INPUT) $(OUTPUT)
 	@echo "Opening Parse Tree"
 	@$(DOT) -Tpdf $(DOTFile) -o $(DOTPDF)
 	@open $(DOTPDF)
+
