@@ -142,3 +142,11 @@ assembly: $(INPUT)
 
 astdump: $(INPUT)
 	@clang -Xclang -ast-dump -fsyntax-only $(INPUT)
+
+SYM_H = sym.h
+SYM_CPP = sym.cpp
+SYM_TEST = test_sym.cpp
+
+sym: $(SYM_H) $(SYM_CPP) $(SYM_TEST)
+	$(CXX) $(UTILITY_CPP) $(SYM_CPP) $(SYM_TEST) -o sym -lm
+	./sym

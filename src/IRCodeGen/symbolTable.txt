@@ -1,0 +1,36 @@
+~~~~~~~~~~~~~~~~~~~~~~~ Symbol Table ~~~~~~~~~~~~~~~~~~~~~~~
+Scope No: 0
+Next Scope No: 1
+Node Count: 3
+Bottom of Scope Stack: 0
+Scope Stack: 0 -1 
+----------- func -----------
+Scope No: 0 | Name: func---------------------------------
+----------- enumConst -----------
+Scope No: 0 | Name: enumConst---------------------------------
+----------- var -----------
+Scope No: 0 | Name: var---------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~ End of Symbol Table ~~~~~~~~~~~~~~~~~~~~~~~
+
+~~~~~~~~~~~~~~~~~~~~~~~ Symbol Table ~~~~~~~~~~~~~~~~~~~~~~~
+Scope No: 1
+Next Scope No: 2
+Node Count: 3
+Bottom of Scope Stack: 3
+Scope Stack: 1 0 -1 
+----------- func -----------
+Scope No: 0 | Name: func---------------------------------
+----------- enumConst -----------
+Scope No: 0 | Name: enumConst---------------------------------
+----------- var -----------
+Scope No: 0 | Name: var---------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~ End of Symbol Table ~~~~~~~~~~~~~~~~~~~~~~~
+
+~~~~~~~~~~~~~~~~~~~~~~~ Symbol Table ~~~~~~~~~~~~~~~~~~~~~~~
+Scope No: -1
+Next Scope No: 2
+Node Count: 0
+Bottom of Scope Stack: -1
+Scope Stack: -1 
+~~~~~~~~~~~~~~~~~~~~~~~ End of Symbol Table ~~~~~~~~~~~~~~~~~~~~~~~
+

@@ -1,12 +1,12 @@
 #ifndef SYM_H
 #define SYM_H
 
-#include <utility.h>
+#include "utility.h"
 
 #define WORD_SIZE 4
 #define BYTE_SIZE 1
 
-const int MEMORY_MONITORING = 1;
+extern int MEMORY_MONITORING;
 
 #define MEM(x) (MEMORY_MONITORING ? std::cerr << x << std::endl : std::cerr)
 
@@ -31,7 +31,8 @@ const std::string levelBase = "Base";
 
 //Forward Declaration
 class UserDType;
-class SymbolDetails;
+class VarSymbols;
+class GenericSymbol;
 
 //--------------- TypeQualifier & StorageClassSpecifiers -----------------------------------------------------------
 enum class TypeQualifier{
@@ -49,9 +50,14 @@ enum class StorageClass{
 //---------------- Data Type [Level Supported] --------------------------------------------------------------------
 class LevelInfo{
     public:
-    
-    //Constructor & Destructor
-    CON_DES(LevelInfo)
+        //Constructor & Destructor
+        LevelInfo(){
+            MEM("LevelInfo Constructor");
+        }
+
+        virtual ~LevelInfo(){
+            MEM("LevelInfo Destructor");
+        } // Making it polymorphic
 };
 
 class ArrayInfo : public LevelInfo{
@@ -59,6 +65,7 @@ class ArrayInfo : public LevelInfo{
         int dimSize;
 
         //Constructor & Destructor
+        CON_DES(ArrayInfo)
 };
 
 class PointerInfo : public LevelInfo{
@@ -67,6 +74,7 @@ class PointerInfo : public LevelInfo{
         // This will have const, volatile, restrict
 
         //Constructor & Destructor
+        CON_DES(PointerInfo)
 };
 
 class BaseInfo : public LevelInfo{
@@ -80,40 +88,142 @@ class BaseInfo : public LevelInfo{
 
         // int size; // a dynamic value [no need to store can be calculated]
 
-        // Constructor & Destructor
+        CON_DES(BaseInfo)
 };
 
 class DType{
     public:
         // D-Type INFO
-        std::vector<std::string> levelType; // This 🧐 is redunant we can check type of LevelInfo itslelf by functions using dynamic_cast()
+        std::vector<std::string> levelType; // This 🧐 is redunant we can check type of LevelInfo itslelf by Function using dynamic_cast()
         std::vector<LevelInfo> levelInfo;
 
         //Constructor & Destructor
+        CON_DES(DType)
 };
 
 bool isArrayInfo(const LevelInfo& info);
 bool isPointerInfo(const LevelInfo &info);
 bool isBaseInfo(const LevelInfo &info);
 
+//--------------------- Generic Symbol and Node & ScopeEnabledSymbolTable --------------------------------------------------
+class GenericSymbol
+{
+public:
+    // General Info
+    std::pair<int, int> location; // This will store the location of the symbol in the source code
+    std::string symbolName;       // This will store the name of the symbol
+    int scopeNo;                  // This will store the scope number in which the symbol is declared
+
+    // Constructor & Destructor
+    GenericSymbol()
+    {
+        MEM("GenericSymbol Constructor");
+    }
+
+    virtual ~GenericSymbol()
+    {
+        MEM("GenericSymbol Destructor");
+    }
+};
+
+class SymbolNode
+{
+public:
+    GenericSymbol *symbol;
+    SymbolNode *next;
+    SymbolNode *prev;
+
+    // Constructor & Destructor
+    SymbolNode()
+    {
+        this->next = nullptr;
+        this->prev = nullptr;
+        MEM("SymbolNode Constructor");
+    }
+
+    ~SymbolNode()
+    {
+        MEM("SymbolNode Destructor");
+    }
+
+    void deleteCurrent();
+
+    void insertAfter(SymbolNode *node);
+
+    void insertBefore(SymbolNode *node);
+};
+
+class SymbolTable
+{
+public:
+    // This will be help in faster access to the symbol from it's key
+    std::unordered_map<std::string, SymbolNode *> symTable;
+
+    std::stack<SymbolNode *> listStack; // This will keep all symbols in order in definition
+    std::stack<int> scopeBottom;        // This will keep the index of the bottom of the scope in the symbolStack
+
+    std::stack<int> lastScopeNo;
+    int scopeNo; // This will keep the current scope number [unique to each scope] [not like level]
+    int nextScopeNo;
+    int NodeCount; // This will keep the count of the symbols in the SymbolTable
+
+    // Constructor & Destructor
+    SymbolTable()
+    {
+        this->scopeNo = -1;
+        this->nextScopeNo = 0;
+        this->NodeCount = 0;
+        MEM("SymbolTable Constructor");
+    }
+
+    ~SymbolTable();
+
+    int enterScope(); // This will create a new scope and return the scope number
+    void exitScope(); // This will remove all the symbols of the current scope
+
+    int insert(const std::string &key, GenericSymbol *symbol);
+    // Returns 0 if the symbol is inserted successfully
+    // Returns -1 if the symbol is already present in the current scope
+
+    int lookup(const std::string &key, GenericSymbol *&sym);
+    // Returns 0 if the symbol is found
+    // Returns -1 if the symbol is not found
+
+    int lookupNode(const std::string &key, SymbolNode *&node);
+
+    // Print the SymbolTable
+    void printTable(std::ofstream &file);
+
+
+};
+
+bool isVarSymbols(const GenericSymbol &sym);
+bool isUserDType(const GenericSymbol &sym);
+//--
+bool isVariable(const GenericSymbol &sym);
+bool isEnumConstant(const GenericSymbol &sym);
+bool isFunction(const GenericSymbol &sym);
 
 //--------- Symbols Details & Their Derived Classes ☞ Stores [Variable,Function,EnumConstant] ---------------------
-class SymbolDetails{
+class VarSymbols : public GenericSymbol{
     public:
-        // General Info
-        // std::string symbolKey; Not needed
-        std::pair<int,int> position; // line and column number [for error reporting]
-        int scopeNo;                 // This will store the scope number
+        // General Info [🚨 Not needed]
 
         // WE will use Inheritance to store specific info
 
         //Constructor & Destructor
+        VarSymbols(){
+            MEM("VarSymbols Constructor");
+        }
+
+        virtual ~VarSymbols(){
+            MEM("VarSymbols Destructor");
+        }
 };
 
-class Variable : public SymbolDetails{
+class Variable : public VarSymbols{
     public:
-        // Variable Info
-        std::string varName; // Name of the variable
+        // Variable Info [🚨 Not needed]
 
         // DT Info
         DType dtype; // This will store the data type info of the variable
@@ -125,12 +235,14 @@ class Variable : public SymbolDetails{
         int offset; // Offset from the base pointer
 
         //Constructor & Destructor
+        CON_DES(Variable)
 };
 
-class EnumConstant : public SymbolDetails{
+class EnumConstant : public VarSymbols{
     public:
-        // Enum Constant Info
-        std::string enumConstName; // Name of the enum constant
+        // Enum Constant Info [🚨 Not needed]
+
+
         // The DType will be int by default
         UserDType* enumType; // This will store the user defined data type info of the enum constant
 
@@ -138,13 +250,13 @@ class EnumConstant : public SymbolDetails{
         int value; // This will store the value of the enum constant
 
         //Constructor & Destructor
+        CON_DES(EnumConstant)
 
 };
 
-class Functions : public SymbolDetails{
+class Function : public VarSymbols{
     public:
-        // Function Info
-        std::string funcName; // Name of the function
+        // Function Info [🚨 Not needed]
 
         // Return Type Info
         DType returnType; // This will store the data type info of the return type
@@ -159,204 +271,28 @@ class Functions : public SymbolDetails{
         // ASTNode *body; // This will point to the body of the function
 
         // Constructor & Destructor
+        CON_DES(Function)
 };
 
 
-//--------------------- Generic DBLinkedList & ScopeEnabledTable --------------------------------------------------
-class DoublyLinkedList{
-    public:
-    DoublyLinkedList *next;
-    DoublyLinkedList *prev;
 
-    //Constructor & Destructor
-    DoublyLinkedList(){
-        this->next = nullptr;
-        this->prev = nullptr;
-        MEM("DoublyLinkedList Constructor");
-    }
+//--------------------- User Defined Data Type [Struct, Union, Enum] ----------------------------------------------
 
-    ~DoublyLinkedList(){
-        MEM("DoublyLinkedList Destructor");
-    }
-
-    void deleteCurrent(){
-        if(this->prev){
-            this->prev->next = this->next;
-        }
-        if(this->next){
-            this->next->prev = this->prev;
-        }
-        delete this;
-    }
-
-    void insertAfter(DoublyLinkedList *node){
-        node->next = this->next;
-        node->prev = this;
-        if(this->next){
-            this->next->prev = node;
-        }
-        this->next = node;
-    }
-
-    void insertBefore(DoublyLinkedList *node){
-        node->prev = this->prev;
-        node->next = this;
-        if(this->prev){
-            this->prev->next = node;
-        }
-        this->prev = node;
-    }
-};
-
-class Table{
-    public:
-
-    // This will be help in faster access to the symbol from it's key
-    std::unordered_map<std::string, DoublyLinkedList*> table;
-
-    std::vector<DoublyLinkedList *> listStack; // This will keep all symbols in order in definition
-    std::vector<int> scopeBottom; // This will keep the index of the bottom of the scope in the symbolStack
-
-    int scopeNo; // This will keep the current scope number [unique to each scope] [not like level]
-    int NodeCount; // This will keep the count of the symbols in the table
-    
-    //Constructor & Destructor
-    Table(){
-        this->scopeNo = 0;
-        this->NodeCount = 0;
-        MEM("Table Constructor");
-    }
-
-    ~Table(){
-        // CleanUp Code [📍 ToDo]
-        // for(auto &pair : table){
-        //     DoublyLinkedList *node = pair.second;
-        //     while(node){
-        //         DoublyLinkedList *temp = node;
-        //         node = node->next;
-        //         delete temp;
-        //     }
-        // }
-        MEM("Table Destructor");
-    }
-
-    int enterScope(); // This will create a new scope and return the scope number
-    void exitScope(); // This will remove all the symbols of the current scope
-
-    // insert functions will be implemented in the derived classes
-    // lookup functions will be implemented in the derived classes
-};
-
-// ------- SymbolList & ScopeEnbledTable ☞ Stores [Variable,Function,EnumConstant] --------------------------------
-class SymbolList : public DoublyLinkedList{
-    public:
-    SymbolDetails *symbol;
-    // This will store the symbol details
-
-    //Constructor & Destructor
-    SymbolList(SymbolDetails *sym){
-        this->symbol = sym;
-        MEM("SymbolList Constructor");
-    }
-
-    ~SymbolList(){
-        delete this->symbol;
-        MEM("SymbolList Destructor");
-    }
-};
-
-class SymbolTable : public Table{
-    public:
-    // This will store the symbol table
-
-    //Constructor & Destructor
-    SymbolTable(){
-        MEM("SymbolTable Constructor");
-    }
-
-    ~SymbolTable(){
-        MEM("SymbolTable Destructor");
-    }
-
-    int insert(SymbolDetails *sym); // This will insert the symbol in the table
-    /* Return 0 if symbol already exists
-    Return 1 if symbol is inserted successfully
-    */
-
-    int insertVariable(Variable *var); // This will insert the variable in the table
-    int insertFunction(Functions *func); // This will insert the function in the table
-    int insertEnumConstant(EnumConstant *enumConst); // This will insert the enum constant in the table
-
-    int lookup(const std::string &key, SymbolDetails *&sym); // This will return the symbol
-    /* Return 0 if symbol not found
-    Return 1 if symbol is found and is variable
-    Return 2 if symbol is found and is function
-    Return 3 if symbol is found and is enum constant
-    Return 4 if symbol is found and is Unknown [🚨 This should not happen]
-    */
-
-};
-
-bool isVariable(const SymbolDetails &sym);
-bool isFunction(const SymbolDetails &sym);
-bool isEnumConstant(const SymbolDetails &sym);
-
-// ---------------------- User Defined Data Types + it's List + it's Table ----------------------------------------
-class UserDType
+class UserDType : public GenericSymbol
 {
-    public:
+public:
     // used for struct, union, enum
-    std::string typeName;   // Name of the type
     std::string recordType; // struct, union, enum
-    int scopeNo;            // This will store the scope number in which this type is defined
 
     // Members of the recor
     std::unordered_map<std::string, Variable> members;
     // 🚨 These Variables are NOT ❌ allowed to have storage class, as they are part of the record
 
-    //Constructor & Destructor
+    // Constructor & Destructor
+    CON_DES(UserDType)
 };
 
-class UserDTypeList : public DoublyLinkedList
-{
-    public:
-    UserDType *dtype;
 
-    //Constructor & Destructor
-    UserDTypeList(UserDType *dtype){
-        this->dtype = dtype;
-        MEM("UserDTypeList Constructor");
-    }
 
-    ~UserDTypeList(){
-        delete this->dtype;
-        MEM("UserDTypeList Destructor");
-    }
-};
-
-class UserDTypeTable : public Table
-{
-    public:
-    // This will store the user defined data types
-
-    //Constructor & Destructor
-    UserDTypeTable(){
-        MEM("UserDTypeTable Constructor");
-    }
-
-    ~UserDTypeTable(){
-        MEM("UserDTypeTable Destructor");
-    }
-
-    int insertRecord(UserDType *dtype); // This will insert the record in the table
-    /* Return 0 if record already exists
-    Return 1 if record is inserted successfully
-    */
-
-    int lookupRecord(const std::string &key, UserDType *&dtype); // This will return the record
-    /* Return 0 if record not found
-    Return 1 if record is found
-    */
-};
 
 #endif // !SYM_H

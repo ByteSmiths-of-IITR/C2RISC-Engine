@@ -1035,13 +1035,13 @@ init_declarator
     ;
 
 storage_class_specifier
-    : /*TYPEDEF 
+     : TYPEDEF 
     {
         LINE 
         $$ = new ASTNode("storage_class_specifier");
         $$->addChild($1);
     }
-    |*/ EXTERN 
+    | EXTERN 
     {
         LINE 
         $$ = new ASTNode("storage_class_specifier");

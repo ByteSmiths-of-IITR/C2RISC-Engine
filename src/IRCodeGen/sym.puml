@@ -1,0 +1,123 @@
+@startuml
+
+ArrayInfo --|> LevelInfo
+PointerInfo --|> LevelInfo
+BaseInfo --|> LevelInfo
+DType *-- LevelInfo
+VarSymbols --|> GenericSymbol
+Variable --|> VarSymbols
+EnumConstant --|> VarSymbols
+Functions --|> VarSymbols
+UserDType --|> GenericSymbol
+
+SymbolTable o-- SymbolNode
+SymbolNode *-- GenericSymbol
+Functions *-- Variable
+Variable *-- DType
+EnumConstant *-- UserDType
+
+class LevelInfo {
+    + LevelInfo()
+    + ~LevelInfo()
+}
+
+class ArrayInfo {
+    + int dimSize
+    + ArrayInfo()
+    + ~ArrayInfo()
+}
+
+class PointerInfo {
+    + vector<TypeQualifier> typeQualifiers
+    + PointerInfo()
+    + ~PointerInfo()
+}
+
+class BaseInfo {
+    + string baseType
+    + vector<TypeQualifier> typeQualifiers
+    + StorageClass storageClass
+    + BaseInfo()
+    + ~BaseInfo()
+}
+
+class DType {
+    + vector<string> levelType
+    + vector<LevelInfo> levelInfo
+    + DType()
+    + ~DType()
+}
+
+class GenericSymbol {
+    + pair<int,int> position
+    + string symbolName
+    + int scopeNo
+    + GenericSymbol()
+    + ~GenericSymbol()
+}
+
+class VarSymbols {
+    + VarSymbols()
+    + ~VarSymbols()
+}
+
+class Variable {
+    + DType dtype
+    + ASTNode* intiailizer
+    + int offset
+    + Variable()
+    + ~Variable()
+}
+
+class EnumConstant {
+    + UserDType* enumType
+    + int value
+    + EnumConstant()
+    + ~EnumConstant()
+}
+
+class Functions {
+    + DType returnType
+    + vector<Variable> parameters
+    + Functions()
+    + ~Functions()
+}
+
+class SymbolNode {
+    + GenericSymbol* symbol
+    + SymbolNode* next
+    + SymbolNode* prev
+    + SymbolNode()
+    + ~SymbolNode()
+    + void deleteCurrent()
+    + void insertAfter(SymbolNode* node)
+    + void insertBefore(SymbolNode* node)
+}
+
+class SymbolTable {
+    + unordered_map<string, SymbolNode*> SymbolTable
+    + stack<SymbolNode*> listStack
+    + stack<int> scopeBottom
+    + stack<int> lastScopeNo
+    + int scopeNo
+    + int nextScopeNo
+    + int NodeCount
+    + SymbolTable()
+    + ~SymbolTable()
+    + int enterScope()
+    + void exitScope()
+    + int insert(GenericSymbol* sym)
+    + int lookup(const string& key, GenericSymbol*& sym)
+    + int lookupNode(const string& key, SymbolNode*& node)
+}
+
+class UserDType {
+    + string Recordtype
+    + unordered_map<string, Variable> members
+    + UserDType()
+    + ~UserDType()
+}
+
+
+
+@enduml
