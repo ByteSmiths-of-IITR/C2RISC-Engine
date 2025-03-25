@@ -21,16 +21,24 @@ void signalHandler(int signum){
     exit(signum);
 }
 
-int main(){
+int main(int argc, char *argv[]){
+
+    // usage - ./test_sym <sym_table_file>
+    if(argc != 2){
+        std::cerr << "Usage: ./test_sym <sym_table_file>" << std::endl;
+        exit(1);
+    }
+
+    std::string sym_table_file = argv[1];
 
     //Signal Handler
     signal(SIGSEGV, signalHandler);
-
-    freopen("stderr.log", "w", stderr);
+    std::string errorFile = "output/sym_error.txt";
+    freopen(errorFile.c_str(), "w", stderr);
 
     // Open SymbolTable File in truncate mode for fresh start
     
-    symFile.open("symbolTable.txt", std::ios_base::trunc);
+    symFile.open(sym_table_file, std::ios_base::trunc);
 
     MEMORY_MONITORING = 0;
     

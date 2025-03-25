@@ -2,10 +2,19 @@
 CXX = g++ -std=c++17 # Added Latest Version [Some error due to old compiler]
 CXXFLAGS = -w -lm
 
+#Folders
+SRC_DIR = src
+INCLUDE_DIR = include
+INPUT_DIR = input
+OUTPUT_DIR = output
+BUILD_DIR = build
+BIN_DIR = bin
+TEST_DIR = test
+
 # Input and output files
-INPUT = input.c
-OUTPUT = output.txt
-CERR = stderr.log
+INPUT = $(INPUT_DIR)/input.c
+OUTPUT = $(OUTPUT_DIR)/output.txt
+CERR = $(OUTPUT_DIR)/stdcerr.log
 
 ## for debug we have a console log
 
@@ -14,33 +23,27 @@ BISON = bison -Wnone
 FLEX = flex
 
 # Source files
-LEXER = lexer.l
-PARSER = parser.y
+LEXER = $(SRC_DIR)/lexer.l
+PARSER = $(SRC_DIR)/parser.y
 UTILITY_H = utility.h
-UTILITY_CPP = utility.cpp
+UTILITY_CPP = $(SRC_DIR)/utility.cpp
 
 # Generated files
-LEXER_C = lex.yy.c
-PARSER_C = parser.tab.c
-PARSER_H = parser.tab.h
-EXECUTABLE = parser
+LEXER_C = $(BUILD_DIR)/lex.yy.c
+PARSER_C = $(BUILD_DIR)/parser.tab.c
+PARSER_H = $(INCLUDE_DIR)/parser.tab.h
+EXECUTABLE = $(BIN_DIR)/parser
 
 # Result dot (graphviz) tool
 DOT = dot
-DOTFile = ast_graph.dot
+DOTFile = $(BUILD_DIR)/ast_graph.dot
 # DOTImage = ast_graph.png [Not used]
-DOTPDF = ast_graph.pdf
+DOTPDF = $(OUTPUT_DIR)/PTree.pdf
 
 #More Result FIle
-S_EXPR = s_expr.txt
-Recursive = recursive_output.txt
+S_EXPR = $(OUTPUT_DIR)/s_expr.txt
+Recursive = $(OUTPUT_DIR)/recursive_output.txt
 
-# #Result PARSER TABLE
-# LaTeXFile = parser_table.tex
-# LaTeX_OUTPUT = parser_table
-
-#Txt File for the output
-# TABLE = parser_table.txt
 
 
 # Default target
@@ -49,15 +52,15 @@ all: $(EXECUTABLE)
 
 # Step 1: Generate parser files from Bison
 $(PARSER_C) $(PARSER_H): $(PARSER)
-	$(BISON) -d $(PARSER)
+	$(BISON) -d $(PARSER) --output=$(PARSER_C) --header=$(PARSER_H)
 
 # Step 2: Generate lexer file from Flex
 $(LEXER_C): $(LEXER)
-	$(FLEX) $(LEXER)
+	$(FLEX) -o $(LEXER_C) $(LEXER)
 
 # Step 3: Compile everything together into an executable
 $(EXECUTABLE): $(LEXER_C) $(PARSER_C) $(UTILITY_CPP) 
-	$(CXX) $(LEXER_C) $(PARSER_C) $(UTILITY_CPP)  -o $(EXECUTABLE) $(CXXFLAGS)
+	$(CXX) $(LEXER_C) $(PARSER_C) $(UTILITY_CPP)  -o $(EXECUTABLE) $(CXXFLAGS) -I $(INCLUDE_DIR)
 
 $(CERR):
 	touch $(CERR)
@@ -84,6 +87,10 @@ ast: $(INPUT) $(OUTPUT) $(EXECUTABLE)
 	$(DOT) -Tpdf $(DOTFile) -o $(DOTPDF)
 	open $(DOTPDF)
 
+ptree: $(INPUT) $(OUTPUT) $(EXECUTABLE)
+	./$(EXECUTABLE) $(INPUT) $(OUTPUT) -ptree $(DOTFile) 2> $(CERR)
+	$(DOT) -Tpdf $(DOTFile) -o $(DOTPDF)
+	open $(DOTPDF) 
 
 r: $(EXECUTABLE) $(INPUT) $(OUTPUT)
 	./$(EXECUTABLE) $(INPUT) $(OUTPUT) -r 2> $(CERR)
@@ -91,23 +98,11 @@ r: $(EXECUTABLE) $(INPUT) $(OUTPUT)
 s: $(EXECUTABLE) $(INPUT)
 	./$(EXECUTABLE) $(INPUT) $(OUTPUT) -s 2> $(CERR)
 
-$(LaTeXFile): $(EXECUTABLE)
-	./$(EXECUTABLE) $(INPUT) $(OUTPUT) 2> $(CERR)
-
-# For PDF printing the Parser Table [Feature Not Needed in IR Code Gen]
-# table: $(EXECUTABLE) $(INPUT) $(LaTeXFile)
-# 	./$(EXECUTABLE) $(INPUT) $(OUTPUT) 2> $(CERR)
-# 	pdflatex -jobname=$(LaTeX_OUTPUT) $(LaTeXFile) > /dev/null 2>&1
-# 	open $(LaTeX_OUTPUT).pdf
-	
-# rm $(LaTeX_OUTPUT).aux $(LaTeX_OUTPUT).log 
 
 # Clean generated files
 clean:
 	@rm -f $(LEXER_C) $(PARSER_C) $(PARSER_H) $(EXECUTABLE) $(OUTPUT) \
-	$(CERR) $(DOTFile) $(DOTPDF) *.dot *.out \
-	$(S_EXPR) $(Recursive)
-	@# latexmk -CA > /dev/null 2>&1
+	$(CERR) $(DOTFile) $(DOTPDF) $(S_EXPR) $(Recursive) $(ASSEMBLY)
 
 
 again:
@@ -124,7 +119,8 @@ semantic: $(EXECUTABLE) $(INPUT) $(OUTPUT)
 	@gcc -fsyntax-only $(INPUT) && echo "✅ Successfully Compiled by GCC"
 
 execute: $(EXECUTABLE) $(INPUT) $(OUTPUT)
-	@gcc $(INPUT) -o runner && ./runner
+	@gcc $(INPUT) -o $(BIN_DIR)/input_exec
+	@./$(BIN_DIR)/input_exec
 
 sem_ast: $(EXECUTABLE) $(INPUT) $(OUTPUT)
 	@echo "-------------------------------------------Our Syntax Analysis-------------------------------------------"
@@ -134,7 +130,7 @@ sem_ast: $(EXECUTABLE) $(INPUT) $(OUTPUT)
 	@$(DOT) -Tpdf $(DOTFile) -o $(DOTPDF)
 	@open $(DOTPDF)
 
-ASSEMBLY = input.s
+ASSEMBLY = $(OUTPUT_DIR)/assembly.s
 
 assembly: $(INPUT)
 	@clang -S -target riscv32-unknown-elf -march=rv32i $(INPUT) -o $(ASSEMBLY)
@@ -143,10 +139,13 @@ assembly: $(INPUT)
 astdump: $(INPUT)
 	@clang -Xclang -ast-dump -fsyntax-only $(INPUT)
 
-SYM_H = sym.h
-SYM_CPP = sym.cpp
-SYM_TEST = test_sym.cpp
+SYM_H = $(INCLUDE_DIR)/sym.h
+SYM_CPP = $(SRC_DIR)/sym.cpp
+SYM_TEST = $(SRC_DIR)/test_sym.cpp
+
+SYM_TABLEFile = $(OUTPUT_DIR)/sym_table.txt
 
 sym: $(SYM_H) $(SYM_CPP) $(SYM_TEST)
-	$(CXX) $(UTILITY_CPP) $(SYM_CPP) $(SYM_TEST) -o sym -lm
-	./sym
+	$(CXX) $(UTILITY_CPP) $(SYM_CPP) $(SYM_TEST) -o $(BIN_DIR)/symTest $(CXXFLAGS) -I $(INCLUDE_DIR)
+	./$(BIN_DIR)/symTest $(SYM_TABLEFile)
+

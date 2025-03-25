@@ -141,6 +141,10 @@ void signalHandler(int signum) {
 }
 
 
+//How to view the ParseTree
+bool compressed = true; // Default is AST, if ParseTree is needed, change it to false
+
+
 ASTNode *root;
 %}
 
@@ -422,7 +426,12 @@ postfix_expression
     : primary_expression 
     { 
         LINE
-        $$ = $1;
+        if(compressed){
+            $$ = $1;
+        }else{
+            $$ = new ASTNode("postfix_expression");
+            $$->addChild($1);
+        }
     }
     | postfix_expression LSQUARE expression rsquare 
     { 
@@ -440,8 +449,6 @@ postfix_expression
         $$->addChild($1);
         $$->addChild($2);
         $$->addChild($3);
-        //-
-        //PARSER_TABLE.push_back({$1->position, {$1->value, "function call"}});
     }
     | postfix_expression LPAREN argument_expression_list rparen 
     { 
@@ -504,7 +511,12 @@ unary_expression
     : postfix_expression 
     { 
         LINE
-        $$ = $1;
+        if(compressed){
+            $$ = $1; // to get AST
+        }else{
+            $$ = new ASTNode("unary_expression");
+            $$->addChild($1);
+        }
     }
     | INC_OP unary_expression 
     { 
@@ -582,7 +594,12 @@ cast_expression
     : unary_expression 
     { 
         LINE 
-        $$ = $1;
+        if(compressed){
+            $$ = $1;
+        }else{
+            $$ = new ASTNode("cast_expression");
+            $$->addChild($1);
+        }
     }
     | LPAREN type_name rparen cast_expression 
     { 
@@ -600,7 +617,12 @@ multiplicative_expression
     : cast_expression 
     { 
         LINE
-        $$ = $1;
+        if(compressed){
+            $$ = $1;
+        }else{
+            $$ = new ASTNode("multiplicative_expression");
+            $$->addChild($1);
+        }
     }
     | multiplicative_expression STAR cast_expression 
     { 
@@ -632,7 +654,12 @@ additive_expression
     : multiplicative_expression 
     { 
         LINE 
-        $$ = $1;
+        if(compressed){
+            $$ = $1;
+        }else{
+            $$ = new ASTNode("additive_expression");
+            $$->addChild($1);
+        }
     }
     | additive_expression PLUS multiplicative_expression 
     { 
@@ -656,7 +683,13 @@ shift_expression
     : additive_expression 
     { 
         LINE 
-        $$ = $1;
+        if(compressed){
+            $$ = $1;
+        }else{
+            $$ = new ASTNode("shift_expression");
+            $$->addChild($1);
+        }
+
     }
     | shift_expression LEFT_OP additive_expression 
     { 
@@ -680,7 +713,13 @@ relational_expression
     : shift_expression 
     { 
         LINE 
-        $$ = $1;
+        if(compressed){
+            $$ = $1;
+        }else{
+            $$ = new ASTNode("relational_expression");
+            $$->addChild($1);
+        }
+
     }
     | relational_expression LESSER_OP shift_expression 
     { 
@@ -720,7 +759,12 @@ equality_expression
     : relational_expression 
     { 
         LINE 
-        $$ = $1;
+        if(compressed){
+            $$ = $1;
+        }else{
+            $$ = new ASTNode("equality_expression");
+            $$->addChild($1);
+        }
     }
     | equality_expression EQ_OP relational_expression 
     { 
@@ -744,7 +788,13 @@ and_expression
     : equality_expression 
     { 
         LINE 
-        $$ = $1;
+        if(compressed){
+            $$ = $1;
+        }else{
+            $$ = new ASTNode("and_expression");
+            $$->addChild($1);
+        }
+
     }
     | and_expression BIT_AND equality_expression 
     { 
@@ -758,9 +808,14 @@ and_expression
 
 exclusive_or_expression
     : and_expression 
-    { 
+    {
         LINE 
-        $$ = $1;
+        if(compressed){
+            $$ = $1;
+        }else{
+            $$ = new ASTNode("exclusive_or_expression");
+            $$->addChild($1);
+        }
     }       
     | exclusive_or_expression XOR and_expression 
     { 
@@ -776,7 +831,12 @@ inclusive_or_expression
     : exclusive_or_expression 
     { 
         LINE
-        $$ = $1;
+        if(compressed){
+            $$ = $1;
+        }else{
+            $$ = new ASTNode("inclusive_or_expression");
+            $$->addChild($1);
+        }
     }
     | inclusive_or_expression BIT_OR exclusive_or_expression 
     { 
@@ -792,7 +852,12 @@ logical_and_expression
     : inclusive_or_expression 
     { 
         LINE 
-        $$ = $1;
+        if(compressed){
+            $$ = $1;
+        }else{
+            $$ = new ASTNode("logical_and_expression");
+            $$->addChild($1);
+        }
     }
     | logical_and_expression AND_OP inclusive_or_expression 
     { 
@@ -808,7 +873,12 @@ logical_or_expression
     : logical_and_expression 
     { 
         LINE 
-        $$ = $1;
+        if(compressed){
+            $$ = $1;
+        }else{
+            $$ = new ASTNode("logical_or_expression");
+            $$->addChild($1);
+        }
     }
     | logical_or_expression OR_OP logical_and_expression 
     { 
@@ -824,7 +894,12 @@ conditional_expression
     : logical_or_expression 
     { 
         LINE 
-        $$ = $1;
+        if(compressed){
+            $$ = $1;
+        }else{
+            $$ = new ASTNode("conditional_expression");
+            $$->addChild($1);
+        }
     }
     | logical_or_expression QUESTION expression COLON conditional_expression 
     { 
@@ -842,7 +917,12 @@ assignment_expression
     : conditional_expression 
     { 
         LINE 
-        $$ = $1;
+        if(compressed){
+            $$ = $1;
+        }else{
+            $$ = new ASTNode("assignment_expression");
+            $$->addChild($1);
+        }
     }
     | unary_expression assignment_operator assignment_expression 
     { 
@@ -917,7 +997,12 @@ expression
     : assignment_expression 
     { 
         LINE
-        $$ = $1;
+        if(compressed){
+            $$ = $1;
+        }else{
+            $$ = new ASTNode("expression");
+            $$->addChild($1);
+        }
     }
     | expression COMMA assignment_expression 
     { 
@@ -933,10 +1018,12 @@ constant_expression
     : conditional_expression 
     {
         LINE
-        // $$ = new ASTNode("constant_expression");
-        // $$->addChild($1);
-        // ShortHand
-        $$ = $1;
+        if(compressed){
+            $$ = $1;
+        }else{
+            $$ = new ASTNode("constant_expression");
+            $$->addChild($1);
+        }
     }
     ;
 
@@ -955,7 +1042,6 @@ declaration
         $$->addChild($1);  
         $$->addChild($2);
         $$->addChild($3);
-        // Declaration_Handler($1, $2);
     }
     ;
 
@@ -971,7 +1057,11 @@ declaration_specifiers
         LINE
         $$ = new ASTNode("declaration_specifiers");
         $$->addChild($1);
-        $$->addChildren($2->children);
+        if(compressed){
+            $$->addChildren($2->children); //In case of compressed, add all children
+        }else{
+            $$->addChild($2); // if needed to be shown as tree
+        }
     }
     | type_specifier 
     { 
@@ -984,7 +1074,11 @@ declaration_specifiers
         LINE
         $$ = new ASTNode("declaration_specifiers");
         $$->addChild($1);
-        $$->addChildren($2->children);
+        if(compressed){
+            $$->addChildren($2->children); //In case of compressed, add all children
+        }else{
+            $$->addChild($2); // if needed to be shown as tree
+        }
     }
     | type_qualifier 
     { 
@@ -997,7 +1091,11 @@ declaration_specifiers
         LINE
         $$ = new ASTNode("declaration_specifiers");
         $$->addChild($1);
-        $$->addChildren($2->children);
+        if(compressed){
+            $$->addChildren($2->children); //In case of compressed, add all children
+        }else{
+            $$->addChild($2); // if needed to be shown as tree
+        }
     }
     ;
 
@@ -1035,12 +1133,12 @@ init_declarator
     ;
 
 storage_class_specifier
-     : TYPEDEF 
+    : /*TYPEDEF 
     {
         LINE 
         $$ = new ASTNode("storage_class_specifier");
         $$->addChild($1);
-    }
+    }*/
     | EXTERN 
     {
         LINE 
@@ -1148,7 +1246,6 @@ struct_or_union_specifier
         $$->addChild($3);
         $$->addChild($4);
         $$->addChild($5);
-        PARSER_TABLE.push_back({$2->position, {$2->value, $1->value}});
     }
     | struct_or_union LCURLY struct_declaration_list rcurly 
     {
@@ -1165,7 +1262,6 @@ struct_or_union_specifier
         $$ = new ASTNode("struct_or_union_specifier");
         $$->addChild($1);
         $$->addChild(new ASTNode("struct_UnionID", $2->value));
-        PARSER_TABLE.push_back({$2->position, {$2->value, $1->value}});
     }
     ;
 
@@ -1205,7 +1301,6 @@ struct_declaration
         $$->addChild($1);
         $$->addChild($2);
         $$->addChild($3);
-        // Struct_Union_Declaration_Handler($1, $2);
     }
     ;
 
@@ -1215,7 +1310,11 @@ specifier_qualifier_list
         LINE
         $$ = new ASTNode("specifier_qualifier_list");
         $$->addChild($1);
-        $$->addChildren($2->children);
+        if(compressed){
+            $$->addChildren($2->children);
+        }else{
+            $$->addChild($2);
+        }
     }
     | type_specifier
     {
@@ -1228,7 +1327,11 @@ specifier_qualifier_list
         LINE
         $$ = new ASTNode("specifier_qualifier_list");
         $$->addChild($1);
-        $$->addChildren($2->children);
+        if(compressed){
+            $$->addChildren($2->children);
+        }else{
+            $$->addChild($2);
+        }
     }
     | type_qualifier
     {
@@ -1287,7 +1390,6 @@ enum_specifier
         $$->addChild($2);
         $$->addChild($3);
         $$->addChild($4);
-        // Enum_Declaration_Handler($$);
     }
     | ENUM identifier LCURLY enumerator_list rcurly 
     { 
@@ -1298,7 +1400,6 @@ enum_specifier
         $$->addChild($3);
         $$->addChild($4);
         $$->addChild($5);
-        // Enum_Declaration_Handler($$);
     }
     | ENUM identifier 
     { 
@@ -1306,7 +1407,6 @@ enum_specifier
         $$ = new ASTNode("enum_specifier");
         $$->addChild($1);
         $$->addChild($2);
-        // Enum_Declaration_Handler($$);
     }
     ;
 
@@ -1477,7 +1577,13 @@ type_qualifier_list
     | type_qualifier_list type_qualifier
     {
         LINE
-        $$ = $1;
+        if(compressed){
+            $$ = $1;
+        }
+        else{
+            $$ = new ASTNode("type_qualifier_list");
+            $$->addChild($1);
+        }
         $$->addChild($2);
     }
     ;
@@ -1549,7 +1655,12 @@ identifier_list
     | identifier_list COMMA identifier 
     { 
         LINE 
-        $$ = $1; 
+        if(compressed){
+            $$ = $1;
+        }else{
+            $$ = new ASTNode("identifier_list");
+            $$->addChild($1);
+        }
         $$->addChild($2);
         $$->addChild($3);
     }
@@ -1620,7 +1731,12 @@ direct_abstract_declarator
     | direct_abstract_declarator LSQUARE rsquare
     {
         LINE
-        $$ = $1;  
+        if(compressed){
+            $$ = $1;
+        }else{
+            $$ = new ASTNode("direct_abstract_declarator");
+            $$->addChild($1);
+        }
         $$->addChild($2);
         $$->addChild($3);
     }
@@ -1650,14 +1766,24 @@ direct_abstract_declarator
     | direct_abstract_declarator LPAREN rparen
     {
         LINE
-        $$ = $1; 
+        if(compressed){
+            $$ = $1;
+        }else{
+            $$ = new ASTNode("direct_abstract_declarator");
+            $$->addChild($1);
+        }
         $$->addChild($2);
         $$->addChild($3);
     }
     | direct_abstract_declarator LPAREN parameter_type_list rparen
     {
         LINE
-        $$ = $1; 
+        if(compressed){
+            $$ = $1;
+        }else{
+            $$ = new ASTNode("direct_abstract_declarator");
+            $$->addChild($1);
+        }
         $$->addChild($2);
         $$->addChild($3);
         $$->addChild($4);
@@ -1700,7 +1826,12 @@ initializer_list
     | initializer_list COMMA initializer 
     { 
         LINE 
-        $$ = $1; 
+        if(compressed){
+            $$ = $1;
+        }else{
+            $$ = new ASTNode("initializer_list");
+            $$->addChild($1);
+        }
         $$->addChild($2);
         $$->addChild($3);
     }
@@ -1824,7 +1955,12 @@ declaration_list
     | declaration_list declaration 
     { 
         LINE 
-        $$ = $1; 
+        if(compressed){
+            $$ = $1;
+        }else{
+            $$ = new ASTNode("declaration_list");
+            $$->addChild($1);
+        }
         $$->addChild($2); 
     }
     ;
@@ -1840,7 +1976,12 @@ statement_list
     | statement_list statement 
     { 
         LINE 
-        $$ = $1;
+        if(compressed){
+            $$ = $1;
+        }else{
+            $$ = new ASTNode("statement_list");
+            $$->addChild($1);
+        }
         $$->addChild($2); 
     }
     ;
@@ -2019,7 +2160,12 @@ translation_unit
     | translation_unit external_declaration 
     { 
         LINE 
-        $$ = $1;
+        if(compressed){
+            $$ = $1;
+        }else{
+            $$ = new ASTNode("translation_unit");
+            $$->addChild($1);
+        }
         $$->addChild($2); 
         root = $$;
     }
@@ -2043,9 +2189,9 @@ external_declaration
     ;
 
 function_definition
-    : // This in not supported [ToHandle]
+    : 
     declaration_specifiers declarator declaration_list compound_statement 
-    { 
+    { // This in not supported [ToHandle]
         LINE  
         $$ = new ASTNode("function_definition"); 
         $$->addChild($2); 
@@ -2060,20 +2206,18 @@ function_definition
         $$->addChild($1);
         $$->addChild($2); 
         $$->addChild($3); 
-        // Function_Def_Handler($2);
     }
-    //This is Depriecated [ToHandle]
+    
     | declarator declaration_list compound_statement 
-    { 
+    { //This is Depriecated [ToHandle]
         LINE
         $$ = new ASTNode("function_definition"); 
         $$->addChild($1); 
         $$->addChild($2);
         $$->addChild($3); 
     } 
-    // This is Depriecated [ToHandle]
     | declarator compound_statement 
-    { 
+    {  // This is Depriecated [ToHandle]
         LINE
         $$ = new ASTNode("function_definition"); 
         $$->addChild($1); 
@@ -2097,12 +2241,12 @@ int main(int argc, char **argv) {
         inputInstructions += "Options: \n";
         inputInstructions += "[-ast <dot_file>] : Generate AST as DOT file\n";
         inputInstructions += "[-r] : Generate Recursive Output\n";
-        inputInstructions += "[-pt <parser_table_file>] : Generate Parser Table\n";
+        inputInstructions += "[-ptree <dot_file> ] : Generate Parser Tree\n";
         inputInstructions += "[-s <SExp_file>] : Generate S-Expression\n";
 
         /* std::cout << "argc: " << argc << std::endl; */
         if (argc < 2) {
-            std::cerr << "Usage: " << argv[0] << " <input_file> <output_file> [-ast <dot_file>] [-r] [-pt] [-s] \n";
+            std::cerr << "Usage: " << argv[0] << " <input_file> <output_file> [-ast <dot_file>] [-r] [-ptree <dot_file>] [-s] \n";
             return 1;
         }
 
@@ -2110,11 +2254,11 @@ int main(int argc, char **argv) {
         std::string output_file = argv[2];
         std::string dot_file = "ast_graph.dot";
         std::string recursive_output_file = "recursive_output.txt";
-        std::string parser_table_file = "parser_table.txt";
         std::string SExp_file = "SExp.txt";
         std::string LaTeXParserTable = "parser_table.tex";    
 
         bool ast_flag = false;
+        bool parser_tree_flag = false;
         bool recursive_flag = false;
         bool parser_table_flag = false;
         bool SExp_flag = false;
@@ -2144,11 +2288,21 @@ int main(int argc, char **argv) {
                 }
             } else if (std::string(argv[i]) == "-r") {
                 recursive_flag = true;
-            } else if (std::string(argv[i]) == "-pt") {
-                std::cerr << "This feature is Removed\n";
-                return 0;
-                /* parser_table_flag = true; */
-                
+            } else if (std::string(argv[i]) == "-ptree") {
+                std::cerr << "We are going to print Parser Tree\n";
+                // If we wish to print parseTree
+                parser_tree_flag = true; 
+                // and if we wish to have parseTree (uncompressed)
+                compressed = false;
+                ast_flag = false; // we only get one things
+                if (i + 1 < argc) {
+                    dot_file = argv[i + 1];
+                    i++;
+                } else {
+                    std::cerr << "Error: Missing argument for -ptree\n";
+                    std::cerr << inputInstructions;
+                    return 1;
+                }
             } else if (std::string(argv[i]) == "-s") {
                 SExp_flag = true;
             } else {
@@ -2257,6 +2411,12 @@ int main(int argc, char **argv) {
         *output << "\U0001F53A AST generated as DOT file: " << dot_file << " can be visualized using Graphviz\n";
     }
 
+    if(parser_tree_flag){
+        // Print Parser Tree to DOT file
+        generateDOT(root, dot_file);
+        *output << "\U0001F53A Parser Tree generated as DOT file: " << dot_file << " can be visualized using Graphviz\n";
+    }
+
     if(recursive_flag){
         // Print Recursive Output
         printASTToFile(root, recursive_output_file);
@@ -2269,14 +2429,14 @@ int main(int argc, char **argv) {
         *output << "\U0001F53A S-Expression generated as: " << SExp_file << "\n";
     }
 
-    if(parser_table_flag){
+    /* if(parser_table_flag){
         // Print Parser Table
         std::ofstream parser_table;
         parser_table.open(parser_table_file);
         printParserTable(parser_table);
         parser_table.close();
         *output << "\U0001F53A Parser Table (TXT) generated as: " << parser_table_file << "\n";
-    }
+    } */
     LINE
 
     // Removing PARSE_TABLE
@@ -2314,7 +2474,7 @@ void printParserTable(std::ostream& out) {
     std::sort(PARSER_TABLE.begin(), PARSER_TABLE.end(), 
         [](const auto& a, const auto& b) {
             return (a.first.first < b.first.first) || 
-                   (a.first.first == b.first.first && a.first.second < b.first.second);
+                (a.first.first == b.first.first && a.first.second < b.first.second);
         });
 
     // Set dynamic column widths
