@@ -77,10 +77,4 @@ void printASTRecursive(ASTNode *node, std::ofstream &outFile, const std::string 
 void printASTToFile(ASTNode *root, const std::string &outputFileName);
 
 
-
-//------------Symbol Table Implementation----------------
-
-
-
-
 #endif // UTILITY_H

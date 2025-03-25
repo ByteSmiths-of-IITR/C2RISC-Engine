@@ -5,7 +5,7 @@ int arr0[12][4];
 
 int *arr1[12][4];
 
-int (*const arr2)[12][4];
+int (* arr2)[12][4];
 
 int arr4[] = {1, 2, 3, 4};
 

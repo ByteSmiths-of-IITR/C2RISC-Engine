@@ -28,10 +28,11 @@ int main()
     enum Color2
     {
         RED = 3, // This will NOT conflict with the previous RED as scope is incremented.
-        GREEN
+        GREEN,
+        BLUE
     };
 
-    // int BLUE = 9;
+    int BLUE = 9;
 
     c = RED;
     int d = BLUE;

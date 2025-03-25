@@ -214,6 +214,9 @@ int SymbolTable::lookupNode(const std::string &key, SymbolNode *&node){
 
     lastFuncCalled = "SymbolTable::lookupNode";
 
+    if(!this->symTable.count(key)){
+        return -1;
+    }
     // This will return the first node of that key
 
     SymbolNode *head = this->symTable[key];
@@ -262,13 +265,25 @@ bool isArrayInfo(const LevelInfo& info){
     return dynamic_cast<const ArrayInfo*>(&info);
 }
 
+// bool isArrayInfo(const LevelInfo* info){
+//     return dynamic_cast<const ArrayInfo*>(info);
+// }
+
 bool isPointerInfo(const LevelInfo &info){
     return dynamic_cast<const PointerInfo*>(&info);
 }
 
+// bool isPointerInfo(const LevelInfo* info){
+//     return dynamic_cast<const PointerInfo*>(info);
+// }
+
 bool isBaseInfo(const LevelInfo &info){
     return dynamic_cast<const BaseInfo*>(&info);
 }
+
+// bool isBaseInfo(const LevelInfo* info){
+//     return dynamic_cast<const BaseInfo*>(info);
+// }
 
 //------- Check GenericSymbol Derived Classes --------------------------------------------------------
 
@@ -292,7 +307,7 @@ void SymbolTable::printTable(std::ofstream &file){
     lastFuncCalled = "SymbolTable::printTable";
 
 
-    file << "~~~~~~~~~~~~~~~~~~~~~~~ Symbol Table ~~~~~~~~~~~~~~~~~~~~~~~\n";
+    // file << "~~~~~~~~~~~~~~~~~~~~~~~ Symbol Table ~~~~~~~~~~~~~~~~~~~~~~~\n";
 
     // Table Variables
     file << "Scope No: " << this->scopeNo << std::endl;
@@ -332,6 +347,258 @@ void SymbolTable::printTable(std::ofstream &file){
         file << "---------------------------------\n";
     }
 
-    file << "~~~~~~~~~~~~~~~~~~~~~~~ End of Symbol Table ~~~~~~~~~~~~~~~~~~~~~~~\n\n";
+    // file << "~~~~~~~~~~~~~~~~~~~~~~~ End of Symbol Table ~~~~~~~~~~~~~~~~~~~~~~~\n\n";
 
 }
+
+//===========[ DType Utilities ]====================
+
+int width(const BaseInfo &info){
+    // This will depend on stding baseType
+    // [📍 ToDo]
+    /*Also need to handle the case of enum, struct, union*/
+    return 0;
+}
+
+int width(const DType &type){
+    
+    // It has levels, so need to consider that as well
+    int size = 0;
+
+    std::stack<LevelInfo*> temp = type.levels;
+    bool baseFlag = false;
+    while(!temp.empty()){
+        LevelInfo* info = temp.top();
+        temp.pop();
+
+        if(isArrayInfo(*info)){
+            ArrayInfo* arr = dynamic_cast<ArrayInfo*>(info);
+            size *= arr->dimSize;
+        }
+        else if (isPointerInfo(*info))
+        {
+            size = ADDRESS_SIZE;
+        }
+        else if (isBaseInfo(*info))
+        {
+            if(!temp.empty()){
+                std::cerr << "Error: BaseInfo should be the last level\n";
+                return -1;
+            }
+            baseFlag = true;
+            BaseInfo* base = dynamic_cast<BaseInfo*>(info);
+            size *= width(*base);
+        }
+    }
+
+    if(!baseFlag){
+        std::cerr << "Error: BaseInfo not found\n";
+        return -1;
+    }
+
+    return size;
+}
+
+std::string toString(const DType &dtype){
+    // This will return the string representation of the data type
+    // [📍 ToDo]
+    return "";
+}
+
+int popALevel(DType &dtype){
+    // First we check if top level is popable or not
+    if(dtype.levels.empty()){
+        std::cerr << "Error: No Level to pop\n";
+        return EXIT_FAILURE;
+    }
+    if(isBaseInfo(*dtype.levels.top())){
+        std::cerr << "Error: BaseInfo can't be popped | TopLevel must be a Pointer or Array\n";
+        return EXIT_FAILURE;
+    }
+
+    dtype.levels.pop();
+    return EXIT_SUCCESS;
+}
+
+//===========[ TypeExpression Utilities ]====================
+std::string toString(const TypeExpression &typeExpr){
+    // This will return the string representation of the type expression
+    // [📍 ToDo]
+    return "";
+}
+
+int popALevel(TypeExpression &typeExpr){
+    // First we check if top level is popable or not
+    return popALevel(typeExpr.dtype);
+}
+
+int width(const TypeExpression &typeExpr){
+    // This will return the width of the returnType of the function
+    return width(typeExpr.dtype);
+}
+
+//===========[ UserDType Utilities ]====================
+int width(const UserDType &dtype){
+    // This will return the width of the user defined data type
+    // [📍 ToDo]
+    return 0;
+}
+
+std::string toString(const UserDType &dtype){
+    // This will return the string representation of the user defined data type
+    // [📍 ToDo] = Make sure to have scopeNo in string as well
+    return "";
+}
+
+//============ [lookup in given scope] =================
+int SymbolTable::lookup(const std::string &key, GenericSymbol *&sym, int lookInScopeNo){
+    
+    lastFuncCalled = "SymbolTable::lookup_scope";
+
+    if(!this->symTable.count(key)){
+        return -1;
+    }
+
+    SymbolNode *head = this->symTable[key];
+
+    if(!head){
+        return -1;
+    }
+
+    SymbolNode *node = head->next;
+    if(!node){
+        return -1; // This would happen if node is deleted
+    }
+
+    while(node){
+        if(node->symbol->scopeNo == lookInScopeNo){
+            sym = node->symbol;
+            return 0;
+        }
+        node = node->next;
+    }
+
+    return -1;
+}
+
+
+//============= [AllSymbolTable] ========================
+int AllSymbolTable::enterScope(){
+    
+    lastFuncCalled = "AllSymbolTable::enterScope";
+
+    int varScope = this->varTable.enterScope();
+    int recordScope = this->recordTable.enterScope();
+
+    if(varScope == recordScope){
+        return varScope; 
+    }
+
+    // Should not happen
+    std::cerr << "Error: Scope Number Mismatch\n";
+    return -1;
+}
+
+void AllSymbolTable::exitScope(){
+
+    lastFuncCalled = "AllSymbolTable::exitScope";
+
+    this->varTable.exitScope();
+    this->recordTable.exitScope();
+}
+
+int AllSymbolTable::insert(const std::string &key, GenericSymbol *symbol){
+    
+    lastFuncCalled = "AllSymbolTable::insert";
+
+    return this->varTable.insert(key, symbol);
+}
+
+int AllSymbolTable::insertRecord(const std::string &key, GenericSymbol *symbol){
+    
+    lastFuncCalled = "AllSymbolTable::insertRecord";
+
+    return this->recordTable.insert(key, symbol);
+}
+
+int AllSymbolTable::lookup(const std::string &key, GenericSymbol *&sym){
+    
+    lastFuncCalled = "AllSymbolTable::lookup";
+
+    if(this->varTable.lookup(key, sym) == 0){
+        return 0;
+    }
+
+    return this->recordTable.lookup(key, sym);
+}
+
+int AllSymbolTable::lookupRecord(const std::string &key, GenericSymbol *&sym){
+    
+    lastFuncCalled = "AllSymbolTable::lookupRecord";
+
+    return this->recordTable.lookup(key, sym);
+}
+
+int AllSymbolTable::lookup(const std::string &key, GenericSymbol *&sym, int lookInScopeNo){
+    
+    lastFuncCalled = "AllSymbolTable::lookup_scope";
+
+    if(this->varTable.lookup(key, sym, lookInScopeNo) == 0){
+        return 0;
+    }
+
+    return this->recordTable.lookup(key, sym, lookInScopeNo);
+}
+
+int AllSymbolTable::lookupRecord(const std::string &key, GenericSymbol *&sym, int lookInScopeNo){
+    
+    lastFuncCalled = "AllSymbolTable::lookupRecord_scope";
+
+    return this->recordTable.lookup(key, sym, lookInScopeNo);
+}
+
+void AllSymbolTable::printTable(std::ofstream &file){
+    
+    lastFuncCalled = "AllSymbolTable::printTable";
+
+    file << "~~~~~~~~~~~~~~~~~~~~~~~ All Symbol Table ~~~~~~~~~~~~~~~~~~~~~~~\n";
+
+    this->printVarTable(file);
+    this->printRecordTable(file);
+
+    file << "~~~~~~~~~~~~~~~~~~~~~~~ End of All Symbol Table ~~~~~~~~~~~~~~~~~~~~~~~\n\n";
+}
+
+void AllSymbolTable::printVarTable(std::ofstream &file){
+    
+    lastFuncCalled = "AllSymbolTable::printVarTable";
+
+    file << "~~~~~~~~~~~~~~~~~~~~~~~ Variable Symbol Table ~~~~~~~~~~~~~~~~~~~~~~~\n";
+    this->varTable.printTable(file);
+    file << "~~~~~~~~~~~~~~~~~~~~~~~ End of Variable Symbol Table ~~~~~~~~~~~~~~~~~~~~~~~\n\n";
+}
+
+void AllSymbolTable::printRecordTable(std::ofstream &file){
+    
+    lastFuncCalled = "AllSymbolTable::printRecordTable";
+
+    file << "~~~~~~~~~~~~~~~~~~~~~~~ Record Symbol Table ~~~~~~~~~~~~~~~~~~~~~~~\n";
+    this->recordTable.printTable(file);
+    file << "~~~~~~~~~~~~~~~~~~~~~~~ End of Record Symbol Table ~~~~~~~~~~~~~~~~~~~~~~~\n\n";
+}
+
+int AllSymbolTable::lookupVarNode(const std::string &key, SymbolNode *&node){
+    
+    lastFuncCalled = "AllSymbolTable::lookupNode";
+
+    return this->varTable.lookupNode(key, node);
+}
+
+int AllSymbolTable::lookupRecordNode(const std::string &key, SymbolNode *&node){
+    
+    lastFuncCalled = "AllSymbolTable::lookupRecordNode";
+
+    return this->recordTable.lookupNode(key, node);
+}
+
+//=======================================================================================================================================================

@@ -3,8 +3,20 @@
 
 #include "utility.h"
 
-#define WORD_SIZE 4
-#define BYTE_SIZE 1
+// System Constants
+#define WORD_SIZE 4 // int, float
+#define WORD_SIZEx2 8 // double
+#define BYTE_SIZEx2 2 // short
+#define BYTE_SIZE 1 // 8 bits
+#define ADDRESS_SIZE 16 // 64 bit address
+
+// int, float - WORD_SIZE | long - WORD_SIZEx2 | long long - WORD_SIZEx2 | short - BYTE_SIZEx2
+// double - WORD_SIZEx2 | long double - WORD_SIZEx2
+// char - BYTE_SIZE
+// pointer - ADDRESS_SIZE
+
+
+
 
 extern int MEMORY_MONITORING;
 
@@ -83,27 +95,78 @@ class BaseInfo : public LevelInfo{
         // This is either primitive or struct or union (Record)
         std::vector<TypeQualifier> typeQualifiers;
         // This will have const, volatile, restrict
-        StorageClass storageClass; // only one of these
+        // StorageClass storageClass; // only one of these [🚨 It's a variable property]
         // This will have auto, static, extern
 
         // int size; // a dynamic value [no need to store can be calculated]
 
         CON_DES(BaseInfo)
+
+        int size() const;
 };
+
+int width(const BaseInfo &info); // This will return the width of the base type
+// int width(const BaseInfo *info); // This will return the width of the base type
 
 class DType{
     public:
         // D-Type INFO
-        std::vector<std::string> levelType; // This 🧐 is redunant we can check type of LevelInfo itslelf by Function using dynamic_cast()
-        std::vector<LevelInfo> levelInfo;
+        // std::vector<std::string> levelType; // This 🧐 is redunant we can check type of LevelInfo itslelf by Function using dynamic_cast()
+        std::stack<LevelInfo*> levels; // bottom of the stack is the base type
 
         //Constructor & Destructor
         CON_DES(DType)
+
 };
 
+
+int width(const DType &dtype); // This will return the width of the data type
+std::string toString(const DType &dtype); // This will return the string representation of the data type
+int popALevel(DType &dtype); // This will pop a level from the dtype and 
+/*Return value | 🚨 It's passed by ref so change will effect the original
+    0 - if successful
+    -1 - if not successful
+*/
+
+class TypeExpression
+{
+public:
+    DType dtype; // This will be used as returnType of the function
+    std::vector<DType> paramType; // This will be used as parameterType of the function
+    /* For simple types, the paramType will be empty */
+    
+
+    //Constructor & Destructor
+    TypeExpression()
+    {
+        MEM("TypeExpression Constructor");
+    }
+
+    ~TypeExpression()
+    {
+        MEM("TypeExpression Destructor");
+    }
+
+    TypeExpression(const DType &dtype, const std::vector<DType> &paramType)
+    {
+        MEM("TypeExpression Constructor 2");
+        this->dtype = dtype;
+        this->paramType = paramType;
+    }
+};
+
+std::string toString(const TypeExpression &typeExpr); // This will return the string representation of the type expression
+int popALevel(TypeExpression &typeExpr); // This will pop a level from the typeExpr and return 1 if successful else 0
+//🚨 It's passed by referance to change will affect original
+int width(const TypeExpression &typeExpr); // This will return the width of the returnType of the function
+
+
 bool isArrayInfo(const LevelInfo& info);
+// bool isArrayInfo(const LevelInfo* info);
 bool isPointerInfo(const LevelInfo &info);
+// bool isPointerInfo(const LevelInfo* info);
 bool isBaseInfo(const LevelInfo &info);
+// bool isBaseInfo(const LevelInfo* info);
 
 //--------------------- Generic Symbol and Node & ScopeEnabledSymbolTable --------------------------------------------------
 class GenericSymbol
@@ -189,7 +252,12 @@ public:
     // Returns 0 if the symbol is found
     // Returns -1 if the symbol is not found
 
+    int lookup(const std::string &key, GenericSymbol *&sym, int lookInScopeNo); // This will lookinto the specific scope
+    // Returns 0 if the symbol is found
+    // Returns -1 if the symbol is not found
+
     int lookupNode(const std::string &key, SymbolNode *&node);
+    // Return 0 on success and -1 on failure
 
     // Print the SymbolTable
     void printTable(std::ofstream &file);
@@ -226,7 +294,9 @@ class Variable : public VarSymbols{
         // Variable Info [🚨 Not needed]
 
         // DT Info
-        DType dtype; // This will store the data type info of the variable
+        TypeExpression type; // This will store the data type info of the variable
+
+        StorageClass storageClass; // It's a variable only property and not a property of the data type
 
         // Initialization info [for now just pass the initializer ASTNode itself]
         ASTNode *intiailizer; //🚨 This will point to the initializer expression of this variable
@@ -241,7 +311,6 @@ class Variable : public VarSymbols{
 class EnumConstant : public VarSymbols{
     public:
         // Enum Constant Info [🚨 Not needed]
-
 
         // The DType will be int by default
         UserDType* enumType; // This will store the user defined data type info of the enum constant
@@ -258,13 +327,11 @@ class Function : public VarSymbols{
     public:
         // Function Info [🚨 Not needed]
 
-        // Return Type Info
-        DType returnType; // This will store the data type info of the return type
-        // It can have storage class, type qualifiers, base type + level info
+        // DT Info
+        TypeExpression type; // This will store the data type info of the function        
 
-        // Parameter Info
-        std::vector<Variable> parameters; // List of parameters
-        // 🚨 These parameters are ❌ NOT allowed to have initializer(syntax checked), or stroage clas(semantic check)
+        // Parameters Info and Return Type are stored in TypeExpression itself
+        // 🚨 These parameters are ❌ NOT allowed to have initializer(syntax checked), or stroage clas(syntax check)
         // clang uses `ParmVarDecl` for this [but we can use Variable]
 
         // Function Body
@@ -285,14 +352,54 @@ public:
     std::string recordType; // struct, union, enum
 
     // Members of the recor
-    std::unordered_map<std::string, Variable> members;
+    std::unordered_map<std::string, TypeExpression> members;
     // 🚨 These Variables are NOT ❌ allowed to have storage class, as they are part of the record
 
     // Constructor & Destructor
     CON_DES(UserDType)
 };
 
+int width(const UserDType &dtype); // This will return the width of the user defined data type
+std::string toString(const UserDType &dtype); // This will return the string representation of the user defined data type
 
+//============================== [ Complete SymbolTable ]=====================================================
 
+class AllSymbolTable {
+    // This will have two instances of SymbolTable
+
+    SymbolTable varTable;
+    SymbolTable recordTable;
+
+    //Constructor & Destructor
+    AllSymbolTable(){
+        MEM("AllSymbolTable Constructor");
+    }
+
+    ~AllSymbolTable(){
+        MEM("AllSymbolTable Destructor");
+    }
+
+    // Member functions
+
+    int enterScope(); // This will create a new scope and return the scope number
+    void exitScope(); // This will remove all the symbols of the current scope
+
+    int insert(const std::string &key, GenericSymbol*symbol);
+    int insertRecord(const std::string &key, GenericSymbol*symbol);
+
+    int lookup(const std::string &key, GenericSymbol *&sym);
+    int lookupRecord(const std::string &key, GenericSymbol *&sym);
+
+    int lookup(const std::string &key, GenericSymbol *&sym, int lookInScopeNo);
+    int lookupRecord(const std::string &key, GenericSymbol *&sym, int lookInScopeNo);
+
+    void printVarTable(std::ofstream &file);
+    void printRecordTable(std::ofstream &file);
+
+    void printTable(std::ofstream &file);
+
+    int lookupVarNode(const std::string &key, SymbolNode *&node);
+    int lookupRecordNode(const std::string &key, SymbolNode *&node);
+};
 
 #endif // !SYM_H

@@ -20,7 +20,6 @@ Thumbs.db
 .env
 
 # Ignore IDE specific files
-.vscode/
 .idea/
 
 # Ignore compiled files
