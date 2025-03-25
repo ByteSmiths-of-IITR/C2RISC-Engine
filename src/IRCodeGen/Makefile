@@ -77,9 +77,10 @@ run: $(EXECUTABLE) $(INPUT) $(OUTPUT) $(CERR)
 $(DOTFile): $(EXECUTABLE)
 	./$(EXECUTABLE) $(INPUT) 
 
-# PDF is better
-# image: $(DOTFile)
-# 	$(DOT) -Tpng $(DOTFile) -o $(DOTImage)
+# Create required directories
+dirs:
+	mkdir -p $(BUILD_DIR) $(BIN_DIR) $(OUTPUT_DIR)
+	
 
 ## For Visualizing the AST
 ast: $(INPUT) $(OUTPUT) $(EXECUTABLE)

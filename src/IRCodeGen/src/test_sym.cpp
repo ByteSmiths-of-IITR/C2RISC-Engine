@@ -33,7 +33,7 @@ int main(int argc, char *argv[]){
 
     //Signal Handler
     signal(SIGSEGV, signalHandler);
-    std::string errorFile = "output/sym_error.txt";
+    std::string errorFile = "output/sym_error.log";
     freopen(errorFile.c_str(), "w", stderr);
 
     // Open SymbolTable File in truncate mode for fresh start

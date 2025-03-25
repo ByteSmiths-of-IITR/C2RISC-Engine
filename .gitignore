@@ -5,7 +5,12 @@
 # Ignore build directories
 dist/
 build/
+
+# Ignore bin directories
 bin/
+
+#Ignore output directories
+output/
 
 # Ignore OS generated files
 .DS_Store
