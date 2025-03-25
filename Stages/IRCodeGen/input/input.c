@@ -1,8 +1,17 @@
-int function(int a, int b) {
-    return a + b;
-}
+struct A
+{
+    int a;
+    int b = 1; // error: field's member initializer is not a constant expression
+    
+};
 
-int main() {
-    double a = 1.0;
-    int ans = function(a, 10);
-}
+const int var = 33; // constant variable can be used in enum
+
+enum color
+{
+    RED,
+    BLUE = RED + 1,
+    Green = var
+};
+
+int main(){}
