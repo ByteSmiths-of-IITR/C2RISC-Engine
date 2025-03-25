@@ -5,6 +5,20 @@
 #include <vector>
 #include <fstream>
 #include <iostream>
+#include <stack>
+#include <map>
+#include <utility>
+#include <algorithm>
+#include <set>
+#include <memory>
+#include <sstream>
+#include <iomanip>
+#include <cassert>
+#include <cstring>
+#include <cstdlib>
+#include <cstdio>
+#include <cctype>
+#include <signal.h>
 
 // Forward declaration
 class TokenAttribute;

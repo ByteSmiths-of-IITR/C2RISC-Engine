@@ -1,8 +1,0 @@
-🚨 Input Program failed in Lexical Analysis Phase 🚨
-
------------------------------------ LEXER LOG ------------------------------------
-Invalid identifier: 3ddre at line 2, column 9
-Unclosed string: " at line 4, column 16
------------------------------------ END OF LOG -----------------------------------
-
-----No Further Processing----
