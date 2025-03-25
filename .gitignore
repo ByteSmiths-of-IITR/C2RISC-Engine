@@ -5,6 +5,7 @@
 # Ignore build directories
 dist/
 build/
+bin/
 
 # Ignore OS generated files
 .DS_Store
