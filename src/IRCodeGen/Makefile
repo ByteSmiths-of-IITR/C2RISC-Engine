@@ -51,24 +51,24 @@ all: $(EXECUTABLE)
 
 
 # Step 1: Generate parser files from Bison
-$(PARSER_C) $(PARSER_H): $(PARSER)
-	$(BISON) -d $(PARSER) --output=$(PARSER_C) --header=$(PARSER_H)
+$(PARSER_C) $(PARSER_H): $(PARSER) $(BUILD_DIR)
+	@$(BISON) -d $(PARSER) --output=$(PARSER_C) --header=$(PARSER_H)
 
 # Step 2: Generate lexer file from Flex
-$(LEXER_C): $(LEXER)
-	$(FLEX) -o $(LEXER_C) $(LEXER)
+$(LEXER_C): $(LEXER) $(BUILD_DIR) 
+	@$(FLEX) -o $(LEXER_C) $(LEXER)
 
 # Step 3: Compile everything together into an executable
-$(EXECUTABLE): $(LEXER_C) $(PARSER_C) $(UTILITY_CPP) 
-	$(CXX) $(LEXER_C) $(PARSER_C) $(UTILITY_CPP)  -o $(EXECUTABLE) $(CXXFLAGS) -I $(INCLUDE_DIR)
+$(EXECUTABLE): $(LEXER_C) $(PARSER_C) $(UTILITY_CPP) $(BUILD_DIR) $(BIN_DIR) $(INCLUDE_DIR) $(OUTPUT_DIR)
+	@$(CXX) $(LEXER_C) $(PARSER_C) $(UTILITY_CPP)  -o $(EXECUTABLE) $(CXXFLAGS) -I $(INCLUDE_DIR)
 
-$(CERR):
-	touch $(CERR)
+$(CERR): $(OUTPUT_DIR)
+	@touch $(CERR)
 
-$(OUTPUT):
-	touch $(OUTPUT)
+$(OUTPUT): $(OUTPUT_DIR)
+	@touch $(OUTPUT)
 
-run: $(EXECUTABLE) $(INPUT) $(OUTPUT) $(CERR)
+run: $(EXECUTABLE) $(INPUT) $(OUTPUT) $(CERR) $(OUTPUT_DIR)
 	./$(EXECUTABLE) $(INPUT) $(OUTPUT) 2> $(CERR) 
 
 # This will only run the parser and generate the output file [NO RESULT]
@@ -77,20 +77,26 @@ run: $(EXECUTABLE) $(INPUT) $(OUTPUT) $(CERR)
 $(DOTFile): $(EXECUTABLE)
 	./$(EXECUTABLE) $(INPUT) 
 
-# Create required directories
-dirs:
-	mkdir -p $(BUILD_DIR) $(BIN_DIR) $(OUTPUT_DIR)
-	
+# Auto Create Required Directories
+$(BUILD_DIR):
+	@mkdir -p $(BUILD_DIR)
+
+$(BIN_DIR):
+	@mkdir -p $(BIN_DIR)
+
+$(OUTPUT_DIR):
+	@mkdir -p $(OUTPUT_DIR)
+
 
 ## For Visualizing the AST
-ast: $(INPUT) $(OUTPUT) $(EXECUTABLE)
+ast: $(INPUT) $(OUTPUT) $(EXECUTABLE) $(OUTPUT_DIR) $(BUILD_DIR)
 	./$(EXECUTABLE) $(INPUT) $(OUTPUT) -ast $(DOTFile) 2> $(CERR)
-	$(DOT) -Tpdf $(DOTFile) -o $(DOTPDF)
+	@$(DOT) -Tpdf $(DOTFile) -o $(DOTPDF)
 	open $(DOTPDF)
 
 ptree: $(INPUT) $(OUTPUT) $(EXECUTABLE)
 	./$(EXECUTABLE) $(INPUT) $(OUTPUT) -ptree $(DOTFile) 2> $(CERR)
-	$(DOT) -Tpdf $(DOTFile) -o $(DOTPDF)
+	@$(DOT) -Tpdf $(DOTFile) -o $(DOTPDF)
 	open $(DOTPDF) 
 
 r: $(EXECUTABLE) $(INPUT) $(OUTPUT)
