@@ -242,13 +242,15 @@ declaration
     | declaration_specifiers init_declarator_list SEMI_COLON
     ;
 
-declaration_specifiers
-    : storage_class_specifier
-    | storage_class_specifier declaration_specifiers
-    | type_specifier
-    | type_specifier declaration_specifiers
-    | type_qualifier
-    | type_qualifier declaration_specifiers
+//👍
+/*This will pass a vector<string> of all info below it. All semantic actions will be performed by it's reciever*/
+declaration_specifiers 
+    : storage_class_specifier { $$.vector.push_back($1); }
+    | storage_class_specifier declaration_specifiers { $$.vector = $2.vector; $$.vector.push_back($1); }
+    | type_specifier    { $$.vector.push_back($1); }
+    | type_specifier declaration_specifiers { $$.vector = $2.vector; $$.vector.push_back($1); }
+    | type_qualifier    { $$.vector.push_back($1); }
+    | type_qualifier declaration_specifiers { $$.vector = $2.vector; $$.vector.push_back($1); }
     ;
 
 init_declarator_list
@@ -256,15 +258,16 @@ init_declarator_list
     | init_declarator_list COMMA init_declarator
     ;
 
+//here will insert variables in symbol table, also check for identifier or function
 init_declarator
     : declarator
     | declarator ASSIGN initializer
     ;
 
 storage_class_specifier
-    : TYPEDEF
+    : TYPEDEF {/* not supported*/}
     | EXTERN
-    | STATIC
+    | STATIC 
     | AUTO
     | REGISTER
     ;
@@ -343,43 +346,81 @@ type_qualifier
     | VOLATILE
     ;
 
+// This will recieve stack<LevelInfo> from direct_declarator
 declarator
-    : pointer direct_declarator
-    | direct_declarator
+    : pointer direct_declarator { 
+        $$.stack = new stack; 
+        $$.stack.copy_push($1.stack);
+        $$.stack.copy_push($2.stack);
+        $$.vaName = $2.vaName; // to think
+        }
+    | direct_declarator { 
+        $$.stack = $1.stack; 
+        $$.vaName = $1.vaName;
+        }
     ;
 
 direct_declarator
-    : IDENTIFIER
-    | LPAREN declarator RPAREN
-    | direct_declarator LSQUARE constant_expression RSQUARE
-    | direct_declarator LSQUARE RSQUARE
+    : IDENTIFIER { $$.vaName = $1; }
+    | LPAREN declarator RPAREN { $$.stack = $2.stack; $$.vaName = $2.vaName; }
+    | direct_declarator LSQUARE constant_expression RSQUARE {
+        // Logic first we push the currentArray Info and then recursive push
+        std::stack<LevelInfo> newStack;
+        newStack.push(ArrayInfo($3));
+        $$.stack = newStack;
+        $$.stack.copy_push($1.stack);
+        $$vaName = $1.vaName;
+    }
+    | direct_declarator LSQUARE RSQUARE 
+        {
+        // Logic first we push the currentArray Info and then recursive push
+        std::stack<LevelInfo> newStack;
+        newStack.push(ArrayInfo(-1 /*This is to show no size was given*/));
+        $$.stack = newStack;
+        $$.stack.copy_push($1.stack);
+        $$vaName = $1.vaName;
+        }
     | direct_declarator LPAREN parameter_type_list RPAREN
     | direct_declarator LPAREN identifier_list RPAREN
     | direct_declarator LPAREN RPAREN
     ;
 
-pointer
-    : STAR
-    | STAR type_qualifier_list
-    | STAR pointer
-    | STAR type_qualifier_list pointer
+// This will give it's parent a stack<LevelInfo> to be specific PointerInfo
+// LevelInfo() 👍
+pointer 
+    : STAR { $$.stack.push_back(PointerInfo(EMPTY_TYPEQUALIFIER_VECTOR)); }
+    | STAR type_qualifier_list { $$.stack.push_back(PointerInfo($2.Qualifiers)); }
+    | STAR pointer { /*First we create a new stack and push new PointerInfo in bottom and then the stack given by pointer1 of production*/
+        std::stack<LevelInfo> newStack;
+        newStack.push(PointerInfo(EMPTY_TYPEQUALIFIER_VECTOR));
+        $$.stack = newStack;
+        $$.stack.copy_push($2.stack);
+    }
+    | STAR type_qualifier_list pointer {
+        std::stack<LevelInfo> newStack;
+        newStack.push(PointerInfo($2.Qualifiers));
+        $$.stack = newStack;
+        $$.stack.copy_push($3.stack);
+    }
     ;
 
+// This will give a vector<TypeQualifier> to it's parent 
+//👍
 type_qualifier_list
-    : type_qualifier
-    | type_qualifier_list type_qualifier
+    : type_qualifier { $$.Qualifiers.push_back($1); }
+    | type_qualifier_list type_qualifier { $$.Qualifiers = $1.Qualifiers; $$.Qualifiers.push_back($2); }
     ;
 
 parameter_type_list
     : parameter_list
-    | parameter_list COMMA ELLIPSIS
+    | parameter_list COMMA ELLIPSIS {/*not supported*/}
     ;
 
 parameter_list
     : parameter_declaration
     | parameter_list COMMA parameter_declaration
     ;
-
+//this will make a variable (name and level) and return to it's parent
 parameter_declaration
     : declaration_specifiers declarator
     | declaration_specifiers abstract_declarator

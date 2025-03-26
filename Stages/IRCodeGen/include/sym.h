@@ -334,6 +334,9 @@ class Function : public VarSymbols{
         // 🚨 These parameters are ❌ NOT allowed to have initializer(syntax checked), or stroage clas(syntax check)
         // clang uses `ParmVarDecl` for this [but we can use Variable]
 
+        bool isDefined; // This will store whether the function is defined or not
+        // TO handle forward declaration
+
         // Function Body
         // ASTNode *body; // This will point to the body of the function
 
