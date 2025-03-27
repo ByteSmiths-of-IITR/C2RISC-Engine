@@ -2,7 +2,7 @@
 enum Color
 {
     RED,
-    GREEN,
+    GREEN = RED,
     BLUE
 };
 
