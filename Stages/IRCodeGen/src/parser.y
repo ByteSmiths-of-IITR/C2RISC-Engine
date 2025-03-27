@@ -501,7 +501,12 @@ argument_expression_list
     | argument_expression_list COMMA assignment_expression 
     { 
         LINE
-        $$ = $1;
+        if(compressed){
+            $$ = $1;
+        }else{
+            $$ = new ASTNode("argument_expression_list");
+            $$->addChild($1);
+        }
         $$->addChild($2);
         $$->addChild($3);
     }
@@ -1109,7 +1114,12 @@ init_declarator_list
     | init_declarator_list COMMA init_declarator
     {
         LINE
-        $$ = $1;
+        if(compressed){
+            $$ = $1;
+        }else{
+            $$ = new ASTNode("init_declarator_list");
+            $$->addChild($1);
+        }
         $$->addChild($2);
         $$->addChild($3);
     }
@@ -1133,12 +1143,12 @@ init_declarator
     ;
 
 storage_class_specifier
-    : /*TYPEDEF 
+    : TYPEDEF 
     {
         LINE 
         $$ = new ASTNode("storage_class_specifier");
         $$->addChild($1);
-    }*/
+    }
     | EXTERN 
     {
         LINE 
@@ -1288,7 +1298,12 @@ struct_declaration_list
     | struct_declaration_list struct_declaration 
     {
         LINE 
-        $$ = $1;
+        if(compressed){
+            $$ = $1;
+        }else{
+            $$ = new ASTNode("struct_declaration_list");
+            $$->addChild($1);
+        }
         $$->addChild($2);
     }
     ;
@@ -1351,7 +1366,12 @@ struct_declarator_list
     | struct_declarator_list COMMA struct_declarator 
     { 
         LINE 
-        $$ = $1;
+        if(compressed){
+            $$ = $1;
+        }else{
+            $$ = new ASTNode("struct_declarator_list");
+            $$->addChild($1);
+        }
         $$->addChild($2);
         $$->addChild($3);
     }
@@ -1422,7 +1442,12 @@ enumerator_list
     | enumerator_list COMMA enumerator 
     {
         LINE 
-        $$ = $1;
+        if(compressed){
+            $$ = $1;
+        }else{
+            $$ = new ASTNode("enumerator_list");
+            $$->addChild($1);
+        }
         $$->addChild($2);
         $$->addChild($3);
     }
