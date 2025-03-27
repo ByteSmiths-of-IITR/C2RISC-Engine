@@ -131,9 +131,11 @@ class TypeExpression
 {
 public:
     DType dtype; // This will be used as returnType of the function
-    std::vector<TypeExpression> paramType; // This will be used as parameterType of the function
-    /* For simple types, the paramType will be empty */
+    std::vector<TypeExpression> paramTypes; // This will be used as parameterType of the function
+    // NOTE ⚠️⚠️⚠️⚠️ Empty paramTypes can mean a empty function or a variable
+    // WE need to distinguish
     
+    // Decision - we use a TypeExpression with dtype's BaseInfo set to "void"
 
     //Constructor & Destructor
     TypeExpression()
@@ -150,7 +152,7 @@ public:
     {
         MEM("TypeExpression Constructor 2");
         this->dtype = dtype;
-        this->paramType = paramType;
+        this->paramTypes = paramType;
     }
 };
 

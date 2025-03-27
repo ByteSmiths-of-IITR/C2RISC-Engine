@@ -5,6 +5,11 @@
 
 extern int MEMORY_MONITORING;
 
+// Custom TAC Arguments
+const std::string RIGHT_ARRAY = "RIGHT_ARRAY";
+const std::string LEFT_ARRAY = "LEFT_ARRAY";
+
+
 #define MEM(x) (MEMORY_MONITORING ? std::cerr << x << std::endl : std::cerr)
 
 #define CON_DES(clasName)                         \
@@ -34,7 +39,8 @@ class TAC{
         std::vector<TAC_Quadruple> code;
         CON_DES(TAC)
         
-        void addTAC(std::string op, std::string arg1, std::string arg2, std::string result);
+        // void addTAC(std::string op, std::string arg1, std::string arg2, std::string result);
+        void addTAC(std::string result, std::string op, std::string arg1, std::string arg2); // More readable
         void addTAC(TAC_Quadruple q);
 
         void printTAC();

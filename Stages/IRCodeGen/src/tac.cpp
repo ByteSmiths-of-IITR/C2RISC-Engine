@@ -26,7 +26,11 @@ std::string newLabel(){
     return "L" + std::to_string(labelCount++);
 }
 
-void TAC::addTAC(std::string op, std::string arg1, std::string arg2, std::string result){
+// void TAC::addTAC(std::string op, std::string arg1, std::string arg2, std::string result){
+//     this->code.push_back(TAC_Quadruple(op, arg1, arg2, result));
+// }
+
+void TAC::addTAC(std::string result, std::string op, std::string arg1, std::string arg2){
     this->code.push_back(TAC_Quadruple(op, arg1, arg2, result));
 }
 
