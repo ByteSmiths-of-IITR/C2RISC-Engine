@@ -15,8 +15,7 @@
 // char - BYTE_SIZE
 // pointer - ADDRESS_SIZE
 
-
-
+const std::string RECORD_PREFIX = "record ";
 
 extern int MEMORY_MONITORING;
 
@@ -132,7 +131,7 @@ class TypeExpression
 {
 public:
     DType dtype; // This will be used as returnType of the function
-    std::vector<DType> paramType; // This will be used as parameterType of the function
+    std::vector<TypeExpression> paramType; // This will be used as parameterType of the function
     /* For simple types, the paramType will be empty */
     
 
@@ -147,7 +146,7 @@ public:
         MEM("TypeExpression Destructor");
     }
 
-    TypeExpression(const DType &dtype, const std::vector<DType> &paramType)
+    TypeExpression(const DType &dtype, const std::vector<TypeExpression> &paramType)
     {
         MEM("TypeExpression Constructor 2");
         this->dtype = dtype;
@@ -244,18 +243,22 @@ public:
     int enterScope(); // This will create a new scope and return the scope number
     void exitScope(); // This will remove all the symbols of the current scope
 
+    int insertRecord(const std::string &key, GenericSymbol *symbol);
     int insert(const std::string &key, GenericSymbol *symbol);
     // Returns 0 if the symbol is inserted successfully
     // Returns -1 if the symbol is already present in the current scope
-
+    
+    int lookupRecord(const std::string &key, GenericSymbol *&sym);
     int lookup(const std::string &key, GenericSymbol *&sym);
     // Returns 0 if the symbol is found
     // Returns -1 if the symbol is not found
 
+    int lookupRecord(const std::string &key, GenericSymbol *&sym, int lookInScopeNo);
     int lookup(const std::string &key, GenericSymbol *&sym, int lookInScopeNo); // This will lookinto the specific scope
     // Returns 0 if the symbol is found
     // Returns -1 if the symbol is not found
 
+    int lookupRecordNode(const std::string &key, SymbolNode *&node);
     int lookupNode(const std::string &key, SymbolNode *&node);
     // Return 0 on success and -1 on failure
 
@@ -354,9 +357,9 @@ public:
     // used for struct, union, enum
     std::string recordType; // struct, union, enum
 
-    // Members of the recor
+    // Members of the record
     std::unordered_map<std::string, TypeExpression> members;
-    // 🚨 These Variables are NOT ❌ allowed to have storage class, as they are part of the record
+    // [Handled 👍] These Variables are NOT ❌ allowed to have storage class, as they are part of the record
 
     // Constructor & Destructor
     CON_DES(UserDType)
@@ -366,7 +369,7 @@ int width(const UserDType &dtype); // This will return the width of the user def
 std::string toString(const UserDType &dtype); // This will return the string representation of the user defined data type
 
 //============================== [ Complete SymbolTable ]=====================================================
-
+/* NOT NEEDED
 class AllSymbolTable {
     // This will have two instances of SymbolTable
 
@@ -404,5 +407,7 @@ class AllSymbolTable {
     int lookupVarNode(const std::string &key, SymbolNode *&node);
     int lookupRecordNode(const std::string &key, SymbolNode *&node);
 };
+
+*/
 
 #endif // !SYM_H

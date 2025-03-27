@@ -135,7 +135,8 @@ int SymbolTable::insert(const std::string &key, GenericSymbol *symbol){
         return -1;
     }
 
-    symbol->symbolName = key;
+    // symbol->symbolName = key; [WE can't set this here, since records have a different key and name] 
+    // The name of symbol will be filled by the caller
     symbol->scopeNo = this->scopeNo;
     // symbol->location [we can't know here]
 
@@ -482,6 +483,28 @@ int SymbolTable::lookup(const std::string &key, GenericSymbol *&sym, int lookInS
 }
 
 
+//============= [Record Handling functions of symbol Table] ========================
+int SymbolTable::insertRecord(const std::string &key, GenericSymbol *symbol){
+
+    std::string newKey = RECORD_PREFIX + key;
+    return this->insert(newKey, symbol);
+}
+
+int SymbolTable::lookupRecord(const std::string &key, GenericSymbol *&sym){
+
+    std::string newKey = RECORD_PREFIX + key;
+    return this->lookup(newKey, sym);
+}
+
+int SymbolTable::lookupRecordNode(const std::string &key, SymbolNode *&node){
+
+    std::string newKey = RECORD_PREFIX + key;
+    return this->lookupNode(newKey, node);
+}
+
+
+
+/* This is NOT NEEDED
 //============= [AllSymbolTable] ========================
 int AllSymbolTable::enterScope(){
     
@@ -600,5 +623,6 @@ int AllSymbolTable::lookupRecordNode(const std::string &key, SymbolNode *&node){
 
     return this->recordTable.lookupNode(key, node);
 }
+*/
 
 //=======================================================================================================================================================
