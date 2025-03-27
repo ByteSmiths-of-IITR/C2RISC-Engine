@@ -21,7 +21,7 @@
 %token <tokenAtr> STRUCT UNION ENUM ELLIPSIS
 %token <tokenAtr> CASE DEFAULT IF ELSE SWITCH WHILE DO FOR GOTO CONTINUE BREAK RETURN UNTIL
 
-%token <tokenAtr> INVALID_TOKEN UNKNOWN_TOKEN
+/* %token <tokenAtr> INVALID_TOKEN UNKNOWN_TOKEN */
 
 /* %type <astNode> IDENTIFIER CONSTANT SEMI_COLON
 %type <astNode> RPAREN RCURLY RSQUARE */
@@ -97,23 +97,105 @@
 %%
 //Expressions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+/* Data on all expressions
+🟡 std::string varName; // This will be [Constants, CompilerTempName, VariableName or EnumConstantName]
+🟡 TypeExpression type; // 
+*/
+
+
+
 
 primary_expression
-    : IDENTIFIER
-    | CONSTANT
-    | STRING_LITERAL
-    | LPAREN expression RPAREN
+    : IDENTIFIER {
+        $$.varName = $1.tokenAtr->lexeme;
+        // Check from symbol table if the identifier is declared
+        // If not declared, throw error
+        // If declared, get the type from symbol table
+        $$.type = getTypeFromSymbolTable($1.tokenAtr->lexeme); // a highWrapper Function [📍ToDo]
+
+        // IRCode Login [📍ToDo]
+    }
+    | CONSTANT {
+        // [📍ToDo - Make changes in Grammar so all constants can be identified at Lexer Stage itself]
+        $$.varName = newTemp();
+        $$.type = getType("int"); // [📍ToDo - Get the type from tokenAtr]
+        // [📍ToDo - Get the type from tokenAtr]
+    }
+    
+    | STRING_LITERAL {
+        // TO THINK 🧠
+
+        // [📍ToDo - Get the type from tokenAtr]
+
+        // IRCode Login
+        // We directly use string literals in IRCode
+        CODE_BASE.addTAC($$.varName, "=", $1.tokenAtr->lexeme, NULL);
+    }
+    | LPAREN expression RPAREN {
+        // Pass syn_data up ⬆️
+        $$.varName = $2.varName;
+        $$.type = $2.type;
+
+        // IRCode Login
+        //NO CODE
+    }
     ;
 
 postfix_expression
-    : primary_expression
-    | postfix_expression LSQUARE expression RSQUARE
-    | postfix_expression LPAREN RPAREN
-    | postfix_expression LPAREN argument_expression_list RPAREN
-    | postfix_expression DOT IDENTIFIER
-    | postfix_expression PTR_OP IDENTIFIER
-    | postfix_expression INC_OP
-    | postfix_expression DEC_OP
+    : primary_expression {
+        // Pass syn_data up ⬆️
+        $$.varName = $1.varName;
+        $$.type = $1.type;
+
+        // IRCode Logic
+        //NO CODE
+    }
+    | postfix_expression LSQUARE expression RSQUARE {
+        // Pass syn_data up ⬆️
+        TypeExpression temp = $1.type;
+        int check = checkArray(temp);
+        if (check == 0) {
+            // Error: Not a popAble TypeExpression
+            // [📍ToDo - Error Handling]
+        }
+        $$.type = temp;
+        //here type will check whether postfixexpression is an identifier not constant or string literal
+
+        $$.varName = newTemp();
+
+        std::string index = newTemp();
+        int size = width($$.type);
+
+
+        // IRCode Logic
+        CODE_BASE.addTAC(index, "*i", size, $3.varName); // IRCode for width calculation 
+        CODE_BASE.addTAC($$.varName, RIGHT_ARRAY, $1.varName, index); // get the address of the array
+    }
+    | postfix_expression LPAREN RPAREN {
+        // Function call
+    }
+    | postfix_expression LPAREN argument_expression_list LPAREN {
+        // function call
+    }
+    | postfix_expression DOT IDENTIFIER{
+        // member access (like in struct)
+    }
+    | postfix_expression PTR_OP IDENTIFIER{
+        // -> access
+    }
+    | postfix_expression INC_OP{
+        // ++ operator (constant and variable not function or string literal)
+        //if type top level is array => error 
+        //if type top level is ptr => pop a level , find it's width and increment as per width
+        // if type top level is base level => increment by 1 see type of + operator
+
+    }
+    | postfix_expression DEC_OP{
+        // ++ operator (constant and variable not function or string literal)
+        //if type top level is array => error 
+        //if type top level is ptr => pop a level , find it's width and increment as per width
+        // if type top level is base level => increment by 1 see type of + operator
+    }
     ;
 
 argument_expression_list
@@ -235,56 +317,182 @@ constant_expression
     : conditional_expression
     ;
 
-// End of Expressions~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//========================== End of Expression Logic ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+//========================== Declaration Logic ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/* Data on declaration
+
+*/
+
+/* Data from/to declaration_specifiers
+    ⬆️ From - std::vector<std::string> valueVector; // This will be a vector of TypeExpression
+*/
+
+/* Data from/to init_declarator_list
+    ⬇️ To - TypeExpression inh_type; // This will be a TypeExpression
+*/
+
+/* What to Do
+    std::string ProcessDecSpecifier(std::vector<std::string> valueVector, BaseInfo *& baseInfo)
+        Take all std:vector<std::string> valueVector and create a BaseInfo* 
+            - Check if combination of primitive possible
+            - Check if typeQualifier and storageQualifier are under rule
+
+*/
 
 declaration
-    : declaration_specifiers SEMI_COLON
-    | declaration_specifiers init_declarator_list SEMI_COLON
+    : declaration_specifiers SEMI_COLON {
+        BaseInfo* baseInfo = new BaseInfo();
+        std::string check = ProcessDecSecifier($1.valueVector,baseInfo);
+        if(check!="OK"){
+            // Report Error as per message
+        }
+
+        // No more processing size we have SEMI_COLOM
+    }
+    | declaration_specifiers init_declarator_list SEMI_COLON {
+        BaseInfo* baseInfo = new BaseInfo();
+        std::string check = ProcessDecSecifier($1.valueVector,baseInfo);
+        if(check!="OK"){
+            // Report Error as per message
+        }
+
+        // We create a TypeExpression now
+        TypeExpression tempType = new TypeExpression();
+        tempType.dtype.levels.add(baseInfo); // add the baseInfo to the type ➕
+        // tempType.dtype.levels is a stack of LevelInfo*
+
+        $2.inh_type = tempType; // pass the type to the init_declarator_list ⬇️ 
+
+        // [🧠 Think if anything else is needed to be done here]
+    }
     ;
 
-//👍
-/*This will pass a vector<string> of all info below it. All semantic actions will be performed by it's reciever*/
+
+
+
+
+/* Data on declaration_specifiers ✅
+🔴 std::vector<std::string> valueVector; // This will be a vector of TypeExpression
+*/
 declaration_specifiers 
-    : storage_class_specifier { $$.vector.push_back($1); }
-    | storage_class_specifier declaration_specifiers { $$.vector = $2.vector; $$.vector.push_back($1); }
-    | type_specifier    { $$.vector.push_back($1); }
-    | type_specifier declaration_specifiers { $$.vector = $2.vector; $$.vector.push_back($1); }
-    | type_qualifier    { $$.vector.push_back($1); }
-    | type_qualifier declaration_specifiers { $$.vector = $2.vector; $$.vector.push_back($1); }
+    : storage_class_specifier { 
+        // Last Production 🚦🛑
+        $$.vector = new vector<std::string>();
+        $$.vector.push_back($1.value); // push the storage_class_specifier ➕
+    }
+    | storage_class_specifier declaration_specifiers {
+        $$.vector = $2.vector; // copy the vector to pass up ⬆️
+        $$.vector.push_back($1.value); // push the storage_class_specifier ➕
+    }
+    | type_specifier {
+        // Last Production 🚦🛑
+        $$.vector = new vector<std::string>();
+        $$.vector.push_back($1.value); // push the type_specifier ➕
+    }
+    | type_specifier declaration_specifiers {
+        $$.vector = $2.vector; // copy the vector to pass up ⬆️
+        $$.vector.push_back($1.value); // push the type_specifier ➕
+    }
+    | type_qualifier  {
+        // Last Production 🚦🛑
+        $$.vector = new vector<std::string>();
+        $$.vector.push_back($1.value); // push the type_qualifier ➕
+    }
+    | type_qualifier declaration_specifiers {
+        $$.vector = $2.vector; // copy the vector to pass up ⬆️
+        $$.vector.push_back($1.value); // push the type_qualifier ➕
+    }
     ;
 
+
+/* Data on init_declarator_list ✅
+🔴 TypeExpression inh_type; // This will be a TypeExpression
+*/
 init_declarator_list
-    : init_declarator
-    | init_declarator_list COMMA init_declarator
+    : init_declarator {
+        // Last Production 🚦🛑
+        $1.inh_type = $$.inh_type; // carry the inh_data below ⬇️
+    }
+    | init_declarator_list COMMA init_declarator {
+        // Pass inh_data in both down ⬇️ ⬇️ [Since base info is same] {eg - int a,*b,(*c)[5]; - all get same base int}
+        $1.inh_type = $2.inh_type; // carry the inh_data below ⬇️
+        $2.inh_type = $1.inh_type; // carry the inh_data below ⬇️
+    }
     ;
 
-//here will insert variables in symbol table, also check for identifier or function
+
+
+/* Data on init_declarator ✅
+🔴 TypeExpression inh_type; // This will be a TypeExpression
+
+*/
+
+/* Data from/to declarator 
+    ⬇️ to - 🔴 TypeExpression inh_type; [ This goes down keep collecting data on way as goes down ]
+    ⬆️ from - 🟡 std::string varName; // This will be a string of variable name
+    ⬆️ from - 🟡 TypeExpression type; // This will be a TypeExpression [after going to bottom and retrieving all information]
+*/
+
+// To think about intializer 🧠
 init_declarator
-    : declarator
-    | declarator ASSIGN initializer
+    : declarator {
+        // Last Production 🚦🛑
+        $1.inh_type = $$.inh_type; // carry the inh_data below ⬇️
+
+        // Now we recieve type [syn] from declarator and we process this to create a symbol table entry
+        TypeExpression tempType = $1.type;
+        // [📍ToDo - Create a symbol table entry] ☢️SYMBOL_ADD
+
+    }
+    | declarator ASSIGN initializer {
+        // Last Production 🚦🛑
+        $1.inh_type = $$.inh_type; // carry the inh_data below ⬇️
+
+        // Now we recieve type [syn] from declarator and we process this to create a symbol table entry
+        TypeExpression tempType = $1.type;
+        // [📍ToDo - Create a symbol table entry] ☢️SYMBOL_ADD
+
+    }
     ;
 
+
+
+/* Data on storage_class_specifier ✅
+🟡 std::string value; // This will be a string of type
+*/
 storage_class_specifier
     : TYPEDEF {/* not supported*/}
-    | EXTERN
-    | STATIC 
-    | AUTO
-    | REGISTER
+    | EXTERN   { $$.value = $1.tokenAtr->lexeme; }
+    | STATIC   { $$.value = $1.tokenAtr->lexeme; }
+    | AUTO     { $$.value = $1.tokenAtr->lexeme; }
+    | REGISTER { $$.value = $1.tokenAtr->lexeme; }
     ;
 
+/* Data on type_specifier ☑️
+🟡 std::string value; // This will be a string of type
+*/ 
 type_specifier
-    : VOID
-    | CHAR
-    | SHORT
-    | INT
-    | LONG
-    | FLOAT
-    | DOUBLE
-    | SIGNED
-    | UNSIGNED
-    | struct_or_union_specifier
-    | enum_specifier
-    | TYPE_NAME
+    : VOID     { $$.value = $1.tokenAtr->lexeme; }
+    | CHAR     { $$.value = $1.tokenAtr->lexeme; }
+    | SHORT    { $$.value = $1.tokenAtr->lexeme; }
+    | INT      { $$.value = $1.tokenAtr->lexeme; }
+    | LONG     { $$.value = $1.tokenAtr->lexeme; }
+    | FLOAT    { $$.value = $1.tokenAtr->lexeme; }
+    | DOUBLE   { $$.value = $1.tokenAtr->lexeme; }
+    | SIGNED   { $$.value = $1.tokenAtr->lexeme; }
+    | UNSIGNED { $$.value = $1.tokenAtr->lexeme; }
+    | struct_or_union_specifier {
+        // [📍ToDo - Think]
+    }
+    | enum_specifier {
+        // [📍ToDo - Think]
+    }
+    | TYPE_NAME {
+        // [Find what is this doing? 🔍 ]
+    } 
     ;
 
 struct_or_union_specifier
@@ -293,13 +501,17 @@ struct_or_union_specifier
     | struct_or_union IDENTIFIER
     ;
 
+/* Data on struct_or_union_specifier ✅
+🟡 std::string value ; // This will be a string of type
+*/
 struct_or_union
-    : STRUCT
-    | UNION
+    : STRUCT { $$.value = $1.tokenAtr->lexeme; }
+    | UNION  { $$.value = $1.tokenAtr->lexeme; }
     ;
 
-struct_declaration_list
-    : struct_declaration
+// Vector of [(TypeExpression) & (varName)]
+struct_declaration_list 
+    : struct_declaration // This must return (TypeExpression) & (varName)
     | struct_declaration_list struct_declaration
     ;
 
@@ -307,22 +519,41 @@ struct_declaration
     : specifier_qualifier_list struct_declarator_list SEMI_COLON
     ;
 
+
+/* Data on specifier_qualifier_list ✅
+🟡 std::vector<std::string> valueVector; // This will be a vector of TypeQualifier
+*/
 specifier_qualifier_list
-    : type_specifier specifier_qualifier_list
-    | type_specifier
-    | type_qualifier specifier_qualifier_list
-    | type_qualifier
+    : type_specifier specifier_qualifier_list {
+        $$.valueVector = $2.valueVector; // copy the vector to pass up ⬆️
+        $$.valueVector.push_back($1.value); // push the type_specifier ➕
+    }
+    | type_specifier {
+        // Last Production 🚦🛑
+        $$.valueVector = new vector<std::string>();
+        $$.valueVector.push_back($1.value); // push the type_specifier ➕
+    }
+    | type_qualifier specifier_qualifier_list {
+        $$.valueVector = $2.valueVector; // copy the vector to pass up ⬆️
+        $$.valueVector.push_back($1.value); // push the type_qualifier ➕
+    }
+    | type_qualifier {
+        // Last Production 🚦🛑
+        $$.valueVector = new vector<std::string>();
+        $$.valueVector.push_back($1.value); // push the type_qualifier ➕
+    }
     ;
 
-struct_declarator_list
+// map<string, TypeExpression> [varName, TypeExpression]
+struct_declarator_list 
     : struct_declarator
     | struct_declarator_list COMMA struct_declarator
     ;
 
 struct_declarator
-    : declarator
-    | COLON constant_expression
-    | declarator COLON constant_expression
+    : declarator // Will return a [(TypeExpression) & (varName)]
+    | COLON constant_expression // Similar to initializer
+    | declarator COLON constant_expression // LeftRecursive version of above
     ;
 
 enum_specifier
@@ -341,118 +572,418 @@ enumerator
     | IDENTIFIER ASSIGN constant_expression
     ;
 
+/* Data on type_qualifier ✅
+🟡 std::string value; // This will be a string of type
+*/
 type_qualifier
-    : CONST
-    | VOLATILE
+    : CONST    { $$.value = $1.tokenAtr->lexeme; }
+    | VOLATILE { $$.value = $1.tokenAtr->lexeme; }
     ;
 
-// This will recieve stack<LevelInfo> from direct_declarator
+/* Data on declarator NT ✅
+🟡 std::string varName; // This will be a string of variable name
+🟡 TypeExpression type; // This will be a TypeExpression
+🔴 TypeExpression inh_type; // This will be a TypeExpression
+*/
 declarator
     : pointer direct_declarator { 
-        $$.stack = new stack; 
-        $$.stack.copy_push($1.stack);
-        $$.stack.copy_push($2.stack);
-        $$.vaName = $2.vaName; // to think
-        }
-    | direct_declarator { 
-        $$.stack = $1.stack; 
-        $$.vaName = $1.vaName;
-        }
-    ;
+        // Process the pointer and add it to the inh_data
+        $1.inh_type = $$.inh_type; // carry the inh_data below ⬇️
+        $1.inh_type.dtype.levels.add($1.PtrInfo); // add the pointer info to the type ➕
+        // .add(std::stack<PointerInfo>) is a function to add the stack<PointerInfo*> to the levels stack
 
-direct_declarator
-    : IDENTIFIER { $$.vaName = $1; }
-    | LPAREN declarator RPAREN { $$.stack = $2.stack; $$.vaName = $2.vaName; }
-    | direct_declarator LSQUARE constant_expression RSQUARE {
-        // Logic first we push the currentArray Info and then recursive push
-        std::stack<LevelInfo> newStack;
-        newStack.push(ArrayInfo($3));
-        $$.stack = newStack;
-        $$.stack.copy_push($1.stack);
-        $$vaName = $1.vaName;
+        // pass the syn_data up ⬆️
+        $$.type = $1.type; // pass syn_data up ⬆️
+        $$.varName = $2.varName; // pass the varName up ⬆️
     }
-    | direct_declarator LSQUARE RSQUARE 
-        {
-        // Logic first we push the currentArray Info and then recursive push
-        std::stack<LevelInfo> newStack;
-        newStack.push(ArrayInfo(-1 /*This is to show no size was given*/));
-        $$.stack = newStack;
-        $$.stack.copy_push($1.stack);
-        $$vaName = $1.vaName;
-        }
-    | direct_declarator LPAREN parameter_type_list RPAREN
-    | direct_declarator LPAREN identifier_list RPAREN
-    | direct_declarator LPAREN RPAREN
+    | direct_declarator { 
+        // carry the inh_data below ⬇️
+        $1.inh_type = $$.inh_type; // carry the inh_data below ⬇️
+
+        // pass the syn_data up ⬆️
+        $$.type = $1.type; // pass syn_data up ⬆️
+    }
     ;
 
-// This will give it's parent a stack<LevelInfo> to be specific PointerInfo
-// LevelInfo() 👍
+
+/* direct_declarator syn/inh variable ✅
+🟡 TypeExpression type
+🟡 std::string varName \\ can be FunctionName, VariableName, EnumConstName
+🔴 TypeExpression inh_type \\ this will be having baseInfo already pushed at bottom
+*/
+direct_declarator
+    : IDENTIFIER {
+        // 🚦 🛑 Last Production inh_data is rotated into a syn_data
+        $$.varName = $1.tokenAtr->lexeme;
+        $$.type = $$.inh_type; // just pass to syn as we have reached the last level ☯️ 
+    }
+    | LPAREN declarator RPAREN {
+        $2.inh_type = $$.inh_type; // carry the inh_data below ⬇️
+
+        $$.type = $2.type; // pass syn_data up ⬆️
+        $$.varName = $2.varName; // pass the varName up ⬆️
+    }
+    | direct_declarator LSQUARE constant_expression RSQUARE {
+        $1.inh_type = $$.inh_type; // carry the inh_data below ⬇️
+        
+        $1.inh_type.dtype.levels.push_back(new ArrayInfo($3)); ➕
+        // ArrayInfo(constant_expression) is a constructor 
+
+        $$.type = $1.type; // pass syn_data up ⬆️
+        $$.varName = $1.varName; // pass the varName up ⬆️
+    }
+    | direct_declarator LSQUARE RSQUARE {
+        $1.inh_type = $$.inh_type; // carry the inh_data below ⬇️
+        
+        $1.inh_type.dtype.levels.push_back(new ArrayInfo(-1)); ➕
+        // ArrayInfo(-1) is a constructor to indicate unknown size
+
+        $$.type = $1.type; // pass syn_data up ⬆️
+        $$.varName = $1.varName; // pass the varName up ⬆️
+    }
+
+    /* Data to/from parameter_type_list
+    ⬆️ from - 🟡 std::vector<TypeExpression> paramVector;
+    */
+    | direct_declarator LPAREN parameter_type_list RPAREN {
+        $1.inh_type = $$.inh_type; // carry the inh_data below ⬇️
+        
+        $1.inh_type.paramTypes = $3.paramVector; // pass the parameter type list to the type
+
+        $$.type = $1.type; // pass syn_data up ⬆️
+    }
+    | direct_declarator LPAREN identifier_list RPAREN {
+        // What is this doing? [🧠 ToThink]
+    }
+    | direct_declarator LPAREN RPAREN {
+        $1.inh_type = $$.inh_type; // carry the inh_data below ⬇️
+        
+        $1.inh_type.paramTypes = new vector<TypeExpression>("void");
+        // 🤯 To differentiate from var/function - we put a dummy type
+        
+
+        $$.type = $1.type; // pass syn_data up ⬆️
+    }
+    ;
+
+
+/* Data on pointer ✅
+🟡 std::stack<PointerInfo> PtrInfo; // This will be a stack of PointerInfo
+🔴 std::stack<PointerInfo> inh_PtrInfo; 
+*/
 pointer 
-    : STAR { $$.stack.push_back(PointerInfo(EMPTY_TYPEQUALIFIER_VECTOR)); }
-    | STAR type_qualifier_list { $$.stack.push_back(PointerInfo($2.Qualifiers)); }
-    | STAR pointer { /*First we create a new stack and push new PointerInfo in bottom and then the stack given by pointer1 of production*/
-        std::stack<LevelInfo> newStack;
-        newStack.push(PointerInfo(EMPTY_TYPEQUALIFIER_VECTOR));
-        $$.stack = newStack;
-        $$.stack.copy_push($2.stack);
+    : STAR { 
+        // Last Production 🚦🛑
+        $$.PtrInfo = $$.inh_PtrInfo; // rotate inh_PtrInfo to syn_PtrInfo ☯️
+        $$.PtrInfo.push(PointerInfo()); // add PointerInfo ➕
+    }
+    | STAR type_qualifier_list {
+        // Last Production 🚦🛑
+        $$.PtrInfo = $$.inh_PtrInfo; // rotate inh_PtrInfo to syn_PtrInfo ☯️
+        $$.PtrInfo.push(PointerInfo($2.Qualifiers)); // add PointerInfo with Qualifiers ➕
+    }
+    | STAR pointer { 
+        $1.inh_PtrInfo = $$.inh_PtrInfo; // carry the inh_data below ⬇️
+        $1.inh_PtrInfo.push(PointerInfo()); // add PointerInfo ➕
+
+        $$.PtrInfo = $1.PtrInfo; // pass syn_data up ⬆️
     }
     | STAR type_qualifier_list pointer {
-        std::stack<LevelInfo> newStack;
-        newStack.push(PointerInfo($2.Qualifiers));
-        $$.stack = newStack;
-        $$.stack.copy_push($3.stack);
+        $1.inh_PtrInfo = $$.inh_PtrInfo; // carry the inh_data below ⬇️
+        $1.inh_PtrInfo.push(PointerInfo($2.Qualifiers)); // add PointerInfo with Qualifiers ➕
+
+        $$.PtrInfo = $1.PtrInfo; // pass syn_data up ⬆️
     }
     ;
 
-// This will give a vector<TypeQualifier> to it's parent 
+
+/* Data on type_qualifier_list ✅
+🟡 std::vector<TypeQualifier> Qualifiers; // [syn] This will be a vector of TypeQualifier
+*/
 //👍
 type_qualifier_list
-    : type_qualifier { $$.Qualifiers.push_back($1); }
-    | type_qualifier_list type_qualifier { $$.Qualifiers = $1.Qualifiers; $$.Qualifiers.push_back($2); }
+    : type_qualifier { 
+        // Last Production
+        $$.Qualifiers = new vector<TypeQualifier>();
+        $$.Qualifiers.push_back($1); // push the type_qualifier
+    }
+    | type_qualifier_list type_qualifier { 
+        $$.Qualifiers = $1.Qualifiers; // copy the vector
+        $$.Qualifiers.push_back($2); // push the type_qualifier
+    }
     ;
 
+/* Data on parameter_type_list ✅
+🟡 std::vector<TypeExpression> paramVector; // This will be a vector of TypeExpression
+*/
 parameter_type_list
-    : parameter_list
-    | parameter_list COMMA ELLIPSIS {/*not supported*/}
+    : parameter_list {
+        // Last Production 🚦🛑
+        $$.paramVector = $$.paramVector; // pass the paramVector up ⬆️
+    }
+    | parameter_list COMMA ELLIPSIS {
+        // Error: ELLIPSIS not supported
+        // [📍ToDo - Error Handling]
+    }
     ;
 
+
+/* Data on parameter_list ✅
+🟡 std::vector<TypeExpression> paramVector; // This will be a vector of TypeExpression
+*/
 parameter_list
-    : parameter_declaration
+    : parameter_declaration {
+        // Last Production 🚦🛑
+        $$.paramVector = new vector<TypeExpression>();
+        $$.paramVector.push_back($1.type); // push the parameter type
+    }
     | parameter_list COMMA parameter_declaration
     ;
-//this will make a variable (name and level) and return to it's parent
+
+
+
+//~~~~~~~~~~ Parameter Declaration Logic ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/* Data on parameter_declaration ✅
+🟡 TypeExpression type; // Type of each parameter
+*/
+
+/* Data from/to declaration_specifiers
+    ⬆️ from - 🟡 std::vector<std::string> valueVector; // This will be a vector of TypeExpression
+*/
 parameter_declaration
-    : declaration_specifiers declarator
-    | declaration_specifiers abstract_declarator
-    | declaration_specifiers
+    : declaration_specifiers declarator {
+        // 💡 Something similar to as on node - declaration
+        
+        // Process the declaration_specifiers
+        BaseInfo* baseInfo = new BaseInfo();
+        std::string check = ProcessDecSecifier($1.valueVector,baseInfo);
+        if(check!="OK"){
+            // Report Error as per message
+        }
+        TypeExpression tempType = new TypeExpression();
+        tempType.dtype.levels.add(baseInfo); // add the baseInfo to the type ➕
+
+
+        // Carry this to the declarator down ⬇️
+        $2.inh_type = tempType; // pass the type to the declarator ⬇️
+
+
+        // Passing things up ⬆️
+        $$.type = $2.type; // pass the type to the parameter_declaration ⬆️
+        // $$.varName = $2.varName; // pass the varName to the parameter_declaration ⬆️
+        // [🔍 Check if varName will be needed]
+
+    }
+    | declaration_specifiers abstract_declarator {
+
+        // Process the declaration_specifiers
+        BaseInfo* baseInfo = new BaseInfo();
+        std::string check = ProcessDecSecifier($1.valueVector,baseInfo);
+        if(check!="OK"){
+            // Report Error as per message
+        }
+        TypeExpression tempType = new TypeExpression();
+        tempType.dtype.levels.add(baseInfo); // add the baseInfo to the type ➕
+
+
+        // Carry this to the abstract_declarator down ⬇️
+        $2.inh_type = tempType; // pass the type to the abstract_declarator ⬇️
+
+
+        // Passing things up ⬆️
+        $$.type = $2.type; // pass the type to the parameter_declaration ⬆️
+        // abstract don't have varName
+
+    }
+    | declaration_specifiers {
+
+        // Process the declaration_specifiers
+        BaseInfo* baseInfo = new BaseInfo();
+        std::string check = ProcessDecSecifier($1.valueVector,baseInfo);
+        if(check!="OK"){
+            // Report Error as per message
+        }
+        TypeExpression tempType = new TypeExpression();
+        tempType.dtype.levels.add(baseInfo); // add the baseInfo to the type ➕
+
+        // Nothing to carry down 
+
+        // Passing things up ⬆️
+        $$.type = tempType; // pass the type to the parameter_declaration ⬆️
+
+    }   
     ;
+
 
 identifier_list
     : IDENTIFIER
     | identifier_list COMMA IDENTIFIER
     ;
 
-type_name
-    : specifier_qualifier_list
-    | specifier_qualifier_list abstract_declarator
+
+/* Data on type_name ✅
+🟡 TypeExpression type;
+*/
+type_name 
+    : specifier_qualifier_list {
+        // Process the declaration_specifiers
+        BaseInfo* baseInfo = new BaseInfo();
+        std::string check = ProcessDecSecifier($1.valueVector,baseInfo);
+        if(check!="OK"){
+            // Report Error as per message
+        }
+
+        TypeExpression tempType = new TypeExpression();
+        tempType.dtype.levels.add(baseInfo); // add the baseInfo to the type ➕
+
+        // Nothing to carry down
+
+        // Passing things up ⬆️
+        $$.type = tempType; // pass the type to the parameter_declaration ⬆️
+    }
+    | specifier_qualifier_list abstract_declarator {
+        // Process the declaration_specifiers
+        BaseInfo* baseInfo = new BaseInfo();
+        std::string check = ProcessDecSecifier($1.valueVector,baseInfo);
+        if(check!="OK"){
+            // Report Error as per message
+        }
+
+        TypeExpression tempType = new TypeExpression();
+        tempType.dtype.levels.add(baseInfo); // add the baseInfo to the type ➕
+
+        // Carry this to the abstract_declarator down ⬇️
+        $2.inh_type = tempType; // pass the type to the abstract_declarator ⬇️
+
+        // Passing things up ⬆️
+        $$.type = $2.type; // pass the type to the parameter_declaration ⬆️
+    }
     ;
+
+
+/* Data on abstract_declarator ✅
+🟡 TypeExpression type; // This will be a TypeExpression
+🔴 TypeExpression inh_type; // This will be a TypeExpression
+*/
 
 abstract_declarator
-    : pointer
-    | direct_abstract_declarator
-    | pointer direct_abstract_declarator
+    : pointer {
+        // Last Production 🚦🛑 [Need Rotation]
+        // Nothing to carry down 
+
+        // Add the pointer info
+        $$.inh_type.dtype.levels.push_back($1.PtrInfo); // add the pointer info to the type ➕
+
+        $$.type = $$.inh_type; // rotate the inh_data to syn_data ☯️
+    }
+    | direct_abstract_declarator {
+        // Carry the inh_data down ⬇️
+        $1.inh_type = $$.inh_type; // carry the inh_data below ⬇️
+
+        // passing things up ⬆️
+        $$.type = $1.type; // pass the type to the parameter_declaration ⬆️
+    }
+    | pointer direct_abstract_declarator {
+        // Process the pointer and add it to the inh_data and carry it down ⬇️
+        $1.inh_type = $$.inh_type; // carry the inh_data below ⬇️
+        $1.inh_type.dtype.levels.add($1.PtrInfo); // add the pointer info to the type ➕
+
+        // passing things up ⬆️
+        $$.type = $1.type; // pass the type to the parameter_declaration ⬆️
+    }
     ;
 
+/* Data on direct_abstract_declarator ✅
+🟡 TypeExpression type; // This will be a TypeExpression
+🔴 TypeExpression inh_type; // This will be a TypeExpression
+*/
 direct_abstract_declarator
-    : LPAREN abstract_declarator RPAREN
-    | LSQUARE RSQUARE
-    | LSQUARE constant_expression RSQUARE
-    | direct_abstract_declarator LSQUARE RSQUARE
-    | direct_abstract_declarator LSQUARE constant_expression RSQUARE
-    | LPAREN RPAREN
-    | LPAREN parameter_type_list RPAREN
-    | direct_abstract_declarator LPAREN RPAREN
-    | direct_abstract_declarator LPAREN parameter_type_list RPAREN
+    : LPAREN abstract_declarator RPAREN {
+        // Carry the inh_data down ⬇️
+        $2.inh_type = $$.inh_type; // carry the inh_data below ⬇️
+
+        // passing things up ⬆️
+        $$.type = $2.type; // pass the type to the parameter_declaration ⬆️
+    }
+
+    | LSQUARE RSQUARE {
+        // Last Production 🚦🛑 [Need Rotation]
+
+        // Add the array info to the type & pass it up ⬆️
+        $$.inh_type.dtype.levels.push_back(new ArrayInfo(-1)); // add the array info to the type ➕
+
+        $$.type = $$.inh_type; // rotate the inh_data to syn_data ☯️
+
+    }
+    | LSQUARE constant_expression RSQUARE {
+        // Last Production 🚦🛑 [Need Rotation]
+
+        // Add the array info to the type & pass it up ⬆️
+        $$.inh_type.dtype.levels.push_back(new ArrayInfo($2)); // add the array info to the type ➕
+
+        $$.type = $$.inh_type; // rotate the inh_data to syn_data ☯️
+    }
+
+    | direct_abstract_declarator LSQUARE RSQUARE {
+        // Carry the inh_data down ⬇️
+        $1.inh_type = $$.inh_type; // carry the inh_data below ⬇️
+
+        // Add the array info to the type
+        $1.inh_type.dtype.levels.push_back(new ArrayInfo(-1)); // add the array info to the type ➕
+
+        // passing things up ⬆️
+        $$.type = $1.type; // pass the type to the parameter_declaration ⬆️
+    }
+    | direct_abstract_declarator LSQUARE constant_expression RSQUARE {
+        // Carry the inh_data down ⬇️
+        $1.inh_type = $$.inh_type; // carry the inh_data below ⬇️
+
+        // Add the array info to the type
+        $1.inh_type.dtype.levels.push_back(new ArrayInfo($2)); // add the array info to the type ➕
+
+        // passing things up ⬆️
+        $$.type = $1.type; // pass the type to the parameter_declaration ⬆️
+    }
+    
+    | LPAREN RPAREN {
+        // Last Production 🚦🛑 [Need Rotation]
+
+        // Add the function info to the type & pass it up ⬆️
+        $$.inh_type.paramTypes = new vector<TypeExpression>("void"); // add the function info to the type ➕
+        // 🤯 To differentiate from var/function - we put a dummy type
+
+        $$.type = $$.inh_type; // rotate the inh_data to syn_data ☯️
+    }
+    | LPAREN parameter_type_list RPAREN {
+        // Last Production 🚦🛑 [Need Rotation]
+
+        // Add the function info to the type & pass it up ⬆️
+        $$.inh_type.paramTypes = $2.paramVector; // add the function info to the type ➕
+
+        $$.type = $$.inh_type; // rotate the inh_data to syn_data ☯️
+    }
+
+    | direct_abstract_declarator LPAREN RPAREN {
+        // Carry the inh_data down ⬇️
+        $1.inh_type = $$.inh_type; // carry the inh_data below ⬇️
+
+        // Add the function info to the type
+        $1.inh_type.paramTypes = new vector<TypeExpression>("void"); // add the function info to the type ➕
+        // 🤯 To differentiate from var/function - we put a dummy type
+
+        // passing things up ⬆️
+        $$.type = $1.type; // pass the type to the parameter_declaration ⬆️
+    }
+    | direct_abstract_declarator LPAREN parameter_type_list RPAREN {
+        // Carry the inh_data down ⬇️
+        $1.inh_type = $$.inh_type; // carry the inh_data below ⬇️
+
+        // Add the function info to the type
+        $1.inh_type.paramTypes = $2.paramVector; // add the function info to the type ➕
+
+        // passing things up ⬆️
+        $$.type = $1.type; // pass the type to the parameter_declaration ⬆️
+    }
     ;
 
 initializer
@@ -465,6 +996,8 @@ initializer_list
     : initializer
     | initializer_list COMMA initializer
     ;
+
+//========================== End of declaration_logic ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 statement
     : labeled_statement
@@ -519,7 +1052,7 @@ iteration_statement
     | FOR LPAREN declaration expression_statement expression RPAREN statement
     ;
 
-jump_statement
+jump_statement 
     : GOTO IDENTIFIER SEMI_COLON
     | CONTINUE SEMI_COLON
     | BREAK SEMI_COLON

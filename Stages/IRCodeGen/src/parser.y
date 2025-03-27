@@ -29,8 +29,8 @@ bool TURN_OFF = true; // Turn off the custom error messages
 
 int noOfyyerrorCalls = 0; 
 
-// #define LINE std::cerr<< "Production - " << __LINE__<<std::endl;
-#define LINE /**/
+#define LINE std::cerr<< "Production - " << __LINE__<<std::endl;
+// #define LINE /**/
 // #define LINE1 std::cerr<< __LINE__<<std::endl;
 #define LINE1 /**/
 
@@ -1146,7 +1146,7 @@ storage_class_specifier
     : TYPEDEF 
     {
         LINE 
-        $$ = new ASTNode("storage_class_specifier");
+        $$ = new ASTNode("special");
         $$->addChild($1);
     }
     | EXTERN 
@@ -1243,7 +1243,14 @@ type_specifier
         LINE 
         $$ = new ASTNode("type_specifier");
         $$->addChild($1);
-    }
+    } /* THIS APPROACH WILL NEVER WORK ❌ ❌ ❌ ❌ [NO way to support typedef as of now]
+    | identifier 
+    {
+        // To Support typedef
+        LINE 
+        $$ = new ASTNode("type_specifier");
+        $$->addChild($1);
+    } */
     ;
 
 struct_or_union_specifier
@@ -2294,10 +2301,10 @@ int main(int argc, char **argv) {
             std::cerr << "Error: Unable to open input file\n";
             return 1;
         }
-        LINE
+        /* LINE */
         initOutputFile(output_file); // open output file
 
-        LINE
+        /* LINE */
 
         // Parse command line arguments
         for (int i = 3; i < argc; i++) {
@@ -2341,12 +2348,12 @@ int main(int argc, char **argv) {
         // Create a new symbol table
         /* SymbolTable *symTable = new SymbolTable(); */
 
-    LINE
+    /* LINE */
     //------------------------ Parsing ------------------------
 
     yyparse();  // Call BISON's parser
     
-    LINE
+    /* LINE */
     // ------------------------- Parser Phase Completion Checks ------------------------
 
     bool lexerFailed = (lexerLOG.size() > 0);

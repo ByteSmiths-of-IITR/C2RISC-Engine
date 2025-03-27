@@ -21,7 +21,7 @@
 %token <tokenAtr> STRUCT UNION ENUM ELLIPSIS
 %token <tokenAtr> CASE DEFAULT IF ELSE SWITCH WHILE DO FOR GOTO CONTINUE BREAK RETURN UNTIL
 
-%token <tokenAtr> INVALID_TOKEN UNKNOWN_TOKEN
+/* %token <tokenAtr> INVALID_TOKEN UNKNOWN_TOKEN */
 
 /* %type <astNode> IDENTIFIER CONSTANT SEMI_COLON
 %type <astNode> RPAREN RCURLY RSQUARE */
@@ -242,13 +242,15 @@ declaration
     | declaration_specifiers init_declarator_list SEMI_COLON
     ;
 
-declaration_specifiers
-    : storage_class_specifier
-    | storage_class_specifier declaration_specifiers
-    | type_specifier
-    | type_specifier declaration_specifiers
-    | type_qualifier
-    | type_qualifier declaration_specifiers
+//👍
+/*This will pass a vector<string> of all info below it. They can be [TypeSpecifier, TypeQualifier, StorageClassSpecifier]*/
+declaration_specifiers 
+    : storage_class_specifier { $$.vector.push_back($1); }
+    | storage_class_specifier declaration_specifiers { $$.vector = $2.vector; $$.vector.push_back($1); }
+    | type_specifier    { $$.vector.push_back($1); }
+    | type_specifier declaration_specifiers { $$.vector = $2.vector; $$.vector.push_back($1); }
+    | type_qualifier    { $$.vector.push_back($1); }
+    | type_qualifier declaration_specifiers { $$.vector = $2.vector; $$.vector.push_back($1); }
     ;
 
 init_declarator_list
@@ -256,15 +258,22 @@ init_declarator_list
     | init_declarator_list COMMA init_declarator
     ;
 
+
+
+
+// At this point we will be creating a VarSymbol and storing it in the symbol table
 init_declarator
     : declarator
     | declarator ASSIGN initializer
     ;
 
+
+
+
 storage_class_specifier
-    : TYPEDEF
+    : TYPEDEF {/* not supported*/}
     | EXTERN
-    | STATIC
+    | STATIC 
     | AUTO
     | REGISTER
     ;
@@ -295,8 +304,9 @@ struct_or_union
     | UNION
     ;
 
-struct_declaration_list
-    : struct_declaration
+// Vector of [(TypeExpression) & (varName)]
+struct_declaration_list 
+    : struct_declaration // This must return (TypeExpression) & (varName)
     | struct_declaration_list struct_declaration
     ;
 
@@ -304,6 +314,8 @@ struct_declaration
     : specifier_qualifier_list struct_declarator_list SEMI_COLON
     ;
 
+
+// This will return a vector<string> [ That can be typeSpecifier or typeQualifier ]
 specifier_qualifier_list
     : type_specifier specifier_qualifier_list
     | type_specifier
@@ -311,15 +323,16 @@ specifier_qualifier_list
     | type_qualifier
     ;
 
-struct_declarator_list
+// map<string, TypeExpression> [varName, TypeExpression]
+struct_declarator_list 
     : struct_declarator
     | struct_declarator_list COMMA struct_declarator
     ;
 
 struct_declarator
-    : declarator
-    | COLON constant_expression
-    | declarator COLON constant_expression
+    : declarator // Will return a [(TypeExpression) & (varName)]
+    | COLON constant_expression // Similar to initializer
+    | declarator COLON constant_expression // LeftRecursive version of above
     ;
 
 enum_specifier
@@ -343,55 +356,91 @@ type_qualifier
     | VOLATILE
     ;
 
+// This will recieve stack<LevelInfo> from direct_declarator
 declarator
-    : pointer direct_declarator
-    | direct_declarator
+    : pointer direct_declarator { 
+        $$.stack = new stack; 
+        $$.stack.copy_push($1.stack);
+        $$.stack.copy_push($2.stack);
+        $$.vaName = $2.vaName; // to think
+        }
+    | direct_declarator { 
+        $$.stack = $1.stack; 
+        $$.vaName = $1.vaName;
+        }
     ;
 
+
+
+/* direct_declarator syn/inh variable
+TypeExpression type
+
+*/
 direct_declarator
-    : IDENTIFIER
-    | LPAREN declarator RPAREN
-
-    | direct_declarator LSQUARE constant_expression RSQUARE
-    | direct_declarator LSQUARE RSQUARE
-
-    | direct_declarator LPAREN parameter_type_list RPAREN // Function declaration
-    
-    | direct_declarator LPAREN identifier_list RPAREN // Function call
+    : IDENTIFIER { $$.vaName = $1; }
+    | LPAREN declarator RPAREN { $$.stack = $2.stack; $$.vaName = $2.vaName; }
+    | direct_declarator LSQUARE constant_expression RSQUARE {
+        // Logic first we push the currentArray Info and then recursive push
+        std::stack<LevelInfo> newStack;
+        newStack.push(ArrayInfo($3));
+        $$.stack = newStack;
+        $$.stack.copy_push($1.stack);
+        $$vaName = $1.vaName;
+    }
+    | direct_declarator LSQUARE RSQUARE 
+        {
+        // Logic first we push the currentArray Info and then recursive push
+        std::stack<LevelInfo> newStack;
+        newStack.push(ArrayInfo(-1 /*This is to show no size was given*/));
+        $$.stack = newStack;
+        $$.stack.copy_push($1.stack);
+        $$vaName = $1.vaName;
+        }
+    | direct_declarator LPAREN parameter_type_list RPAREN
+    | direct_declarator LPAREN identifier_list RPAREN
     | direct_declarator LPAREN RPAREN
     ;
 
-pointer
-    : STAR
-    | STAR type_qualifier_list
-    | STAR pointer
-    | STAR type_qualifier_list pointer
+// This will give it's parent a stack<LevelInfo> to be specific PointerInfo
+// LevelInfo() 👍
+pointer 
+    : STAR { $$.stack.push_back(PointerInfo(EMPTY_TYPEQUALIFIER_VECTOR)); }
+    | STAR type_qualifier_list { $$.stack.push_back(PointerInfo($2.Qualifiers)); }
+    | STAR pointer { /*First we create a new stack and push new PointerInfo in bottom and then the stack given by pointer1 of production*/
+        std::stack<LevelInfo> newStack;
+        newStack.push(PointerInfo(EMPTY_TYPEQUALIFIER_VECTOR));
+        $$.stack = newStack;
+        $$.stack.copy_push($2.stack);
+    }
+    | STAR type_qualifier_list pointer {
+        std::stack<LevelInfo> newStack;
+        newStack.push(PointerInfo($2.Qualifiers));
+        $$.stack = newStack;
+        $$.stack.copy_push($3.stack);
+    }
     ;
 
+// This will give a vector<TypeQualifier> to it's parent 
+//👍
 type_qualifier_list
-    : type_qualifier
-    | type_qualifier_list type_qualifier
+    : type_qualifier { $$.Qualifiers.push_back($1); }
+    | type_qualifier_list type_qualifier { $$.Qualifiers = $1.Qualifiers; $$.Qualifiers.push_back($2); }
     ;
 
 parameter_type_list
     : parameter_list
-    | parameter_list COMMA ELLIPSIS
+    | parameter_list COMMA ELLIPSIS {/*not supported*/}
     ;
 
 parameter_list
     : parameter_declaration
     | parameter_list COMMA parameter_declaration
     ;
-
+//this will make a variable (name and level) and return to it's parent
 parameter_declaration
-    : declaration_specifiers declarator 
-    // This type of parameter declaration has variable name
-
-    | declaration_specifiers abstract_declarator 
-    // This type of parameter declaration ❌ DOES NOT have variable name and is a kind of recursive declaraion of funciton pointer
-    
+    : declaration_specifiers declarator
+    | declaration_specifiers abstract_declarator
     | declaration_specifiers
-    // This type of parameter declaration ❌ DOES NOT have variable name
     ;
 
 identifier_list
@@ -412,12 +461,16 @@ abstract_declarator
 
 direct_abstract_declarator
     : LPAREN abstract_declarator RPAREN
+
     | LSQUARE RSQUARE
     | LSQUARE constant_expression RSQUARE
+
     | direct_abstract_declarator LSQUARE RSQUARE
     | direct_abstract_declarator LSQUARE constant_expression RSQUARE
+    
     | LPAREN RPAREN
     | LPAREN parameter_type_list RPAREN
+
     | direct_abstract_declarator LPAREN RPAREN
     | direct_abstract_declarator LPAREN parameter_type_list RPAREN
     ;
@@ -486,7 +539,7 @@ iteration_statement
     | FOR LPAREN declaration expression_statement expression RPAREN statement
     ;
 
-jump_statement
+jump_statement 
     : GOTO IDENTIFIER SEMI_COLON
     | CONTINUE SEMI_COLON
     | BREAK SEMI_COLON
