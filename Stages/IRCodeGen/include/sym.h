@@ -58,17 +58,24 @@ enum class StorageClass{
     EXTERN
 };
 
-//---------------- Data Type [Level Supported] --------------------------------------------------------------------
+//---------------- Sub-Level TypeExpression [Level Supported] --------------------------------------------------------------------
 class LevelInfo{
     public:
         //Constructor & Destructor
         LevelInfo(){
             MEM("LevelInfo Constructor");
         }
-
         virtual ~LevelInfo(){
             MEM("LevelInfo Destructor");
-        } // Making it polymorphic
+        }
+};
+
+class ParenthesisInfo : public LevelInfo{
+    public:
+        // NO data - just a separator
+
+        //Constructor & Destructor
+        CON_DES(ParenthesisInfo)
 };
 
 class ArrayInfo : public LevelInfo{
@@ -104,40 +111,90 @@ class BaseInfo : public LevelInfo{
         int size() const;
 };
 
-int width(const BaseInfo &info); // This will return the width of the base type
-// int width(const BaseInfo *info); // This will return the width of the base type
-
-class DType{
+class ParameterInfo : public LevelInfo{
     public:
-        // D-Type INFO
-        // std::vector<std::string> levelType; // This 🧐 is redunant we can check type of LevelInfo itslelf by Function using dynamic_cast()
-        std::stack<LevelInfo*> levels; // bottom of the stack is the base type
+        std::vector<TypeExpression> paramsType;
 
         //Constructor & Destructor
-        CON_DES(DType)
-
+        CON_DES(ParameterInfo)
 };
 
-
-int width(const DType &dtype); // This will return the width of the data type
-std::string toString(const DType &dtype); // This will return the string representation of the data type
-int popALevel(DType &dtype); // This will pop a level from the dtype and 
-/*Return value | 🚨 It's passed by ref so change will effect the original
-    0 - if successful
-    -1 - if not successful
+int width(const BaseInfo &info); // primitive type's width
+/* Logic
+- for primitives - check arch variable
+- for (Struct,Union) user defined - ask symbol table for record & calculate the width
+- for enum - check size == int
 */
 
+/* Equivalance Check Outputs
+0 - Equivalent
+1 - Warning
+-1 - Not Equivalent [Error]
+*/
+
+int checkEquivalance(const LevelInfo &info1, const LevelInfo &info2);
+
+int checkEquivalance(const BaseInfo &info1, const BaseInfo &info2);
+int checkEquivalance(const PointerInfo &info1, const PointerInfo &info2);
+int checkEquivalance(const ArrayInfo &info1, const ArrayInfo &info2);
+int checkEquivalance(const ParameterInfo &info1, const ParameterInfo &info2);
+// int checkEquivalance(const ParenthesisInfo &info1, const ParenthesisInfo &info2);
+
+
+bool isParenthesisInfo(const LevelInfo &info);
+bool isArrayInfo(const LevelInfo &info);
+bool isPointerInfo(const LevelInfo &info);
+bool isBaseInfo(const LevelInfo &info);
+bool isParameterInfo(const LevelInfo &info);
+
+int whatIsLevelInfo(const LevelInfo &info);
+
+// $output of whatIsLevelInfo
+int const BASE_LEVEL = 0;
+int const POINTER_LEVEL = 1;
+int const ARRAY_LEVEL = 2;
+int const PARAMETER_LEVEL = 3;
+int const PARENTHESIS_LEVEL = 4;
+int const UNKNOWN_LEVEL = -1;
+
+//---------------- TypeExpression [Level] -------------------------------------------------------------------
 class TypeExpression
 {
 public:
-    DType dtype; // This will be used as returnType of the function
-    std::vector<TypeExpression> paramTypes; // This will be used as parameterType of the function
-    // NOTE ⚠️⚠️⚠️⚠️ Empty paramTypes can mean a empty function or a variable
-    // WE need to distinguish
+    std::stack<LevelInfo *> levelStack; // Instead of stack we can have {LevelInfo* current; TypeExpression below}
+    // ☢️ Pay Attention LevelInfo is pointer thus a copy made for TypeExpression will not copy the LevelInfo
     
-    // Decision - we use a TypeExpression with dtype's BaseInfo set to "void"
+    /* LevelInfo Rules
+    - BaseInfo
+        - width = width of the base type
 
-    //Constructor & Destructor
+    - PointerInfo
+        - width = ADDRESS_SIZE
+
+    - ArrayInfo
+        - width = size of the array * width of the below TypeExpression
+
+    - ParameterInfo
+        - width = 1
+
+    - ParenthesisInfo
+        - width = width of the below TypeExpression
+
+    # Restrictions
+        - BaseInfo always be at the bottom
+
+        - ArrayInfo top of ParameterInfo -> ERROR(declared as array of functions)
+
+        - ParameterInfo on top of ParameterInfo -> ERROR(function cannot return function)
+        - ParameterInfo on top of ArrayInfo -> ERROR(function cannot return array)
+    
+        PoP a level has different meaning
+        returnType if top was ParameterInfo
+        elementType if top was ArrayInfo
+        pointerElementType if top was PointerInfo
+        base is UnPopable
+        */
+
     TypeExpression()
     {
         MEM("TypeExpression Constructor");
@@ -147,27 +204,42 @@ public:
     {
         MEM("TypeExpression Destructor");
     }
-
-    TypeExpression(const DType &dtype, const std::vector<TypeExpression> &paramType)
-    {
-        MEM("TypeExpression Constructor 2");
-        this->dtype = dtype;
-        this->paramTypes = paramType;
-    }
 };
 
-std::string toString(const TypeExpression &typeExpr); // This will return the string representation of the type expression
-int popALevel(TypeExpression &typeExpr); // This will pop a level from the typeExpr and return 1 if successful else 0
+// ########## TypeExpression Utilities ###################################################################
+
+bool topIsParenthesis(const TypeExpression &typeExpr); // Logic = Check if top is ParenthesisInfo
+bool topIsArray(const TypeExpression &typeExpr); // Logic = Check if top is ArrayInfo
+bool topIsPointer(const TypeExpression &typeExpr); // Logic = Check if top is PointerInfo
+bool topIsBase(const TypeExpression &typeExpr); // Logic = Check if top is BaseInfo
+bool topIsParameter(const TypeExpression &typeExpr); // Logic = Check if top is ParameterInfo
+
+
+std::string toString(const TypeExpression &typeExpr); 
+// Logic = Remove top-parenthesis if any
+int popALevel(TypeExpression &typeExpr); // This will pop a level from stack<LevelTypeExpression> of the data type
 //🚨 It's passed by referance to change will affect original
-int width(const TypeExpression &typeExpr); // This will return the width of the returnType of the function
+int width(const TypeExpression &typeExpr); 
+// Width logic of each level type is written in the TypeExpression class
+int checkEquivalance(const TypeExpression &typeExpr1, const TypeExpression &typeExpr2); 
+/* Logic
+- During type checking all parenthesis are ignored - not just top ones
+*/
 
+// $output of checkEquivalance
+int const OKAY = 0;
+int const WARNING = -1;
+int const LOW_ERROR = -2;
+int const HIGH_ERROR = -3;
 
-bool isArrayInfo(const LevelInfo& info);
-// bool isArrayInfo(const LevelInfo* info);
-bool isPointerInfo(const LevelInfo &info);
-// bool isPointerInfo(const LevelInfo* info);
-bool isBaseInfo(const LevelInfo &info);
-// bool isBaseInfo(const LevelInfo* info);
+bool isEmpty(const TypeExpression &typeExpr); // This will check if the type expression is empty
+
+void removeTopParenthesis(TypeExpression &typeExpr); // This will remove all the parenthesis from the type expression
+
+bool isTypeAssignable(const TypeExpression &type);
+// Logic - Non-assignable types are - top is ArrayInfo, ParameterInfo | top is PointerInfo or BaseInfo with "const" qualifier
+
+// #################################################################################################################
 
 //--------------------- Generic Symbol and Node & ScopeEnabledSymbolTable --------------------------------------------------
 class GenericSymbol
@@ -298,7 +370,7 @@ class Variable : public VarSymbols{
     public:
         // Variable Info [🚨 Not needed]
 
-        // DT Info
+        // Type Info
         TypeExpression type; // This will store the data type info of the variable
 
         StorageClass storageClass; // It's a variable only property and not a property of the data type
@@ -369,6 +441,11 @@ public:
 
 int width(const UserDType &dtype); // This will return the width of the user defined data type
 std::string toString(const UserDType &dtype); // This will return the string representation of the user defined data type
+int checkEquivalance(const UserDType &dtype1, const UserDType &dtype2); 
+/*Logic
+- struct & union different scope - give error
+- enum in different scope - give warning
+*/
 
 //============================== [ Complete SymbolTable ]=====================================================
 /* NOT NEEDED

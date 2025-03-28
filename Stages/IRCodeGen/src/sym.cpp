@@ -260,31 +260,6 @@ bool isUserDType(const GenericSymbol &sym){
     return dynamic_cast<const UserDType*>(&sym);
 }
 
-//------- Check LevelInfo Derived Classes --------------------------------------------------------
-
-bool isArrayInfo(const LevelInfo& info){
-    return dynamic_cast<const ArrayInfo*>(&info);
-}
-
-// bool isArrayInfo(const LevelInfo* info){
-//     return dynamic_cast<const ArrayInfo*>(info);
-// }
-
-bool isPointerInfo(const LevelInfo &info){
-    return dynamic_cast<const PointerInfo*>(&info);
-}
-
-// bool isPointerInfo(const LevelInfo* info){
-//     return dynamic_cast<const PointerInfo*>(info);
-// }
-
-bool isBaseInfo(const LevelInfo &info){
-    return dynamic_cast<const BaseInfo*>(&info);
-}
-
-// bool isBaseInfo(const LevelInfo* info){
-//     return dynamic_cast<const BaseInfo*>(info);
-// }
 
 //------- Check GenericSymbol Derived Classes --------------------------------------------------------
 
@@ -352,7 +327,32 @@ void SymbolTable::printTable(std::ofstream &file){
 
 }
 
-//===========[ DType Utilities ]====================
+//===========[ Sub-Level TypeExpression Utilities ]====================
+
+bool isArrayInfo(const LevelInfo &info)
+{
+    return dynamic_cast<const ArrayInfo *>(&info);
+}
+
+bool isPointerInfo(const LevelInfo &info)
+{
+    return dynamic_cast<const PointerInfo *>(&info);
+}
+
+bool isBaseInfo(const LevelInfo &info)
+{
+    return dynamic_cast<const BaseInfo *>(&info);
+}
+
+bool isParameterInfo(const LevelInfo &info)
+{
+    return dynamic_cast<const ParameterInfo *>(&info);
+}
+
+bool isParenthesisInfo(const LevelInfo &info)
+{
+    return dynamic_cast<const ParenthesisInfo *>(&info);
+}
 
 int width(const BaseInfo &info){
     // This will depend on stding baseType
@@ -361,95 +361,336 @@ int width(const BaseInfo &info){
     return 0;
 }
 
-int width(const DType &type){
+int checkEquivalance(const BaseInfo &info1, const BaseInfo &info2){
+    // Convert to string and compare
+    if(info1.baseType != info2.baseType){
+        return HIGH_ERROR;
+    }
+
+    return OKAY;
+}
+
+int checkEquivalance(const PointerInfo &info1, const PointerInfo &info2){
+    // nothing to check
+    return OKAY;
+}
+
+int checkEquivalance(const ArrayInfo &info1, const ArrayInfo &info2){
+    if(info1.dimSize != info2.dimSize){
+        return LOW_ERROR;
+    }
+
+    return OKAY;
+}
+
+int checkEquivalance(const ParameterInfo &info1, const ParameterInfo &info2){
+    if(info1.paramsType.size() != info2.paramsType.size()){
+        return HIGH_ERROR;
+    }
+
+    for(int i=0; i<info1.paramsType.size(); i++){
+        int res = checkEquivalance(info1.paramsType[i], info2.paramsType[i]);
+        if(res != OKAY){
+            return res;
+        }
+    }
+
+    return OKAY;
+}
+
+int whatIsLevelInfo(const LevelInfo &info){
+    if(isBaseInfo(info)){
+        return BASE_LEVEL;
+    }else if(isPointerInfo(info)){
+        return POINTER_LEVEL;
+    }else if(isArrayInfo(info)){
+        return ARRAY_LEVEL;
+    }else if(isParameterInfo(info)){
+        return PARAMETER_LEVEL;
+    }else if(isParenthesisInfo(info)){
+        return PARENTHESIS_LEVEL;
+    }else{
+        return UNKNOWN_LEVEL;
+    }
+}
+
+int checkEquivalance(const LevelInfo &info1, const LevelInfo &info2){
+    // This will depend on stding baseType
     
-    // It has levels, so need to consider that as well
-    int size = 0;
-
-    std::stack<LevelInfo*> temp = type.levels;
-    bool baseFlag = false;
-    while(!temp.empty()){
-        LevelInfo* info = temp.top();
-        temp.pop();
-
-        if(isArrayInfo(*info)){
-            ArrayInfo* arr = dynamic_cast<ArrayInfo*>(info);
-            size *= arr->dimSize;
-        }
-        else if (isPointerInfo(*info))
-        {
-            size = ADDRESS_SIZE;
-        }
-        else if (isBaseInfo(*info))
-        {
-            if(!temp.empty()){
-                std::cerr << "Error: BaseInfo should be the last level\n";
-                return -1;
-            }
-            baseFlag = true;
-            BaseInfo* base = dynamic_cast<BaseInfo*>(info);
-            size *= width(*base);
-        }
+    int type1 = whatIsLevelInfo(info1);
+    int type2 = whatIsLevelInfo(info2);
+    if(type1 != type2){
+        return LOW_ERROR;
+        // Different levelTypes is Low Error
     }
 
-    if(!baseFlag){
-        std::cerr << "Error: BaseInfo not found\n";
-        return -1;
+    if(type1 == BASE_LEVEL){
+        // BaseInfo
+        const BaseInfo *base1 = dynamic_cast<const BaseInfo*>(&info1);
+        const BaseInfo *base2 = dynamic_cast<const BaseInfo*>(&info2);
+        return checkEquivalance(*base1, *base2);
+
+    }else if(type1 == POINTER_LEVEL){
+        // PointerInfo
+        const PointerInfo *ptr1 = dynamic_cast<const PointerInfo*>(&info1);
+        const PointerInfo *ptr2 = dynamic_cast<const PointerInfo*>(&info2);
+        return checkEquivalance(*ptr1, *ptr2);
+
+    }else if(type1 == ARRAY_LEVEL){
+        // ArrayInfo
+        const ArrayInfo *arr1 = dynamic_cast<const ArrayInfo*>(&info1);
+        const ArrayInfo *arr2 = dynamic_cast<const ArrayInfo*>(&info2);
+        return checkEquivalance(*arr1, *arr2);
+
+    }else if(type1 == PARAMETER_LEVEL){
+        // ParameterInfo
+        const ParameterInfo *param1 = dynamic_cast<const ParameterInfo*>(&info1);
+        const ParameterInfo *param2 = dynamic_cast<const ParameterInfo*>(&info2);
+        return checkEquivalance(*param1, *param2);
+
+    }else if(type1 == PARENTHESIS_LEVEL){
+        // No need to check
+        return OKAY;
+    }else{
+        // Unknown Level
+        std::cerr << "Error: Unknown LevelInfo\n";
+        return LOW_ERROR;
     }
 
-    return size;
-}
-
-std::string toString(const DType &dtype){
-    // This will return the string representation of the data type
-    // [📍 ToDo]
-    return "";
-}
-
-int popALevel(DType &dtype){
-    // First we check if top level is popable or not
-    if(dtype.levels.empty()){
-        std::cerr << "Error: No Level to pop\n";
-        return EXIT_FAILURE;
-    }
-    if(isBaseInfo(*dtype.levels.top())){
-        std::cerr << "Error: BaseInfo can't be popped | TopLevel must be a Pointer or Array\n";
-        return EXIT_FAILURE;
-    }
-
-    dtype.levels.pop();
-    return EXIT_SUCCESS;
+    return false;
 }
 
 //===========[ TypeExpression Utilities ]====================
 std::string toString(const TypeExpression &typeExpr){
-    // This will return the string representation of the type expression
+    TypeExpression temp = typeExpr;
+    //First Remove top Parenthesis
+    removeTopParenthesis(temp);
+
     // [📍 ToDo]
     return "";
 }
 
 int popALevel(TypeExpression &typeExpr){
-    // First we check if top level is popable or not
-    return popALevel(typeExpr.dtype);
+    
+    // First Remove top Parenthesis
+    removeTopParenthesis(typeExpr);
+
+    // Popable only if top is Array or Pointer
+    bool isPopAble = topIsArray(typeExpr) || topIsPointer(typeExpr);
+
+    if(isPopAble){
+        typeExpr.levelStack.pop();
+        return 0;
+    }
+    // Not Popable
+    std::cerr << "Error: TypeExpression is not Popable\n";
+    return -1;
 }
 
 int width(const TypeExpression &typeExpr){
-    // This will return the width of the returnType of the function
-    return width(typeExpr.dtype);
+    TypeExpression temp = typeExpr;
+    
+    // First Remove top Parenthesis
+    removeTopParenthesis(temp);
+
+    int size = 0;
+    if (topIsBase(temp))
+    {
+        BaseInfo *base = dynamic_cast<BaseInfo*>(temp.levelStack.top());
+        size = width(*base);
+    }
+    else if(topIsPointer(temp)){
+        size =  ADDRESS_SIZE;
+    }else if(topIsArray(temp)){
+        ArrayInfo *array = dynamic_cast<ArrayInfo*>(temp.levelStack.top());
+        TypeExpression element = temp; popALevel(element);
+        size = array->dimSize * width(element);
+    }
+    else if(topIsParameter(temp)){
+        size = 1;
+    }else{
+        std::cerr << "Error : Something wrong in width(TypeExpression)\n";
+        return -1;
+    }
+
+    // This will return the width of the type expression
+    return size;
 }
 
-//===========[ UserDType Utilities ]====================
-int width(const UserDType &dtype){
-    // This will return the width of the user defined data type
-    // [📍 ToDo]
-    return 0;
+void removeTopParenthesis(TypeExpression &typeExpr){
+    // This will remove only the top parenthesis
+    while(topIsParenthesis(typeExpr)){
+        typeExpr.levelStack.pop(); // ignore top-parenthesis
+    }
 }
 
-std::string toString(const UserDType &dtype){
-    // This will return the string representation of the user defined data type
-    // [📍 ToDo] = Make sure to have scopeNo in string as well
-    return "";
+int checkEquivalance(const TypeExpression &typeExpr1, const TypeExpression &typeExpr2){
+
+    TypeExpression temp1 = typeExpr1;
+    TypeExpression temp2 = typeExpr2;
+
+    // Use Recursion to check equivalance
+    removeTopParenthesis(temp1);
+    removeTopParenthesis(temp2);
+
+    if (isEmpty(temp1) && isEmpty(temp2))
+    {
+        // Both are empty
+        return OKAY;
+    }
+    if(isEmpty(temp1) ^ isEmpty(temp2)){
+        // One is empty and other is not
+        // Error
+        return LOW_ERROR;
+    }
+
+    // Both are not empty
+
+    // Check a level
+    LevelInfo *info1 = temp1.levelStack.top();
+    LevelInfo *info2 = temp2.levelStack.top();
+    if(!info1 || !info2){
+        // Should not happen
+        std::cerr << "Error: LevelInfo is nullptr\n";
+        return false;
+    }
+    
+    int levelcheck = checkEquivalance(*info1, *info2);
+    if(levelcheck != OKAY){
+        return levelcheck;
+    }
+
+    //Current level is OKAY
+
+    // Pop a level
+    popALevel(temp1);
+    popALevel(temp2);
+    // Recursion
+    int res = checkEquivalance(temp1, temp2);
+
+    if(res == OKAY || res == WARNING){
+        return res; // OKAY or WARNING
+    }
+    // res == LOW_ERROR [Error from below but can be reduced by higher levels as warning]
+    // Depending on current level it will be Error or Warning
+    int type1 = whatIsLevelInfo(*info1);
+    int type2 = whatIsLevelInfo(*info2);
+    if(type1 == POINTER_LEVEL && type2 == POINTER_LEVEL){
+        // Pointer's Reduce Error level
+        if(res == LOW_ERROR){ 
+            return WARNING; // Pointer to pointer
+        }
+        if(res == HIGH_ERROR){
+            return LOW_ERROR; // Pointer to pointer
+        }
+    }
+
+    // Only if this level is pointer we can reduce to warning else No Reduction
+    return res;
 }
+
+bool isEmpty(const TypeExpression &typeExpr){
+    // This will check if the type expression is empty
+    return typeExpr.levelStack.empty();
+}
+
+//----------- What is the top of the stack
+bool topIsParenthesis(const TypeExpression &typeExpr){
+    // This will check if the top is ParenthesisInfo
+    if(typeExpr.levelStack.empty()){
+        return false;
+    }
+    LevelInfo *info = typeExpr.levelStack.top();
+    if(!info){
+        std::cerr << "Error: LevelInfo is nullptr\n";
+        return false;
+    }
+    return isParenthesisInfo(*info);
+}
+
+bool topIsArray(const TypeExpression &typeExpr){
+    // This will check if the top is ArrayInfo
+    if(typeExpr.levelStack.empty()){
+        return false;
+    }
+    LevelInfo *info = typeExpr.levelStack.top();
+    if(!info){
+        std::cerr << "Error: LevelInfo is nullptr\n";
+        return false;
+    }
+    return isArrayInfo(*info);
+}
+
+bool topIsPointer(const TypeExpression &typeExpr){
+    // This will check if the top is PointerInfo
+    if(typeExpr.levelStack.empty()){
+        return false;
+    }
+    LevelInfo *info = typeExpr.levelStack.top();
+    if(!info){
+        std::cerr << "Error: LevelInfo is nullptr\n";
+        return false;
+    }
+    return isPointerInfo(*info);
+}
+
+bool topIsBase(const TypeExpression &typeExpr){
+    // This will check if the top is BaseInfo
+    if(typeExpr.levelStack.empty()){
+        return false;
+    }
+    LevelInfo *info = typeExpr.levelStack.top();
+    if(!info){
+        std::cerr << "Error: LevelInfo is nullptr\n";
+        return false;
+    }
+    return isBaseInfo(*info);
+}
+
+bool topIsParameter(const TypeExpression &typeExpr){
+    // This will check if the top is ParameterInfo
+    if(typeExpr.levelStack.empty()){
+        return false;
+    }
+    LevelInfo *info = typeExpr.levelStack.top();
+    if(!info){
+        std::cerr << "Error: LevelInfo is nullptr\n";
+        return false;
+    }
+    return isParameterInfo(*info);
+}
+
+bool isTypeAssignable(const TypeExpression &type){
+    //First Remove top Parenthesis
+    TypeExpression temp = type;
+
+    // Logic - Non-assignable types are - top is ArrayInfo, ParameterInfo | top is PointerInfo or BaseInfo with "const" qualifier
+    if(topIsArray(temp) || topIsParameter(temp)){
+        return false;
+    }
+
+    if(topIsPointer(temp)){
+        PointerInfo *ptr = dynamic_cast<PointerInfo*>(temp.levelStack.top());
+        for(auto qualifier : ptr->typeQualifiers){
+            if(qualifier == TypeQualifier::CONST){
+                return false;
+            }
+        }
+    }
+
+    if(topIsBase(temp)){
+        BaseInfo *base = dynamic_cast<BaseInfo*>(temp.levelStack.top());
+        for(auto qualifier : base->typeQualifiers){
+            if(qualifier == TypeQualifier::CONST){
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+
 
 //============ [lookup in given scope] =================
 int SymbolTable::lookup(const std::string &key, GenericSymbol *&sym, int lookInScopeNo){
