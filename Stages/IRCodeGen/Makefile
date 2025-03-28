@@ -138,10 +138,13 @@ sem_ast: $(EXECUTABLE) $(INPUT) $(OUTPUT)
 	@open $(DOTPDF)
 
 ASSEMBLY = $(OUTPUT_DIR)/assembly.s
+LLVMIR = $(OUTPUT_DIR)/llvm_ir.ll
 
 assembly: $(INPUT)
 	@clang -S -target riscv32-unknown-elf -march=rv32i $(INPUT) -o $(ASSEMBLY)
 
+llvm: $(INPUT)
+	@clang -S -emit-llvm $(INPUT) -o $(LLVMIR)
 
 astdump: $(INPUT)
 	@clang -Xclang -ast-dump -fsyntax-only $(INPUT)
