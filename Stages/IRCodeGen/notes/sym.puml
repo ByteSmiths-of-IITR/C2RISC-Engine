@@ -1,123 +1,139 @@
 @startuml
 
-ArrayInfo --|> LevelInfo
-PointerInfo --|> LevelInfo
-BaseInfo --|> LevelInfo
-DType *-- LevelInfo
-VarSymbols --|> GenericSymbol
-Variable --|> VarSymbols
-EnumConstant --|> VarSymbols
-Functions --|> VarSymbols
-UserDType --|> GenericSymbol
-
-SymbolTable o-- SymbolNode
-SymbolNode *-- GenericSymbol
-Functions *-- Variable
-Variable *-- DType
-EnumConstant *-- UserDType
-
 class LevelInfo {
-    + LevelInfo()
-    + ~LevelInfo()
+    +LevelInfo()
+    +~LevelInfo()
+}
+
+class ParenthesisInfo {
+    +ParenthesisInfo()
+    +~ParenthesisInfo()
 }
 
 class ArrayInfo {
-    + int dimSize
-    + ArrayInfo()
-    + ~ArrayInfo()
+    +int dimSize
+    +ArrayInfo()
+    +~ArrayInfo()
 }
 
 class PointerInfo {
-    + vector<TypeQualifier> typeQualifiers
-    + PointerInfo()
-    + ~PointerInfo()
+    +vector<TypeQualifier> typeQualifiers
+    +PointerInfo()
+    +~PointerInfo()
 }
 
 class BaseInfo {
-    + string baseType
-    + vector<TypeQualifier> typeQualifiers
-    + StorageClass storageClass
-    + BaseInfo()
-    + ~BaseInfo()
+    +string baseType
+    +vector<TypeQualifier> typeQualifiers
+    +int size() const
+    +BaseInfo()
+    +~BaseInfo()
 }
 
-class DType {
-    + vector<string> levelType
-    + vector<LevelInfo> levelInfo
-    + DType()
-    + ~DType()
+class ParameterInfo {
+    +vector<TypeExpression> paramsType
+    +ParameterInfo()
+    +~ParameterInfo()
+}
+
+class TypeExpression {
+    +stack<LevelInfo*> levelStack
+    +TypeExpression()
+    +~TypeExpression()
 }
 
 class GenericSymbol {
-    + pair<int,int> position
-    + string symbolName
-    + int scopeNo
-    + GenericSymbol()
-    + ~GenericSymbol()
-}
-
-class VarSymbols {
-    + VarSymbols()
-    + ~VarSymbols()
-}
-
-class Variable {
-    + DType dtype
-    + ASTNode* intiailizer
-    + int offset
-    + Variable()
-    + ~Variable()
-}
-
-class EnumConstant {
-    + UserDType* enumType
-    + int value
-    + EnumConstant()
-    + ~EnumConstant()
-}
-
-class Functions {
-    + DType returnType
-    + vector<Variable> parameters
-    + Functions()
-    + ~Functions()
+    +pair<int, int> location
+    +string symbolName
+    +int scopeNo
+    +GenericSymbol()
+    +~GenericSymbol()
 }
 
 class SymbolNode {
-    + GenericSymbol* symbol
-    + SymbolNode* next
-    + SymbolNode* prev
-    + SymbolNode()
-    + ~SymbolNode()
-    + void deleteCurrent()
-    + void insertAfter(SymbolNode* node)
-    + void insertBefore(SymbolNode* node)
+    +GenericSymbol* symbol
+    +SymbolNode* next
+    +SymbolNode* prev
+    +SymbolNode()
+    +~SymbolNode()
+    +void deleteCurrent()
+    +void insertAfter(SymbolNode* node)
+    +void insertBefore(SymbolNode* node)
 }
 
 class SymbolTable {
-    + unordered_map<string, SymbolNode*> SymbolTable
-    + stack<SymbolNode*> listStack
-    + stack<int> scopeBottom
-    + stack<int> lastScopeNo
-    + int scopeNo
-    + int nextScopeNo
-    + int NodeCount
-    + SymbolTable()
-    + ~SymbolTable()
-    + int enterScope()
-    + void exitScope()
-    + int insert(GenericSymbol* sym)
-    + int lookup(const string& key, GenericSymbol*& sym)
-    + int lookupNode(const string& key, SymbolNode*& node)
+    +unordered_map<string, SymbolNode*> symTable
+    +stack<SymbolNode*> listStack
+    +stack<int> scopeBottom
+    +stack<int> lastScopeNo
+    +int scopeNo
+    +int nextScopeNo
+    +int NodeCount
+    +SymbolTable()
+    +~SymbolTable()
+    +int enterScope()
+    +void exitScope()
+    +int insertRecord(string, GenericSymbol*)
+    +int insert(string, GenericSymbol*)
+    +int lookupRecord(string, GenericSymbol*&)
+    +int lookup(string, GenericSymbol*&)
+    +void printTable(ofstream& file)
+}
+
+class VarSymbols {
+    +VarSymbols()
+    +~VarSymbols()
+}
+
+class Variable {
+    +TypeExpression type
+    +StorageClass storageClass
+    +ASTNode* initializer
+    +int offset
+    +Variable()
+    +~Variable()
+}
+
+class EnumConstant {
+    +UserDType* enumType
+    +int value
+    +EnumConstant()
+    +~EnumConstant()
+}
+
+class Function {
+    +TypeExpression type
+    +bool isDefined
+    +Function()
+    +~Function()
 }
 
 class UserDType {
-    + string Recordtype
-    + unordered_map<string, Variable> members
-    + UserDType()
-    + ~UserDType()
+    +string recordType
+    +unordered_map<string, TypeExpression> members
+    +UserDType()
+    +~UserDType()
 }
 
+LevelInfo <|-- ParenthesisInfo
+LevelInfo <|-- ArrayInfo
+LevelInfo <|-- PointerInfo
+LevelInfo <|-- BaseInfo
+LevelInfo <|-- ParameterInfo
 
+GenericSymbol <|-- VarSymbols
+VarSymbols <|-- Variable
+VarSymbols <|-- EnumConstant
+VarSymbols <|-- Function
+GenericSymbol <|-- UserDType
+
+SymbolTable o-- SymbolNode : used by
+SymbolNode o-- GenericSymbol : used by
+
+Variable o-- TypeExpression : used by
+Function o-- TypeExpression : used by
+UserDType o-- TypeExpression : used by
+TypeExpression o-- LevelInfo : used by
+EnumConstant o-- UserDType : used by
 
 @enduml
