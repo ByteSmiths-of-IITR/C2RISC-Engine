@@ -770,7 +770,7 @@ declaration
         $2.inh_type = tempType; // pass the type to the init_declarator_list ⬇️ 
         $2.inh_storageClass = storageClass; // pass the storage class to the init_declarator_list ⬇️
 
-        // [🧠 Think if anything else is needed to be done here]
+        // [📍ToDo - Decide where to do INITIALIZATION]
     }
     ;
 
@@ -836,7 +836,6 @@ init_declarator_list
 🔴 TypeExpression inh_type; // This will be a TypeExpression
 🔴 StorageClass inh_storageClass;
 */
-
 /* Data from/to declarator 
     ⬇️ to - 🔴 TypeExpression inh_type; [ This goes down keep collecting data on way as goes down ]
     ⬆️ from - 🟡 std::string varName; // This will be a string of variable name
@@ -844,25 +843,90 @@ init_declarator_list
 */
 init_declarator
     : declarator {
-        // Last Production 🚦
-        $1.inh_type = $$.inh_type; // carry the inh_data below ⬇️
-        // no need to pass the inh_storageClass anyfuther as symbol table entry will be created
+        // 0. Carry inh_data down
+            $1.inh_type = $$.inh_type; // carry the inh_data below ⬇️
+            StorageClass storageClass = $$.inh_storageClass; // no need to pass down
+            // no need to pass the inh_storageClass anyfuther as symbol table entry will be created
 
-        // Now we recieve type [syn] from declarator and we process this to create a symbol table entry
-        TypeExpression tempType = $1.type;
-        // [📍ToDo - Create a symbol table entry] ☢️SYMBOL_ADD
-        // Available - varName, type, inh_storageClass
+        // 1. Reeive the syn_data from declarator
+            TypeExpression tempType = $1.type;
+            std::string symName = $1.varName;
 
+        // 2.  Create Symbol (Variable or Function)
+            Expr_Type whichType = whichTypeExpression(tempType);
+            GenericSymbol* symbol;
+            if(whichType == Expr_Type::FUNCTION){
+                // Function
+                Function* func = new Function();
+                func->symbolName = symName;
+                func->type = tempType;
+                func->isDefined = false; // not defined yet
+
+                if(storageClass == StorageClass::STATIC){
+                    // Function can only be accessed in the same file 
+                    // 😵‍💫 Too Advance 😵‍💫
+                }
+                symbol = func;
+            }
+            else{
+                // Variable
+                Variable* var = new Variable();
+                var->symbolName = symName;
+                var->type = tempType;
+                var->storageClass = storageClass;
+                // [ 📍ToDo fill offset ]
+
+                symbol = var;
+            }
+
+
+        // 3. Add Symbol to SYM_TABLE
+            int check = SYM_TABLE.insertRecord($1.varName, symbol);
+            if(check == -1){
+                // Already Present in Current Scope
+                // [Error Handling]
+            }
+
+        // Done - NO 🔖IRCode
+        
     }
     | declarator ASSIGN initializer {
-        // Last Production 🚦
-        $1.inh_type = $$.inh_type; // carry the inh_data below ⬇️
+        // 0. Carry inh_data down 
+            $1.inh_type = $$.inh_type; // carry the inh_data below ⬇️
+            StorageClass storageClass = $$.inh_storageClass; // no need to pass down
 
-        // Now we recieve type [syn] from declarator and we process this to create a symbol table entry
-        TypeExpression tempType = $1.type;
-        // [📍ToDo - Create a symbol table entry] ☢️SYMBOL_ADD
-        // Available - varName, type, inh_storageClass
+        // 1. Reeive the syn_data from declarator
+            TypeExpression tempType = $1.type;
+            std::string symName = $1.varName;
 
+        // 2.  Create Symbol (Variable or Function)
+            Expr_Type whichType = whichTypeExpression(tempType);
+            GenericSymbol* symbol;
+            if(whichType == Expr_Type::FUNCTION){
+                // Should NOT HAPPEDN with INITIALIZER
+                // [Error Handling - Function with Initializer]
+            }
+            else{
+                // Variable
+                Variable* var = new Variable();
+                var->symbolName = symName;
+                var->type = tempType;
+                var->storageClass = storageClass;
+                // [ 📍ToDo fill offset ]
+
+                // [📍ToDo - Add Initializer to symbol] 🤯 Advance Logic [🧠ToDecide]
+                    // Also if const - need a compile time value
+                symbol = var;
+            }
+        
+        // 3. Add Symbol to SYM_TABLE
+            int check = SYM_TABLE.insertRecord($1.varName, symbol);
+            if(check == -1){
+                // Already Present in Current Scope
+                // [Error Handling]
+            }
+
+        // Done - NO 🔖IRCode
     }
     ;
 
@@ -872,7 +936,7 @@ init_declarator
 🟡 std::string value; // This will be a string of type
 */
 storage_class_specifier
-    : TYPEDEF {/* not supported*/}
+    : TYPEDEF  {/* not supported*/}
     | EXTERN   { $$.value = $1.tokenAtr->lexeme; }
     | STATIC   { $$.value = $1.tokenAtr->lexeme; }
     | AUTO     { $$.value = $1.tokenAtr->lexeme; }
@@ -893,10 +957,10 @@ type_specifier
     | SIGNED   { $$.value = $1.tokenAtr->lexeme; }
     | UNSIGNED { $$.value = $1.tokenAtr->lexeme; }
     | struct_or_union_specifier {
-        $$.value = $1.value; // This will be a string of type
+        $$.value = $1.value; // This will be a string of type ✅
     }
     | enum_specifier {
-        $$.value = $1.value; // This will be a string of type
+        $$.value = $1.value; // This will be a string of type ✅
     }
     | TYPE_NAME {
         // [Find what is this doing? 🔍 ]
@@ -1122,7 +1186,7 @@ struct_declarator_list
 */
 struct_declarator
     : declarator {
-        // Last Production 🚦🛑
+        // Carry the inh_data down ⬇️
         $1.inh_type = $$.inh_type; // carry the inh_data below ⬇️
 
         // Pass all syn_data up ⬆️
@@ -1370,26 +1434,31 @@ direct_declarator
     ⬆️ from - 🟡 std::vector<TypeExpression> paramVector;
     */
     | direct_declarator LPAREN parameter_type_list RPAREN {
-        $1.inh_type = $$.inh_type; // carry the inh_data below ⬇️
-        
-        $1.inh_type.paramTypes = $3.paramVector; // pass the parameter type list to the type
+        // 1. Carry the inh_data down ⬇️
+            $1.inh_type = $$.inh_type; // carry the inh_data below ⬇️
+            
+            // 1.1 Create a ParameterInfo and add it to the inh_type
+                ParameterInfo* paramInfo = new ParameterInfo();
+                paramInfo->paramTypes = $3.paramVector; // add the parameter type list to the parameter info ➕
+                $1.inh_type.levelStack.addOnTop(paramInfo); // add the parameter info to the type ➕
 
-        $$.type = $1.type; // pass syn_data up ⬆️
+        // 2. Pass the syn_data up ⬆️
+            $$.type = $1.type; // pass syn_data up ⬆️
     }
     | direct_declarator LPAREN identifier_list RPAREN {
         // What is this doing? [🧠 ToThink]
     }
     | direct_declarator LPAREN RPAREN {
-        $1.inh_type = $$.inh_type; // carry the inh_data below ⬇️
+        // 1. Carry the inh_data down ⬇️
+            $1.inh_type = $$.inh_type; // carry the inh_data below ⬇️
         
-        ParameterInfo* paramInfo = new ParameterInfo();
-        paramInfo->paramTypes = new vector<TypeExpression>();
-        $1.inh_type.levelStack.addOnTop(paramInfo); // add the parameter info to the type ➕
+            // 1.1 Create a ParameterInfo and add it to the inh_type
+                ParameterInfo* paramInfo = new ParameterInfo();
+                paramInfo->paramTypes = new vector<TypeExpression>(); // empty vector
+                $1.inh_type.levelStack.addOnTop(paramInfo); // add the parameter info to the type ➕
         
-        // 🤯 To differentiate from var/function - we put a dummy type [ToDecide if needed 🤔]
-        
-
-        $$.type = $1.type; // pass syn_data up ⬆️
+        // 2. Pass the syn_data up ⬆️
+            $$.type = $1.type; // pass syn_data up ⬆️
     }
     ;
 
@@ -1432,11 +1501,14 @@ type_qualifier_list
     : type_qualifier { 
         // Last Production
         $$.Qualifiers = new vector<TypeQualifier>();
-        $$.Qualifiers.push_back($1); // push the type_qualifier
+        TypeQualifier qualifier = convertToTypeQualifier($1.value); // convert the string to TypeQualifier
+
+        $$.Qualifiers.push_back(qualifier); // push the type_qualifier
     }
     | type_qualifier_list type_qualifier { 
         $$.Qualifiers = $1.Qualifiers; // copy the vector
-        $$.Qualifiers.push_back($2); // push the type_qualifier
+        TypeQualifier qualifier = convertToTypeQualifier($2.value); // convert the string to TypeQualifier
+        $$.Qualifiers.push_back(qualifier); // push the type_qualifier
     }
     ;
 
@@ -1489,7 +1561,6 @@ parameter_declaration
         // Function Arguments can't have storage class
         if(storageClass != NULL){
             // Report Error as per message [ 🐞 Error Handling ]
-
         }
 
         if(check!="OK"){
