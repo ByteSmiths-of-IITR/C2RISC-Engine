@@ -2,6 +2,8 @@
 #define SYM_H
 
 #include "utility.h"
+#include "tac.h"
+#include "semantic.h"
 
 // System Constants
 #define WORD_SIZE 4 // int, float
@@ -15,7 +17,7 @@
 // char - BYTE_SIZE
 // pointer - ADDRESS_SIZE
 
-const std::string RECORD_PREFIX = "record ";
+const std::string RECORD_PREFIX = "record "; // will be used for struct & union
 
 extern int MEMORY_MONITORING;
 
@@ -23,6 +25,35 @@ extern int MEMORY_MONITORING;
 
 #define CON_DES(clasName) clasName(){MEM(#clasName " Constructor");} ~clasName(){MEM(#clasName " Destructor");}
 // We can define constructor and destructor in .h file itself since they get 
+
+
+// String used in BaseInfo to show Record or Primitive
+std::string STRUCT = "struct"; // used as prefix
+std::string UNION = "union"; // used as prefix
+std::string ENUM = "enum"; // used as prefix
+std::string ENUM_CONSTANT = "enumConstant"; // used as exactName
+std::string INT = "int"; // used as exactName
+std::string FLOAT = "float"; // used as exactName
+std::string DOUBLE = "double"; // used as exactName
+std::string CHAR = "char"; // used as exactName
+std::string SHORT = "short"; // used as exactName
+std::string LONG = "long"; // used as exactName
+std::string LONG_LONG = "long long"; // used as exactName
+std::string VOID = "void"; // used as exactName
+
+// Strings used in SymbolTable key
+// For variable - exactName 
+// For function - exactName
+// For enum constants - exactName
+
+
+// To Check which type it is - get UserDType and it's recordType
+// For struct - "record" + " " + exactName + " " + scopeNo
+// For union - "record" + " " + exactName + " " + scopeNo
+// For enum objects - "record" + " " + exactName + " " + scopeNo
+
+
+
 
 
 // Include all the necessary headers
@@ -50,6 +81,13 @@ enum class TypeQualifier{
     CONST,
     VOLATILE,
     RESTRICT
+};
+
+enum class RecordType{
+    STRUCT,
+    UNION,
+    ENUM,
+    NONE
 };
 
 enum class StorageClass{
@@ -98,9 +136,20 @@ class PointerInfo : public LevelInfo{
 class BaseInfo : public LevelInfo{
     public:
         std::string baseType;
-        // This is either primitive or struct or union (Record)
+        // This is either primitive or struct or union or enumConstant (Record)
+        
+        /*Rules of Record baseType
+        name = "struct" | "union" | "enum" + " " + "name" + " " + "scopeNo"
+        
+        */
+        // RecordType recordType; // This will be used for struct, union, enum
+        // NotNeeded
+
         std::vector<TypeQualifier> typeQualifiers;
         // This will have const, volatile, restrict
+        
+
+        
         // StorageClass storageClass; // only one of these [🚨 It's a variable property]
         // This will have auto, static, extern
 
@@ -214,8 +263,9 @@ bool topIsPointer(const TypeExpression &typeExpr); // Logic = Check if top is Po
 bool topIsBase(const TypeExpression &typeExpr); // Logic = Check if top is BaseInfo
 bool topIsParameter(const TypeExpression &typeExpr); // Logic = Check if top is ParameterInfo
 
-int whichTypeExpression(const TypeExpression &typeExpr); // Logic = Check what is the top level of the type expression
+Expr_Type whichTypeExpression(const TypeExpression &typeExpr); // Logic = Check what is the top level of the type expression
 
+TypeExpression createTypeExpression(GenericSymbol *symbol); 
 
 std::string toString(const TypeExpression &typeExpr); 
 // Logic = Remove top-parenthesis if any
@@ -228,6 +278,8 @@ int checkEquivalance(const TypeExpression &typeExpr1, const TypeExpression &type
 - During type checking all parenthesis are ignored - not just top ones
 */
 
+SPACE getSpace(const TypeExpression &typeExpr); // This will return the space of the type expression
+
 // $output of checkEquivalance
 int const OKAY = 0;
 int const WARNING = -1;
@@ -238,8 +290,21 @@ bool isEmpty(const TypeExpression &typeExpr); // This will check if the type exp
 
 void removeTopParenthesis(TypeExpression &typeExpr); // This will remove all the parenthesis from the type expression
 
+// VALUE_TYPE getValueType(const TypeExpression &typeExpr); // This will return the value type of the type expression
+// bool isLvalue(const TypeExpression &typeExpr); // This will check if the type expression is Lvalue or not
+// bool isRvalue(const TypeExpression &typeExpr); // This will check if the type expression is Rvalue or not
+// ❌ Not possible to check just on basis of TypeExpression
+
+
 bool isModifiableLvalue(const TypeExpression &type);
-// Logic - Non-assignable types are - top is ArrayInfo, ParameterInfo | top is PointerInfo or BaseInfo with "const" qualifier
+/*Logic of Non-Modifialbe LAVLUE
+- top is ArrayInfo, ParameterInfo
+- top is PointerInfo or BaseInfo with "const" qualifier
+- if BaseInfo - need to check for RecordType;
+    struct & union are not modifiable
+*/
+
+VALUE_TYPE getValueType(const TypeExpression &typeExpr);
 
 // #################################################################################################################
 
@@ -431,7 +496,7 @@ class UserDType : public GenericSymbol
 {
 public:
     // used for struct, union, enum
-    std::string recordType; // struct, union, enum
+    RecordType recordType; // This will be used for struct, union, enum
 
     // Members of the record
     std::unordered_map<std::string, TypeExpression> members;

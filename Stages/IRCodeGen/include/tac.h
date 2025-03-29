@@ -9,6 +9,7 @@ extern int MEMORY_MONITORING;
 const std::string RIGHT_ARRAY = "RIGHT_ARRAY";
 const std::string LEFT_ARRAY = "LEFT_ARRAY";
 
+const std::string NO_ARG = "";
 
 #define MEM(x) (MEMORY_MONITORING ? std::cerr << x << std::endl : std::cerr)
 

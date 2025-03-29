@@ -3,7 +3,7 @@
 
 #include "utility.h"
 #include "sym.h"
-#include "ast.h"
+#include "tac.h"
 
 // Semantic Analysis Phase Requirement
 
@@ -14,6 +14,9 @@ Change Variable Properties to TypeExpression from DType of returnType
 👍 Written in sym.h
 */
 
+//~~~~~~~~~~~~~~~~~~~~~~~[ 🅰️TypeCheck Utilities ]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+bool isIntegral(const TypeExpression &typeExpr); 
 
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[ TypeCasting Utilites ]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -30,17 +33,32 @@ std::string widenType(BaseInfo *s, BaseInfo *t, std::string varName);
 
 
 //++++++++++++++++++++++[ Expressions OnData ]++++++++++++++++++++++++++++++++
-enum class VALUE_TYPE{
-    RVALUE, // Read Only Value
-    M_LVALUE, // Modifiable LValue
+enum class VALUE_TYPE
+{
+    RVALUE,    // Read Only Value
+    M_LVALUE,  // Modifiable LValue
     NM_LVALUE, // Non Modifiable LValue
     UNKNOWN
-}
+};
 
-enum class VALUE_SPACE{
-    ADDRESS,
-    VALUE,
+enum class SPACE
+{
+    ADDRESS_SPACE, // Address Space
+    VALUE_SPACE,   // Value Space
     UNKNOWN
-}
+};
+
+enum class Expr_Type
+{
+    VARIABLE, // base is primitive
+    ARRAY,
+    POINTER,
+    ENUM_CONSTANT, // this is the constant inside of enum definition
+    FUNCTION,
+    STURCT_UNION, // struct or union
+    ENUM,         // this is object of enum
+    EMPTY,
+    UNKNOWN
+};
 
 #endif //!SEMANTIC_H
