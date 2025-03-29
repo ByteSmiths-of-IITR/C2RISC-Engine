@@ -151,10 +151,10 @@ primary_expression
             If valueSpace is ADDRESS we need to fetch offset
             */
 
-            if($$.valueSpace == VALUE){
+            if($$.valueSpace == SPACE::VALUE_SPACE){
                 $$.varName = idName;
             }
-            else if($$.valueSpace == ADDRESS_SPACE){
+            else if($$.valueSpace == SPACE::ADDRESS_SPACE){
                 std::string address = newTemp();
                 std::string id_offset = idName + ".offset";
                 // To Decide how should offset need to be calculated in TAC [ToDecide ❓]
@@ -511,7 +511,7 @@ postfix_expression
 
             // 4.2 Add TAC for function call 
             std::string returnValue = newTemp(); // need a new temp to pass returnValue
-            CODE_BASE.addTAC(returnValue, "CALL", functionAddress, argCountStr);
+            CODE_BASE.addTAC(returnValue, "call", functionAddress, argCountStr);
 
             // Assign the label to the varName
             $$.varName = returnValue;
@@ -575,10 +575,8 @@ postfix_expression
 
 /*Data on argument_expression_list
 
-std::vector<std::string> varNameVector; // This will be a vector of variable name
-std::vector<TypeExpression> typeVector; // This will be a vector of TypeExpression
-
-
+🟡 std::vector<std::string> varNameVector; // This will be a vector of variable name
+🟡 std::vector<TypeExpression> typeVector; // This will be a vector of TypeExpression
 */
 argument_expression_list
     : assignment_expression
@@ -586,12 +584,33 @@ argument_expression_list
     ;
 
 unary_expression
-    : postfix_expression
-    | INC_OP unary_expression
-    | DEC_OP unary_expression
-    | unary_operator cast_expression
-    | SIZEOF unary_expression
-    | SIZEOF LPAREN type_name RPAREN
+    : postfix_expression {
+
+    }
+    | INC_OP unary_expression {
+        // 1. 🅰️TypeCheck of $2 unary_expression
+            // NOTE - { }
+
+        // 2. 
+    }
+    | DEC_OP unary_expression {
+        // 1. 🅰️TypeCheck of $2 unary_expression
+    }
+
+    | unary_operator cast_expression {
+        // 1. 🅰️TypeCheck of $1 unary_expression
+
+        // 2. 🅰️TypeCheck of $2 cast_expression 
+    }
+    | SIZEOF unary_expression {
+        // 1. 🅰️TypeCheck of $2 unary_expression
+    }
+    | SIZEOF LPAREN type_name RPAREN {
+        // 1. 🅰️TypeCheck of $2 type_name
+            // NOTE - { }
+
+        // 2. 
+    }
     ;
 
 unary_operator
@@ -724,14 +743,13 @@ constant_expression
             - Check if typeQualifier and storageQualifier are under rule
 
 */
-
 declaration
     : declaration_specifiers SEMI_COLON {
         BaseInfo* baseInfo = new BaseInfo();
         StorageClass storageClass;
         std::string check = ProcessDecSecifier($1.valueVector,baseInfo,storageClass);
         if(check!="OK"){
-            // Report Error as per message
+            // [Error Handling]
         }
 
         // No more processing size we have SEMI_COLOM
@@ -741,7 +759,7 @@ declaration
         StorageClass storageClass;
         std::string check = ProcessDecSecifier($1.valueVector,baseInfo,storageClass);
         if(check!="OK"){
-            // Report Error as per message
+            // [Error Handling]
         }
 
         // We create a TypeExpression now
@@ -824,8 +842,6 @@ init_declarator_list
     ⬆️ from - 🟡 std::string varName; // This will be a string of variable name
     ⬆️ from - 🟡 TypeExpression type; // This will be a TypeExpression [after going to bottom and retrieving all information]
 */
-
-// To think about intializer 🧠
 init_declarator
     : declarator {
         // Last Production 🚦
@@ -877,20 +893,109 @@ type_specifier
     | SIGNED   { $$.value = $1.tokenAtr->lexeme; }
     | UNSIGNED { $$.value = $1.tokenAtr->lexeme; }
     | struct_or_union_specifier {
-        // [📍ToDo - Think]
+        $$.value = $1.value; // This will be a string of type
     }
     | enum_specifier {
-        // [📍ToDo - Think]
+        $$.value = $1.value; // This will be a string of type
     }
     | TYPE_NAME {
         // [Find what is this doing? 🔍 ]
     } 
     ;
 
+/* Data on struct_or_union_specifier ✅
+🟡 std::string value ; // This will be a string of type
+*/
 struct_or_union_specifier
-    : struct_or_union IDENTIFIER LCURLY struct_declaration_list RCURLY
-    | struct_or_union LCURLY struct_declaration_list RCURLY
-    | struct_or_union IDENTIFIER
+    : struct_or_union IDENTIFIER LCURLY struct_declaration_list RCURLY {
+        // This is point of adding UserDType to Symbol Table (named)
+
+        // 1. Create a UserDType Unit 
+            UserDType* userDType = new UserDType();
+            RecordType recordType;
+            if($1.value == "struct"){
+                recordType = RecordType::STRUCT;
+            }
+            else if($1.value == "union"){
+                recordType = RecordType::UNION;
+            }
+            else{
+                // Error - not struct or union [Syntax Checked]
+            }
+            userDType->recordType = recordType;
+            userDType->members = $3.members; // add the members to the userDType ➕
+
+        // 2. Add it to symbol table
+            std::string recordID = $2.tokenAtr->lexeme;
+            int check = SYM_TABLE.insertRecord(recordID, userDType);
+            if(check == -1){
+                // Already Present in Current Scope
+                // [Error Handling]
+            }
+
+        // 3. Pass a string up
+            std::string scope = std::to_string(SYM_TABLE.scopeNo);
+            std::string typeSpecifier = $1.value + " " + recordID + " " + scope;
+
+            $$.value = typeSpecifier; // Pass the type up ⬆️
+    }
+    | struct_or_union LCURLY struct_declaration_list RCURLY {
+        // This is point of adding UserDType to Symbol Table (unnamed)
+        
+        // 1. Create a UserDType Unit
+            UserDType* userDType = new UserDType();
+            RecordType recordType;
+            if($1.value == "struct"){
+                recordType = RecordType::STRUCT;
+            }
+            else if($1.value == "union"){
+                recordType = RecordType::UNION;
+            }
+            else{
+                // Error - not struct or union [Syntax Checked]
+            }
+            userDType->recordType = recordType;
+            userDType->members = $3.members; // add the members to the userDType ➕
+        // 2. Add it to symbol table
+            std::string recordID = newRecordName();
+            int check = SYM_TABLE.insertRecord(recordID, userDType);
+            if(check == -1){
+                // Already Present in Current Scope
+                // [Error Handling]
+            }
+
+        // 3. Pass a string up
+            std::string scope = std::to_string(SYM_TABLE.scopeNo);
+            std::string typeSpecifier = $1.value + " " + recordID + " " + scope;
+
+            $$.value = typeSpecifier; // Pass the type up ⬆️
+
+    }
+    | struct_or_union IDENTIFIER {
+        // This point we check if such a type is there in symbol table [else Error]
+
+        // 1. Check if UserDType is there in symbol table
+            std::string recordID = $2.tokenAtr->lexeme;
+            GenericSymbol* userDType;
+            int check = SYM_TABLE.lookupRecord(recordID, userDType);
+            if(check == -1){
+                // Such a type is not there in symbol table
+                // [Error Handling]
+            }
+            RecordType neededType = ($1.value == "struct") ? RecordType::STRUCT : RecordType::UNION;
+            RecordType foundType = userDType->recordType;
+            if(foundType != neededType){
+                // Error - not same type 
+                // [Error Handling]
+            }
+            
+            // Okay
+
+        // 2. Pass a string up
+            std::string scope = std::to_string(userDType->scopeNo); // Scope from symbol table
+            std::string typeSpecifier = $1.value + " " + recordID + " " + scope;
+
+    }
     ;
 
 /* Data on struct_or_union_specifier ✅
@@ -901,14 +1006,54 @@ struct_or_union
     | UNION  { $$.value = $1.tokenAtr->lexeme; }
     ;
 
-// Vector of [(TypeExpression) & (varName)]
+
+/* Data on struct_declaration_list ✅
+🟡 std::map<std::string,TypeExpression> members;
+*/
 struct_declaration_list 
-    : struct_declaration // This must return (TypeExpression) & (varName)
-    | struct_declaration_list struct_declaration
+    : struct_declaration {
+        // Last Production 🚦 
+        $$.members = $1.members; // pass the members by adding ➕
+    }
+    | struct_declaration_list struct_declaration {
+        // Copy the members to pass up ⬆️
+        $$.members = $1.members; // copy the map to pass up ⬆️
+
+        // Add the members of $2 to $$
+        for(auto it : $2.members){
+            // Check if varName is already present
+            if($$.members.find(it.first) != $$.members.end()){
+                // Error - duplicate variable name
+                // [📍ToDo - Error Handling]
+            }
+            $$.members[it.first] = it.second; // add the <varName,type> to the map ➕
+        }
+    }
     ;
 
+
+
+/* Data on struct_declaration ✅
+🟡 std::map<std::string,TypeExpression> members;
+*/
 struct_declaration
-    : specifier_qualifier_list struct_declarator_list SEMI_COLON
+    : specifier_qualifier_list struct_declarator_list SEMI_COLON {
+        BaseInfo* baseInfo = new BaseInfo();
+        StorageClass storageClass;// NOT ALLOWED ❌ [Will be syntax checked]
+        std::string check = ProcessDecSecifier($1.valueVector,baseInfo,storageClass);
+        if(check!="OK"){
+            // [Error Handling]
+        }
+
+        // We create a TypeExpression now
+        TypeExpression tempType = new TypeExpression();
+        tempType.dtype.levels.add(baseInfo); // add the baseInfo to the type ➕
+
+        $2.inh_type = tempType; // pass the type to the struct_declarator_list ⬇️
+
+        // Pass the members to the struct_declaration_list ⬆️
+        $$.members = $2.members;
+    }
     ;
 
 
@@ -936,32 +1081,218 @@ specifier_qualifier_list
     }
     ;
 
-// map<string, TypeExpression> [varName, TypeExpression]
+/* Data on struct_declarator_list ✅
+🟡 std::map<std::string,TypeExpression type> members
+🔴 TypeExpression inh_type; // This will be a TypeExpression
+*/
 struct_declarator_list 
-    : struct_declarator
-    | struct_declarator_list COMMA struct_declarator
+    : struct_declarator {
+        // Carry the inh_data down ⬇️
+        $1.inh_type = $$.inh_type; // carry the inh_data below ⬇️
+
+        // Last Production 🚦 
+        std::map<std::string,TypeExpression> members = new std::map<std::string,TypeExpression>();
+
+        // Check if varName is already present
+        if(members.find($1.varName) != members.end()){
+            // Error - duplicate variable name
+            // [📍ToDo - Error Handling]
+        }
+        members[$1.varName] = $1.type; // add the <varName,type> to the map ➕
+        $$.members = members; // pass the map to the struct_declarator_list ⬆️
+    }
+    | struct_declarator_list COMMA struct_declarator {
+        // Carry the inh_data down ⬇️
+        $1.inh_type = $$.inh_type; // carry the inh_data below ⬇️
+
+        // Check if varName is already present
+        if($1.members.find($2.varName) != $1.members.end()){
+            // Error - duplicate variable name
+            // [📍ToDo - Error Handling]
+        }
+        $$.members = $1.members; // copy the map to pass up ⬆️
+        $$.members[$2.varName] = $2.type; // add the <varName,type> to the map ➕
+    }
     ;
 
+/* Data on struct_declarator ✅
+🟡 std::string varName; // This will be a string of variable name
+🟡 TypeExpression type; // This will be a TypeExpression
+🔴 TypeExpression inh_type; // This will be a TypeExpression
+*/
 struct_declarator
-    : declarator // Will return a [(TypeExpression) & (varName)]
-    | COLON constant_expression // Similar to initializer
-    | declarator COLON constant_expression // LeftRecursive version of above
+    : declarator {
+        // Last Production 🚦🛑
+        $1.inh_type = $$.inh_type; // carry the inh_data below ⬇️
+
+        // Pass all syn_data up ⬆️
+        $$.varName = $1.varName; // pass the varName up ⬆️
+        $$.type = $1.type; // pass the type up ⬆️
+        // These <varName, type> are used to create a UserDType member entry
+    }
+    | COLON constant_expression { // ⚡️ Advance Feature ⚡️ - BitField
+        // Last Production 🚦🛑
+        $$.varName = ""; // pass the varName up ⬆️
+        $$.type = $$.inh_type; // pass the type up ⬆️
+        // These <varName, type> are used to create a UserDType member entry
+    }
+    | declarator COLON constant_expression { // ⚡️ Advance Feature ⚡️ - BitField
+        // Last Production 🚦🛑
+        $1.inh_type = $$.inh_type; // carry the inh_data below ⬇️
+
+        // Pass all syn_data up ⬆️
+        $$.varName = $1.varName; // pass the varName up ⬆️
+        $$.type = $1.type; // pass the type up ⬆️
+        // These <varName, type> are used to create a UserDType member entry
+    }
     ;
 
+/* Data on enum_specifier ✅
+🟡
+*/
 enum_specifier
-    : ENUM LCURLY enumerator_list RCURLY //On-Spot Usage
-    | ENUM IDENTIFIER LCURLY enumerator_list RCURLY //Identifier given can also be used later as a type
-    | ENUM IDENTIFIER // Forward Declaration of Enum, can be used later as a type
+    : ENUM LCURLY enumerator_list RCURLY {
+        // 1. Create a UserDType Unit
+            UserDType* userDType = new UserDType();
+            userDType->recordType = RecordType::ENUM;
+            userDType->members = new std::map<std::string,TypeExpression>(); // empty map
+            // Empty no members in enum
+
+        // 2. Add it to symbol table
+            std::string recordID = newRecordName();
+            int check = SYM_TABLE.insertRecord(recordID, userDType);
+            if(check == -1){
+                // Already Present in Current Scope
+                // [Error Handling]
+            }
+
+        // 3. Pass a typeSpecifier up
+            std::string scope = std::to_string(SYM_TABLE.scopeNo);
+            std::string typeSpecifier = "enum " + recordID + " " + scope;
+
+            $$.value = typeSpecifier; // Pass the type up ⬆️
+    }
+    | ENUM IDENTIFIER LCURLY enumerator_list RCURLY {
+        // 1. Create a UserDType Unit
+            UserDType* userDType = new UserDType();
+            userDType->recordType = RecordType::ENUM;
+            userDType->members = new std::map<std::string,TypeExpression>(); // empty map
+            // Empty no members in enum
+
+        // 2. Add it to symbol table
+            std::string recordID = $2.tokenAtr->lexeme;
+            int check = SYM_TABLE.insertRecord(recordID, userDType);
+            if(check == -1){
+                // Already Present in Current Scope
+                // [Error Handling]
+            }
+
+        // 3. Pass a typeSpecifier up
+            std::string scope = std::to_string(SYM_TABLE.scopeNo);
+            std::string typeSpecifier = "enum " + recordID + " " + scope;
+
+            $$.value = typeSpecifier; // Pass the type up ⬆️
+    }
+    | ENUM IDENTIFIER {
+        // 1. Check if such a ENUM UserDType exists
+            std::string recordID = $2.tokenAtr->lexeme;
+            GenericSymbol* userDType;
+            int check = SYM_TABLE.lookupRecord(recordID, userDType);
+            if(check == -1){
+                // Such a type is not there in symbol table
+                // [Error Handling]
+            }
+            RecordType neededType = RecordType::ENUM;
+            RecordType foundType = userDType->recordType;
+            if(foundType != neededType){
+                // Error - not same type 
+                // [Error Handling]
+            }
+            
+            // Okay
+
+        // 2. Pass a typeSpecifier up
+            std::string scope = std::to_string(userDType->scopeNo); // Scope from symbol table
+            std::string typeSpecifier = "enum " + recordID + " " + scope;
+
+            $$.value = typeSpecifier; // Pass the type up ⬆️
+    }
     ;
 
+/* Data on enumerator_list ✅
+int lastInitValue;
+
+*/
 enumerator_list
-    : enumerator
-    | enumerator_list COMMA enumerator
+    : enumerator {
+        // Last Production 🚦🛑
+        int lastInitValue = 0; // lastInitValue is 0 by default
+        // 1. Check if the enumerator is explicitly initialized
+            if($1.isInitialized){
+                lastInitValue = $1.initValue; 
+            }
+            else{
+                // Okay
+                lastInitValue = 0; // since it's last production
+            }
+
+        // 2. Pass syn_data up ⬆️
+            $$.lastInitValue = lastInitValue; // pass the lastInitValue up ⬆️
+
+        // 3. Add a EnumConstant to the symbol table
+            EnumConstant* enumConstant = new EnumConstant();
+            enumConstant->value = lastInitValue;
+
+            int check = SYM_TABLE.insert($1.varName, enumConstant);
+            if(check == -1){
+                // Already Present in Current Scope
+                // [Error Handling]
+            }
+            // Okay
+
+    }
+    | enumerator_list COMMA enumerator {
+        // 1. Check if the enumerator is explicitly initialized
+            int lastInitValue = $1.lastInitValue; // get the lastInitValue from the enumerator_list
+            if($3.isInitialized){
+                lastInitValue = $3.initValue; 
+            }
+            else{
+                // Okay
+                lastInitValue++; // since it's last production
+            }
+
+        // 2. Pass syn_data up ⬆️
+            $$.lastInitValue = lastInitValue; // pass the lastInitValue up ⬆️
+
+        // 3. Add a EnumConstant to the symbol table
+            EnumConstant* enumConstant = new EnumConstant();
+            enumConstant->value = lastInitValue;
+            int check = SYM_TABLE.insert($3.varName, enumConstant);
+            if(check == -1){
+                // Already Present in Current Scope
+                // [Error Handling]
+            }
+
+        // Okay
+    }
     ;
 
+/* Data on enumerator ✅
+🟡 std::string varName; // This will be a string of variable name
+🟡 bool isInitialized;
+🟡 std::string initValue; 
+*/
 enumerator
-    : IDENTIFIER
-    | IDENTIFIER ASSIGN constant_expression
+    : IDENTIFIER {
+        $$.varName = $1.tokenAtr->lexeme; // pass the varName up ⬆️
+        $$.isInitialized = false; // pass the isInitialized up ⬆️
+    }
+    | IDENTIFIER ASSIGN constant_expression {
+        $$.varName = $1.tokenAtr->lexeme; // pass the varName up ⬆️
+        $$.isInitialized = true; // pass the isInitialized up ⬆️
+        $$.initValue = $3.varName; // pass the initValue up ⬆️
+    }
     ;
 
 /* Data on type_qualifier ✅
@@ -1219,6 +1550,7 @@ parameter_declaration
     ;
 
 
+// - Don't know where it's used
 identifier_list
     : IDENTIFIER
     | identifier_list COMMA IDENTIFIER
@@ -1397,6 +1729,7 @@ direct_abstract_declarator
     }
     ;
 
+// == Will Think of it later ==
 initializer
     : assignment_expression
     | LCURLY initializer_list RCURLY

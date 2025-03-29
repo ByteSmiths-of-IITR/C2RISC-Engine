@@ -457,7 +457,7 @@ class EnumConstant : public VarSymbols{
         // Enum Constant Info [🚨 Not needed]
 
         // The DType will be int by default
-        UserDType* enumType; // This will store the user defined data type info of the enum constant
+        // UserDType* enumType; // This will store the user defined data type info of the enum constant
 
         // Value Info
         int value; // This will store the value of the enum constant
@@ -505,6 +505,8 @@ public:
     // Constructor & Destructor
     CON_DES(UserDType)
 };
+
+std::string newRecordName();
 
 int width(const UserDType &dtype); // This will return the width of the user defined data type
 std::string toString(const UserDType &dtype); // This will return the string representation of the user defined data type

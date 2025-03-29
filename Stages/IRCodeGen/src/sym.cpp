@@ -250,6 +250,8 @@ SymbolTable::~SymbolTable(){
     MEM("SymbolTable Destructor");
 }
 
+
+
 //------- Check Derived Classes -------------------------------------------------------------------
 
 bool isVarSymbols(const GenericSymbol &sym){
@@ -865,6 +867,12 @@ int SymbolTable::lookupRecordNode(const std::string &key, SymbolNode *&node){
     return this->lookupNode(newKey, node);
 }
 
+std::string newRecordName(){
+    static int recordCount = 0;
+    std::string recordName = "UnNamedRecord" + std::to_string(recordCount);
+    recordCount++;
+    return recordName;
+}
 
 
 /* This is NOT NEEDED
