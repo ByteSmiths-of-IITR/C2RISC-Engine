@@ -147,7 +147,7 @@ bool isPointerInfo(const LevelInfo &info);
 bool isBaseInfo(const LevelInfo &info);
 bool isParameterInfo(const LevelInfo &info);
 
-int whatIsLevelInfo(const LevelInfo &info);
+int whichLevelInfo(const LevelInfo &info);
 
 // $output of whatIsLevelInfo
 int const BASE_LEVEL = 0;
@@ -214,6 +214,8 @@ bool topIsPointer(const TypeExpression &typeExpr); // Logic = Check if top is Po
 bool topIsBase(const TypeExpression &typeExpr); // Logic = Check if top is BaseInfo
 bool topIsParameter(const TypeExpression &typeExpr); // Logic = Check if top is ParameterInfo
 
+int whichTypeExpression(const TypeExpression &typeExpr); // Logic = Check what is the top level of the type expression
+
 
 std::string toString(const TypeExpression &typeExpr); 
 // Logic = Remove top-parenthesis if any
@@ -236,7 +238,7 @@ bool isEmpty(const TypeExpression &typeExpr); // This will check if the type exp
 
 void removeTopParenthesis(TypeExpression &typeExpr); // This will remove all the parenthesis from the type expression
 
-bool isTypeAssignable(const TypeExpression &type);
+bool isModifiableLvalue(const TypeExpression &type);
 // Logic - Non-assignable types are - top is ArrayInfo, ParameterInfo | top is PointerInfo or BaseInfo with "const" qualifier
 
 // #################################################################################################################

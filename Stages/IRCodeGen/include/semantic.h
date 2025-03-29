@@ -1,6 +1,10 @@
 #ifndef SEMANTIC_H
 #define SEMANTIC_H
 
+#include "utility.h"
+#include "sym.h"
+#include "ast.h"
+
 // Semantic Analysis Phase Requirement
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[ TypeExpression Class ]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -19,14 +23,24 @@ Change Variable Properties to TypeExpression from DType of returnType
 
 */
 
-DType maxType(DType t1, DType t2);
 
-DType widenType(DType s, DType t, std::string varName);
+BaseInfo* maxType(BaseInfo *t1, BaseInfo *t2);
 
-
-
+std::string widenType(BaseInfo *s, BaseInfo *t, std::string varName);
 
 
+//++++++++++++++++++++++[ Expressions OnData ]++++++++++++++++++++++++++++++++
+enum class VALUE_TYPE{
+    RVALUE, // Read Only Value
+    M_LVALUE, // Modifiable LValue
+    NM_LVALUE, // Non Modifiable LValue
+    UNKNOWN
+}
 
+enum class VALUE_SPACE{
+    ADDRESS,
+    VALUE,
+    UNKNOWN
+}
 
 #endif //!SEMANTIC_H

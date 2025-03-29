@@ -398,7 +398,7 @@ int checkEquivalance(const ParameterInfo &info1, const ParameterInfo &info2){
     return OKAY;
 }
 
-int whatIsLevelInfo(const LevelInfo &info){
+int whichLevelInfo(const LevelInfo &info){
     if(isBaseInfo(info)){
         return BASE_LEVEL;
     }else if(isPointerInfo(info)){
@@ -660,7 +660,8 @@ bool topIsParameter(const TypeExpression &typeExpr){
     return isParameterInfo(*info);
 }
 
-bool isTypeAssignable(const TypeExpression &type){
+bool isModifiableLvalue(const TypeExpression &type)
+{
     //First Remove top Parenthesis
     TypeExpression temp = type;
 
@@ -690,6 +691,21 @@ bool isTypeAssignable(const TypeExpression &type){
     return true;
 }
 
+int whichTypeExpression(const TypeExpression &typeExpr){
+    // First Remove top Parenthesis
+    TypeExpression temp = typeExpr;
+    removeTopParenthesis(temp);
+    
+    if(temp.levelStack.empty()){
+        return UNKNOWN_LEVEL;
+    }
+    LevelInfo *info = temp.levelStack.top();
+    if(!info){
+        std::cerr << "Error: LevelInfo is nullptr\n";
+        return UNKNOWN_LEVEL;
+    }
+    return whichLevelInfo(*info);
+}
 
 
 //============ [lookup in given scope] =================
