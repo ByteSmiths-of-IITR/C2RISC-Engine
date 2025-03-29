@@ -125,7 +125,7 @@ semantic: $(EXECUTABLE) $(INPUT) $(OUTPUT)
 	@echo "---------------------------------------------GCC Compilation---------------------------------------------"
 	@gcc -fsyntax-only $(INPUT) && echo "✅ Successfully Compiled by GCC"
 
-execute: $(EXECUTABLE) $(INPUT) $(OUTPUT)
+execute: $(INPUT)
 	@gcc $(INPUT) -o $(BIN_DIR)/input_exec
 	@./$(BIN_DIR)/input_exec
 
