@@ -417,8 +417,8 @@ int whichLevelInfo(const LevelInfo &info){
 int checkEquivalance(const LevelInfo &info1, const LevelInfo &info2){
     // This will depend on stding baseType
     
-    int type1 = whatIsLevelInfo(info1);
-    int type2 = whatIsLevelInfo(info2);
+    int type1 = whichLevelInfo(info1);
+    int type2 = whichLevelInfo(info2);
     if(type1 != type2){
         return LOW_ERROR;
         // Different levelTypes is Low Error
@@ -471,20 +471,17 @@ std::string toString(const TypeExpression &typeExpr){
 }
 
 int popALevel(TypeExpression &typeExpr){
-    
     // First Remove top Parenthesis
     removeTopParenthesis(typeExpr);
 
-    // Popable only if top is Array or Pointer
-    bool isPopAble = topIsArray(typeExpr) || topIsPointer(typeExpr);
-
-    if(isPopAble){
-        typeExpr.levelStack.pop();
-        return 0;
+    if(typeExpr.levelStack.empty()){
+        // Nothing to pop
+        std::cerr << "Error: TypeExpression is empty\n";
+        return -1;
     }
-    // Not Popable
-    std::cerr << "Error: TypeExpression is not Popable\n";
-    return -1;
+    
+    typeExpr.levelStack.pop(); // Pop the top level
+    return 0;
 }
 
 int width(const TypeExpression &typeExpr){
@@ -573,8 +570,8 @@ int checkEquivalance(const TypeExpression &typeExpr1, const TypeExpression &type
     }
     // res == LOW_ERROR [Error from below but can be reduced by higher levels as warning]
     // Depending on current level it will be Error or Warning
-    int type1 = whatIsLevelInfo(*info1);
-    int type2 = whatIsLevelInfo(*info2);
+    int type1 = whichLevelInfo(*info1);
+    int type2 = whichLevelInfo(*info2);
     if(type1 == POINTER_LEVEL && type2 == POINTER_LEVEL){
         // Pointer's Reduce Error level
         if(res == LOW_ERROR){ 
@@ -664,12 +661,14 @@ bool isModifiableLvalue(const TypeExpression &type)
 {
     //First Remove top Parenthesis
     TypeExpression temp = type;
+    removeTopParenthesis(temp);
 
-    // Logic - Non-assignable types are - top is ArrayInfo, ParameterInfo | top is PointerInfo or BaseInfo with "const" qualifier
+    // Logic - Array or Function
     if(topIsArray(temp) || topIsParameter(temp)){
         return false;
     }
 
+    // Logic - Pointer with const qualifier
     if(topIsPointer(temp)){
         PointerInfo *ptr = dynamic_cast<PointerInfo*>(temp.levelStack.top());
         for(auto qualifier : ptr->typeQualifiers){
@@ -679,34 +678,141 @@ bool isModifiableLvalue(const TypeExpression &type)
         }
     }
 
+    // Logic - Base with const qualifier
     if(topIsBase(temp)){
         BaseInfo *base = dynamic_cast<BaseInfo*>(temp.levelStack.top());
+        
+    // Base with const qualifier
         for(auto qualifier : base->typeQualifiers){
             if(qualifier == TypeQualifier::CONST){
                 return false;
             }
         }
+
+    // Base with record type can be modified
+    //     std::string baseType = base->baseType;
+    //     // it can have 3parts seprated by space or just one
+    //     std::string recordType = baseType.substr(0, baseType.find(" "));
+    //     if(recordType == "struct" || recordType == "union"){
+    //         return true;
+    //     }
+    //     if(recordType == "enum"){
+    //         return true;
+    //     }
     }
 
     return true;
 }
 
-int whichTypeExpression(const TypeExpression &typeExpr){
+
+Expr_Type whichTypeExpression(const TypeExpression &typeExpr){
     // First Remove top Parenthesis
     TypeExpression temp = typeExpr;
     removeTopParenthesis(temp);
     
     if(temp.levelStack.empty()){
-        return UNKNOWN_LEVEL;
+        return Expr_Type::EMPTY;
     }
     LevelInfo *info = temp.levelStack.top();
     if(!info){
         std::cerr << "Error: LevelInfo is nullptr\n";
-        return UNKNOWN_LEVEL;
+        return Expr_Type::UNKNOWN;
     }
-    return whichLevelInfo(*info);
+    
+    int topLevel = whichLevelInfo(*info);
+    if(topLevel == BASE_LEVEL){
+        // Check if it is a record
+        BaseInfo *base = dynamic_cast<BaseInfo*>(info);
+        std::string baseType = base->baseType;
+        std::string recordType = baseType.substr(0, baseType.find(" "));
+        if(recordType == STRUCT || recordType == UNION){
+            return Expr_Type::STURCT_UNION;
+        }
+        if(recordType == ENUM){
+            return Expr_Type::ENUM;
+        }
+        if(recordType == ENUM_CONSTANT){
+            return Expr_Type::ENUM_CONSTANT;
+        }
+
+        // Then it is a variable
+        return Expr_Type::VARIABLE;
+    }else if(topLevel == POINTER_LEVEL){
+        return Expr_Type::POINTER;
+    }else if(topLevel == ARRAY_LEVEL){
+        return Expr_Type::ARRAY;
+    }else if(topLevel == PARAMETER_LEVEL){
+        return Expr_Type::FUNCTION;
+    }
+
+    return Expr_Type::UNKNOWN;
 }
 
+TypeExpression createTypeExpression(GenericSymbol *symbol){
+    TypeExpression typeExpr;
+
+    if(!symbol){
+        std::cerr << "Error: Symbol is nullptr\n";
+        return typeExpr;
+    }
+
+    // Check if it is a variable
+    if(isVariable(*symbol)){
+        Variable *var = dynamic_cast<Variable*>(symbol);
+        return var->type;
+    }
+    else if (isFunction(*symbol))
+    {
+        Function *func = dynamic_cast<Function*>(symbol);
+        return func->type;
+    }
+    else if(isEnumConstant(*symbol)){
+        BaseInfo *base = new BaseInfo();
+        base->baseType = ENUM_CONSTANT;
+    }
+    return typeExpr;
+
+}
+
+VALUE_TYPE getValueType(const TypeExpression &typeExpr){
+
+    // First Remove top Parenthesis
+    TypeExpression temp = typeExpr;
+    removeTopParenthesis(temp);
+
+    Expr_Type whichType = whichTypeExpression(temp);
+
+    if(whichType == Expr_Type::ENUM_CONSTANT){
+        // This is a constant
+        return VALUE_TYPE::RVALUE;
+    }
+
+    int isModifiable = isModifiableLvalue(temp);
+    if(!isModifiable){
+        //Non-modifiable Lvalue (array, function, const keyword)
+        return VALUE_TYPE::NM_LVALUE;
+    }
+    
+    return VALUE_TYPE::M_LVALUE;
+}
+
+SPACE getSpace(const TypeExpression &typeExpr){
+    
+    // First Remove top Parenthesis
+    TypeExpression temp = typeExpr;
+    removeTopParenthesis(temp);
+
+    // Only ARRAY & STRUCT/UNION are in Address Space
+    Expr_Type whichType = whichTypeExpression(temp);
+    if(whichType == Expr_Type::ARRAY){
+        return SPACE::ADDRESS_SPACE;
+    }
+    if(whichType == Expr_Type::STURCT_UNION){
+        return SPACE::ADDRESS_SPACE;
+    }
+
+    return SPACE::VALUE_SPACE;
+}
 
 //============ [lookup in given scope] =================
 int SymbolTable::lookup(const std::string &key, GenericSymbol *&sym, int lookInScopeNo){

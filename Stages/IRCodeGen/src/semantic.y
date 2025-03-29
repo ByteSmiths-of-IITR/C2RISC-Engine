@@ -1,6 +1,12 @@
 // File: grammarOnly.y
 
 %{
+
+#include <stdio.h>
+#include "sym.h"
+#include "ast.h"
+#include "semantic.h"
+
     %}
 
 %union{
@@ -100,67 +106,450 @@
 /* Data on all expressions
 🟡 std::string varName; // This will be [Constants, CompilerTempName, VariableName or EnumConstantName]
 🟡 TypeExpression type; // 
+🟡 VALUE_TYPE valueType;
+🟡 SPACE valueSpace;
+🔴 std::string whereToSendString; // possible value .rodata, stack
 */
+
 
 primary_expression
     : IDENTIFIER {
-        $$.varName = $1.tokenAtr->lexeme;
-        // Check from symbol table if the identifier is declared
-        // If not declared, throw error
-        // If declared, get the type from symbol table
-        $$.type = getTypeFromSymbolTable($1.tokenAtr->lexeme); // a highWrapper Function [📍ToDo]
+        std::string idName = $1.tokenAtr->lexeme;
 
-        // IRCode Login [📍ToDo]
+        // 1. Existance Check of Identifier
+            GenericSymbol* symbol;
+            int lookupCheck = SYMBOL_TABLE.lookup(idName, symbol);
+            if(lookupCheck == -1){
+                // Error - Identifier not found
+                // [📍ToDo - Error Handling]
+            }
+
+        
+        // 2. 🟡 type - Create a TypeExpression from symbol found
+            $$.type = createTypeExpression(symbol); 
+
+        // 3. Find type of TypeExpression (topLevelInfo)
+            Expr_Type whichType = whichTypeExpression($$.type);
+
+        // 4. 🟡 valueType -  Check is it's Modifiable Lvalue or Rvalue
+            // All possible cases - variable (primitve or struct_union or enum), functions
+
+            // Use getValueType to find the valueType
+            $$.valueType = getValueType($$.type);
+
+        // 5. 🟡 valueSpace - Check if it's ADDRESS or VALUE
+            /*Logic 
+                Array (top is arrayInfo) - must be kept in ADDRESS Space
+                Struct (top is BaseInfo with recordType = STRUCT_UNION ) - must be kept in ADDRESS Space
+                🧠 Think if someone else need to be in ADDRESS Space
+            */
+            $$.valueSpace = getSpace($$.type);
+
+        // 6. 🔖 IRCode + 🟡 varName assigned here
+
+            /*Logic
+            If valueSpace is ADDRESS we need to fetch offset
+            */
+
+            if($$.valueSpace == VALUE){
+                $$.varName = idName;
+            }
+            else if($$.valueSpace == ADDRESS_SPACE){
+                std::string address = newTemp();
+                std::string id_offset = idName + ".offset";
+                // To Decide how should offset need to be calculated in TAC [ToDecide ❓]
+
+                CODE_BASE.addTAC(address, "=", id_offset, NO_ARG);
+
+                $$.varName = address;
+            }
+            else{
+                // [📍ToDo - Error Handling]
+            }
+
     }
     | CONSTANT {
-        // [📍ToDo - Make changes in Grammar so all constants can be identified at Lexer Stage itself]
-        $$.varName = newTemp();
-        $$.type = getType("int"); // [📍ToDo - Get the type from tokenAtr]
-        // [📍ToDo - Get the type from tokenAtr]
-    }
-    
-    | STRING_LITERAL {
-        // TO THINK 🧠
 
-        // [📍ToDo - Get the type from tokenAtr]
+        // 1. 🟡 type - Create a TypeExpression from symbol found
+            //Logic - as it's constant will only have BaseInfo with PrimitiveType
+            // We can pass the info from lexer itself [but we still need to check for size of integral-data(int,long,longlong)]
+            
+        // 2. 🟡 valueType - It's a Rvalue
+            $$.valueType = VALUE_TYPE::RVALUE;
+        
+        // 3. 🟡 valueSpace - All constant will be VALUE Space
+            /*Logic 
+                All constants are kept in VALUE Space
+            */
+            $$.valueSpace = SPACE::VALUE_SPACE;
 
-        // IRCode Login [ToThink 🧠]
-        // We directly use string literals in IRCode
-        // CODE_BASE.addTAC($$.varName, "=", $1.tokenAtr->lexeme, NULL);
+        // 4. Assign it's varName
+            $$.varName = $1.tokenAtr->lexeme;
+        
+        // 5. 🔖 IRCode
+            // Nothing to do here
+
+    }    
+    | STRING_LITERAL { // ⚡️ Advance Feature ⚡️
+        std::string strValue = $1.tokenAtr->lexeme;
+
+        // 1. 🟡 type - Create a TypeExpression from symbol found
+            BaseInfo* baseInfo = new BaseInfo();
+            baseInfo->baseType = "char";
+            PointerInfo* ptrInfo = new PointerInfo();
+            TypeExpression tempType = new TypeExpression();
+            tempType.levelStack.addOnTop(baseInfo); // add the baseInfo to the type ➕
+            tempType.levelStack.addOnTop(ptrInfo); // add the pointer info to the type ➕
+
+        // 2. 🟡 valueType - It's a NM_Lvalue
+            $$.valueType = VALUE_TYPE::NM_LVALUE;
+
+        // 3. 🟡 valueSpace - string literal plays in ADDRESS_SPACE
+            $$.valueSpace = SPACE::ADDRESS_SPACE;
+
+        // 4. 🟡 varName + 🔖IRCode
+            // Check if to send the string in .rodata or stack
+            if($$.whereToSendString == ".rodata"){
+                // Yes
+                std::string lable = newLabel();
+                CODE_BASE.addTAC(lable, ":", strValue, NO_ARG);
+                std::string address = newTemp();
+                CODE_BASE.addTAC(address, "&", lable, NO_ARG);
+                $$.varName = address;
+            }
+            else{
+                // Not Sure how to handle this [ToDecide]
+            }
+        
     }
     | LPAREN expression RPAREN {
-        // Pass syn_data up ⬆️
-        $$.varName = $2.varName;
-        $$.type = $2.type;
+        
+        // 1. Pass all syn_data up ⬆️
+            $$.varName = $2.varName;
+            $$.type = $2.type;
+            $$.valueType = $2.valueType;
+            $$.valueSpace = $2.valueSpace;
 
-        // IRCode Login [ToThink 🧠]
-        //NO CODE
+        // 2. Carry the inh_data down ⬇️
+            $2.whereToSendString = $$.whereToSendString; // carry the inh_data below ⬇️
     }
     ;
 
+
+/* Data on postfix_expression
+    Same as primary_expression
+*/
 postfix_expression
     : primary_expression {
-        // Pass syn_data up ⬆️
-        $$.varName = $1.varName;
-        $$.type = $1.type;
+        // Pass all syn_data up ⬆️
+            $$.varName = $1.varName;
+            $$.type = $1.type;
+            $$.valueType = $1.valueType;
+            $$.valueSpace = $1.valueSpace;
 
-        // IRCode Logic
-        //NO CODE
+        // Carry the inh_data down ⬇️
+            $1.whereToSendString = $$.whereToSendString; // carry the inh_data below ⬇️
+
+        // 🔖IRCode
+            // Nothing to do here   
     }
-    | postfix_expression LSQUARE expression RSQUARE {
-        // Pass syn_data up ⬆️
-        TypeExpression temp = $1.type;
-        
-        //[📍ToThink Deep]
+    | postfix_expression LSQUARE expression RSQUARE // ⚡️ Advance Feature ⚡️ - ArraySup
+    {
+        // 1. Array Subscript Expression 🅰️TypeCheck Evaluation
+            /*Logic
+            - Check it's a integral value (check if top is base with primitiveType(char,short,int,long,longlong))
+            */
+            
+            // Required Type - Integral
+            if(!isIntegral($3.type)){
+                // Error - not integral
+                // [📍ToDo - Error Handling]
+            }
+            std::string index;
 
-        // IRCode Logic
+            // Required Space - VALUE_SPACE
+            if($3.valueSpace == SPACE::ADDRESS_SPACE){
+                // Need a Space🚀 Change Code
+                std::string value = newTemp();
+                // Put a Dereferencing code
+                CODE_BASE.addTAC(value, "*", $3.varName, NO_ARG);
+            }
+            else{
+                index = $3.varName;
+            }
+            
+        // 2. 🅰️TypeCheck on $$ + 🟡 type - Pop a Level from $1.Type
+            TypeExpression temp = $1.type;
+            // Check top level is arrayInfo or pointerInfo
+            Expr_Type whichType = whichTypeExpression(temp);
+            if(whichType != Expr_Type::ARRAY && whichType != Expr_Type::POINTER){
+                // Error - not array or pointer
+                // [📍ToDo - Error Handling]
+            }
+            // Pop a level
+            int check = popALevel(temp);
+            if(check){
+                // Error - not popAble [should not happen since we checked top just now]
+                // [📍ToDo - Error Handling]
+            }
+
+            $$.type = temp; // pass the type to the postfix_expression ⬆️
+
+        // 3. 🟡 varName + 🔖IRCode + 🟡 valueSpace
+            // 3.1 $1.varName can be in ADDRESS_SPACE(if array) or VALUE_SPACE(if pointer)
+
+            // 3.2 Find the width of the type-below
+            int w = width(temp);
+
+            // 3.3 Find the base address of array/pointer
+            std::string baseAddress = $1.varName;
+
+            // 3.4 Find the jump required
+            std::string jump = newTemp();
+            CODE_BASE.addTAC(jump, "*", w, index); // jump = w * index
+
+            // 3.5 Find the new address
+            std::string newAddress = newTemp();
+            CODE_BASE.addTAC(newAddress, "+", baseAddress, jump); // newAddress = baseAddress + jump
+
+            // 3.6 Assign the new address to the varName 
+                // We used a array[index] so it will be in ADDRESS_SPACE & will need a Space🚀 Change Code if Value is needed
+                $$.varName = newAddress;
+                $$.valueSpace = SPACE::ADDRESS_SPACE; // 👍👍 IMP_LOGIC 👍👍
+
+        // 4. 🟡 valueType
+            // This will be decided by type of $$.type
+
+            $$.valueType = getValueType($$.type);
+
+        // 5. Carry the inh_data down ⬇️
+            $1.whereToSendString = $$.whereToSendString; // carry the inh_data below ⬇️
+
         
+        
+        // #### -----_RAMAN's LOGIC_----------------
+            TypeExpression temp = $1.type;
+            int check = popALevel(temp);
+            if(check){
+                // Error - not popAble 
+            }
+
+            $$.type = temp; // pass the type to the postfix_expression ⬆️
+            $$.ptrName = $1.ptrName;
+            
+            std::string index = newTemp();
+
+            //[📍ToThink Deep]
+
+            // // IRCode Logic [ToThink 🧠]
+            int w = width(temp);
+            std::string expName = $3.varName;
+            CODE_BASE.addTAC(index, "*", w, expName);
+            std::string newName = newTemp();
+            CODE_BASE.addTAC(newName, "+", $1.varName, index);
+            $$.varName = newName; // pass the varName to the postfix_expression ⬆️
     }
     | postfix_expression LPAREN RPAREN {
-        // Function call
+        TypeExpression temp = $1.type;
+        // 1. 🅰️TypeCheck of $1 is a function or function pointer
+            Expr_Type whichType = whichTypeExpression(temp);
+            ParameterInfo* paramInfo;
+            if(whichType == Expr_Type::FUNCTION){ // Is a function
+                // Okay
+                paramInfo = temp.levelStack.top();
+            }
+            else if(whichType == Expr_Type::POINTER){ // Is a function pointer
+                // Okay BUT the below level should be function
+                TypeExpression temp2 = temp;
+                int check = popALevel(temp2);
+                if(check){
+                    // Error - not popAble [should not happen since we checked top just now]
+                    // [📍ToDo - Error Handling]
+                }
+                Expr_Type whichType2 = whichTypeExpression(temp2);
+                if(whichType2 != Expr_Type::FUNCTION){
+                    // Error - not function
+                    // [📍ToDo - Error Handling]
+                }
+                else{
+                    // Okay
+                    paramInfo = temp2.levelStack.top();
+                }
+            }
+            else{ // Neither function nor function pointer
+                // Error - not function or function pointer
+                // [📍ToDo - Error Handling]
+            }
+        
+        // 2. We already have address of function call - which is mostLikely a label
+            std::string functionAddress = $1.varName;
+
+        // 3. Handling Arguments + 🅰️TypeCheck signature
+            // Check if paramInfo is empty
+            if(paramInfo == nullptr){
+                // Error - no parameterInfo
+                // [📍ToDo - Error Handling]
+            }
+
+            int argCount = 0;
+            argCount = paramInfo->paramsType.size();
+            if(argCount != 0){
+                // Error - no arguments
+                // [📍ToDo - Error Handling]
+            }
+
+            //Okay
+        
+        // 4. 🟡 varName + 🔖IRCode
+            // We need to create a new label for the function call
+            std::string returnValue = newTemp();
+            CODE_BASE.addTAC(returnValue, "CALL", functionAddress, "0");
+
+            // Assign the label to the varName
+            $$.varName = returnValue;
+
+        // 5. 🟡 type of $$
+            // WE pop the level or arguments in TypeExpression
+            TypeExpression returnExpr = $1.type;
+
+            if(topIsPointer(returnExpr)){ // Function Pointer pop the pointer
+                if(popALevel(returnExpr)){
+                    // Error - not popAble [should not happen since we checked top just now]
+                    // [📍ToDo - Error Handling]
+                }
+            }
+            if(topIsFunction(returnExpr)){
+                // Okay
+                if(popALevel(returnExpr)){ // Function pop the argumentsList
+                    // Error - not popAble [should not happen since we checked top just now]
+                    // [📍ToDo - Error Handling]
+                }
+            }
+
+            $$.type = returnExpr; // pass the type to the postfix_expression ⬆️
+        
+        // 6. 🟡 valueType
+            // This will be decided by type of $$.type
+            $$.valueType = getValueType($$.type);
+
+        // 7. 🟡 valueSpace
+            /*Logic
+                A function can never return array which deal with ADDRESS_SPACE
+                BUT it can return a Struct/Union which can be in ADDRESS_SPACE
+            */
+            $$.valueSpace = getSpace($$.type);
+        
+        // 8. Carry the inh_data down ⬇️
+            $1.whereToSendString = $$.whereToSendString; // carry the inh_data below ⬇️
     }
     | postfix_expression LPAREN argument_expression_list LPAREN {
-        // function call
+        // 1. 🅰️TypeCheck of $1 is a function or function pointer + Parameter
+            Expr_Type whichType = whichTypeExpression(temp);
+            ParameterInfo* paramInfo;
+            if(whichType == Expr_Type::FUNCTION){ // Is a function
+                // Okay
+                paramInfo = temp.levelStack.top();
+            }
+            else if(whichType == Expr_Type::POINTER){ // Is a function pointer
+                // Okay BUT the below level should be function
+                TypeExpression temp2 = temp;
+                int check = popALevel(temp2);
+                if(check){
+                    // Error - not popAble [should not happen since we checked top just now]
+                    // [📍ToDo - Error Handling]
+                }
+                Expr_Type whichType2 = whichTypeExpression(temp2);
+                if(whichType2 != Expr_Type::FUNCTION){
+                    // Error - not function
+                    // [📍ToDo - Error Handling]
+                }
+                else{
+                    // Okay
+                    paramInfo = temp2.levelStack.top();
+                }
+            }
+            else{ // Neither function nor function pointer
+                // Error - not function or function pointer
+                // [📍ToDo - Error Handling]
+            }
+        
+        // 2. We already have address of function call - which is mostLikely a label
+            std::string functionAddress = $1.varName;
+
+        // 3. Handling Arguments + 🅰️TypeCheck signature
+            // 3.1 Find functionSign & givenArguments
+            std::vector<TypeExpression> functionSign = paramInfo->paramsType;
+            std::vector<TypeExpression> argList = $3.typeVector;
+        
+            // 3.2 Check if functionSign and givenArguments are same
+            bool areSame = true;
+            if(functionSign.size() != argList.size()){
+                // Error - not same
+                // [📍ToDo - Error Handling]
+            }
+            for(int i=0; i<functionSign.size(); i++){
+                if(checkEquivalance(functionSign[i], argList[i]) != OKAY){
+                    // Error - not same
+                    // [📍ToDo - Error Handling]
+
+                    // THINK - TYPECASTING🆎
+                }
+            }
+
+            int argCount = functionSign.size();
+
+            //Okay
+
+        // 4. 🟡 varName + 🔖IRCode
+            std::string argCountStr = std::to_string(argCount);
+
+            // 4.1 Add TAC for parameter
+            for(int i=0; i<argCount; i++){
+                std::string paramName = $3.varNameVector[i];
+                CODE_BASE.addTAC(NO_ARG, "param", paramName, NO_ARG);
+            }
+
+            // 4.2 Add TAC for function call 
+            std::string returnValue = newTemp(); // need a new temp to pass returnValue
+            CODE_BASE.addTAC(returnValue, "CALL", functionAddress, argCountStr);
+
+            // Assign the label to the varName
+            $$.varName = returnValue;
+
+        // 5. 🟡 type of $$
+            // WE pop the level or arguments in TypeExpression
+            TypeExpression returnExpr = $1.type;
+
+            if(topIsPointer(returnExpr)){ // Function Pointer pop the pointer
+                if(popALevel(returnExpr)){
+                    // Error - not popAble [should not happen since we checked top just now]
+                    // [📍ToDo - Error Handling]
+                }
+            }
+            if(topIsFunction(returnExpr)){
+                // Okay
+                if(popALevel(returnExpr)){ // Function pop the argumentsList
+                    // Error - not popAble [should not happen since we checked top just now]
+                    // [📍ToDo - Error Handling]
+                }
+            }
+
+            $$.type = returnExpr; // pass the type to the postfix_expression ⬆️
+        
+        // 6. 🟡 valueType of $$
+            // This will be decided by type of $$.type
+            $$.valueType = getValueType($$.type);
+
+        // 7. 🟡 valueSpace of $$
+            /*Logic
+                A function can never return array which deal with ADDRESS_SPACE
+                BUT it can return a Struct/Union which can be in ADDRESS_SPACE
+            */
+            $$.valueSpace = getSpace($$.type);
+        
+        // 8. Carry the inh_data down ⬇️
+            $1.whereToSendString = $$.whereToSendString; // carry the inh_data below ⬇️
+    
     }
     | postfix_expression DOT IDENTIFIER{
         // member access (like in struct)
@@ -183,6 +572,14 @@ postfix_expression
     }
     ;
 
+
+/*Data on argument_expression_list
+
+std::vector<std::string> varNameVector; // This will be a vector of variable name
+std::vector<TypeExpression> typeVector; // This will be a vector of TypeExpression
+
+
+*/
 argument_expression_list
     : assignment_expression
     | argument_expression_list COMMA assignment_expression
@@ -655,7 +1052,7 @@ direct_declarator
         $1.inh_type = $$.inh_type; // carry the inh_data below ⬇️
         
         ParameterInfo* paramInfo = new ParameterInfo();
-        paramInfo->paramTypes = new vector<TypeExpression>("void");
+        paramInfo->paramTypes = new vector<TypeExpression>();
         $1.inh_type.levelStack.addOnTop(paramInfo); // add the parameter info to the type ➕
         
         // 🤯 To differentiate from var/function - we put a dummy type [ToDecide if needed 🤔]
@@ -722,7 +1119,7 @@ parameter_type_list
     }
     | parameter_list COMMA ELLIPSIS {
         // Error: ELLIPSIS not supported
-        // [📍ToDo - Error Handling]
+        // [📍ToDo - Error Handling] 
     }
     ;
 
@@ -957,9 +1354,9 @@ direct_abstract_declarator
 
         // Add the function info to the type & pass it up ⬆️
         ParameterInfo* paramInfo = new ParameterInfo();
-        paramInfo->paramTypes = new vector<TypeExpression>("void");
+        paramInfo->paramTypes = new vector<TypeExpression>();
         $$.inh_type.levelStack.addOnTop(paramInfo); // add the parameter info to the type ➕
-        // 🤯 To differentiate from var/function - we put a dummy type
+        // No need of void as dummy
 
         $$.type = $$.inh_type; // rotate the inh_data to syn_data ☯️
     }
@@ -980,9 +1377,8 @@ direct_abstract_declarator
 
         // Add the function info to the type
         ParameterInfo* paramInfo = new ParameterInfo();
-        paramInfo->paramTypes = new vector<TypeExpression>("void");
+        paramInfo->paramTypes = new vector<TypeExpression>();
         $1.inh_type.levelStack.addOnTop(paramInfo); // add the parameter info to the type ➕
-        // 🤯 To differentiate from var/function - we put a dummy type
 
         // passing things up ⬆️
         $$.type = $1.type; // pass the type to the parameter_declaration ⬆️
