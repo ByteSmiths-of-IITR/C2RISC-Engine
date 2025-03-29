@@ -1,14 +1,39 @@
+// #include <stdio.h>
+// enum Color
+// {
+//     RED,
+//     GREEN,
+//     BLUE
+// };
 
-// // void someFunction(int, double *()); // Function taking a function pointer
+// int function(int a, int b)
+// {
+//     return a + b;
+// }
 
-// // char func(int a);
+// #define LorR(x) printf("%p\n", &(x));
 
-// // // void function(int *(*[])[]);
+// #define MorNM_Lvalue(x) \
+//     x = x;              \
+//     x++;
 
-// // int (*func1(int *)); // Function returning a pointer to an array of 10 pointers to int
+struct A
+{
+    int a;
+    int b;
+};
 
-// // int (*func3(int *)); // Function returning a pointer to an array of 10 integers
+int function(int a,int arr[], struct A b)
+{
+    return a + arr[0] + b.a;
+}
 
-// // int *func2(int *);
+int main(){
 
-// // // int func(int , int[3][2] , char*); // Function taking 3 integers and returning an integer
+    int a = 9;
+    int arr[] = {1, 2, 3, 4, 5};
+    struct A b;
+    b.a = 10;
+
+    int res = function(a, arr, b);
+}
