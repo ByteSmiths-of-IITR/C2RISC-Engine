@@ -33,6 +33,9 @@ public:
     std::pair<int,int> position; // line and column number [for error reporting]
     std::vector<ASTNode *> children;
 
+    // Attribute during semantic
+    std::vector<std::string> attributes; // used for semantic analysis
+
     // Function used for TOKENS
     ASTNode(TokenAttribute *tokenAtr);
     ASTNode(std::string type, std::string value, std::pair<int, int> position);
@@ -51,6 +54,11 @@ public:
     void addChild(TokenAttribute* tokenAtr);
 
     void print(int level);
+
+    void pushAttribute(std::string attribute) {
+        attributes.push_back(attribute);
+    }
+
 };
 
 //HelperFunction

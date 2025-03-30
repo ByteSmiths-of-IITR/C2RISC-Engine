@@ -1647,7 +1647,12 @@ parameter_list
     | parameter_list COMMA parameter_declaration 
     { 
         LINE 
-        $$ = $1;
+        if(compressed){
+            $$ = $1;
+        }else{
+            $$ = new ASTNode("parameter_list");
+            $$->addChild($1);
+        }
         $$->addChild($2);
         $$->addChild($3);
     }
@@ -1775,7 +1780,13 @@ direct_abstract_declarator
     | direct_abstract_declarator LSQUARE constant_expression rsquare
     {
         LINE
-        $$ = $1;  
+        if(compressed){
+            $$ = $1;
+        }else{
+            $$ = new ASTNode("direct_abstract_declarator");
+            $$->addChild($1);
+        }
+        
         $$->addChild($2);
         $$->addChild($3);
         $$->addChild($4);

@@ -1,15 +1,22 @@
 #ifndef HEADER_H
 #define HEADER_H
 
+#include "utility.h"
+
 //====================[ GCC Header Files ]=========================================================================================
 #include <iostream>
 #include <vector>
 #include <string>
-#include <unordered_map>
+#include <map>
 #include <fstream>
 #include <stdexcept>
 #include <numeric>
 #include <algorithm>
+#include <stack>
+#include <map>
+#include <utility>
+#include <map>
+
 
 
 //================== [Architecture Variables]=========================================================================================
@@ -275,11 +282,20 @@ public:
     void insertBefore(SymbolNode *node);
 };
 
+// Return values of insert()
+extern int const INSERT_SUCCESS;              // Inserted Successfully
+extern int const INSERT_SUCCESS_WITH_WARNING; // Inserted but had a same key in ancestor scope
+extern int const INSERT_FAILURE;              // Already present in the current scope
+
+// Return values of lookup()
+extern int const LOOKUP_SUCCESS; // Found
+extern int const LOOKUP_FAILURE; // Not Found
+
 class SymbolTable
 {
 public:
     // Faster lookup
-    std::unordered_map<std::string, SymbolNode *> symTable;
+    std::map<std::string, SymbolNode *> symTable;
 
     std::stack<SymbolNode *> listStack; // Keep track of order of insertions
     std::stack<int> scopeBottom;        // Track the bottom marker to above stack of symbols
@@ -304,16 +320,10 @@ public:
 
     int insertRecord(const std::string &key, GenericSymbol *symbol);
     int insert(const std::string &key, GenericSymbol *symbol);
-        // Return values
-        int const INSERT_SUCCESS = 0; // Inserted Successfully
-        int const INSERT_SUCCESS_WITH_WARNING = 1; // Inserted but had a same key in ancestor scope
-        int const INSERT_FAILURE = -1; // Already present in the current scope
-
+        
     int lookupRecord(const std::string &key, GenericSymbol *&sym);
     int lookup(const std::string &key, GenericSymbol *&sym);
-        // Return values
-        int const LOOKUP_SUCCESS = 0; // Found 
-        int const LOOKUP_FAILURE = -1; // Not Found
+        
 
     int lookupRecord(const std::string &key, GenericSymbol *&sym, int lookInScopeNo);
     int lookup(const std::string &key, GenericSymbol *&sym, int lookInScopeNo); // This will lookinto the specific scope
@@ -336,6 +346,8 @@ public:
             StorageClass storageClass; 
 
             // Think about Initialized values ? [ToThink 🧠]
+
+            long compileTimeConstant; // This will be used for constant variables
 
             CON_DES(Variable)
         };
@@ -371,7 +383,7 @@ public:
             RecordType recordType; // This will be used for struct, union, enum
 
             // Members of the record
-            std::unordered_map<std::string, TypeExpression> members; // Enum won't use this
+            std::map<std::string, TypeExpression> members; // Enum won't use this
 
             CON_DES(UserDType)
         };
@@ -402,21 +414,25 @@ int width(const UserDType &dtype); // This will return the width of the user def
 
     //==================[ Custom TAC Arguments ]=========================================================================================
         const std::string NO_ARG = "";
+        const std::string RIGHT_STAR;
+        const std::string LEFT_STAR;
 
+        class TAC_Quadruple
+        {
+        public:
+            std::string op;
+            std::string arg1;
+            std::string arg2;
+            std::string result;
 
-class TAC_Quadruple{
-    public:
-        std::string op;
-        std::string arg1;
-        std::string arg2;
-        std::string result;
+            CON_DES(TAC_Quadruple)
 
-        CON_DES(TAC_Quadruple)
+            TAC_Quadruple(std::string op, std::string arg1, std::string arg2, std::string result);
 
-        TAC_Quadruple(std::string op, std::string arg1, std::string arg2, std::string result);
-
-        std::string toString() const;
+            std::string toString() const;
 };
+
+
 
 std::string newTemp(); // Generates a new temporary variable [compiler generated]
 std::string newLabel(); // Generates a new label [compiler generated]
@@ -435,6 +451,8 @@ class TAC{
 };
 
 
+
+
 /*
 
 
@@ -447,7 +465,7 @@ class TAC{
 //=====================[ TypeChecking Utilities 🅰️ ]=========================================================================================
 
 bool isIntegral(const TypeExpression &typeExpr);
-
+bool isConstant(const TypeExpression &typeExpr);
 
 
 //======================[ TypeCasting Utilities 🆎 ]=========================================================================================
@@ -502,5 +520,46 @@ public:
     TypeExpression inh_type;
     StorageClass inh_storageClass;
 };
+
+
+//=====================[ Declaration Handlers ]=========================================================================================
+
+void declaration_H(ASTNode* node);
+void declaration_specifiers_H(ASTNode* node, std::vector<std::string> &valueVector);
+
+void init_declarator_list_H(ASTNode* node, TypeExpression inh_type, StorageClass inh_storageClass);
+void init_declarator_H(ASTNode* node, TypeExpression inh_type, StorageClass inh_storageClass);
+
+void declarator_H(ASTNode* node, TypeExpression inh_type, std::string &varName, TypeExpression &type);
+
+void storage_class_specifier_H(ASTNode* node, std::string &value);
+void type_specifier_H(ASTNode* node, std::string &value);
+void type_qualifier_H(ASTNode* node, std::string &value);
+void specifier_qualifier_list_H(ASTNode* node, std::vector<std::string> &valueVector);
+void type_qualifier_list_H(ASTNode* node, std::vector<TypeQualifier> &typeQualifiers);
+
+void struct_or_union_specifier_H(ASTNode* node, std::string &value);
+void struct_declaration_list_H(ASTNode* node, std::map<std::string, TypeExpression> &members);
+void struct_declaration_H(ASTNode* node, std::map<std::string, TypeExpression> &members);
+void struct_declarator_list_H(ASTNode* node, TypeExpression inh_type, std::map<std::string, TypeExpression> &members);
+void struct_declarator_H(ASTNode* node, TypeExpression inh_type, std::string &varName, TypeExpression &type);
+
+void enum_specifier_H(ASTNode* node, std::string &value);
+void enumerator_list_H(ASTNode* node, std::string recordID, int &lastInitValue);
+void enumerator_H(ASTNode* node, std::string &varName, int &explicitInitValue, bool &isExplicityInit);
+
+void declarator_H(ASTNode* node, TypeExpression inh_type, std::string &varName, TypeExpression &type);
+void direct_declarator_H(ASTNode* node, TypeExpression inh_type, std::string &varName, TypeExpression &type);
+void pointer_H(ASTNode* node, std::vector<PointerInfo> inh_ptrInfo, std::vector<PointerInfo> &ptrInfo);
+
+void parameter_type_list_H(ASTNode* node, std::vector<TypeExpression> &paramVector);
+void parameter_list_H(ASTNode* node, std::vector<TypeExpression> &paramVector);
+void parameter_declaration_H(ASTNode* node, TypeExpression &type);
+void abstract_declarator_H(ASTNode* node, TypeExpression inh_type, TypeExpression &type);
+void direct_abstract_declarator_H(ASTNode* node, TypeExpression inh_type, TypeExpression &type);
+
+//======================[ Expression Handlers ]=========================================================================================
+
+void constant_expression_H(ASTNode* node, std::string &value);
 
 #endif // !HEADER_H

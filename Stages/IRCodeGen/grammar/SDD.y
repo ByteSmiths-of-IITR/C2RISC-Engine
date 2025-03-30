@@ -604,19 +604,204 @@ unary_expression
 
     }
     | INC_OP unary_expression {
+        //Work on this
+        //modifiable lvalue(m-lval) => basic types, pointer, struct object element with m-lval 
+        // Do not work on this
+        // rvalue and non-modofiable lvalue = enum const, function name, array name, struct object
+        
         // 1. 🅰️TypeCheck of $2 unary_expression
-            // NOTE - { }
+            Type whichType = whatIsType($2.type);
+            // Allowed - VARIABLE, ARRAY❌,  POINTER, ENUM_CONSTANT❌, FUNCTION❌, STRUCT_UNION❌, ENUM
+            // And must be M_LVALUE
+            if(whichType == Type::ARRAY || whichType == Type::ENUM_CONSTANT || whichType == Type::FUNCTION || whichType == Type::STRUCT_UNION){
+                // Error - not modifiable lvalue
+                // [📍ToDo - Error Handling]
+            }
+            else{
+                if($2.valueType != VALUE_TYPE::M_LVALUE){
+                    // Error - not modifiable lvalue
+                    // [📍ToDo - Error Handling]
+                }
+            }
+        
+        // 2. 🟡 type + 🟡 valueType
+            $$.type = $2.type; // pass the type to the unary_expression ⬆️
+            $$.valueType = VALUE::NM_LVALUE; // change the valueType to NM_LVALUE
+            
+        // 3. 🔖IRCode
+            // We need to create a new label for the function call
+            std::string resName = "";
 
-        // 2. 
+            // IncBy Eval
+            TypeExpression belowType = $2.type;
+            int check = popALevel(belowType);
+            if(check){
+                // Error - not popAble [should not happen since we checked top just now]
+                // [📍ToDo - Error Handling]
+            }
+            int incBy = width(belowType);
+            std::string incByStr = std::to_string(incBy);
+
+            SPACE reqSpace = getSpace($2.type);
+            SPACE currSpace = $2.valueSpace;
+            if(reqSpace != currSpace){
+                // SPACE🚀 Change Code
+
+                // Load it
+                std::string value = newTemp();
+                CODE_BASE.addTAC(value, RIGHT_STAR, $2.varName, NO_ARG);
+
+                // Increment it
+                std::string incValue = newTemp();
+                
+                CODE_BASE.addTAC(incValue, "+", value, incByStr);
+                resName = incValue;
+
+                // Store it
+                CODE_BASE.addTAC($2.varName, LEFT_STAR, incValue, NO_ARG);
+            }
+            else{
+                // No need of space change
+
+                // Direct Increment & Store it
+                CODE_BASE.addTAC($2.varName, "+", $2.varName, incByStr);
+                resName = $2.varName;
+            }
+        
+        // 4.  🟡 varName + 🟡 valueSpace   
+            $$.varName = resName;
+            $$.valueSpace = SPACE::VALUE_SPACE;
+
     }
     | DEC_OP unary_expression {
+        
         // 1. 🅰️TypeCheck of $2 unary_expression
+            Type whichType = whatIsType($2.type);
+            // Allowed - VARIABLE, ARRAY❌,  POINTER, ENUM_CONSTANT❌, FUNCTION❌, STRUCT_UNION❌, ENUM
+            // And must be M_LVALUE
+            if(whichType == Type::ARRAY || whichType == Type::ENUM_CONSTANT || whichType == Type::FUNCTION || whichType == Type::STRUCT_UNION){
+                // Error - not modifiable lvalue
+                // [📍ToDo - Error Handling]
+            }
+            else{
+                if($2.valueType != VALUE_TYPE::M_LVALUE){
+                    // Error - not modifiable lvalue
+                    // [📍ToDo - Error Handling]
+                }
+            }
+        
+        // 2. 🟡 type + 🟡 valueType
+            $$.type = $2.type; // pass the type to the unary_expression ⬆️
+            $$.valueType = VALUE::NM_LVALUE; // change the valueType to NM_LVALUE
+            
+        // 3. 🔖IRCode
+            // We need to create a new label for the function call
+            std::string resName = "";
+
+            // IncBy Eval
+            TypeExpression belowType = $2.type;
+            int check = popALevel(belowType);
+            if(check){
+                // Error - not popAble [should not happen since we checked top just now]
+                // [📍ToDo - Error Handling]
+            }
+            int incBy = width(belowType);
+            std::string incByStr = std::to_string(incBy);
+
+            SPACE reqSpace = getSpace($2.type);
+            SPACE currSpace = $2.valueSpace;
+            if(reqSpace != currSpace){
+                // SPACE🚀 Change Code
+
+                // Load it
+                std::string value = newTemp();
+                CODE_BASE.addTAC(value, RIGHT_STAR, $2.varName, NO_ARG);
+
+                // Increment it
+                std::string incValue = newTemp();
+                
+                CODE_BASE.addTAC(incValue, "-", value, incByStr);
+                resName = incValue;
+
+                // Store it
+                CODE_BASE.addTAC($2.varName, LEFT_STAR, incValue, NO_ARG);
+            }
+            else{
+                // No need of space change
+
+                // Direct Increment & Store it
+                CODE_BASE.addTAC($2.varName, "+", $2.varName, incByStr);
+                resName = $2.varName;
+            }
+        
+        // 4.  🟡 varName + 🟡 valueSpace   
+            $$.varName = resName;
+            $$.valueSpace = SPACE::VALUE_SPACE;
     }
 
     | unary_operator cast_expression {
-        // 1. 🅰️TypeCheck of $1 unary_expression
+        // values to pass up 
+        std::string resName;
+        SPACE resSpace;
+        TypeExpression resType;
+        VALUE_TYPE resValueType;
+        // for "&" operator 
+        if($1.op == "&"){
+            // 1. 🅰️TypeCheck of $2 unary_expression
+                // This is about finding address of operand
+                // Allowed - M_LVALUE, NM_LVALUE but not RVALUE
+                if($2.valueType == VALUE_TYPE::RVALUE){
+                    // Error - not modifiable lvalue
+                    // [📍ToDo - Error Handling]
+                }
 
-        // 2. 🅰️TypeCheck of $2 cast_expression 
+                //Okay
+
+            // 2. 🔖IRCode
+                // SPACE🚀 Change Sensitive
+                if($2.valueSpace == SPACE::ADDRESS_SPACE){
+                    std::string newName = newTemp();
+                    CODE_BASE(newName,"=",$2.varName,NO_ARG);
+                    resName = newName;
+                }
+                else{
+                    std::string newName = newTemp();
+                    CODE_BASE(newName,"&",$2.varName,NO_ARG);
+                    resName = newName;
+                }
+            
+
+            // 3. 🟡 type 
+                resType = $2.type;
+                PointerInfo* ptr = new PointerInfo();
+                resType.levelStack.addOnTop(ptr);
+
+                resSpace = SPACE::VALUE_SPACE;
+        }
+        // for "*" operator
+        else if($1.op == "*"){
+            Type whichType = whatIsType($2.type)
+
+            if(whichType == Type::FUNCTION){
+
+            }
+            else if(whichType == Type::ARRAY || whichType == Type::POINTER){
+
+            }
+        }
+        
+        
+        
+        
+        
+        
+        
+        // END. Final Assignment
+            $$.varName = resName;
+            $$.type = resType;
+            $$.valueSpace = resSpace;
+            $$.valueType = resValueType;
+
     }
     | SIZEOF unary_expression {
         // 1. 🅰️TypeCheck of $2 unary_expression
@@ -629,13 +814,14 @@ unary_expression
     }
     ;
 
+// Data on unary_operator - std::string op
 unary_operator
-    : BIT_AND
-    | STAR
-    | PLUS
-    | MINUS
-    | BIT_NOT
-    | NOT_OP
+    : BIT_AND { $$.op = "&" }
+    | STAR    { $$.op = "*" }
+    | PLUS    { $$.op = "+" }
+    | MINUS   { $$.op = "-" }
+    | BIT_NOT { $$.op = "~" }
+    | NOT_OP  { $$.op = "!" }
     ;
 
 cast_expression
@@ -1003,7 +1189,7 @@ struct_or_union_specifier
                 // Error - not struct or union [Syntax Checked]
             }
             userDType->recordType = recordType;
-            userDType->members = $3.members; // add the members to the userDType ➕
+            userDType->members = $4.members; // add the members to the userDType ➕
 
         // 2. Add it to symbol table
             std::string recordID = $2.tokenAtr->lexeme;

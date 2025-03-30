@@ -604,10 +604,6 @@ unary_expression
 
     }
     | INC_OP unary_expression {
-        //Work on this
-        //modifiable lvalue(m-lval) => basic types, pointer, struct object element with m-lval 
-        // Do not work on this
-        // rvalue and non-modofiable lvalue = enum const, function name, array name, struct object
         // 1. 🅰️TypeCheck of $2 unary_expression
             // NOTE - { }
 

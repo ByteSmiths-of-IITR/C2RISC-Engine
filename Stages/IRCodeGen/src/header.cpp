@@ -27,4 +27,16 @@ int const WARNING = -1;
 int const LOW_ERROR = -2;
 int const HIGH_ERROR = -3;
 
+int const INSERT_SUCCESS = 0;
+int const INSERT_SUCCESS_WITH_WARNING = 1;
+int const INSERT_FAILURE = -1; // Already present in the current scope
+
+int const LOOKUP_SUCCESS = 0; // Found
+int const LOOKUP_FAILURE = -1; // Not Found
+
+
 std::string lastFuncCalled;
+
+//=== [Global Variables] ==========================================================================================================
+SymbolTable SYM_TABLE; // Global Symbol Table
+TAC CODE_BASE; // Global TAC Code Base

@@ -19,4 +19,9 @@ bool isIntegral(const TypeExpression &typeExpr) {
     return false;
 }
 
+bool isConstant(){
+    // [📍 ToDo]
+    return true;
+}
+
 //=====================[ TypeCasting Utilites 🆎 ]=========================================================================================
