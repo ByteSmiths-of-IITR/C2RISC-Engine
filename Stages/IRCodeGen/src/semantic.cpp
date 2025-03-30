@@ -1,21 +1,22 @@
-#include "semantic.h"
-#include "sym.h"
-#include "utility.h"
-#include "tac.h"
+#include "header.h"
 
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[ TypeCasting Utilites ]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//===================[ TypeChecking Utilites 🅰️ ] ============================================================================================
 
-DType maxType(DType t1, DType t2){
-    //🚨 This will only work for primitive types
-    //[📍 ToWrite]
-
-    return t1; //🚨 Returning t1 for now
+bool isIntegral(const TypeExpression &typeExpr) {
+    // Check if the type expression is an integral type
+    Type topType = whatIsType(typeExpr);
+    if(topType == Type::ENUM_CONSTANT || topType == Type::VARIABLE) {
+        // Check if the base type is integral
+        BaseInfo *baseInfo = dynamic_cast<BaseInfo *>(typeExpr.levelStack.top());
+        std::string baseType = baseInfo->baseType;
+        if(baseType == INT || baseType == CHAR || baseType == SHORT || baseType == LONG || baseType == LONG_LONG) {
+            return true;
+        }
+        if(baseType == ENUM_CONSTANT){
+            return true;
+        }
+    }
+    return false;
 }
 
-DType widenType(DType s, DType t, std::string varName){
-    //[📍 ToWrite]
-
-    // This will also push a TAC Code for the typecasting
-
-    return s; //🚨 Returning s for now
-}
+//=====================[ TypeCasting Utilites 🆎 ]=========================================================================================

@@ -77,20 +77,21 @@ class VarSymbols;
 class GenericSymbol;
 
 //--------------- TypeQualifier & StorageClassSpecifiers -----------------------------------------------------------
-enum class TypeQualifier{
+enum class TypeQualifier
+{ // 👍
     CONST,
     VOLATILE,
     RESTRICT
 };
 
-enum class RecordType{
+enum class RecordType{ 
     STRUCT,
     UNION,
     ENUM,
     NONE
 };
 
-enum class StorageClass{
+enum class StorageClass{ //👍
     AUTO,
     STATIC,
     EXTERN

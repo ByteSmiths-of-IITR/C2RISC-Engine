@@ -5,6 +5,7 @@
 # Ignore build directories
 dist/
 build/
+object/
 
 # Ignore bin directories
 bin/

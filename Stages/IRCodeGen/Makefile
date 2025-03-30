@@ -1,15 +1,18 @@
-# Compiler and flags
-CXX = g++ -std=c++17 # Added Latest Version [Some error due to old compiler]
-CXXFLAGS = -w -lm
-
 #Folders
 SRC_DIR = src
 INCLUDE_DIR = include
 INPUT_DIR = input
 OUTPUT_DIR = output
 BUILD_DIR = build
+OBJ_DIR = object
 BIN_DIR = bin
 TEST_DIR = test
+GRAMMAR_DIR = grammar
+
+# Compiler and flags
+CXX = g++ -std=c++17 # Added Latest Version [Some error due to old compiler]
+CXXFLAGS = -w -lm -I $(INCLUDE_DIR)
+
 
 # Input and output files
 INPUT = $(INPUT_DIR)/input.c
@@ -22,17 +25,39 @@ CERR = $(OUTPUT_DIR)/stdcerr.log
 BISON = bison -Wnone
 FLEX = flex
 
-# Source files
-LEXER = $(SRC_DIR)/lexer.l
-PARSER = $(SRC_DIR)/parser.y
+# Lexer File
+LEXER = $(GRAMMAR_DIR)/lexer.l
+LEXER_C = $(BUILD_DIR)/lex.yy.c
+
+
+# Header Files
 UTILITY_H = utility.h
+HEADER_H = header.h
+
+# Source Files
+HEADER_CPP = $(SRC_DIR)/header.cpp
+SEMANTIC_CPP = $(SRC_DIR)/semantic.cpp
+SYM_CPP = $(SRC_DIR)/sym.cpp
+TAC_CPP = $(SRC_DIR)/tac.cpp
+TYPE_CPP = $(SRC_DIR)/type.cpp
 UTILITY_CPP = $(SRC_DIR)/utility.cpp
 
-# Generated files
-LEXER_C = $(BUILD_DIR)/lex.yy.c
+
+# Parser\Bison Files
 PARSER_C = $(BUILD_DIR)/parser.tab.c
+
+PARSER = $(GRAMMAR_DIR)/parser.y # just change Grammar File Here will change all 
+
 PARSER_H = $(INCLUDE_DIR)/parser.tab.h
 EXECUTABLE = $(BIN_DIR)/parser
+
+# Making Object files
+SRC_FILES = $(wildcard $(SRC_DIR)/*.cpp)
+OBJ_FILES = $(patsubst $(SRC_DIR)/%.cpp,$(OBJ_DIR)/%.o,$(SRC_FILES))
+
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
+	$(CXX) $(CXXFLAGS) -c $< -o $@ 
+
 
 # Result dot (graphviz) tool
 DOT = dot
@@ -49,24 +74,23 @@ Recursive = $(OUTPUT_DIR)/recursive_output.txt
 # Default target
 all: $(EXECUTABLE)
 
-
 # Step 1: Generate parser files from Bison
 $(PARSER_C) $(PARSER_H): $(PARSER) $(BUILD_DIR)
-	@$(BISON) -d $(PARSER) --output=$(PARSER_C) --header=$(PARSER_H)
+	$(BISON) -d $(PARSER) --output=$(PARSER_C) --header=$(PARSER_H)
 
 # Step 2: Generate lexer file from Flex
 $(LEXER_C): $(LEXER) $(BUILD_DIR) 
-	@$(FLEX) -o $(LEXER_C) $(LEXER)
+	$(FLEX) -o $(LEXER_C) $(LEXER)
 
 # Step 3: Compile everything together into an executable
-$(EXECUTABLE): $(LEXER_C) $(PARSER_C) $(UTILITY_CPP) $(BUILD_DIR) $(BIN_DIR) $(INCLUDE_DIR) $(OUTPUT_DIR)
-	@$(CXX) $(LEXER_C) $(PARSER_C) $(UTILITY_CPP)  -o $(EXECUTABLE) $(CXXFLAGS) -I $(INCLUDE_DIR)
+$(EXECUTABLE): $(LEXER_C) $(PARSER_C) $(PARSER_H) $(OBJ_FILES)
+	$(CXX) $(CXXFLAGS) $(LEXER_C) $(PARSER_C) $(OBJ_FILES) -o $(EXECUTABLE)
 
 $(CERR): $(OUTPUT_DIR)
-	@touch $(CERR)
+	touch $(CERR)
 
 $(OUTPUT): $(OUTPUT_DIR)
-	@touch $(OUTPUT)
+	touch $(OUTPUT)
 
 run: $(EXECUTABLE) $(INPUT) $(OUTPUT) $(CERR) $(OUTPUT_DIR)
 	./$(EXECUTABLE) $(INPUT) $(OUTPUT) 2> $(CERR) 
@@ -79,13 +103,18 @@ $(DOTFile): $(EXECUTABLE)
 
 # Auto Create Required Directories
 $(BUILD_DIR):
-	@mkdir -p $(BUILD_DIR)
+	mkdir -p $(BUILD_DIR)
 
 $(BIN_DIR):
-	@mkdir -p $(BIN_DIR)
+	mkdir -p $(BIN_DIR)
 
 $(OUTPUT_DIR):
-	@mkdir -p $(OUTPUT_DIR)
+	mkdir -p $(OUTPUT_DIR)
+
+$(OBJ_DIR):
+	mkdir -p $(OBJ_DIR)
+
+
 
 
 ## For Visualizing the AST
@@ -94,7 +123,7 @@ ast: $(INPUT) $(OUTPUT) $(EXECUTABLE) $(OUTPUT_DIR) $(BUILD_DIR)
 	@$(DOT) -Tpdf $(DOTFile) -o $(DOTPDF)
 	open $(DOTPDF)
 
-ptree: $(INPUT) $(OUTPUT) $(EXECUTABLE)
+ptree: $(INPUT) $(OUTPUT) $(EXECUTABLE) $(OUTPUT_DIR) $(BUILD_DIR)
 	./$(EXECUTABLE) $(INPUT) $(OUTPUT) -ptree $(DOTFile) 2> $(CERR)
 	@$(DOT) -Tpdf $(DOTFile) -o $(DOTPDF)
 	open $(DOTPDF) 
@@ -109,8 +138,8 @@ s: $(EXECUTABLE) $(INPUT)
 # Clean generated files
 clean:
 	@rm -f $(LEXER_C) $(PARSER_C) $(PARSER_H) $(EXECUTABLE) $(OUTPUT) \
-	$(CERR) $(DOTFile) $(DOTPDF) $(S_EXPR) $(Recursive) $(ASSEMBLY)
-
+	$(CERR) $(DOTFile) $(DOTPDF) $(S_EXPR) $(Recursive) $(ASSEMBLY) \
+	$(OBJ_FILES)
 
 again:
 	rm -f $(EXECUTABLE) \
@@ -159,3 +188,16 @@ sym: $(SYM_H) $(SYM_CPP) $(SYM_TEST)
 	$(CXX) $(UTILITY_CPP) $(SYM_CPP) $(SYM_TEST) -o $(BIN_DIR)/symTest $(CXXFLAGS) -I $(INCLUDE_DIR)
 	./$(BIN_DIR)/symTest $(SYM_TABLEFile)
 
+
+IRSemantic = $(SRC_DIR)/IRCodeGen.y
+IRSemantic_H = $(INCLUDE_DIR)/IRCodeGen.tab.h
+IRSemantic_CPP = $(SRC_DIR)/IRCodeGen.tab.c
+IRSemantic_EXECUTABLE = $(BIN_DIR)/IRCodeGen
+
+$(IRSemantic_H): $(IRSemantic)
+	$(BISON) -d $(IRSemantic) --output=$(IRSemantic_CPP) --header=$(IRSemantic_H)
+
+
+IRCode: $(IRSemantic)  $(IRSemantic_H) $(IRSemantic_CPP) $(SYM_CPP) $(SEMANTIC_CPP) $(TAC_CPP) $(UTILITY_CPP)
+	$(CXX) $(LEXER_C) $(IRSemantic_CPP) $(SYM_CPP) $(SEMANTIC_CPP) $(TAC_CPP) $(UTILITY_CPP) -o $(IRSemantic_EXECUTABLE) $(CXXFLAGS) -I $(INCLUDE_DIR)
+	./$(IRSemantic_EXECUTABLE)

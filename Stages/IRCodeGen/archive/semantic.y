@@ -1,17 +1,25 @@
-// File: grammarOnly.y
 
 %{
-
-#include <stdio.h>
+#include "utility.h"
 #include "sym.h"
 #include "ast.h"
 #include "semantic.h"
 
-    %}
+// External Declarations
+extern int yylineno;
+extern char *yytext;
+void yyerror(const char *s);
+extern int yylex();
+extern File* yyin;
+
+#define YYDEBUG 1
+
+
+%}
 
 %union{
     struct TokenAttribute* tokenAtr;
-    struct ASTNode* astNode;
+    struct BaseData* data;
 }
 
 
@@ -29,72 +37,72 @@
 
 /* %token <tokenAtr> INVALID_TOKEN UNKNOWN_TOKEN */
 
-/* %type <astNode> IDENTIFIER CONSTANT SEMI_COLON
-%type <astNode> RPAREN RCURLY RSQUARE */
+/* %type <data> IDENTIFIER CONSTANT SEMI_COLON
+%type <data> RPAREN RCURLY RSQUARE */
 
-%type <astNode> primary_expression
-%type <astNode> postfix_expression
-%type <astNode> argument_expression_list
-%type <astNode> unary_expression
-%type <astNode> unary_operator
-%type <astNode> cast_expression
-%type <astNode> multiplicative_expression
-%type <astNode> additive_expression
-%type <astNode> shift_expression
-%type <astNode> relational_expression
-%type <astNode> equality_expression
-%type <astNode> and_expression
-%type <astNode> exclusive_or_expression
-%type <astNode> inclusive_or_expression
-%type <astNode> logical_and_expression
-%type <astNode> logical_or_expression
-%type <astNode> conditional_expression
-%type <astNode> assignment_expression
-%type <astNode> assignment_operator
-%type <astNode> expression
-%type <astNode> constant_expression
-%type <astNode> declaration
-%type <astNode> declaration_specifiers
-%type <astNode> init_declarator_list
-%type <astNode> init_declarator 
-%type <astNode> storage_class_specifier
-%type <astNode> type_specifier
-%type <astNode> struct_or_union_specifier
-%type <astNode> struct_or_union
-%type <astNode> struct_declaration_list
-%type <astNode> struct_declaration
-%type <astNode> specifier_qualifier_list
-%type <astNode> struct_declarator_list
-%type <astNode> struct_declarator
-%type <astNode> enum_specifier
-%type <astNode> enumerator_list
-%type <astNode> enumerator
-%type <astNode> type_qualifier
-%type <astNode> declarator
-%type <astNode> direct_declarator
-%type <astNode> pointer
-%type <astNode> type_qualifier_list
-%type <astNode> parameter_type_list
-%type <astNode> parameter_list
-%type <astNode> parameter_declaration
-%type <astNode> identifier_list
-%type <astNode> type_name
-%type <astNode> abstract_declarator
-%type <astNode> direct_abstract_declarator
-%type <astNode> initializer
-%type <astNode> initializer_list
-%type <astNode> statement
-%type <astNode> labeled_statement
-%type <astNode> compound_statement
-%type <astNode> declaration_list
-%type <astNode> statement_list
-%type <astNode> expression_statement
-%type <astNode> selection_statement
-%type <astNode> iteration_statement
-%type <astNode> jump_statement
-%type <astNode> translation_unit
-%type <astNode> external_declaration
-%type <astNode> function_definition
+%type <data> primary_expression
+%type <data> postfix_expression
+%type <data> argument_expression_list
+%type <data> unary_expression
+%type <data> unary_operator
+%type <data> cast_expression
+%type <data> multiplicative_expression
+%type <data> additive_expression
+%type <data> shift_expression
+%type <data> relational_expression
+%type <data> equality_expression
+%type <data> and_expression
+%type <data> exclusive_or_expression
+%type <data> inclusive_or_expression
+%type <data> logical_and_expression
+%type <data> logical_or_expression
+%type <data> conditional_expression
+%type <data> assignment_expression
+%type <data> assignment_operator
+%type <data> expression
+%type <data> constant_expression
+%type <data> declaration
+%type <data> declaration_specifiers
+%type <data> init_declarator_list
+%type <data> init_declarator 
+%type <data> storage_class_specifier
+%type <data> type_specifier
+%type <data> struct_or_union_specifier
+%type <data> struct_or_union
+%type <data> struct_declaration_list
+%type <data> struct_declaration
+%type <data> specifier_qualifier_list
+%type <data> struct_declarator_list
+%type <data> struct_declarator
+%type <data> enum_specifier
+%type <data> enumerator_list
+%type <data> enumerator
+%type <data> type_qualifier
+%type <data> declarator
+%type <data> direct_declarator
+%type <data> pointer
+%type <data> type_qualifier_list
+%type <data> parameter_type_list
+%type <data> parameter_list
+%type <data> parameter_declaration
+%type <data> identifier_list
+%type <data> type_name
+%type <data> abstract_declarator
+%type <data> direct_abstract_declarator
+%type <data> initializer
+%type <data> initializer_list
+%type <data> statement
+%type <data> labeled_statement
+%type <data> compound_statement
+%type <data> declaration_list
+%type <data> statement_list
+%type <data> expression_statement
+%type <data> selection_statement
+%type <data> iteration_statement
+%type <data> jump_statement
+%type <data> translation_unit
+%type <data> external_declaration
+%type <data> function_definition
 
 /* %expect-rr 96 */
 /* %expect 2 */
@@ -129,7 +137,7 @@ primary_expression
             $$.type = createTypeExpression(symbol); 
 
         // 3. Find type of TypeExpression (topLevelInfo)
-            Expr_Type whichType = whichTypeExpression($$.type);
+            Type whichType = whatIsType($$.type);
 
         // 4. 🟡 valueType -  Check is it's Modifiable Lvalue or Rvalue
             // All possible cases - variable (primitve or struct_union or enum), functions
@@ -152,7 +160,15 @@ primary_expression
             */
 
             if($$.valueSpace == SPACE::VALUE_SPACE){
+                // Handling Special Cases of VALUE_SPACE (compiler time constants)
+                if(whichType == Type::ENUM_CONSTANTS){
+                    EnumConstant* enumVar = dynamic_cast<EnumConstant *>(&symbol)
+                    int enumValue = enumVar->value;
+                    $$.varName = std::to_string(enumValue);
+                }
+                else{
                 $$.varName = idName;
+                }
             }
             else if($$.valueSpace == SPACE::ADDRESS_SPACE){
                 std::string address = newTemp();
@@ -281,8 +297,8 @@ postfix_expression
         // 2. 🅰️TypeCheck on $$ + 🟡 type - Pop a Level from $1.Type
             TypeExpression temp = $1.type;
             // Check top level is arrayInfo or pointerInfo
-            Expr_Type whichType = whichTypeExpression(temp);
-            if(whichType != Expr_Type::ARRAY && whichType != Expr_Type::POINTER){
+            Type whichType = whatIsType(temp);
+            if(whichType != Type::ARRAY && whichType != Type::POINTER){
                 // Error - not array or pointer
                 // [📍ToDo - Error Handling]
             }
@@ -352,13 +368,13 @@ postfix_expression
     | postfix_expression LPAREN RPAREN {
         TypeExpression temp = $1.type;
         // 1. 🅰️TypeCheck of $1 is a function or function pointer
-            Expr_Type whichType = whichTypeExpression(temp);
+            Type whichType = whatIsType(temp);
             ParameterInfo* paramInfo;
-            if(whichType == Expr_Type::FUNCTION){ // Is a function
+            if(whichType == Type::FUNCTION){ // Is a function
                 // Okay
                 paramInfo = temp.levelStack.top();
             }
-            else if(whichType == Expr_Type::POINTER){ // Is a function pointer
+            else if(whichType == Type::POINTER){ // Is a function pointer
                 // Okay BUT the below level should be function
                 TypeExpression temp2 = temp;
                 int check = popALevel(temp2);
@@ -366,8 +382,8 @@ postfix_expression
                     // Error - not popAble [should not happen since we checked top just now]
                     // [📍ToDo - Error Handling]
                 }
-                Expr_Type whichType2 = whichTypeExpression(temp2);
-                if(whichType2 != Expr_Type::FUNCTION){
+                Type whichType2 = whatIsType(temp2);
+                if(whichType2 != Type::FUNCTION){
                     // Error - not function
                     // [📍ToDo - Error Handling]
                 }
@@ -444,13 +460,13 @@ postfix_expression
     }
     | postfix_expression LPAREN argument_expression_list LPAREN {
         // 1. 🅰️TypeCheck of $1 is a function or function pointer + Parameter
-            Expr_Type whichType = whichTypeExpression(temp);
+            Type whichType = whatIsType(temp);
             ParameterInfo* paramInfo;
-            if(whichType == Expr_Type::FUNCTION){ // Is a function
+            if(whichType == Type::FUNCTION){ // Is a function
                 // Okay
                 paramInfo = temp.levelStack.top();
             }
-            else if(whichType == Expr_Type::POINTER){ // Is a function pointer
+            else if(whichType == Type::POINTER){ // Is a function pointer
                 // Okay BUT the below level should be function
                 TypeExpression temp2 = temp;
                 int check = popALevel(temp2);
@@ -458,8 +474,8 @@ postfix_expression
                     // Error - not popAble [should not happen since we checked top just now]
                     // [📍ToDo - Error Handling]
                 }
-                Expr_Type whichType2 = whichTypeExpression(temp2);
-                if(whichType2 != Expr_Type::FUNCTION){
+                Type whichType2 = whatIsType(temp2);
+                if(whichType2 != Type::FUNCTION){
                     // Error - not function
                     // [📍ToDo - Error Handling]
                 }
@@ -752,7 +768,7 @@ declaration
             // [Error Handling]
         }
 
-        // No more processing size we have SEMI_COLOM
+        // No more processing since we have SEMI_COLOM
     }
     | declaration_specifiers init_declarator_list SEMI_COLON {
         BaseInfo* baseInfo = new BaseInfo();
@@ -853,9 +869,9 @@ init_declarator
             std::string symName = $1.varName;
 
         // 2.  Create Symbol (Variable or Function)
-            Expr_Type whichType = whichTypeExpression(tempType);
+            Type whichType = whatIsType(tempType);
             GenericSymbol* symbol;
-            if(whichType == Expr_Type::FUNCTION){
+            if(whichType == Type::FUNCTION){
                 // Function
                 Function* func = new Function();
                 func->symbolName = symName;
@@ -900,9 +916,9 @@ init_declarator
             std::string symName = $1.varName;
 
         // 2.  Create Symbol (Variable or Function)
-            Expr_Type whichType = whichTypeExpression(tempType);
+            Type whichType = whatIsType(tempType);
             GenericSymbol* symbol;
-            if(whichType == Expr_Type::FUNCTION){
+            if(whichType == Type::FUNCTION){
                 // Should NOT HAPPEDN with INITIALIZER
                 // [Error Handling - Function with Initializer]
             }
