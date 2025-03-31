@@ -237,6 +237,7 @@ constant_expression
 
 // End of Expressions~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+//Declarations ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 declaration
     : declaration_specifiers SEMI_COLON
     | declaration_specifiers init_declarator_list SEMI_COLON
@@ -424,11 +425,12 @@ direct_abstract_declarator
 
 initializer
     : assignment_expression
-    | LCURLY initializer_list RCURLY
-    | LCURLY initializer_list COMMA RCURLY
+    | LCURLY initializer_list RCURLY // ❌ Not Supporting
+    | LCURLY initializer_list COMMA RCURLY // ❌ Not Supporting
     ;
 
-initializer_list
+// ❌ Not Supporting
+initializer_list 
     : initializer
     | initializer_list COMMA initializer
     ;

@@ -486,6 +486,8 @@ initializer_list
     | initializer_list COMMA initializer
     ;
 
+// Done with Declarations ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 statement
     : labeled_statement
     | compound_statement

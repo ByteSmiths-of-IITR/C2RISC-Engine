@@ -1,5 +1,12 @@
 #include "header.h"
 
+const std::string NO_ARG = "";
+const std::string RIGHT_STAR = "right_star";
+const std::string LEFT_STAR = "left_star";
+const std::string FUNCTION_LABEL = "function_label";
+const std::string BLANK = "blank";
+
+
 TAC_Quadruple::TAC_Quadruple(std::string op, std::string arg1, std::string arg2, std::string result) {
     this->op = op;
     this->arg1 = arg1;

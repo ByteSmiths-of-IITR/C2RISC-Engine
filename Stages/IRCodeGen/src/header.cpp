@@ -12,6 +12,7 @@ std::string ENUM_CONSTANT = "enum_constant";
 std::string TYPE_INT = "int";
 std::string TYPE_FLOAT = "float";
 std::string TYPE_DOUBLE = "double";
+std::string TYPE_LONG_DOUBLE = "long_double";
 std::string TYPE_CHAR = "char";
 std::string TYPE_SHORT = "short";
 std::string TYPE_LONG = "long";
@@ -38,5 +39,5 @@ int const LOOKUP_FAILURE = -1; // Not Found
 std::string lastFuncCalled = "init"; // Global variable to keep track of the last function called
 
 //=== [Global Variables] ==========================================================================================================
-SymbolTable SYM_TABLE; // Global Symbol Table
-TAC CODE_BASE; // Global TAC Code Base
+// SymbolTable SYM_TABLE; // Global Symbol Table
+// TAC CODE_BASE; // Global TAC Code Base [declared in handler.cpp]

@@ -25,9 +25,10 @@ extern int ANNOTATE; // 0 - OFF | 1 - ON [value set by header.cpp]
 
 //================== [Architecture Variables]=========================================================================================
 #define WORD_SIZE 4 // int, float
-#define WORD_SIZEx2 8 // double
+#define WORD_SIZEx2 8 // double, long
+#define WORD_SIZEx4 16 // long double or long long
 #define BYTE_SIZEx2 2 // short
-#define BYTE_SIZE 1 // 8 bits
+#define BYTE_SIZE 1 // 8 bits, char
 #define ADDRESS_SIZE 16 // 64 bit address
 
 //===================[ Memory Monitoring + Debugging ]============================================================================================
@@ -110,9 +111,14 @@ class TypeExpression{
         
         class ParameterInfo : public LevelInfo {
         public:
+
+
+            bool isAbstract;
+            std::vector<std::string> paramsName;
             std::vector<TypeExpression> paramsType; // This will have the type of the parameters
 
             CON_DES(ParameterInfo)
+
         };
         
         //=====================[ BaseInfo ]=========================================================================================
@@ -120,14 +126,19 @@ class TypeExpression{
             extern std::string TYPE_UNION;
             extern std::string TYPE_ENUM;
             extern std::string ENUM_CONSTANT;
-            extern std::string TYPE_INT;
+
+            extern std::string TYPE_VOID;
+
             extern std::string TYPE_FLOAT;
             extern std::string TYPE_DOUBLE;
+            extern std::string TYPE_LONG_DOUBLE;
+
             extern std::string TYPE_CHAR;
             extern std::string TYPE_SHORT;
+            extern std::string TYPE_INT;
             extern std::string TYPE_LONG;
-            extern std::string TYPE_VOID;
             extern std::string TYPE_LONG_LONG;
+
             extern std::string TYPE_UNSIGNED; // will be used like - UNSIGNED + PRIMITIVE
             extern std::string TYPE_SIGNED; // this will be used - PRIMITIVE [Default Signed]
 
@@ -418,9 +429,13 @@ int width(const UserDType &dtype); // This will return the width of the user def
 //=====================[ Three Address Code ]=========================================================================================
 
     //==================[ Custom TAC Arguments ]=========================================================================================
-        const std::string NO_ARG = "";
-        const std::string RIGHT_STAR;
-        const std::string LEFT_STAR;
+        extern const std::string NO_ARG;
+        extern const std::string RIGHT_STAR;
+        extern const std::string LEFT_STAR;
+        extern const std::string FUNCTION_LABEL;
+        extern const std::string BLANK;
+
+
 
         class TAC_Quadruple
         {
@@ -471,15 +486,12 @@ class TAC{
 
 bool isIntegral(const TypeExpression &typeExpr);
 bool isConstant(const TypeExpression &typeExpr);
-
+std::string isPrimitive(const TypeExpression &typeExpr);
+// Return values will be Primitive Types
 
 //======================[ TypeCasting Utilities 🆎 ]=========================================================================================
 
-
-
-
-
-
+std::string maxWidth(std::string primTyp1, std::string primType2);
 
 /*
 
@@ -490,9 +502,39 @@ bool isConstant(const TypeExpression &typeExpr);
 
 */
 
+//=====================[ toString Utilities ]=========================================================================================
+std::string toString(int value);
+std::string toString(bool flag);
+std::string toString(std::vector<std::string> valueVector);
+std::string toString(StorageClass storageClass);
+std::string toString(TypeQualifier typeQualifier);
+std::string toString(std::vector<TypeQualifier> typeQualifiers);
+std::string toString(std::map<std::string, TypeExpression> members);
+std::string toString(std::vector<PointerInfo> ptrInfo);
+std::string toString(std::vector<TypeExpression> &paramVector);
+
+
+//====================[ Helper Functions ]=========================================================================================
+std::string getProduction(ASTNode *node);
+int ProcessDecSpecifiers(std::vector<std::string> &valueVector, BaseInfo *&base, StorageClass &storageClass);
+
+    //====================[ Globally Accessible Variables ]=========================================================================================
+    extern SymbolTable SYM_TABLE; // Global Symbol Table
+extern TAC CODE_BASE;         // Global TAC Code Base
+
+//====================[ Annotated Parse Tree ]=========================================================================================
+
+extern int ANNOTATE; // 0 - OFF | 1 - ON [extern declared in header.h]
+
+#define A_PTree if (ANNOTATE)
+
 //=====================[ Handler Error Handling ]=========================================================================================
 
 extern std::ofstream* handlerLog; // This will be used to log the errors
+
+#define HERE *handlerLog << "AT line " << __LINE__ << " in function " << lastFuncCalled << std::endl
+
+#define CERR *handlerLog << "[" << __LINE__ << "] "
 
 void openHandlerLog(const std::string &filename);
 void closeHandlerLog();
@@ -515,6 +557,7 @@ void function_definition_H(ASTNode *node);
 //=====================[ Statements Handlers ]=========================================================================================
 
 void statement_H(ASTNode *node);
+void compound_statement_H(ASTNode* node, bool earlyScopeEntry);
 
 //=====================[ Declaration Handlers ]=========================================================================================
 
@@ -555,9 +598,9 @@ void direct_declarator_H(ASTNode* node, TypeExpression inh_type, std::string &va
 void pointer_H(ASTNode* node, std::vector<PointerInfo> inh_ptrInfo, std::vector<PointerInfo> &ptrInfo);
 
 //----- Parameters -----
-void parameter_type_list_H(ASTNode* node, std::vector<TypeExpression> &paramVector);
-void parameter_list_H(ASTNode* node, std::vector<TypeExpression> &paramVector);
-void parameter_declaration_H(ASTNode* node, TypeExpression &type);
+void parameter_type_list_H(ASTNode* node, std::vector<TypeExpression> &paramVector, std::vector<std::string> &varName_list);
+void parameter_list_H(ASTNode* node, std::vector<TypeExpression> &paramVector, std::vector<std::string> &varName_list);
+void parameter_declaration_H(ASTNode* node, TypeExpression &type, std::string varName);
 
 //----- Identifier List -----
 void identifier_list_H(ASTNode *node, std::vector<std::string> &idList);
@@ -568,6 +611,8 @@ void type_name_H(ASTNode *node, TypeExpression &type);
 //----- Abstract Declarator -----
 void abstract_declarator_H(ASTNode *node, TypeExpression inh_type, TypeExpression &type);
 void direct_abstract_declarator_H(ASTNode *node, TypeExpression inh_type, TypeExpression &type);
+extern std::string NO_ARG_NAME;
+
 
 //----- Initializer -----
 void initializer_H(ASTNode *node);
@@ -576,5 +621,10 @@ void initializer_list_H(ASTNode *node);
 //======================[ Expression Handlers ]=========================================================================================
 
 void constant_expression_H(ASTNode *node, std::string &value);
+       
+
+
+
+
 
 #endif // !HEADER_H

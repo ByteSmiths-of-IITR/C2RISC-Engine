@@ -145,7 +145,7 @@ bool compressed = false; // Default is PTree, if AST is needed, change it to fal
 
 //========================= SEMANTIC + IRCode Gen Phase =========================
 // SymbolTable SYM_TABLE;
-// TAC CODE_BASE; [Are declared in header.cpp]
+// TAC CODE_BASE; [Are declared in handler.cpp]
 
 
 ASTNode *root;
@@ -2511,6 +2511,11 @@ int main(int argc, char **argv) {
 
     */
 
+    if(!APTree){ // We don't want to run semantic pass if we are NOT generating APTree
+        if(yyin) fclose(yyin);  // Close the input file if opened
+        closeOutputFile();  // Close the output file
+        return 0;
+    }
 
     //SYM_TABLE & CODE_BASE are globaly defined
 

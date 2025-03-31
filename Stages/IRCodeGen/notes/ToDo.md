@@ -23,3 +23,12 @@ Was it a error in the input code OR is our Compiler bug
 
 
 # No parameter Function Signature & Function call can't be distinguished
+
+
+# Where to Open SCOPE
+
+
+# Checking return type matching to function signature
+
+
+# For Initialization logic - we won't use INITIALIZER LIST
