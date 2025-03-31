@@ -71,6 +71,7 @@ class TypeExpression{
             AUTO,
             STATIC,
             EXTERN,
+            NONE,
             UNKNOWN
         };
 

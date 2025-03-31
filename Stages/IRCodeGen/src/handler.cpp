@@ -68,6 +68,8 @@ std::string toString(StorageClass storageClass) {
             return "static";
         case StorageClass::EXTERN:
             return "extern";
+        case StorageClass::NONE:
+            return "";
         default:
             return "unknown-storage-class";
     }
@@ -332,10 +334,10 @@ void declaration_H(ASTNode *node){
     // 2. Prepare data to be sent down to next child
         // 2.1 Create a BaseInfo object
             BaseInfo *base = new BaseInfo();
-            StorageClass inh_storageClass = StorageClass::AUTO;
+            StorageClass inh_storageClass = StorageClass::NONE;
             int check = ProcessDecSpecifiers(valueVector, base, inh_storageClass);
 
-        // 2.2 Create a TypeExpression object
+            // 2.2 Create a TypeExpression object
             TypeExpression inh_type;
             inh_type.levelStack.push(base); // inh_attr for init_declarator_list 🔴
 
@@ -848,7 +850,7 @@ void struct_declaration_H(ASTNode* node, std::map<std::string, TypeExpression> &
     
     // 1. Create a BaseInfo object
         BaseInfo* base = new BaseInfo();
-        StorageClass inh_storageClass; // NOT ALLOWED ❌ [Will be syntax checked]
+        StorageClass inh_storageClass=StorageClass::NONE; // NOT ALLOWED ❌ [Will be syntax checked]
         int check = ProcessDecSpecifiers(valueVector, base, inh_storageClass);
         if(check == -1){
             // SEMANTIC ERROR 🚨 : Invalid TypeSpecifier
@@ -1522,13 +1524,13 @@ void parameter_declaration_H(ASTNode* node, TypeExpression &type){
 
     // Create a BaseInfo object
     BaseInfo *base = new BaseInfo();
-    StorageClass inh_storageClass = StorageClass::UNKNOWN;
+    StorageClass inh_storageClass = StorageClass::NONE;
     int check = ProcessDecSpecifiers(valueVector, base, inh_storageClass);
     if (check == -1)
     {
         // SEMANTIC ERROR 🚨 : Invalid TypeSpecifier
     }
-    if (inh_storageClass != StorageClass::UNKNOWN)
+    if (inh_storageClass != StorageClass::NONE)
     {
         // SEMANTIC ERROR 🚨 : Storage Class NOT ALLOWED Here
     }
@@ -1627,7 +1629,7 @@ void type_name_H(ASTNode* node, TypeExpression &type){
 
         // 2. Create a BaseInfo object
         BaseInfo *base = new BaseInfo();
-        StorageClass inh_storageClass = StorageClass::UNKNOWN; // [Syntax Checked]
+        StorageClass inh_storageClass = StorageClass::NONE; // [Syntax Checked]
         int check = ProcessDecSpecifiers(valueVector, base, inh_storageClass);
         if (check == -1)
         {
@@ -1649,7 +1651,7 @@ void type_name_H(ASTNode* node, TypeExpression &type){
 
         // 2. Create a BaseInfo object
         BaseInfo *base = new BaseInfo();
-        StorageClass inh_storageClass = StorageClass::UNKNOWN;
+        StorageClass inh_storageClass = StorageClass::NONE;
         int check = ProcessDecSpecifiers(valueVector, base, inh_storageClass);
         if (check == -1)
         {
