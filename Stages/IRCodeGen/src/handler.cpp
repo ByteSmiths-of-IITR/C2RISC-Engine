@@ -44,6 +44,10 @@ std::string toString(int value) {
     return str;
 }
 
+std::string toString(bool flag) {
+    return flag ? "true" : "false";
+}
+
 std::string toString(std::vector<std::string> valueVector) {
     std::string str = "[ ";
     for (size_t i = 0; i < valueVector.size(); ++i) {
@@ -97,8 +101,8 @@ std::string toString(std::vector<TypeQualifier> typeQualifiers) {
 std::string toString(std::map<std::string, TypeExpression> members) {
     std::string str = "{ ";
     for (const auto &pair : members) {
-        str += pair.first + ": " + toString(pair.second);
-        str += ", ";
+        str += pair.first + " : " + toString(pair.second);
+        str += " | ";
     }
     str += " }";
     return str;
@@ -997,7 +1001,7 @@ void enum_specifier_H(ASTNode* node, std::string &value){
     
 
     // 2. Find Name of Enum - RecordID
-        std::string recordID = (whichProduction == P1) ? node->children[1]->value : newRecordName();
+        std::string recordID = (whichProduction == P2) ? node->children[1]->value : newRecordName();
         int lastInitValue = 0; // To be passed to enumerator_list_H
 
     // 3. Call the child's handler
@@ -1084,6 +1088,8 @@ void enumerator_list_H(ASTNode* node, std::string recordID, int &lastInitValue){
             // SEMANTIC ERROR 🚨 : Enum Constant already present in the current scope
         }
 
+        A_PTree node->addAttribute("EnumConstant added ☞ \"" + varName + " = " + std::to_string(currInitValue) + "\""); // 🌴 Adding syn_attr
+
         // Send lastInitValue up
         lastInitValue = currInitValue + 1; // Increment the value for next enumerator
 
@@ -1099,7 +1105,7 @@ void enumerator_list_H(ASTNode* node, std::string recordID, int &lastInitValue){
         bool isExplicityInit = false;
         std::string varName; // to be fetched ⬆️
         // 1. Call the function again to fetch the next value
-        enumerator_list_H(node->children[0], recordID, lastInitValue);
+        enumerator_H(node->children[2], varName, explicitInitValue, isExplicityInit);
 
         if(isExplicityInit){
             currInitValue = explicitInitValue;
@@ -1115,6 +1121,8 @@ void enumerator_list_H(ASTNode* node, std::string recordID, int &lastInitValue){
         if(check == INSERT_FAILURE){
             // SEMANTIC ERROR 🚨 : Enum Constant already present in the current scope
         }
+
+        A_PTree node->addAttribute("EnumConstant added ☞ \"" + varName + " = " + std::to_string(currInitValue) + "\""); // 🌴 Adding syn_attr
 
         // Send lastInitValue up
         lastInitValue = currInitValue + 1; // Increment the value for next enumerator
@@ -1134,6 +1142,9 @@ void enumerator_H(ASTNode* node, std::string &varName, int &explicitInitValue, b
     std::string P1 = "IDENTIFIER";
     std::string P2 = "IDENTIFIER ASSIGN constant_expression";
 
+    A_PTree node->addAttribute("inh_varName = "+varName); // 🌳 Adding inh_attr
+    A_PTree node->addAttribute("inh_explicitInitValue = "+toString(explicitInitValue)); // 🌳 Adding inh_attr
+    A_PTree node->addAttribute("inh_isExplicityInit = "+toString(isExplicityInit)); // 🌳 Adding inh_attr
 
     if(whichProduction == P1){
         // 0. syn_data to fetch ⬆️
@@ -1146,8 +1157,10 @@ void enumerator_H(ASTNode* node, std::string &varName, int &explicitInitValue, b
         varName = node->children[0]->value;
 
         // 1. syn_data to be fetched from constant_expression
-        std::string varName1; // this will be a const-literal
-        constant_expression_H(node->children[2],varName);
+        std::string varName1 = "100"; // this will be a const-literal
+        constant_expression_H(node->children[2],varName1);
+
+        CERR << "varName1 = " << varName1 << std::endl;
 
         int constValue = std::stoi(varName1);
         explicitInitValue = constValue;
@@ -1158,11 +1171,11 @@ void enumerator_H(ASTNode* node, std::string &varName, int &explicitInitValue, b
     }else{
         // Wrong Production
     }
-    return;
 
     A_PTree node->addAttribute("syn_varName = "+varName); // 🌴 Adding syn_attr
     A_PTree node->addAttribute("syn_explicitInitValue = "+toString(explicitInitValue)); // 🌴 Adding syn_attr
     A_PTree node->addAttribute("syn_isExplicityInit = "+toString(isExplicityInit)); // 🌴 Adding syn_attr
+    return;
 }
 
 // ----- Declarator Handlers -----
@@ -1833,6 +1846,8 @@ void initializer_list_H(ASTNode* node){
 
 // 1. constant_expression
 void constant_expression_H(ASTNode* node, std::string &value){
+    lastFuncCalled = "constant_expression_H";
+    *handlerLog << "constant_expression_H" << std::endl;
     value = "10";
     // [To be implemented] - Expression Evaluation
     return;

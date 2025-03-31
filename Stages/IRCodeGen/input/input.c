@@ -1,5 +1,6 @@
-struct A{
-    int a;
+enum COLOR
+{
+    BLUE,
+    RED=9,
+    GREEN
 };
-
-struct A obj;
