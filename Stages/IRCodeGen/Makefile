@@ -83,7 +83,7 @@ $(LEXER_C): $(LEXER) $(BUILD_DIR)
 	@$(FLEX) -o $(LEXER_C) $(LEXER)
 
 # Step 3: Compile everything together into an executable
-$(EXECUTABLE): $(LEXER_C) $(PARSER_C) $(PARSER_H) $(OBJ_FILES)
+$(EXECUTABLE): $(LEXER_C) $(PARSER_C) $(PARSER_H) $(OBJ_FILES) 
 	$(CXX) $(CXXFLAGS) $(LEXER_C) $(PARSER_C) $(OBJ_FILES) -o $(EXECUTABLE)
 
 $(CERR): $(OUTPUT_DIR)
@@ -118,12 +118,12 @@ $(OBJ_DIR):
 
 
 ## For Visualizing the AST
-ast: $(INPUT) $(OUTPUT) $(EXECUTABLE) $(OUTPUT_DIR) $(BUILD_DIR)
+ast: $(INPUT) $(OUTPUT) $(EXECUTABLE) $(OUTPUT_DIR) $(BUILD_DIR) $(OBJ_DIR) $(DOTFile) $(DOTPDF)
 	@./$(EXECUTABLE) $(INPUT) $(OUTPUT) -ast $(DOTFile) 2> $(CERR)
 	@$(DOT) -Tpdf $(DOTFile) -o $(DOTPDF)
 	open $(DOTPDF)
 
-ptree: $(INPUT) $(OUTPUT) $(EXECUTABLE) $(OUTPUT_DIR) $(BUILD_DIR)
+ptree: $(INPUT) $(OUTPUT) $(EXECUTABLE) $(OUTPUT_DIR) $(BUILD_DIR) $(OBJ_DIR) $(DOTFile) $(DOTPDF)
 	@./$(EXECUTABLE) $(INPUT) $(OUTPUT) -ptree $(DOTFile) 2> $(CERR)
 	@$(DOT) -Tpdf $(DOTFile) -o $(DOTPDF)
 	open $(DOTPDF) 
@@ -137,7 +137,7 @@ $(DOTFile2):
 $(DOTPDF2):
 	@touch $(DOTPDF2)
 
-Aptree: $(INPUT) $(OUTPUT) $(EXECUTABLE) $(OUTPUT_DIR) $(BUILD_DIR) $(DOTFile2) $(DOTPDF2)
+Aptree: $(INPUT) $(OUTPUT) $(EXECUTABLE) $(OUTPUT_DIR) $(BUILD_DIR) $(DOTFile2) $(DOTPDF2) $(OBJ_DIR)
 	@./$(EXECUTABLE) $(INPUT) $(OUTPUT) -APTree $(DOTFile2) 2> $(CERR)
 	$(DOT) -Tsvg $(DOTFile2) -o $(DOTPDF2)
 	open $(DOTPDF2)
