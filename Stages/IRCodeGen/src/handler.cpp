@@ -4,6 +4,8 @@
 
 std::ofstream *handlerLog = nullptr;
 
+#define HERE *handlerLog << "AT line " << __LINE__ << " in function " << lastFuncCalled << std::endl
+
 void openHandlerLog(const std::string &filename)
 {
     handlerLog = new std::ofstream(filename);
@@ -141,9 +143,43 @@ std::string getProduction(ASTNode *node){
 }
 
 int ProcessDecSpecifiers(std::vector<std::string> &valueVector, BaseInfo *&base, StorageClass &storageClass){
-    // 1. Fill base
+    // 1. Initialize the base and storageClass
+    int check = 0;
 
-    // 2. Check for storage class
+    if(base == nullptr){
+        *handlerLog << "BaseInfo was NULL" << std::endl;
+        base = new BaseInfo();
+    }
+
+    for (size_t i = 0; i < valueVector.size(); ++i) {
+        std::string value = valueVector[i];
+        // The TypeQualifier will be added to the base->typeQualifiers
+        if(value == "const"){
+            TypeQualifier typeQualifier = TypeQualifier::CONST;
+            base->typeQualifiers.push_back(typeQualifier);
+        }else if(value == "volatile"){
+            TypeQualifier typeQualifier = TypeQualifier::VOLATILE;
+            base->typeQualifiers.push_back(typeQualifier);
+        }else if(value == "restrict"){
+            TypeQualifier typeQualifier = TypeQualifier::RESTRICT;
+            base->typeQualifiers.push_back(typeQualifier);
+        }
+
+        // The StorageClass will be added to the storageClass
+        else if(value == "auto"){
+            storageClass = StorageClass::AUTO;
+        }else if(value == "static"){
+            storageClass = StorageClass::STATIC;
+        }else if(value == "extern"){
+            storageClass = StorageClass::EXTERN;
+        }
+
+        // The TypeSpecifier will wil loaded as it is
+        else{
+            // Assuming rest is typeSpecifier
+            base->baseType = value;
+        }
+    }
 
     return 0;
 }
@@ -151,10 +187,13 @@ int ProcessDecSpecifiers(std::vector<std::string> &valueVector, BaseInfo *&base,
 //=====================[ Main Semantic Pass Handler ]=========================================================================================
 
 void semanticPass(ASTNode *node, std::string filename){
+    lastFuncCalled = "semanticPass";
     openHandlerLog(filename);
-
+    *handlerLog << "semanticPass" << std::endl;
     *handlerLog << "--==[ Semantic Pass ]==--" << std::endl;
     translation_unit_H(node);
+
+    closeHandlerLog();
 }
 // SYM_TABLE - Will be Globaly available
 // CODE_BASE - Will be Globaly available (TAC)
@@ -163,6 +202,7 @@ void semanticPass(ASTNode *node, std::string filename){
 
 void translation_unit_H(ASTNode* node){
     *handlerLog << "translation_unit_H" << std::endl;
+    lastFuncCalled = "translation_unit_H";
     std::string whichProduction = getProduction(node);
     std::string P1 = "external_declaration";
     std::string P2 = "translation_unit external_declaration";
@@ -183,6 +223,7 @@ void translation_unit_H(ASTNode* node){
 
 void external_declaration_H(ASTNode* node){
     *handlerLog << "external_declaration_H" << std::endl;
+    lastFuncCalled = "external_declaration_H";
     std::string whichProduction = getProduction(node);
     std::string P1 = "function_definition";
     std::string P2 = "declaration";
@@ -203,6 +244,7 @@ void external_declaration_H(ASTNode* node){
 
 void function_definition_H(ASTNode* node){
     *handlerLog << "function_definition_H" << std::endl;
+    lastFuncCalled = "function_definition_H";
     // This will be used to fetch the function name
     std::string whichProduction = getProduction(node);
     std::string P1 = "declaration_specifiers declarator compound_statement";
@@ -216,6 +258,8 @@ void function_definition_H(ASTNode* node){
 //=====================[ Statements ]=========================================================================================
 
 void statement_H(ASTNode* node){
+    *handlerLog << "statement_H" << std::endl;
+    lastFuncCalled = "statement_H";
     std::string whichProduction = getProduction(node);
     std::string P1 = "labeled_statement";
     std::string P2 = "compound_statement";
@@ -248,6 +292,8 @@ void statement_H(ASTNode* node){
 
 // ----- Main Declaration Handler
 void declaration_H(ASTNode *node){
+    *handlerLog << "declaration_H" << std::endl;
+    lastFuncCalled = "declaration_H";
 
     std::string whichProduction = getProduction(node);
     std::string P1 = "declaration_specifiers SEMI_COLON";
@@ -287,6 +333,8 @@ void declaration_H(ASTNode *node){
 
 void declaration_list(ASTNode *node)
 {
+    *handlerLog << "declaration_list_H" << std::endl;
+    lastFuncCalled = "declaration_list_H";
     std::string whichProduction = getProduction(node);
     std::string P1 = "declaration";
     std::string P2 = "declaration_list declaration";
@@ -310,6 +358,8 @@ void declaration_list(ASTNode *node)
 
 // ----- Init Declarator Handler
 void init_declarator_list_H(ASTNode* node, TypeExpression inh_type, StorageClass inh_storageClass){
+    *handlerLog << "init_declarator_list_H" << std::endl;
+    lastFuncCalled = "init_declarator_list_H";
     std::string whichProduction = getProduction(node);
     std::string P1 = "init_declarator";
     std::string P2 = "init_declarator_list COMMA init_declarator";
@@ -337,6 +387,8 @@ void init_declarator_list_H(ASTNode* node, TypeExpression inh_type, StorageClass
 }
 
 void init_declarator_H(ASTNode* node, TypeExpression inh_type, StorageClass inh_storageClass){
+    *handlerLog << "init_declarator_H" << std::endl;
+    lastFuncCalled = "init_declarator_H";
     std::string whichProduction = getProduction(node);
     std::string P1 = "declarator";
     std::string P2 = "declarator ASSIGN initializer";
@@ -387,7 +439,7 @@ void init_declarator_H(ASTNode* node, TypeExpression inh_type, StorageClass inh_
                 // SEMANTIC ERROR 🚨 : Variable already present in the current scope
             }
 
-            A_PTree node->addAttribute(varName + " symbol Added"); // 🌴 Adding syn_attr
+            A_PTree node->addAttribute("Symbol added ☞ \"" + varName + "\""); // 🌴 Adding syn_attr
 
         // Done - NO 🔖IRCode
     }
@@ -407,6 +459,8 @@ void init_declarator_H(ASTNode* node, TypeExpression inh_type, StorageClass inh_
 // ----- TypeSpecifier + TypeQualifier + StorageClass -----
 void declaration_specifiers_H(ASTNode *node, std::vector<std::string> &valueVector)
 {
+    *handlerLog << "declaration_specifiers_H" << std::endl;
+    lastFuncCalled = "declaration_specifiers_H";
     std::string whichProduction = getProduction(node);
     std::string P1 = "storage_class_specifier";
     std::string P2 = "storage_class_specifier declaration_specifiers";
@@ -459,6 +513,8 @@ void declaration_specifiers_H(ASTNode *node, std::vector<std::string> &valueVect
 }
 
 void storage_class_specifier_H(ASTNode* node, std::string &value){
+    *handlerLog << "storage_class_specifier_H" << std::endl;
+    lastFuncCalled = "storage_class_specifier_H";
     // Has only one Production
     int noOfChild = node->children.size();
     if(noOfChild != 1){
@@ -474,6 +530,8 @@ void storage_class_specifier_H(ASTNode* node, std::string &value){
 }
 
 void type_qualifier_H(ASTNode* node, std::string &value){
+    *handlerLog << "type_qualifier_H" << std::endl;
+    lastFuncCalled = "type_qualifier_H";
     // Has only one Production
     int noOfChild = node->children.size();
     if(noOfChild != 1){
@@ -487,6 +545,8 @@ void type_qualifier_H(ASTNode* node, std::string &value){
 }
 
 void type_qualifier_list_H(ASTNode* node, std::vector<TypeQualifier> &typeQualifiers){
+    *handlerLog << "type_qualifier_list_H" << std::endl;
+    lastFuncCalled = "type_qualifier_list_H";
     std::string whichProduction = getProduction(node);
     std::string P1 = "type_qualifier";
     std::string P2 = "type_qualifier_list type_qualifier";
@@ -546,6 +606,8 @@ void type_qualifier_list_H(ASTNode* node, std::vector<TypeQualifier> &typeQualif
 }
 
 void type_specifier_H(ASTNode* node, std::string &value){
+    *handlerLog << "type_specifier_H" << std::endl;
+    lastFuncCalled = "type_specifier_H";
     std::string whichProduction = getProduction(node);
     // P1 - P9 are Terminals
     std::string P10 = "struct_or_union_specifier";
@@ -586,6 +648,8 @@ void type_specifier_H(ASTNode* node, std::string &value){
 
 void specifier_qualifier_list_H(ASTNode *node, std::vector<std::string> &valueVector)
 {
+    *handlerLog << "specifier_qualifier_list_H" << std::endl;
+    lastFuncCalled = "specifier_qualifier_list_H";
     std::string whichProduction = getProduction(node);
     std::string P1 = "type_specifier specifier_qualifier_list";
     std::string P2 = "type_specifier";
@@ -617,6 +681,8 @@ void specifier_qualifier_list_H(ASTNode *node, std::vector<std::string> &valueVe
 
 // ----- STURCT & UNION -----
 void struct_or_union_specifier_H(ASTNode* node, std::string &value){
+    *handlerLog << "struct_or_union_specifier_H" << std::endl;
+    lastFuncCalled = "struct_or_union_specifier_H";
     std::string whichProduction = getProduction(node);
     std::string P1 = "struct_or_union IDENTIFIER LCURLY struct_declaration_list RCURLY";
     std::string P2 = "struct_or_union LCURLY struct_declaration_list RCURLY";
@@ -647,7 +713,7 @@ void struct_or_union_specifier_H(ASTNode* node, std::string &value){
             if(check == INSERT_FAILURE){
                 // SEMANTIC ERROR 🚨 : Record already present in the current scope
             }
-            A_PTree node->addAttribute(recordID + " structID/unionID added"); // 🌴 Adding syn_attr
+            A_PTree node->addAttribute("\""+recordID + "\" structID/unionID added"); // 🌴 Adding syn_attr
         
         // 3. Pass a String up
             std::string scope = std::to_string(SYM_TABLE.scopeNo);
@@ -690,6 +756,8 @@ void struct_or_union_specifier_H(ASTNode* node, std::string &value){
 // struct_or_union_H is not needed
 
 void struct_declaration_list_H(ASTNode* node, std::map<std::string, TypeExpression> &members){
+    *handlerLog << "struct_declaration_list_H" << std::endl;
+    lastFuncCalled = "struct_declaration_list_H";
     std::string whichProduction = getProduction(node);
     std::string P1 = "struct_declaration";
     std::string P2 = "struct_declaration_list struct_declaration";
@@ -733,6 +801,8 @@ void struct_declaration_list_H(ASTNode* node, std::map<std::string, TypeExpressi
 }
 
 void struct_declaration_H(ASTNode* node, std::map<std::string, TypeExpression> &members){
+    *handlerLog << "struct_declaration_H" << std::endl;
+    lastFuncCalled = "struct_declaration_H";
     std::string whichProduction = getProduction(node);
     std::string P1 = "specifier_qualifier_list struct_declarator_list SEMI_COLON";
 
@@ -771,6 +841,8 @@ void struct_declaration_H(ASTNode* node, std::map<std::string, TypeExpression> &
 }
 
 void struct_declarator_list_H(ASTNode* node, TypeExpression inh_type, std::map<std::string, TypeExpression> &members){
+    *handlerLog << "struct_declarator_list_H" << std::endl;
+    lastFuncCalled = "struct_declarator_list_H";
     std::string whichProduction = getProduction(node);
     std::string P1 = "struct_declarator";
     std::string P2 = "struct_declarator_list COMMA struct_declarator";
@@ -826,6 +898,8 @@ void struct_declarator_list_H(ASTNode* node, TypeExpression inh_type, std::map<s
 }
 
 void struct_declarator_H(ASTNode* node, TypeExpression inh_type, std::string &varName, TypeExpression &type){
+    *handlerLog << "struct_declarator_H" << std::endl;
+    lastFuncCalled = "struct_declarator_H";
     std::string whichProduction = getProduction(node);
     std::string P1 = "declarator";
     std::string P2 = "COLON constant_expression declarator";
@@ -877,6 +951,8 @@ void struct_declarator_H(ASTNode* node, TypeExpression inh_type, std::string &va
 
 // ----- ENUM ----
 void enum_specifier_H(ASTNode* node, std::string &value){
+    *handlerLog << "enum_specifier_H" << std::endl;
+    lastFuncCalled = "enum_specifier_H";
     std::string whichProduction = getProduction(node);
     std::string P1 = "ENUM LCURLY enumerator_list RCURLY";
     std::string P2 = "ENUM IDENTIFIER LCURLY enumerator_list RCURLY";
@@ -908,7 +984,7 @@ void enum_specifier_H(ASTNode* node, std::string &value){
             // SEMANTIC ERROR 🚨 : Record already present in the current scope
         }
 
-        A_PTree node->addAttribute(recordID + " enumID added"); // 🌴 Adding syn_attr
+        A_PTree node->addAttribute("\"" + recordID + "\" enumID added"); // 🌴 Adding syn_attr
     // 5. Pass a String up
         std::string scope = std::to_string(SYM_TABLE.scopeNo);
         std::string typeSpecifier = "enum " + recordID + " " + scope;
@@ -945,6 +1021,8 @@ void enum_specifier_H(ASTNode* node, std::string &value){
 }
 
 void enumerator_list_H(ASTNode* node, std::string recordID, int &lastInitValue){
+    *handlerLog << "enumerator_list_H" << std::endl;
+    lastFuncCalled = "enumerator_list_H";
     std::string whichProduction = getProduction(node);
     std::string P1 = "enumerator";
     std::string P2 = "enumerator_list COMMA enumerator";
@@ -1024,6 +1102,8 @@ void enumerator_list_H(ASTNode* node, std::string recordID, int &lastInitValue){
 }
 
 void enumerator_H(ASTNode* node, std::string &varName, int &explicitInitValue, bool &isExplicityInit){
+    *handlerLog << "enumerator_H" << std::endl;
+    lastFuncCalled = "enumerator_H";
     std::string whichProduction = getProduction(node);
     std::string P1 = "IDENTIFIER";
     std::string P2 = "IDENTIFIER ASSIGN constant_expression";
@@ -1061,7 +1141,10 @@ void enumerator_H(ASTNode* node, std::string &varName, int &explicitInitValue, b
 
 // ----- Declarator Handlers -----
 void declarator_H(ASTNode* node, TypeExpression inh_type, std::string &varName, TypeExpression &type){
+    *handlerLog << "declarator_H" << std::endl;
+    lastFuncCalled = "declarator_H";
     std::string whichProduction = getProduction(node);
+    *handlerLog << "whichProduction of dec_H = " << whichProduction << std::endl;
     std::string P1 = "pointer direct_declarator";
     std::string P2 = "direct_declarator";
 
@@ -1069,15 +1152,21 @@ void declarator_H(ASTNode* node, TypeExpression inh_type, std::string &varName, 
 
 
     if(whichProduction == P1){
+        *handlerLog << "P1" << std::endl;
         // 0. Prepare syn_data to be fetched ⬆️
         std::string varName1; // to be fetched ⬆️
         TypeExpression type1; // to be fetched ⬆️
 
         // 1. Call the function again to fetch the next value
-        std::vector<PointerInfo> ptrInfo;
+        std::vector<PointerInfo> ptrInfo; // can't use this since it's a stack variable
         pointer_H(node->children[0], ptrInfo, ptrInfo);
-        for(auto &info : ptrInfo){
-            inh_type.levelStack.push(&info);
+
+
+        // Update the inh_type
+        for(auto &unit : ptrInfo){
+            PointerInfo *info = new PointerInfo(); // This will make a heap copy 
+            info->typeQualifiers = unit.typeQualifiers;
+            inh_type.levelStack.push(info);
         }
 
         // 2. Call the function again to fetch the next value   
@@ -1087,6 +1176,7 @@ void declarator_H(ASTNode* node, TypeExpression inh_type, std::string &varName, 
         varName = varName1;
         type = type1;
     }else if(whichProduction == P2){
+        *handlerLog << "P2" << std::endl;
         // 0. Prepare syn_data to be fetched ⬆️
         std::string varName1; // to be fetched ⬆️
         TypeExpression type1; // to be fetched ⬆️
@@ -1108,67 +1198,109 @@ void declarator_H(ASTNode* node, TypeExpression inh_type, std::string &varName, 
 }
 
 void direct_declarator_H(ASTNode* node, TypeExpression inh_type, std::string &varName, TypeExpression &type){
+    *handlerLog << "direct_declarator_H" << std::endl;
+    lastFuncCalled = "direct_declarator_H";
+
     std::string whichProduction = getProduction(node);
+    // *handlerLog << "whichProduction = " << whichProduction << std::endl;
     std::string P1 = "IDENTIFIER";
-    std::string P2 = "LPAREN declarator RPAREN";
-    std::string P3 = "IDENTIFIER LPAREN parameter_type_list RPAREN";
-    std::string P4 = "IDENTIFIER LPAREN RPAREN";
+    std::string P2 = "LPAREN declarator RPAREN"; // More Levels
+
+    std::string P3 = "direct_declarator LSQUARE constant_expression RSQUARE"; // Array
+    std::string P4 = "direct_declarator LSQUARE RSQUARE"; 
+
+    std::string P5 = "direct_declarator LPAREN parameter_type_list RPAREN"; // Function SignNature
+    std::string P6 = "direct_declarator LPAREN RPAREN"; // Function call + Signature { Two Possibilities TO-THINK 🤨🤨🤨🤨 }
+    std::string P7 = "direct_declarator LPAREN identifier_list RPAREN"; // Function Calls
+
 
     A_PTree node->addAttribute("inh_type = "+ toString(inh_type)); // 🌳 Adding inh_attr
 
     if(whichProduction == P1){
+        // *handlerLog << "P1" << std::endl;
         // 0. syn_data to fetch ⬆️
         varName = node->children[0]->value;
-        type = inh_type; // Pass the inh_type as it is
-
-    }else if(whichProduction == P2){
+        type = inh_type; // Rotate the inh_type to syn_type ☯️
+    }
+    else if (whichProduction == P2)
+    {
+        // *handlerLog << "P2" << std::endl;
         // 1. Call the function again to fetch the next value
-        declarator_H(node->children[1], inh_type, varName, type);
-
-    }else if(whichProduction == P3){
-        // 0. Prepare syn_data to be fetched ⬆️
+        TypeExpression type1;
         std::string varName1; // to be fetched ⬆️
-        TypeExpression type1; // to be fetched ⬆️
-
-        // First we find parameters
-        std::vector<TypeExpression> paramVector;
-        parameter_type_list_H(node->children[2], paramVector);
-        ParameterInfo* paramInfo = new ParameterInfo();
-        paramInfo->paramsType = paramVector;
-
-        // Update the type
-        inh_type.levelStack.push(paramInfo);
-
-        // 1. Call the function again to fetch the next value
-        declarator_H(node->children[0], inh_type, varName1, type1);
-
-        // 3. Pass the data up
-        varName = varName1;
-        type = type1;
-    }else if(whichProduction == P4){
-        // 0. Prepare syn_data to be fetched ⬆️
-        std::string varName1; // to be fetched ⬆️
-        TypeExpression type1; // to be fetched ⬆️
-
-        // First we find parameters
-        std::vector<TypeExpression> paramVector; // Empty
-        ParameterInfo* paramInfo = new ParameterInfo();
-        paramInfo->paramsType = paramVector;
-
-        // Update the type
-        inh_type.levelStack.push(paramInfo);
-
-        // 1. Call the function again to fetch the next value
-        declarator_H(node->children[0], inh_type, varName1, type1);
+        declarator_H(node->children[1], inh_type, varName1, type1);
 
         // 2. Pass the data up
         varName = varName1;
         type = type1;
-    }else{
+    }
+    else if (whichProduction == P3 || whichProduction == P4)
+    {
+        *handlerLog << "P3+P4" << std::endl;
+        // 0. Prepare syn_data to be fetched ⬆️
+        std::string varName1; // to be fetched ⬆️
+        TypeExpression type1; // to be fetched ⬆️
+
+        // 1. Update inh_type before passing
+
+        std::string value = "-1"; // Either get's updated by constant_expression_H or remains -1
+        if (whichProduction == P3)
+        {
+            constant_expression_H(node->children[2], value);
+        }
+        int size = std::stoi(value);
+
+        ArrayInfo* info = new ArrayInfo();
+        info->dimSize = size;
+        inh_type.levelStack.push(info);
+
+        // 2. Call the function again to fetch the next value
+        direct_declarator_H(node->children[0], inh_type, varName1, type1);
+
+        // 3. Pass the data up
+        varName = varName1;
+        type = type1;
+    }
+    else if (whichProduction == P5 || whichProduction == P6)
+    {
+        // *handlerLog << "P5+P6" << std::endl;
+        // Function signature
+
+        // 0. Prepare syn_data to be fetched ⬆️
+        std::vector<TypeExpression> paramVector;
+        // 1. Call the function again to fetch the next value
+        if(whichProduction == P5){
+            parameter_type_list_H(node->children[1], paramVector);
+        }else{
+            // Argument List is Empty
+        }
+        // Update the inh_type
+        ParameterInfo* info = new ParameterInfo();
+        info->paramsType = paramVector;
+
+        inh_type.levelStack.push(info);
+
+        // 2. Call the function again to fetch the next value
+        std::string varName1; // to be fetched ⬆️
+        TypeExpression type1; // to be fetched ⬆️
+        direct_declarator_H(node->children[0], inh_type, varName1, type1);
+        // 3. Pass the data up
+        varName = varName1;
+        type = type1;
+    }
+    else if (whichProduction == P7)
+    {
+        // What is this doing? [🧠 ToThink]
+        // MOST LIKEY - ERROR: a parameter list without types is only allowed in a function definition
+    }
+    else{
         // Wrong Production
     }
 
-    A_PTree node->addAttribute("syn_varName = "+varName); // 🌴 Adding syn_attr
+
+    A_PTree node->addAttribute("syn_varName = " + varName);   // 🌴 Adding syn_attr
+
+    A_PTree node->addAttribute("syn_type = " + toString(type)); // 🌴 Adding syn_attr
 
     return;
 }
@@ -1176,6 +1308,9 @@ void direct_declarator_H(ASTNode* node, TypeExpression inh_type, std::string &va
 
 // ----- Pointer Handlers -----
 void pointer_H(ASTNode* node, std::vector<PointerInfo> inh_ptrInfo,std::vector<PointerInfo> &ptrInfo){
+    *handlerLog << "pointer_H" << std::endl;
+    lastFuncCalled = "pointer_H";
+
     std::string whichProduction = getProduction(node);
     std::string P1 = "STAR";
     std::string P2 = "STAR type_qualifier_list";
@@ -1237,6 +1372,8 @@ void pointer_H(ASTNode* node, std::vector<PointerInfo> inh_ptrInfo,std::vector<P
 
 // ----- Parameter Handlers -----
 void parameter_type_list_H(ASTNode* node, std::vector<TypeExpression> &paramVector){
+    *handlerLog << "parameter_type_list_H" << std::endl;
+    lastFuncCalled = "parameter_type_list_H";
     std::string whichProduction = getProduction(node);
     std::string P1 = "parameter_list";
     std::string P2 = "parameter_list COMMA ELLIPSIS";
@@ -1259,6 +1396,8 @@ void parameter_type_list_H(ASTNode* node, std::vector<TypeExpression> &paramVect
 }
 
 void parameter_list_H(ASTNode* node, std::vector<TypeExpression> &paramVector){
+    *handlerLog << "parameter_list_H" << std::endl;
+    lastFuncCalled = "parameter_list_H";
     std::string whichProduction = getProduction(node);
     std::string P1 = "parameter_declaration";
     std::string P2 = "parameter_list COMMA parameter_declaration";
@@ -1295,6 +1434,8 @@ void parameter_list_H(ASTNode* node, std::vector<TypeExpression> &paramVector){
 }
 
 void parameter_declaration_H(ASTNode* node, TypeExpression &type){
+    *handlerLog << "parameter_declaration_H" << std::endl;
+    lastFuncCalled = "parameter_declaration_H";
     std::string whichProduction = getProduction(node);
     std::string P1 = "declaration_specifiers declarator";
     std::string P2 = "declaration_specifiers abstract_declarator";
@@ -1364,6 +1505,8 @@ void parameter_declaration_H(ASTNode* node, TypeExpression &type){
 
 // ----- Identifier List Handlers -----
 void identifier_list_H(ASTNode* node, std::vector<std::string> &idList){
+    *handlerLog << "identifier_list_H" << std::endl;
+    lastFuncCalled = "identifier_list_H";
     std::string whichProduction = getProduction(node);
     std::string P1 = "IDENTIFIER";
     std::string P2 = "identifier_list COMMA IDENTIFIER";
@@ -1396,6 +1539,9 @@ void identifier_list_H(ASTNode* node, std::vector<std::string> &idList){
 
 //----- type name Handlers -----
 void type_name_H(ASTNode* node, TypeExpression &type){
+    *handlerLog << "type_name_H" << std::endl;
+    lastFuncCalled = "type_name_H";
+
     std::string whichProduction = getProduction(node);
     std::string P1 = "specifier_qualifier_list";
     std::string P2 = "specifier_qualifier_list abstract_declarator";
@@ -1455,6 +1601,8 @@ void type_name_H(ASTNode* node, TypeExpression &type){
 
 // ----- Abstract Declarator Handlers -----
 void abstract_declarator_H(ASTNode* node, TypeExpression inh_type, TypeExpression &type){
+    *handlerLog << "abstract_declarator_H" << std::endl;
+    lastFuncCalled = "abstract_declarator_H";
     std::string whichProduction = getProduction(node);
     std::string P1 = "pointer";
     std::string P2 = "direct_abstract_declarator";
@@ -1510,6 +1658,8 @@ void abstract_declarator_H(ASTNode* node, TypeExpression inh_type, TypeExpressio
 }
 
 void direct_abstract_declarator_H(ASTNode* node, TypeExpression inh_type, TypeExpression &type){
+    *handlerLog << "direct_abstract_declarator_H" << std::endl;
+    lastFuncCalled = "direct_abstract_declarator_H";
     std::string whichProduction = getProduction(node);
     std::string P1 = "LPAREN abstract_declarator RPAREN";
 
@@ -1596,6 +1746,8 @@ void direct_abstract_declarator_H(ASTNode* node, TypeExpression inh_type, TypeEx
 
 //---- Initializers ---------
 void initializer_H(ASTNode* node){
+    *handlerLog << "initializer_H" << std::endl;
+    lastFuncCalled = "initializer_H";
     std::string whichProduction = getProduction(node);
     std::string P1 = "assignment_expression";
     std::string P2 = "LCURLY initializer_list RCURLY";
@@ -1607,6 +1759,8 @@ void initializer_H(ASTNode* node){
 }
 
 void initializer_list_H(ASTNode* node){
+    *handlerLog << "initializer_list_H" << std::endl;
+    lastFuncCalled = "initializer_list_H";
     std::string whichProduction = getProduction(node);
     std::string P1 = "initializer";
     std::string P2 = "initializer_list COMMA initializer";

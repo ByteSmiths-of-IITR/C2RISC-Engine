@@ -1,13 +1,15 @@
 #include "utility.h"
 #include "parser.tab.h"
 
+int orderOfEval = 0; // Global variable to keep track of the order of evaluation
 
 #define EMPTY_VAL "!!EMPTY!!"
 
 //----------- ASTNode Class
 
     void ASTNode::addAttribute(std::string attribute) {
-
+        attribute += " (" + std::to_string(orderOfEval) + ")";
+        orderOfEval++;
         this->attributes.push_back(attribute);
 
         // // Check if the attribute is added

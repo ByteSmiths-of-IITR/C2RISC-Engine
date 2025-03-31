@@ -129,7 +129,7 @@ ptree: $(INPUT) $(OUTPUT) $(EXECUTABLE) $(OUTPUT_DIR) $(BUILD_DIR)
 	open $(DOTPDF) 
 
 DOTFile2 = $(BUILD_DIR)/annotated_ast_graph.dot
-DOTPDF2 = $(OUTPUT_DIR)/A_PTree.pdf
+DOTPDF2 = $(OUTPUT_DIR)/A_PTree.svg
 
 $(DOTFile2):
 	@touch $(DOTFile2)
@@ -139,7 +139,7 @@ $(DOTPDF2):
 
 Aptree: $(INPUT) $(OUTPUT) $(EXECUTABLE) $(OUTPUT_DIR) $(BUILD_DIR) $(DOTFile2) $(DOTPDF2)
 	@./$(EXECUTABLE) $(INPUT) $(OUTPUT) -APTree $(DOTFile2) 2> $(CERR)
-	@$(DOT) -Tpdf $(DOTFile2) -o $(DOTPDF2)
+	$(DOT) -Tsvg $(DOTFile2) -o $(DOTPDF2)
 	open $(DOTPDF2)
 
 r: $(EXECUTABLE) $(INPUT) $(OUTPUT)

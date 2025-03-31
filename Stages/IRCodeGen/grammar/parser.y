@@ -32,7 +32,7 @@ int noOfyyerrorCalls = 0;
 
 // #define LINE std::cerr<< "Production - " << __LINE__<<std::endl;
 #define LINE /**/
-#define LINE1 std::cerr<< __LINE__<<std::endl;
+#define LINE1 std::cerr << "Reaching line no - " << __LINE__ << std::endl;
 // #define LINE1 /**/
 
 #define PARSERLOGHEADER "----------------------------------- PARSER LOG -----------------------------------"
@@ -108,10 +108,16 @@ void closeOutputFile() {
     }
 }
 
+
 void signalHandler(int signum) {
 
     // Don't Think will be needed anymore [since we removed the handlerFunctions, which were cause of segFaults]
 
+    *output << "\U0001F6A8 SignalHandler: " << signum << " received \U0001F6A8" << std::endl;
+    *output << "Where was I Last: " << lastFuncCalled << std::endl;
+    closeOutputFile();
+    exit(0); // Clean Exit
+    return;
 
     *output << "\U0001F6A8 * Input Program failed in the PARSE stage \U0001F6A8" << std::endl;
     *output << "Where was I Last: " << whereWasILast << std::endl;
@@ -2510,8 +2516,9 @@ int main(int argc, char **argv) {
 
     std::cout << "\n\U0001F170\U0000FE0F ---- Starting Semantic Analysis Phase ---- \U0001F170\U0000FE0F\n";
 
+    LINE1
     semanticPass(root, handlerLogFile); // Call the semantic pass 
-
+    LINE1
     // Print the Annotated Parse Tree
     if(APTree){
         generateDOT_A(root, dot_file_2);

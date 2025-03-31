@@ -26,6 +26,8 @@ class ASTNode;
 
 extern std::ofstream *handlerLog; // This will be used to log the errors
 
+extern int orderOfEval;
+
 // ASTNode class definition
 class ASTNode {
 public:

@@ -35,7 +35,7 @@ int const LOOKUP_SUCCESS = 0; // Found
 int const LOOKUP_FAILURE = -1; // Not Found
 
 
-std::string lastFuncCalled;
+std::string lastFuncCalled = "init"; // Global variable to keep track of the last function called
 
 //=== [Global Variables] ==========================================================================================================
 SymbolTable SYM_TABLE; // Global Symbol Table

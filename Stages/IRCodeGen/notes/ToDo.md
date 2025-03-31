@@ -10,10 +10,6 @@
 
 Was it a error in the input code OR is our Compiler bug
 
-# Declaration's Processing
-`ProcessDeclarationSpecifier()`
-Write code of this function
-
 
 # Decide on how the offset mechanism will work
 
@@ -24,3 +20,6 @@ Write code of this function
 # Write Member Access Logic in postfix_expression
 
 - Think about SPACE::ADDRESS_SPACE logic
+
+
+# No parameter Function Signature & Function call can't be distinguished
