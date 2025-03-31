@@ -55,7 +55,7 @@ EXECUTABLE = $(BIN_DIR)/parser
 SRC_FILES = $(wildcard $(SRC_DIR)/*.cpp)
 OBJ_FILES = $(patsubst $(SRC_DIR)/%.cpp,$(OBJ_DIR)/%.o,$(SRC_FILES))
 
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp $(OBJ_DIR) 
 	@$(CXX) $(CXXFLAGS) -c $< -o $@ 
 
 
@@ -83,7 +83,7 @@ $(LEXER_C): $(LEXER) $(BUILD_DIR)
 	@$(FLEX) -o $(LEXER_C) $(LEXER)
 
 # Step 3: Compile everything together into an executable
-$(EXECUTABLE): $(LEXER_C) $(PARSER_C) $(PARSER_H) $(OBJ_FILES) 
+$(EXECUTABLE): $(LEXER_C) $(PARSER_C) $(PARSER_H) $(OBJ_FILES) $(BIN_DIR) $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) $(LEXER_C) $(PARSER_C) $(OBJ_FILES) -o $(EXECUTABLE)
 
 $(CERR): $(OUTPUT_DIR)
@@ -92,7 +92,7 @@ $(CERR): $(OUTPUT_DIR)
 $(OUTPUT): $(OUTPUT_DIR)
 	@touch $(OUTPUT)
 
-run: $(EXECUTABLE) $(INPUT) $(OUTPUT) $(CERR) $(OUTPUT_DIR) $(BUILD_DIR) $(OBJ_DIR)
+run: $(EXECUTABLE) $(INPUT) $(OUTPUT) $(CERR) $(OUTPUT_DIR) $(BUILD_DIR) $(OBJ_DIR) 
 	./$(EXECUTABLE) $(INPUT) $(OUTPUT) 2> $(CERR) 
 
 # This will only run the parser and generate the output file [NO RESULT]
@@ -118,12 +118,12 @@ $(OBJ_DIR):
 
 
 ## For Visualizing the AST
-ast: $(INPUT) $(OUTPUT) $(EXECUTABLE) $(OUTPUT_DIR) $(BUILD_DIR) $(OBJ_DIR) $(DOTFile) $(DOTPDF)
+ast: $(INPUT) $(OUTPUT) $(EXECUTABLE) $(OUTPUT_DIR) $(BUILD_DIR) 
 	@./$(EXECUTABLE) $(INPUT) $(OUTPUT) -ast $(DOTFile) 2> $(CERR)
 	@$(DOT) -Tpdf $(DOTFile) -o $(DOTPDF)
 	open $(DOTPDF)
 
-ptree: $(INPUT) $(OUTPUT) $(EXECUTABLE) $(OUTPUT_DIR) $(BUILD_DIR) $(OBJ_DIR) $(DOTFile) $(DOTPDF)
+ptree: $(INPUT) $(OUTPUT) $(EXECUTABLE) $(OUTPUT_DIR) $(BUILD_DIR) 
 	@./$(EXECUTABLE) $(INPUT) $(OUTPUT) -ptree $(DOTFile) 2> $(CERR)
 	@$(DOT) -Tpdf $(DOTFile) -o $(DOTPDF)
 	open $(DOTPDF) 
@@ -140,7 +140,6 @@ $(DOTPDF2):
 Aptree: $(INPUT) $(OUTPUT) $(EXECUTABLE) $(OUTPUT_DIR) $(BUILD_DIR) $(DOTFile2) $(DOTPDF2) $(OBJ_DIR)
 	@./$(EXECUTABLE) $(INPUT) $(OUTPUT) -APTree $(DOTFile2) 2> $(CERR)
 	$(DOT) -Tsvg $(DOTFile2) -o $(DOTPDF2)
-	open $(DOTPDF2)
 
 r: $(EXECUTABLE) $(INPUT) $(OUTPUT)
 	./$(EXECUTABLE) $(INPUT) $(OUTPUT) -r 2> $(CERR)

@@ -141,7 +141,7 @@ void signalHandler(int signum) {
 
 
 //How to view the ParseTree
-bool compressed = true; // Default is AST, if ParseTree is needed, change it to false
+bool compressed = false; // Default is PTree, if AST is needed, change it to false
 
 //========================= SEMANTIC + IRCode Gen Phase =========================
 // SymbolTable SYM_TABLE;
@@ -2339,6 +2339,7 @@ int main(int argc, char **argv) {
         for (int i = 3; i < argc; i++) {
             if(std::string(argv[i]) == "-APTree") {
                 APTree = true;
+                compressed = false; // we want uncompressed AST
                 if (i + 1 < argc) {
                     dot_file_2 = argv[i + 1];
                     i++;
@@ -2349,6 +2350,7 @@ int main(int argc, char **argv) {
                 }
             }else if (std::string(argv[i]) == "-ast") {
                 ast_flag = true;
+                compressed = true; // we want compressed AST
                 if (i + 1 < argc) {
                     dot_file = argv[i + 1];
                     i++;

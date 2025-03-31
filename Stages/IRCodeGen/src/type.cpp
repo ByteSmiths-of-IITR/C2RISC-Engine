@@ -105,19 +105,22 @@ std::string toString(const TypeExpression &typeExpr)
         else if (isBaseInfo(*info))
         {
             BaseInfo *base = dynamic_cast<BaseInfo *>(info);
-            result = base->baseType + " " + result;
             // Add qualifiers
+            std::string baseadd = "";
+
             for (auto qualifier : base->typeQualifiers)
             {
                 if (qualifier == TypeQualifier::CONST)
                 {
-                    result = "const " + result;
+                    baseadd = "const " + baseadd;
                 }
                 else if (qualifier == TypeQualifier::VOLATILE)
                 {
-                    result = "volatile " + result;
+                    baseadd = "volatile " + baseadd;
                 }
             }
+            baseadd = baseadd + base->baseType;
+            result = baseadd + result;
         }
         else if (isPointerInfo(*info))
         {
@@ -134,12 +137,12 @@ std::string toString(const TypeExpression &typeExpr)
                     result = "volatile " + result;
                 }
             }
-            result = "*" + result;
+            result = " *" + result;
         }
         else if (isArrayInfo(*info))
         {
             ArrayInfo *arr = dynamic_cast<ArrayInfo *>(info);
-            result = "[" + std::to_string(arr->dimSize) + "]" + result;
+            result = result + "[" + std::to_string(arr->dimSize) + "]";
         }
         else if (isParameterInfo(*info))
         {

@@ -306,6 +306,27 @@ void generateDOT(ASTNode* root, const std::string& filename) {
     out.close();
 }
 
+std::string escapeBrackets(const std::string &input)
+{
+    std::string result;
+    for (char ch : input)
+    {
+        if (ch == '[')
+        {
+            result += "\\["; // Escape opening bracket
+        }
+        else if (ch == ']')
+        {
+            result += "\\]"; // Escape closing bracket (optional, for safety)
+        }
+        else
+        {
+            result += ch;
+        }
+    }
+    return result;
+}
+
 //--------------- Write the Annotated PTree to a DOT format file recursively
 void writeNode_A(std::ofstream &out, ASTNode *node, int parentId, int &nodeCount)
 {
@@ -361,7 +382,7 @@ void writeNode_A(std::ofstream &out, ASTNode *node, int parentId, int &nodeCount
         {
             color = "chocolate2";
         }
-        out << "  <tr><td><FONT COLOR=\"" << color << "\"><font point-size=\"10\">" << info << "</font></FONT></td></tr>\n";
+        out << "  <tr><td><FONT COLOR=\"" << color << "\"><font point-size=\"10\">" << escapeBrackets(info) << "</font></FONT></td></tr>\n";
     }
 
     out << "</table>\n";
