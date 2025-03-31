@@ -92,7 +92,7 @@ $(CERR): $(OUTPUT_DIR)
 $(OUTPUT): $(OUTPUT_DIR)
 	@touch $(OUTPUT)
 
-run: $(EXECUTABLE) $(INPUT) $(OUTPUT) $(CERR) $(OUTPUT_DIR)
+run: $(EXECUTABLE) $(INPUT) $(OUTPUT) $(CERR) $(OUTPUT_DIR) $(BUILD_DIR) $(OBJ_DIR)
 	./$(EXECUTABLE) $(INPUT) $(OUTPUT) 2> $(CERR) 
 
 # This will only run the parser and generate the output file [NO RESULT]
