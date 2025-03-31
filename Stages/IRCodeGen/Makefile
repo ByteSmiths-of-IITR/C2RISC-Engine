@@ -56,7 +56,7 @@ SRC_FILES = $(wildcard $(SRC_DIR)/*.cpp)
 OBJ_FILES = $(patsubst $(SRC_DIR)/%.cpp,$(OBJ_DIR)/%.o,$(SRC_FILES))
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
-	$(CXX) $(CXXFLAGS) -c $< -o $@ 
+	@$(CXX) $(CXXFLAGS) -c $< -o $@ 
 
 
 # Result dot (graphviz) tool
@@ -76,21 +76,21 @@ all: $(EXECUTABLE)
 
 # Step 1: Generate parser files from Bison
 $(PARSER_C) $(PARSER_H): $(PARSER) $(BUILD_DIR)
-	$(BISON) -d $(PARSER) --output=$(PARSER_C) --header=$(PARSER_H)
+	@$(BISON) -d $(PARSER) --output=$(PARSER_C) --header=$(PARSER_H)
 
 # Step 2: Generate lexer file from Flex
 $(LEXER_C): $(LEXER) $(BUILD_DIR) 
-	$(FLEX) -o $(LEXER_C) $(LEXER)
+	@$(FLEX) -o $(LEXER_C) $(LEXER)
 
 # Step 3: Compile everything together into an executable
 $(EXECUTABLE): $(LEXER_C) $(PARSER_C) $(PARSER_H) $(OBJ_FILES)
 	$(CXX) $(CXXFLAGS) $(LEXER_C) $(PARSER_C) $(OBJ_FILES) -o $(EXECUTABLE)
 
 $(CERR): $(OUTPUT_DIR)
-	touch $(CERR)
+	@touch $(CERR)
 
 $(OUTPUT): $(OUTPUT_DIR)
-	touch $(OUTPUT)
+	@touch $(OUTPUT)
 
 run: $(EXECUTABLE) $(INPUT) $(OUTPUT) $(CERR) $(OUTPUT_DIR)
 	./$(EXECUTABLE) $(INPUT) $(OUTPUT) 2> $(CERR) 
@@ -99,34 +99,48 @@ run: $(EXECUTABLE) $(INPUT) $(OUTPUT) $(CERR) $(OUTPUT_DIR)
 
 
 $(DOTFile): $(EXECUTABLE)
-	./$(EXECUTABLE) $(INPUT) 
+	@./$(EXECUTABLE) $(INPUT) 
 
 # Auto Create Required Directories
 $(BUILD_DIR):
-	mkdir -p $(BUILD_DIR)
+	@mkdir -p $(BUILD_DIR)
 
 $(BIN_DIR):
-	mkdir -p $(BIN_DIR)
+	@mkdir -p $(BIN_DIR)
 
 $(OUTPUT_DIR):
-	mkdir -p $(OUTPUT_DIR)
+	@mkdir -p $(OUTPUT_DIR)
 
 $(OBJ_DIR):
-	mkdir -p $(OBJ_DIR)
+	@mkdir -p $(OBJ_DIR)
 
 
 
 
 ## For Visualizing the AST
 ast: $(INPUT) $(OUTPUT) $(EXECUTABLE) $(OUTPUT_DIR) $(BUILD_DIR)
-	./$(EXECUTABLE) $(INPUT) $(OUTPUT) -ast $(DOTFile) 2> $(CERR)
+	@./$(EXECUTABLE) $(INPUT) $(OUTPUT) -ast $(DOTFile) 2> $(CERR)
 	@$(DOT) -Tpdf $(DOTFile) -o $(DOTPDF)
 	open $(DOTPDF)
 
 ptree: $(INPUT) $(OUTPUT) $(EXECUTABLE) $(OUTPUT_DIR) $(BUILD_DIR)
-	./$(EXECUTABLE) $(INPUT) $(OUTPUT) -ptree $(DOTFile) 2> $(CERR)
+	@./$(EXECUTABLE) $(INPUT) $(OUTPUT) -ptree $(DOTFile) 2> $(CERR)
 	@$(DOT) -Tpdf $(DOTFile) -o $(DOTPDF)
 	open $(DOTPDF) 
+
+DOTFile2 = $(BUILD_DIR)/annotated_ast_graph.dot
+DOTPDF2 = $(OUTPUT_DIR)/A_PTree.pdf
+
+$(DOTFile2):
+	@touch $(DOTFile2)
+
+$(DOTPDF2):
+	@touch $(DOTPDF2)
+
+Aptree: $(INPUT) $(OUTPUT) $(EXECUTABLE) $(OUTPUT_DIR) $(BUILD_DIR) $(DOTFile2) $(DOTPDF2)
+	@./$(EXECUTABLE) $(INPUT) $(OUTPUT) -APTree $(DOTFile2) 2> $(CERR)
+	@$(DOT) -Tpdf $(DOTFile2) -o $(DOTPDF2)
+	open $(DOTPDF2)
 
 r: $(EXECUTABLE) $(INPUT) $(OUTPUT)
 	./$(EXECUTABLE) $(INPUT) $(OUTPUT) -r 2> $(CERR)
@@ -185,19 +199,27 @@ SYM_TEST = $(SRC_DIR)/test_sym.cpp
 SYM_TABLEFile = $(OUTPUT_DIR)/sym_table.txt
 
 sym: $(SYM_H) $(SYM_CPP) $(SYM_TEST)
-	$(CXX) $(UTILITY_CPP) $(SYM_CPP) $(SYM_TEST) -o $(BIN_DIR)/symTest $(CXXFLAGS) -I $(INCLUDE_DIR)
-	./$(BIN_DIR)/symTest $(SYM_TABLEFile)
+	@$(CXX) $(UTILITY_CPP) $(SYM_CPP) $(SYM_TEST) -o $(BIN_DIR)/symTest $(CXXFLAGS) -I $(INCLUDE_DIR)
+	@./$(BIN_DIR)/symTest $(SYM_TABLEFile)
 
 
-IRSemantic = $(SRC_DIR)/IRCodeGen.y
-IRSemantic_H = $(INCLUDE_DIR)/IRCodeGen.tab.h
-IRSemantic_CPP = $(SRC_DIR)/IRCodeGen.tab.c
-IRSemantic_EXECUTABLE = $(BIN_DIR)/IRCodeGen
+# IRSemantic = $(SRC_DIR)/IRCodeGen.y
+# IRSemantic_H = $(INCLUDE_DIR)/IRCodeGen.tab.h
+# IRSemantic_CPP = $(SRC_DIR)/IRCodeGen.tab.c
+# IRSemantic_EXECUTABLE = $(BIN_DIR)/IRCodeGen
 
-$(IRSemantic_H): $(IRSemantic)
-	$(BISON) -d $(IRSemantic) --output=$(IRSemantic_CPP) --header=$(IRSemantic_H)
+# $(IRSemantic_H): $(IRSemantic)
+# 	@$(BISON) -d $(IRSemantic) --output=$(IRSemantic_CPP) --header=$(IRSemantic_H)
 
 
-IRCode: $(IRSemantic)  $(IRSemantic_H) $(IRSemantic_CPP) $(SYM_CPP) $(SEMANTIC_CPP) $(TAC_CPP) $(UTILITY_CPP)
-	$(CXX) $(LEXER_C) $(IRSemantic_CPP) $(SYM_CPP) $(SEMANTIC_CPP) $(TAC_CPP) $(UTILITY_CPP) -o $(IRSemantic_EXECUTABLE) $(CXXFLAGS) -I $(INCLUDE_DIR)
-	./$(IRSemantic_EXECUTABLE)
+# IRCode: $(IRSemantic)  $(IRSemantic_H) $(IRSemantic_CPP) $(SYM_CPP) $(SEMANTIC_CPP) $(TAC_CPP) $(UTILITY_CPP)
+# 	$(CXX) $(LEXER_C) $(IRSemantic_CPP) $(SYM_CPP) $(SEMANTIC_CPP) $(TAC_CPP) $(UTILITY_CPP) -o $(IRSemantic_EXECUTABLE) $(CXXFLAGS) -I $(INCLUDE_DIR)
+# 	./$(IRSemantic_EXECUTABLE)
+
+UNIT_TEST = unit_testing.cpp
+
+UNIT_TEST_EXECUTABLE = $(BIN_DIR)/unit_test
+
+unitTest: $(UNIT_TEST) $(OBJ_FILES) 
+	$(CXX) $(CXXFLAGS) $(UNIT_TEST) $(OBJ_FILES) -o $(UNIT_TEST_EXECUTABLE)
+	./$(UNIT_TEST_EXECUTABLE)

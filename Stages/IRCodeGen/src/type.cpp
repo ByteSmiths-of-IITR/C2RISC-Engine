@@ -54,11 +54,11 @@ Type whatIsType(const TypeExpression &typeExpr)
         BaseInfo *base = dynamic_cast<BaseInfo *>(info);
         std::string baseType = base->baseType;
         std::string recordType = baseType.substr(0, baseType.find(" "));
-        if (recordType == STRUCT || recordType == UNION)
+        if (recordType == TYPE_STRUCT || recordType == TYPE_UNION)
         {
             return Type::STRUCT_UNION;
         }
-        if (recordType == ENUM)
+        if (recordType == TYPE_ENUM)
         {
             return Type::ENUM;
         }
@@ -88,9 +88,75 @@ Type whatIsType(const TypeExpression &typeExpr)
 
 std::string toString(const TypeExpression &typeExpr)
 {
+    //Clear topParenthesis
+    TypeExpression temp = typeExpr;
+    removeTopParenthesis(temp);
+
     std::string result = "";
-    //[📍 ToDo] - Need to implement this
-    
+    std::stack<LevelInfo *> tempStack = temp.levelStack;
+    while (!tempStack.empty())
+    {
+        LevelInfo *info = tempStack.top();
+        tempStack.pop();
+        if (isParenthesisInfo(*info))
+        {
+            result = "(" + result + ")";
+        }
+        else if (isBaseInfo(*info))
+        {
+            BaseInfo *base = dynamic_cast<BaseInfo *>(info);
+            result = base->baseType + " " + result;
+            // Add qualifiers
+            for (auto qualifier : base->typeQualifiers)
+            {
+                if (qualifier == TypeQualifier::CONST)
+                {
+                    result = "const " + result;
+                }
+                else if (qualifier == TypeQualifier::VOLATILE)
+                {
+                    result = "volatile " + result;
+                }
+            }
+        }
+        else if (isPointerInfo(*info))
+        {
+            PointerInfo *ptr = dynamic_cast<PointerInfo *>(info);
+            // Add qualifiers
+            for (auto qualifier : ptr->typeQualifiers)
+            {
+                if (qualifier == TypeQualifier::CONST)
+                {
+                    result = "const " + result;
+                }
+                else if (qualifier == TypeQualifier::VOLATILE)
+                {
+                    result = "volatile " + result;
+                }
+            }
+            result = "*" + result;
+        }
+        else if (isArrayInfo(*info))
+        {
+            ArrayInfo *arr = dynamic_cast<ArrayInfo *>(info);
+            result = "[" + std::to_string(arr->dimSize) + "]" + result;
+        }
+        else if (isParameterInfo(*info))
+        {
+            ParameterInfo *param = dynamic_cast<ParameterInfo *>(info);
+            std::string paramStr = "(";
+            for (int i = 0; i < param->paramsType.size(); i++)
+            {
+                paramStr += toString(param->paramsType[i]);
+                if (i != param->paramsType.size() - 1)
+                {
+                    paramStr += ", ";
+                }
+            }
+            paramStr += ")";
+            result = result + paramStr;
+        }
+    }
     return result;
 }
 

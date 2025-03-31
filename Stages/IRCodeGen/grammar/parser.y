@@ -17,6 +17,7 @@
 #include <iomanip>
 
 #include "utility.h"  
+#include "header.h"
 
 #define EMPTY_VAL "!!EMPTY!!"
 
@@ -29,10 +30,10 @@ bool TURN_OFF = true; // Turn off the custom error messages
 
 int noOfyyerrorCalls = 0; 
 
-#define LINE std::cerr<< "Production - " << __LINE__<<std::endl;
-// #define LINE /**/
-// #define LINE1 std::cerr<< __LINE__<<std::endl;
-#define LINE1 /**/
+// #define LINE std::cerr<< "Production - " << __LINE__<<std::endl;
+#define LINE /**/
+#define LINE1 std::cerr<< __LINE__<<std::endl;
+// #define LINE1 /**/
 
 #define PARSERLOGHEADER "----------------------------------- PARSER LOG -----------------------------------"
 #define LOGFOOTER       "----------------------------------- END OF LOG -----------------------------------"
@@ -41,14 +42,6 @@ int noOfyyerrorCalls = 0;
 
 // Global DS 
 std::vector<std::pair<std::pair<int,int>, std::pair<std::string, std::string>> > PARSER_TABLE;
-
-
-// Handler Functions [Removed]
-// void Struct_Union_Declaration_Handler(ASTNode* specifierQualifierList, ASTNode* declaratorList);
-// void Enum_Declaration_Handler(ASTNode* enumSpecifier);
-// void Function_Def_Handler(ASTNode* declarator);
-// void Declaration_Handler(ASTNode* declarationSpecifiers, ASTNode* initDeclaratorList);
-
 
 // Utility Functions
 void printParserTable(std::ostream& out);
@@ -143,6 +136,10 @@ void signalHandler(int signum) {
 
 //How to view the ParseTree
 bool compressed = true; // Default is AST, if ParseTree is needed, change it to false
+
+//========================= SEMANTIC + IRCode Gen Phase =========================
+// SymbolTable SYM_TABLE;
+// TAC CODE_BASE; [Are declared in header.cpp]
 
 
 ASTNode *root;
@@ -1179,52 +1176,62 @@ type_specifier
     : VA_LIST 
     {
         LINE 
-        $$ = new ASTNode("type_specifier", $1->value);
+        $$ = new ASTNode("type_specifier");
+        $$->addChild($1);
     }
     | VOID 
     {
         LINE
-        $$ = new ASTNode("type_specifier", $1->value);
+        $$ = new ASTNode("type_specifier");
+        $$->addChild($1);
     }
     | CHAR 
     {
         LINE
-        $$ = new ASTNode("type_specifier", $1->value);
+        $$ = new ASTNode("type_specifier");
+        $$->addChild($1);
     }
     | SHORT 
     {
         LINE 
-        $$ = new ASTNode("type_specifier", $1->value);
+        $$ = new ASTNode("type_specifier");
+        $$->addChild($1);
     }
     | INT 
     {
         LINE 
-        $$ = new ASTNode("type_specifier", $1->value);
+        $$ = new ASTNode("type_specifier");
+        $$->addChild($1);
     }
     | LONG 
     {
         LINE 
-        $$ = new ASTNode("type_specifier", $1->value);
+        $$ = new ASTNode("type_specifier");
+        $$->addChild($1);
     }
     | FLOAT 
     {
         LINE
-        $$ = new ASTNode("type_specifier", $1->value);
+        $$ = new ASTNode("type_specifier");
+        $$->addChild($1);
     }
     | DOUBLE 
     {
         LINE
-        $$ = new ASTNode("type_specifier", $1->value);
+        $$ = new ASTNode("type_specifier");
+        $$->addChild($1);
     }
     | SIGNED 
     {
         LINE
-        $$ = new ASTNode("type_specifier", $1->value);
+        $$ = new ASTNode("type_specifier");
+        $$->addChild($1);
     }
     | UNSIGNED 
     {
         LINE
-        $$ = new ASTNode("type_specifier", $1->value);
+        $$ = new ASTNode("type_specifier");
+        $$->addChild($1);
     }
     | struct_or_union_specifier 
     {
@@ -2278,6 +2285,8 @@ int main(int argc, char **argv) {
 
     signal(SIGSEGV, signalHandler); // Catch segmentation fault
 
+    signal(SIGABRT, signalHandler); // Catch abort signal
+
     //------------------------ cmd line arguments handling ------------------------
 
         std::string inputInstructions = "Usage: " + std::string(argv[0]) + " <input_file> <output_file> [-ast <dot_file>] [-r] [-pt] [-s] \n";
@@ -2286,21 +2295,24 @@ int main(int argc, char **argv) {
         inputInstructions += "[-r] : Generate Recursive Output\n";
         inputInstructions += "[-ptree <dot_file> ] : Generate Parser Tree\n";
         inputInstructions += "[-s <SExp_file>] : Generate S-Expression\n";
+        inputInstructions += "[-APTree <dot_file>] : Generate a Annotated PTree During Semantic Phase\n";
 
         /* std::cout << "argc: " << argc << std::endl; */
         if (argc < 2) {
-            std::cerr << "Usage: " << argv[0] << " <input_file> <output_file> [-ast <dot_file>] [-r] [-ptree <dot_file>] [-s] \n";
+            std::cerr << "Usage: " << argv[0] << " <input_file> <output_file> [-ast <dot_file>] [-r] [-ptree <dot_file>] [-s] [ -APTree <dot_file> ]\n";
             return 1;
         }
 
         std::string input_file = argv[1];
         std::string output_file = argv[2];
         std::string dot_file = "ast_graph.dot";
+        std::string dot_file_2 = "annotated_ast_graph.dot";
         std::string recursive_output_file = "recursive_output.txt";
         std::string SExp_file = "SExp.txt";
         std::string LaTeXParserTable = "parser_table.tex";    
 
         bool ast_flag = false;
+        bool APTree = false;
         bool parser_tree_flag = false;
         bool recursive_flag = false;
         bool parser_table_flag = false;
@@ -2319,7 +2331,17 @@ int main(int argc, char **argv) {
 
         // Parse command line arguments
         for (int i = 3; i < argc; i++) {
-            if (std::string(argv[i]) == "-ast") {
+            if(std::string(argv[i]) == "-APTree") {
+                APTree = true;
+                if (i + 1 < argc) {
+                    dot_file_2 = argv[i + 1];
+                    i++;
+                } else {
+                    std::cerr << "Error: Missing argument for -APTree\n";
+                    std::cerr << inputInstructions;
+                    return 1;
+                }
+            }else if (std::string(argv[i]) == "-ast") {
                 ast_flag = true;
                 if (i + 1 < argc) {
                     dot_file = argv[i + 1];
@@ -2435,7 +2457,7 @@ int main(int argc, char **argv) {
             return 0; // For now even if there is a syntax error, we will continue to print the AST
         }
     }
-    LINE
+    LINE1
 
     // Success message
     
@@ -2472,26 +2494,32 @@ int main(int argc, char **argv) {
         *output << "\U0001F53A S-Expression generated as: " << SExp_file << "\n";
     }
 
-    /* if(parser_table_flag){
-        // Print Parser Table
-        std::ofstream parser_table;
-        parser_table.open(parser_table_file);
-        printParserTable(parser_table);
-        parser_table.close();
-        *output << "\U0001F53A Parser Table (TXT) generated as: " << parser_table_file << "\n";
-    } */
-    LINE
+    LINE1
 
-    // Removing PARSE_TABLE
-    /* // MUST PRINT PARSER_LaTeX_TABLE
-    std::ofstream LaTeXTable;
-    LaTeXTable.open(LaTeXParserTable);
-    writeLatexTable(LaTeXTable);
-    LaTeXTable.close();
-    *output << "\U00002B55 Parser Table (LaTeX) generated as: " << LaTeXParserTable << " can be visualized using LaTeX\n"; */
 
-    LINE
-    //------------------------- Cleanup ------------------------
+    /*
+
+                                🅾️ SEMANTIC PHASE + 🔖IR Code Gen
+
+    */
+
+
+    //SYM_TABLE & CODE_BASE are globaly defined
+
+    std::string handlerLogFile = "output/handlers.log";
+
+    std::cout << "\n\U0001F170\U0000FE0F ---- Starting Semantic Analysis Phase ---- \U0001F170\U0000FE0F\n";
+
+    semanticPass(root, handlerLogFile); // Call the semantic pass 
+
+    // Print the Annotated Parse Tree
+    if(APTree){
+        generateDOT_A(root, dot_file_2);
+        *output << "\U0001F53A Annotated Parse Tree generated as DOT file: " << dot_file_2 << " can be visualized using Graphviz\n";
+    }
+
+
+
     if (yyin) fclose(yyin);  // Close the input file if opened
     closeOutputFile();  // Close the output file
     return 0;

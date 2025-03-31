@@ -17,7 +17,11 @@
 #include <utility>
 #include <map>
 
+//====================[ Globaly Accessible SymbolTable & TAC-CodeBase ]=========================================================================================
 
+//====================[ Annotated PTree Utilities ]=========================================================================================
+
+extern int ANNOTATE; // 0 - OFF | 1 - ON [value set by header.cpp]
 
 //================== [Architecture Variables]=========================================================================================
 #define WORD_SIZE 4 // int, float
@@ -111,20 +115,20 @@ class TypeExpression{
         };
         
         //=====================[ BaseInfo ]=========================================================================================
-            extern std::string STRUCT;
-            extern std::string UNION;
-            extern std::string ENUM;
+            extern std::string TYPE_STRUCT;
+            extern std::string TYPE_UNION;
+            extern std::string TYPE_ENUM;
             extern std::string ENUM_CONSTANT;
-            extern std::string INT;
-            extern std::string FLOAT;
-            extern std::string DOUBLE;
-            extern std::string CHAR;
-            extern std::string SHORT;
-            extern std::string LONG;
-            extern std::string VOID;
-            extern std::string LONG_LONG;
-            extern std::string UNSIGNED; // will be used like - UNSIGNED + PRIMITIVE
-            extern std::string SIGNED; // this will be used - PRIMITIVE [Default Signed]
+            extern std::string TYPE_INT;
+            extern std::string TYPE_FLOAT;
+            extern std::string TYPE_DOUBLE;
+            extern std::string TYPE_CHAR;
+            extern std::string TYPE_SHORT;
+            extern std::string TYPE_LONG;
+            extern std::string TYPE_VOID;
+            extern std::string TYPE_LONG_LONG;
+            extern std::string TYPE_UNSIGNED; // will be used like - UNSIGNED + PRIMITIVE
+            extern std::string TYPE_SIGNED; // this will be used - PRIMITIVE [Default Signed]
 
         class BaseInfo : public LevelInfo {
         public:
@@ -227,7 +231,7 @@ VALUE_TYPE getValueType(const TypeExpression &typeExpr); // Only Valid for Ident
 
 
 
-
+                                    SYMBOL TABLE
 
 
 
@@ -405,7 +409,7 @@ int width(const UserDType &dtype); // This will return the width of the user def
 /*
 
 
-
+                            THREE ADDRESS CODE
 
 
 */
@@ -456,7 +460,7 @@ class TAC{
 /*
 
 
-
+                            TYPE CHECKING 🅰️ + TYPE CASTING 🆎
 
 
 */
@@ -472,94 +476,104 @@ bool isConstant(const TypeExpression &typeExpr);
 
 
 
+
+
+
+
 /*
 
 
-
+                            HANDLER FUNCTIONS 🥌
 
 
 
 */
 
-//=====================[ Non-Terminal DataStructure ]=========================================================================================
+//=====================[ Handler Error Handling ]=========================================================================================
 
-class BaseData
-{
-public:
-    BaseData()
-    {
-        MEM("BaseData Constructor");
-    }
-    virtual ~BaseData()
-    {
-        MEM("BaseData Destructor");
-    }
-};
+extern std::ofstream* handlerLog; // This will be used to log the errors
 
-class ExpressionData : public BaseData
-{
-public:
-    // syn_Attributes to be passed up ⬆️
-    std::string varName;
-    TypeExpression type;
-    VALUE_TYPE valueType;
-    SPACE valueSpace;
+void openHandlerLog(const std::string &filename);
+void closeHandlerLog();
 
-    // inh_Attributes to be passed down ⬇️
-    std::string whereToSendString; // ❓ Check if needed
-};
+//=====================[ Main Semantic Pass Handler ]=========================================================================================
 
-class DeclarationData : public BaseData
-{
-public:
-    // syn_Attributes to be passed up ⬆️
-    TypeExpression type;
-    std::string varName;
+void semanticPass(ASTNode *node, std::string filename);
+// SYM_TABLE - Will be Globaly available
+// CODE_BASE - Will be Globaly available (TAC)
 
-    // inh_Attributes to be passed down ⬇️
-    TypeExpression inh_type;
-    StorageClass inh_storageClass;
-};
+//=====================[ Starting Handlers ]=========================================================================================
 
+void translation_unit_H(ASTNode *node);
+void external_declaration_H(ASTNode *node);
+
+//=====================[ Function Definition Handlers ]=========================================================================================
+
+void function_definition_H(ASTNode *node);
+
+//=====================[ Statements Handlers ]=========================================================================================
+
+void statement_H(ASTNode *node);
 
 //=====================[ Declaration Handlers ]=========================================================================================
 
-void declaration_H(ASTNode* node);
-void declaration_specifiers_H(ASTNode* node, std::vector<std::string> &valueVector);
+// ----- Main Declaration Handler
+void declaration_H(ASTNode *node);
+void declaration_list_H(ASTNode *node);
 
+
+//----- Init Declarator Handler
 void init_declarator_list_H(ASTNode* node, TypeExpression inh_type, StorageClass inh_storageClass);
 void init_declarator_H(ASTNode* node, TypeExpression inh_type, StorageClass inh_storageClass);
 
-void declarator_H(ASTNode* node, TypeExpression inh_type, std::string &varName, TypeExpression &type);
-
+// ----- TypeSpecifier + TypeQualifier + StorageClass -----
+void declaration_specifiers_H(ASTNode *node, std::vector<std::string> &valueVector);
 void storage_class_specifier_H(ASTNode* node, std::string &value);
 void type_specifier_H(ASTNode* node, std::string &value);
 void type_qualifier_H(ASTNode* node, std::string &value);
 void specifier_qualifier_list_H(ASTNode* node, std::vector<std::string> &valueVector);
 void type_qualifier_list_H(ASTNode* node, std::vector<TypeQualifier> &typeQualifiers);
 
+//----- Struct/Union -----
 void struct_or_union_specifier_H(ASTNode* node, std::string &value);
+// struct_or_union_H not needed
 void struct_declaration_list_H(ASTNode* node, std::map<std::string, TypeExpression> &members);
 void struct_declaration_H(ASTNode* node, std::map<std::string, TypeExpression> &members);
 void struct_declarator_list_H(ASTNode* node, TypeExpression inh_type, std::map<std::string, TypeExpression> &members);
 void struct_declarator_H(ASTNode* node, TypeExpression inh_type, std::string &varName, TypeExpression &type);
-
+// -- Enum -----
 void enum_specifier_H(ASTNode* node, std::string &value);
 void enumerator_list_H(ASTNode* node, std::string recordID, int &lastInitValue);
 void enumerator_H(ASTNode* node, std::string &varName, int &explicitInitValue, bool &isExplicityInit);
 
+//----- Declarator -----
 void declarator_H(ASTNode* node, TypeExpression inh_type, std::string &varName, TypeExpression &type);
 void direct_declarator_H(ASTNode* node, TypeExpression inh_type, std::string &varName, TypeExpression &type);
+
+//----- Pointer -----
 void pointer_H(ASTNode* node, std::vector<PointerInfo> inh_ptrInfo, std::vector<PointerInfo> &ptrInfo);
 
+//----- Parameters -----
 void parameter_type_list_H(ASTNode* node, std::vector<TypeExpression> &paramVector);
 void parameter_list_H(ASTNode* node, std::vector<TypeExpression> &paramVector);
 void parameter_declaration_H(ASTNode* node, TypeExpression &type);
-void abstract_declarator_H(ASTNode* node, TypeExpression inh_type, TypeExpression &type);
-void direct_abstract_declarator_H(ASTNode* node, TypeExpression inh_type, TypeExpression &type);
+
+//----- Identifier List -----
+void identifier_list_H(ASTNode *node, std::vector<std::string> &idList);
+
+//----- Type Name -----
+void type_name_H(ASTNode *node, TypeExpression &type);
+
+//----- Abstract Declarator -----
+void abstract_declarator_H(ASTNode *node, TypeExpression inh_type, TypeExpression &type);
+void direct_abstract_declarator_H(ASTNode *node, TypeExpression inh_type, TypeExpression &type);
+
+//----- Initializer -----
+void initializer_H(ASTNode *node);
+void initializer_list_H(ASTNode *node);
 
 //======================[ Expression Handlers ]=========================================================================================
 
-void constant_expression_H(ASTNode* node, std::string &value);
+void constant_expression_H(ASTNode *node, std::string &value);
 
 #endif // !HEADER_H

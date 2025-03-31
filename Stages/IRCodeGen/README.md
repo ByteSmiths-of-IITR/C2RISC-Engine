@@ -20,3 +20,9 @@ and Result is stored in `output.txt` file
 
 ### To Generate RISC-V Assembly
 `make assembly`
+
+### To View Annoteated Parse Tree
+`make Aptree`
+
+### To Unit Test
+`make unitTest`

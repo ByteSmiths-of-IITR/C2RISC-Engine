@@ -1,9 +1,24 @@
 #include "utility.h"
 #include "parser.tab.h"
 
+
 #define EMPTY_VAL "!!EMPTY!!"
 
 //----------- ASTNode Class
+
+    void ASTNode::addAttribute(std::string attribute) {
+
+        this->attributes.push_back(attribute);
+
+        // // Check if the attribute is added
+        // for(const std::string &attr : this->attributes) {
+        //     if (attr == attribute) {
+        //         std::cout << "Attribute added: " << attribute << std::endl;
+        //     }
+        // }
+
+    }
+
     ASTNode::ASTNode(
         std::string type, 
         std::string value,
@@ -240,53 +255,147 @@ std::string ASTStyle(ASTNode* node) {
     }
 
 //--------------- Writes the AST to a DOT format file recursively
-    void writeNode(std::ofstream &out, ASTNode* node, int parentId, int &nodeCount) {
-        if (!node) return;
 
-        int currentId = nodeCount++;
-        out << "    node" << currentId << " [label=\"";
-        if(node->value == "!!EMPTY!!") {
-            out << node->type;
-        } else {
-            // if the value is a string, escape the quotes
-            std::string value = node->value;
-            for (size_t i = 0; i < value.size(); ++i) {
-                if (value[i] == '\"') {
-                    value.insert(i, "\\");
-                    i++;
-                }
+void writeNode(std::ofstream &out, ASTNode* node, int parentId, int &nodeCount) {
+    if (!node) return;
+
+    int currentId = nodeCount++;
+    out << "    node" << currentId << " [label=\"";
+    if(node->value == "!!EMPTY!!") {
+        out << node->type;
+    } else {
+        // if the value is a string, escape the quotes
+        std::string value = node->value;
+        for (size_t i = 0; i < value.size(); ++i) {
+            if (value[i] == '\"') {
+                value.insert(i, "\\");
+                i++;
             }
-            out << value;
         }
-        std::string styleSettings = ASTStyle(node);
-        out << "\", " << styleSettings << "];\n";
+        out << value;
+    }
+    std::string styleSettings = ASTStyle(node);
+    out << "\", " << styleSettings << "];\n";
 
-        if (parentId != -1) {
-            out << "    node" << parentId << " -> node" << currentId << ";\n";
-        }
-
-        for (ASTNode* child : node->children) {
-            writeNode(out, child, currentId, nodeCount);
-        }
+    if (parentId != -1) {
+        out << "    node" << parentId << " -> node" << currentId << ";\n";
     }
 
-    // Generates a DOT file to visualize the AST
-    void generateDOT(ASTNode* root, const std::string& filename) {
-        std::ofstream out(filename);
-        if (!out) {
-            std::cerr << "Error: Could not open file " << filename << "\n";
-            return;
-        }
-
-        out << "digraph AST {\n";
-        out << "    node [shape=oval, style=filled, fillcolor=bisque, fontname=\"Cochin\"];\n";
-
-        int nodeCount = 0;
-        writeNode(out, root, -1, nodeCount); 
-
-        out << "}\n";
-        out.close();
+    for (ASTNode* child : node->children) {
+        writeNode(out, child, currentId, nodeCount);
     }
+}
+
+// Generates a DOT file to visualize the AST
+void generateDOT(ASTNode* root, const std::string& filename) {
+    std::ofstream out(filename);
+    if (!out) {
+        std::cerr << "Error: Could not open file " << filename << "\n";
+        return;
+    }
+
+    out << "digraph AST {\n";
+    out << "    node [shape=oval, style=filled, fillcolor=bisque, fontname=\"Cochin\"];\n";
+
+    int nodeCount = 0;
+    writeNode(out, root, -1, nodeCount); 
+
+    out << "}\n";
+    out.close();
+}
+
+//--------------- Write the Annotated PTree to a DOT format file recursively
+void writeNode_A(std::ofstream &out, ASTNode *node, int parentId, int &nodeCount)
+{
+    if (!node)
+        return;
+    
+    int currentId = nodeCount++;
+    std::string header;
+    if (node->value == "!!EMPTY!!")
+    {
+        header = node->type;
+    }
+    else
+    {
+        // if the value is a string, escape the quotes
+        std::string value = node->value;
+        for (size_t i = 0; i < value.size(); ++i)
+        {
+            if (value[i] == '\"')
+            {
+                value.insert(i, "\\");
+                i++;
+            }
+        }
+        header = value;
+    }
+    std::string styleSettings = ASTStyle(node);
+
+    //-----
+    out << "    node" << currentId;
+    out << " [label=<\n";
+    out << "<table border=\"0\" cellborder=\"0\" cellspacing=\"0\">\n";
+
+    // Heading with larger font
+    std::string headerColor = "black";
+    out << "  <tr><td><FONT COLOR=\"" << headerColor << "\"><font point-size=\"14\"><b>" << header << "</b></font></FONT></td></tr>\n";
+
+    // Extra info with smaller font
+    for (const auto &info : node->attributes)
+    {
+        // Check for syn_attr and inh_attr 
+        // Fetch first 3 characters ignoring space
+        std::string infoStr = info;
+        infoStr.erase(remove_if(infoStr.begin(), infoStr.end(), isspace), infoStr.end());
+        std::string type = infoStr.substr(0, 3);
+        // std::cout << "Type: " << type << std::endl;
+        std::string color = "darkorchid2";
+        if (type == "syn")
+        {
+            color = "forestgreen";
+        }
+        else if (type == "inh")
+        {
+            color = "chocolate2";
+        }
+        out << "  <tr><td><FONT COLOR=\"" << color << "\"><font point-size=\"10\">" << info << "</font></FONT></td></tr>\n";
+    }
+
+    out << "</table>\n";
+    out << ">,";
+    out << styleSettings << "];\n";
+
+    //-----
+    if (parentId != -1)
+    {
+        out << "    node" << parentId << " -> node" << currentId << ";\n";
+    }
+
+    for (ASTNode *child : node->children)
+    {
+        writeNode_A(out, child, currentId, nodeCount);
+    }
+}
+
+void generateDOT_A(ASTNode *root, const std::string &filename)
+{
+    std::ofstream out(filename);
+    if (!out)
+    {
+        std::cerr << "Error: Could not open file " << filename << "\n";
+        return;
+    }
+
+    out << "digraph AST {\n";
+    out << "    node [shape=oval, style=filled, fillcolor=bisque, fontname=\"Cochin\"];\n";
+
+    int nodeCount = 0;
+    writeNode_A(out, root, -1, nodeCount);
+
+    out << "}\n";
+    out.close();
+}
 
 //----------- Function to print the AST in S-expression format
     void printSExpression(ASTNode* root, std::ofstream& outputFile, int indent ) {

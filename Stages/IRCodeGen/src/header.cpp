@@ -5,20 +5,20 @@ int MEMORY_MONITORING = 0; // 0 - OFF | 1 - ON [Initialized here]
 
 //===================[ Intialized Externed Variable ]===============================
 
-std::string STRUCT = "struct";
-std::string UNION = "union";
-std::string ENUM = "enum";
+std::string TYPE_STRUCT = "struct";
+std::string TYPE_UNION = "union";
+std::string TYPE_ENUM = "enum";
 std::string ENUM_CONSTANT = "enum_constant";
-std::string INT = "int";
-std::string FLOAT = "float";
-std::string DOUBLE = "double";
-std::string CHAR = "char";
-std::string SHORT = "short";
-std::string LONG = "long";
-std::string VOID = "void";
-std::string LONG_LONG = "long_long";
-std::string UNSIGNED = "unsigned"; // will be used like - UNSIGNED + PRIMITIVE
-std::string SIGNED = "signed";
+std::string TYPE_INT = "int";
+std::string TYPE_FLOAT = "float";
+std::string TYPE_DOUBLE = "double";
+std::string TYPE_CHAR = "char";
+std::string TYPE_SHORT = "short";
+std::string TYPE_LONG = "long";
+std::string TYPE_VOID = "void";
+std::string TYPE_LONG_LONG = "long_long";
+std::string TYPE_UNSIGNED = "unsigned"; // will be used like - UNSIGNED + PRIMITIVE
+std::string TYPE_SIGNED = "signed";
 
 int const POP_SUCCESS = 0;
 int const POP_FAILURE = -1; // if 

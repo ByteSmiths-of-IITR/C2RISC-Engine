@@ -24,6 +24,7 @@
 class TokenAttribute;
 class ASTNode;
 
+extern std::ofstream *handlerLog; // This will be used to log the errors
 
 // ASTNode class definition
 class ASTNode {
@@ -55,10 +56,7 @@ public:
 
     void print(int level);
 
-    void pushAttribute(std::string attribute) {
-        attributes.push_back(attribute);
-    }
-
+    void addAttribute(std::string attribute);
 };
 
 //HelperFunction
@@ -79,6 +77,10 @@ void printAST(ASTNode *root);
 std::string ASTStyle(ASTNode *node);
 void writeNode(std::ofstream &out, ASTNode *node, int parentId, int &nodeCount);
 void generateDOT(ASTNode *root, const std::string &filename);
+
+void writeNode_A(std::ofstream &out, ASTNode *node, int parentId, int &nodeCount);
+void generateDOT_A(ASTNode *root, const std::string &filename);
+
 void printSExpression(ASTNode *root, std::ofstream &outputFile, int indent = 0);
 void writeASTToSExpression(ASTNode *root, const std::string &outputFileName);
 void printASTRecursive(ASTNode *node, std::ofstream &outFile, const std::string &prefix, bool isLast);
