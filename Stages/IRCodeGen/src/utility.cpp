@@ -313,11 +313,11 @@ std::string escapeBrackets(const std::string &input)
     {
         if (ch == '[')
         {
-            result += "\\["; // Escape opening bracket
+            result += "["; // Escape opening bracket
         }
         else if (ch == ']')
         {
-            result += "\\]"; // Escape closing bracket (optional, for safety)
+            result += "]"; // Escape closing bracket (optional, for safety)
         }
         else
         {

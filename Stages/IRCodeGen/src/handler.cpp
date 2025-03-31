@@ -1245,6 +1245,11 @@ void direct_declarator_H(ASTNode* node, TypeExpression inh_type, std::string &va
         // 1. Call the function again to fetch the next value
         TypeExpression type1;
         std::string varName1; // to be fetched ⬆️
+
+        // Update the inh_type
+        ParenthesisInfo* info = new ParenthesisInfo();
+        inh_type.levelStack.push(info);
+
         declarator_H(node->children[1], inh_type, varName1, type1);
 
         // 2. Pass the data up

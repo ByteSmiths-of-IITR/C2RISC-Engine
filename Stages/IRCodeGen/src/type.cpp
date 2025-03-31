@@ -120,7 +120,7 @@ std::string toString(const TypeExpression &typeExpr)
                 }
             }
             baseadd = baseadd + base->baseType;
-            result = baseadd + result;
+            result = baseadd + (result.empty() ? "" : " ") + result;
         }
         else if (isPointerInfo(*info))
         {
@@ -137,7 +137,7 @@ std::string toString(const TypeExpression &typeExpr)
                     result = "volatile " + result;
                 }
             }
-            result = " *" + result;
+            result = "*" + result;
         }
         else if (isArrayInfo(*info))
         {
