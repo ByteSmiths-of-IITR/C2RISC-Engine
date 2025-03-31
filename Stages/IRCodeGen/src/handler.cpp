@@ -988,6 +988,8 @@ void enum_specifier_H(ASTNode* node, std::string &value){
     std::string P2 = "ENUM IDENTIFIER LCURLY enumerator_list RCURLY";
     std::string P3 = "ENUM IDENTIFIER";
 
+    CERR << "Production: " << whichProduction << std::endl;
+
     A_PTree node->addAttribute("inh_value = "+value); // 🌳 Adding inh_attr
 
     // Code Common to P1 & P2
@@ -1025,8 +1027,11 @@ void enum_specifier_H(ASTNode* node, std::string &value){
         std::string recordID = node->children[1]->value;
         GenericSymbol *symbol;
         int check = SYM_TABLE.lookupRecord(recordID, symbol);
-        if(check == LOOKUP_FAILURE){
+        std::string scope = "-101";
+        if (check == LOOKUP_FAILURE)
+        {
             // SEMANTIC ERROR 🚨 : Record not found
+            CERR << "lookup Filure" << std::endl;
         }
         else{
             RecordType neededType = RecordType::ENUM;
@@ -1034,16 +1039,19 @@ void enum_specifier_H(ASTNode* node, std::string &value){
             if(neededType != foundType){
                 // SEMANTIC ERROR 🚨 : Type Mismatch
             }
+            scope = std::to_string(symbol->scopeNo);
         }
+        HERE;
         // 2. Pass a String up
-            std::string scope = std::to_string(symbol->scopeNo);
-            std::string typeSpecifier = "enum " + recordID + " " + scope;
+        std::string typeSpecifier = "enum " + recordID + " " + scope;
 
-            value = typeSpecifier; // send syn_attr ⬆️
-    }else{
+        value = typeSpecifier; // send syn_attr ⬆️
+        HERE;
+    }
+    else
+    {
         // Wrong Production
     }
-
 
     A_PTree node->addAttribute("syn_value = "+value); // 🌴 Adding syn_attr
 

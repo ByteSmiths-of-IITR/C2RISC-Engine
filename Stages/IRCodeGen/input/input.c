@@ -1,6 +1,1 @@
-enum COLOR
-{
-    BLUE,
-    RED=9,
-    GREEN
-};
+enum Color c;
