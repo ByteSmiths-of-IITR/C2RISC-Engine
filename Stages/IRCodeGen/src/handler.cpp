@@ -673,6 +673,8 @@ void specifier_qualifier_list_H(ASTNode *node, std::vector<std::string> &valueVe
     std::string P3 = "type_qualifier specifier_qualifier_list";
     std::string P4 = "type_qualifier";
 
+    CERR << "Production: " << whichProduction << std::endl;
+
     A_PTree node->addAttribute("inh_valueVector = " + toString(valueVector)); // 🌳 Adding inh_attr
 
     if (whichProduction != P1 && whichProduction != P2 && whichProduction != P3 && whichProduction != P4)
@@ -682,13 +684,16 @@ void specifier_qualifier_list_H(ASTNode *node, std::vector<std::string> &valueVe
     }
 
     // Code Common to all
-    std::string value = node->children[0]->value; // Direct fetch from the child
+    std::string value; // syn_attr from type_specifier or type_qualifier 🟡
+    type_specifier_H(node->children[0], value); // syn_attr from type_specifier or type_qualifier
 
     if (whichProduction == P1 || whichProduction == P3)
     {
         // 1. We call the function again to fetch the next value
         specifier_qualifier_list_H(node->children[1], valueVector);
     }
+
+    valueVector.push_back(value); // syn_attr from type_specifier or type_qualifier
 
     A_PTree node->addAttribute("syn_value = " + toString(valueVector)); // 🌴 Adding syn_attr
 
@@ -704,6 +709,10 @@ void struct_or_union_specifier_H(ASTNode* node, std::string &value){
     std::string P1 = "struct_or_union IDENTIFIER LCURLY struct_declaration_list RCURLY";
     std::string P2 = "struct_or_union LCURLY struct_declaration_list RCURLY";
     std::string P3 = "struct_or_union IDENTIFIER";
+
+    A_PTree node->addAttribute("inh_value = "+value); // 🌳 Adding inh_attr
+
+    CERR << "Production: " << whichProduction << std::endl;
 
     std::string recordStr = (node->children.size() > 0) ? node->children[0]->value : "";
 

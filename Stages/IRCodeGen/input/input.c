@@ -1,4 +1,5 @@
-// int a = 0, *b;
+struct A{
+    int a;
+};
 
-int *func(int a);
-int (*func)(int a);
+struct A obj;

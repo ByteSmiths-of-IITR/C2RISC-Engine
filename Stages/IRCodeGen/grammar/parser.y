@@ -1272,7 +1272,7 @@ struct_or_union_specifier
         LINE 
         $$ = new ASTNode("struct_or_union_specifier");
         $$->addChild($1);
-        $$->addChild(new ASTNode("struct_UnionID", $2->value));
+        $$->addChild(new ASTNode("IDENTIFIER", $2->value));
         $$->addChild($3);
         $$->addChild($4);
         $$->addChild($5);
@@ -1291,7 +1291,7 @@ struct_or_union_specifier
         LINE 
         $$ = new ASTNode("struct_or_union_specifier");
         $$->addChild($1);
-        $$->addChild(new ASTNode("struct_UnionID", $2->value));
+        $$->addChild(new ASTNode("IDENTIFIER", $2->value));
     }
     ;
 
@@ -1299,12 +1299,12 @@ struct_or_union
     : STRUCT 
     {
         LINE 
-        $$ = new ASTNode("Struct", "struct");
+        $$ = new ASTNode("struct_or_union", "struct");
     }
     | UNION 
     {
         LINE 
-        $$ = new ASTNode("Union", "union");
+        $$ = new ASTNode("struct_or_union", "union");
     }
     ;
 
