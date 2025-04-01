@@ -321,6 +321,8 @@ public:
     std::stack<SymbolNode *> listStack; // Keep track of order of insertions
     std::stack<int> scopeBottom;        // Track the bottom marker to above stack of symbols
 
+    int globalScope;
+
     std::stack<int> lastScopeNo; // A ancestor scope tracker
     int scopeNo; // This will keep the current scope number [unique to each scope] [not like level]
     int nextScopeNo;
@@ -331,6 +333,7 @@ public:
         this->scopeNo = -1;
         this->nextScopeNo = 0;
         this->NodeCount = 0;
+        this->globalScope = -100;
         MEM("SymbolTable Constructor");
     }
 
@@ -338,6 +341,8 @@ public:
 
     int enterScope(); // This will create a new scope and return the scope number
     void exitScope(); // This will remove all the symbols of the current scope
+
+    int getGlobaScopeNo();
 
     int insertRecord(const std::string &key, GenericSymbol *symbol);
     int insert(const std::string &key, GenericSymbol *symbol);
@@ -551,6 +556,7 @@ extern int ANNOTATE; // 0 - OFF | 1 - ON [extern declared in header.h]
 
 extern std::ofstream* handlerLog; // This will be used to log the errors
 
+#define ENTRY_MSG *handlerLog << "[" << __LINE__ << "] " 
 #define HERE *handlerLog << "AT line " << __LINE__ << " in " << __FILE__ << std::endl
 #define HEREFUNC *handlerLog << "AT line " << __LINE__ << " in " << __FILE__ << " in function: " << lastFuncCalled << std::endl
 

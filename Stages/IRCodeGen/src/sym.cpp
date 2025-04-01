@@ -52,8 +52,17 @@ void SymbolNode::insertBefore(SymbolNode *node)
 
 //================[ SymTable - Scope + general + print ]=================================================================================================
 
+int SymbolTable::getGlobaScopeNo()
+{
+    return this->globalScope;
+}
+
 int SymbolTable::enterScope()
 {
+
+    if(globalScope == -100){
+        globalScope = this->nextScopeNo;
+    }
 
     lastFuncCalled = "SymbolTable::enterScope";
 

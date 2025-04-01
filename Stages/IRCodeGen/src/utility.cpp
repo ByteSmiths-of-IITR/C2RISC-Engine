@@ -14,6 +14,9 @@ bool expectingTypeName = false; // Global variable to check if we are expecting 
         orderOfEval++;
         this->attributes.push_back(attribute);
 
+        // When adding attributes clear the value field of node
+        this->value = EMPTY_VAL; // This was filled during parsing
+
         // // Check if the attribute is added
         // for(const std::string &attr : this->attributes) {
         //     if (attr == attribute) {
@@ -135,19 +138,9 @@ std::string ASTStyle(ASTNode* node) {
     if (param == "IDENTIFIER") {
         return "shape=egg, style=filled, fillcolor=seagreen1";
     }
-    if (param == "Typedef D-Type") {
+    if (param == "TYPE_NAME") {
         return "shape=parallelogram, style=filled, fillcolor=seagreen1";
     }
-    else if (param == "struct_UnionID")
-    {
-        return "shape=parallelogram, style=filled, fillcolor=seagreen2";
-    }
-    // else if (param == "unionID"){
-    //     return "shape=parallelogram, style=filled, fillcolor=seagreen3";
-    // }
-    else if (param == "enumID"){
-        return "shape=parallelogram, style=filled, fillcolor=seagreen4";
-    } 
 
     // Constants and literals
     else if (param == "CONSTANT")
@@ -157,99 +150,34 @@ std::string ASTStyle(ASTNode* node) {
     else if (param == "STRING_LITERAL"){
         return "shape=box, style=rounded, fillcolor=lightcoral";
     }
+    
 
     // Root 
-    else if (param == "Translation Unit")
+    else if (param == "translation_unit")
     {
         return "shape=doubleoctagon, style=filled, fillcolor=lightcoral";
     }
 
     // Struct Union Enum
-    else if(param =="Struct"){
+    else if (param == "struct_or_union")
+    {
         return "shape=box3d, style=filled, fillcolor=olivedrab1";
     }
-    else if(param =="Union"){
-        return "shape=box3d, style=filled, fillcolor=olivedrab1";
-    }
-    else if(param =="Enum"){
+    else if(param =="ENUM"){
         return "shape=box3d, style=filled, fillcolor=olivedrab3";
     }
 
-    // Functions
-    else if(param =="Function Definition"){
-        return "shape=cylinder, style=filled, fillcolor=lawngreen";
+    // SymbolTable Entry Points
+    else if(param=="function_definition"){
+        return "shape=cylinder, style=filled, fillcolor=darkolivegreen2";
     }
-    else if(param=="Function Declaration"){
-        return "shape=cylinder, style=filled, fillcolor=deeppink";
+    else if(param == "struct_or_union_specifier"){
+        return "shape=box3d, style=filled, fillcolor=darkolivegreen1";
     }
-    else if(param =="Function Call"){
-        return "shape=cylinder, style=filled, fillcolor=blanchedalmond";
-    }
-
-
-    else if(param =="Declaration"){
-        return "shape=invtrapezium, style=filled, fillcolor=lightblue";
+    else if(param =="init_declarator"){
+        return "shape=box, style=filled, fillcolor=cyan2";
     }
 
-    // List
-    else if(param == "Struct or Union Declarator List"){
-        return "shape=component, style=rounded, fillcolor=salmon";
-    }
-    else if (param == "Struct or Union Declaration List"){
-        return "shape=component, style=rounded, fillcolor=salmon2";
-    }
-    else if (param == "Empty Parameter List")
-    {
-        return "shape=component, style=rounded, fillcolor=salmon";
-    }
-    else if(param == "Parameter List"){
-        return "shape=component, style=rounded, fillcolor=salmon";
-    }
-    else if(param == "Argument List"){
-        return "shape=component, style=rounded, fillcolor=salmon";
-    }
-    else if (param == "Initialization or Declaration List"){
-        return "shape=component, style=rounded, fillcolor=salmon";
-    }
-    else if(param =="Enum List"){
-        return "shape=component, style=rounded, fillcolor=salmon";
-    }
-    else if(param=="Statement List"){
-        return "shape=component, style=rounded, fillcolor=salmon";
-    }
-
-    // Member Access
-    else if(param=="Member Access"){
-
-    }
-    else if(param=="Pointer Member Access"){
-
-    }
-
-
-
-
-    else if (param == "type_specifier")
-    {
-            return "shape=parallelogram, style=filled, fillcolor=orange";
-    }
-    else if(param =="type_qualifier"){
-        return "shape=parallelogram, style=filled, fillcolor=orangered";
-    }
-    else if (param == "storage_class_specifier")
-    {
-        return "shape=parallelogram, style=filled, fillcolor=orchid";
-    }
-
-    else if(param =="Struct Declaration List"){
-        return "shape=box, style=filled, fillcolor=lightblue";
-    }
-    else if(param =="Struct Declaration"){
-        return "shape=box, style=filled, fillcolor=lightblue";
-    }
-    else if(param =="Specifie Qualifier List"){
-        return "shape=box, style=filled, fillcolor=lightblue";
-    }
     else if(node->value != EMPTY_VAL){
         // It's a leaf node with a value
         return "shape=box, style=filled, fillcolor=lightblue";
@@ -362,7 +290,7 @@ void writeNode_A(std::ofstream &out, ASTNode *node, int parentId, int &nodeCount
         }
     }
 
-    header = nodeType + (nodeValue != EMPTY_VAL ? (" : " + nodeValue) : "");
+    header = (nodeValue != EMPTY_VAL ? nodeValue : nodeType);
 
     std::string styleSettings = ASTStyle(node);
 
@@ -386,15 +314,20 @@ void writeNode_A(std::ofstream &out, ASTNode *node, int parentId, int &nodeCount
         std::string infoStr = info;
         infoStr.erase(remove_if(infoStr.begin(), infoStr.end(), isspace), infoStr.end());
         std::string type = infoStr.substr(0, 3);
+        // std::string lastWord = infoStr.substr(infoStr.find_last_of(" ") + 1);
         // std::cout << "Type: " << type << std::endl;
         std::string color = "darkorchid2";
         if (type == "syn")
         {
-            color = "forestgreen";
+            color = "firebrick3";
         }
         else if (type == "inh")
         {
-            color = "chocolate2";
+            color = "blue3";
+        }
+        else if(info[0] == 'S'){
+            // Scope Entry messages
+            color = "crimson";
         }
         out << "  <tr><td><FONT COLOR=\"" << color << "\"><font point-size=\"10\">" << escapeBrackets(info) << "</font></FONT></td></tr>\n";
     }

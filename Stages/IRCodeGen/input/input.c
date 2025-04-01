@@ -1,4 +1,10 @@
-int long a;
-long long int ab;
-unsigned int short var;
-int short signed var3;
+struct A{
+    int a, b;
+} var;
+
+int main(){
+    return 0;
+    struct A{
+        int a, b;
+    } var;
+}

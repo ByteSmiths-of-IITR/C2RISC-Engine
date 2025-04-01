@@ -34,7 +34,6 @@ TAC CODE_BASE;         // Global TAC Code Base
 
 int ANNOTATE = 1; // 0 - OFF | 1 - ON [extern declared in header.h]
 
-
 //=====================[ toString Utilities ]=========================================================================================
 std::string toString(int value)
 {
@@ -114,8 +113,9 @@ std::string toString(std::map<std::string, TypeExpression> members)
     std::string str = "{ ";
     for (const auto &pair : members)
     {
-        str += pair.first + " : " + toString(pair.second);
-        str += " | ";
+        std::string unit = "( " + pair.first + " : " + toString(pair.second) + " )";
+        str += unit;
+        str += " ";
     }
     str += " }";
     return str;
@@ -196,7 +196,7 @@ std::string getProduction(ASTNode *node)
     }
     return production;
 }
-//TODO : do error handling
+// TODO : do error handling
 int ProcessDecSpecifiers(std::vector<std::string> &valueVector, TypeExpression &type, StorageClass &storageClass)
 {
     // 1. Initialize the base and storageClass
@@ -207,7 +207,7 @@ int ProcessDecSpecifiers(std::vector<std::string> &valueVector, TypeExpression &
     // {
     //     CERR << "Value: " << valueVector[i] << std::endl;
     // }
-    
+
     std::vector<StorageClass> storageClassVector;
     std::vector<TypeQualifier> typeQualifierVector;
     std::vector<std::string> typeSpecifierVector;
@@ -248,7 +248,6 @@ int ProcessDecSpecifiers(std::vector<std::string> &valueVector, TypeExpression &
     //     CERR << "TypeSpecifier: " << typeSpecifierVector[i] << std::endl;
     // }
 
-
     // 2. Process the storageClass
     if (storageClassVector.size() > 1)
     {
@@ -274,121 +273,131 @@ int ProcessDecSpecifiers(std::vector<std::string> &valueVector, TypeExpression &
         TypeQualifier tq = typeQualifierVector[i];
         if (tq == TypeQualifier::CONST)
         {
-            if(!isPresent[0]){
+            if (!isPresent[0])
+            {
                 base->typeQualifiers.push_back(TypeQualifier::CONST);
                 isPresent[0] = true;
             }
-            else{
+            else
+            {
                 duplicate = true;
             }
         }
         else if (tq == TypeQualifier::VOLATILE)
         {
-            if(!isPresent[1]){
+            if (!isPresent[1])
+            {
                 base->typeQualifiers.push_back(TypeQualifier::VOLATILE);
                 isPresent[1] = true;
             }
-            else{
+            else
+            {
                 duplicate = true;
             }
         }
         else if (tq == TypeQualifier::RESTRICT)
         {
-            if(!isPresent[2]){
+            if (!isPresent[2])
+            {
                 base->typeQualifiers.push_back(TypeQualifier::RESTRICT);
                 isPresent[2] = true;
             }
-            else{
+            else
+            {
                 duplicate = true;
             }
         }
     }
 
-    if(duplicate){
+    if (duplicate)
+    {
         // SEMANTIC ERROR 🚨 : Duplicate Type Qualifier
         check = WARNING;
     }
 
     // 4. Process "typedef"
-    if(storageClass == StorageClass::TYPEDEF){
+    if (storageClass == StorageClass::TYPEDEF)
+    {
         // This is a definition of a typedef // Should give back a type
         // Move On
     }
 
     // 5. Process the type specifiers [Two case - all Are a C InbuiltType or only one TypeDef Defined TYPE_NAME]
-        // 5.1 First we check if the values are only primiteve types
-        bool allAreInbuiltType = true;
-        for (size_t i = 0; i < typeSpecifierVector.size(); ++i)
+    // 5.1 First we check if the values are only primiteve types
+    bool allAreInbuiltType = true;
+    for (size_t i = 0; i < typeSpecifierVector.size(); ++i)
+    {
+        std::string value = typeSpecifierVector[i];
+        if (!isA_InbuiltType(value))
         {
-            std::string value = typeSpecifierVector[i];
-            if (!isA_InbuiltType(value))
-            {
-                allAreInbuiltType = false;
-                break;
-            }
+            allAreInbuiltType = false;
+            break;
         }
+    }
 
-        if (!allAreInbuiltType)
+    if (!allAreInbuiltType)
+    {
+        CERR << "Not all are inbuilt types" << std::endl;
+        // Are are not Primtive
+        // Then there must be only one typedef defined type
+        if (typeSpecifierVector.size() != 1)
         {
-            CERR << "Not all are inbuilt types" << std::endl;
-            // Are are not Primtive
-            // Then there must be only one typedef defined type
-            if (typeSpecifierVector.size() != 1)
+            // SEMANTIC ERROR 🚨 : Multiple type specifiers
+            check = LOW_ERROR; // ERROR
+        }
+        else
+        {
+            // TypeSpecifier must be a TYPE_NAME
+            // Check in Symbol Table if present
+            std::string typeName = typeSpecifierVector[0];
+            GenericSymbol *sym = nullptr;
+            int lookupCheck = SYM_TABLE.lookup(typeName, sym);
+            if (lookupCheck == LOOKUP_FAILURE)
             {
-                // SEMANTIC ERROR 🚨 : Multiple type specifiers
+                // SEMANTIC ERROR 🚨 : Type name not found
                 check = LOW_ERROR; // ERROR
             }
             else
             {
-                // TypeSpecifier must be a TYPE_NAME
-                // Check in Symbol Table if present
-                std::string typeName = typeSpecifierVector[0];
-                GenericSymbol *sym = nullptr;
-                int lookupCheck = SYM_TABLE.lookup(typeName, sym);
-                if (lookupCheck == LOOKUP_FAILURE)
+                // Type name found
+                TypeDefs *typedefDef = dynamic_cast<TypeDefs *>(sym);
+                if (typedefDef != nullptr)
                 {
-                    // SEMANTIC ERROR 🚨 : Type name not found
-                    check = LOW_ERROR; // ERROR
+                    // This is a typedef definition
+                    resultType = typedefDef->type;
                 }
                 else
                 {
-                    // Type name found
-                    TypeDefs *typedefDef = dynamic_cast<TypeDefs *>(sym);
-                    if (typedefDef != nullptr)
-                    {
-                        // This is a typedef definition
-                        resultType = typedefDef->type;                    
-                    }
-                    else
-                    {
-                        // SEMANTIC ERROR 🚨 : Not a typedef definition
-                        check = LOW_ERROR; // ERROR
-                    }
+                    // SEMANTIC ERROR 🚨 : Not a typedef definition
+                    check = LOW_ERROR; // ERROR
                 }
             }
-        }else{
-            // All are inbuilt types
-            CERR << "All are inbuilt types" << std::endl;
-
-            std::string finalBase = combineType(typeSpecifierVector);
-            CERR << "Final Base: " << finalBase << std::endl;
-            if(finalBase == INVALID_COMBINATION){
-                // SEMANTIC ERROR 🚨 : Invalid TypeSpecifier's Combination
-                check = LOW_ERROR; // ERROR
-            }
-            else{
-                base->baseType = finalBase;
-                resultType.levelStack.push(base);
-            }
-
         }
+    }
+    else
+    {
+        // All are inbuilt types
+        CERR << "All are inbuilt types" << std::endl;
+
+        std::string finalBase = combineType(typeSpecifierVector);
+        CERR << "Final Base: " << finalBase << std::endl;
+        if (finalBase == INVALID_COMBINATION)
+        {
+            // SEMANTIC ERROR 🚨 : Invalid TypeSpecifier's Combination
+            check = LOW_ERROR; // ERROR
+        }
+        else
+        {
+            base->baseType = finalBase;
+            resultType.levelStack.push(base);
+        }
+    }
 
     type = resultType;
 
     CERR << "TypeExpression: " << toString(type) << std::endl;
     CERR << "Check: " << check << std::endl;
     return check;
-
 }
 
 //=====================[ Main Semantic Pass Handler ]=========================================================================================
@@ -397,8 +406,8 @@ void semanticPass(ASTNode *node, std::string filename)
 {
     lastFuncCalled = "semanticPass";
     openHandlerLog(filename);
-    *handlerLog << "semanticPass" << std::endl;
-    *handlerLog << "--==[ Semantic Pass ]==--" << std::endl;
+    ENTRY_MSG << "semanticPass" << std::endl;
+    ENTRY_MSG << "--==[ Semantic Pass ]==--" << std::endl;
     translation_unit_H(node);
 
     closeHandlerLog();
@@ -410,17 +419,22 @@ void semanticPass(ASTNode *node, std::string filename)
 
 void translation_unit_H(ASTNode *node)
 {
-    *handlerLog << "translation_unit_H" << std::endl;
+    ENTRY_MSG << "translation_unit_H" << std::endl;
     lastFuncCalled = "translation_unit_H";
     std::string whichProduction = getProduction(node);
     std::string P1 = "external_declaration";
     std::string P2 = "translation_unit external_declaration";
 
+    // SCOPE ENTRY
+
     // CERR << "Production: " << whichProduction << std::endl;
 
     if (whichProduction == P1)
     {
-        // HERE;
+        // We will openScope here
+        int globalScope = SYM_TABLE.enterScope();                                          // GlobalScope
+        A_PTree node->addAttribute("S" + toString(globalScope) + " : Global Scope Entry"); // 🌴 Adding syn_attr
+
         // Call the external_declaration handler
         external_declaration_H(node->children[0]);
     }
@@ -441,7 +455,7 @@ void translation_unit_H(ASTNode *node)
 
 void external_declaration_H(ASTNode *node)
 {
-    *handlerLog << "external_declaration_H" << std::endl;
+    ENTRY_MSG << "external_declaration_H" << std::endl;
     lastFuncCalled = "external_declaration_H";
     std::string whichProduction = getProduction(node);
     std::string P1 = "function_definition";
@@ -468,31 +482,32 @@ void external_declaration_H(ASTNode *node)
 
 void function_definition_H(ASTNode *node)
 {
-    *handlerLog << "function_definition_H" << std::endl;
+    ENTRY_MSG << "function_definition_H" << std::endl;
     lastFuncCalled = "function_definition_H";
     // This will be used to fetch the function name
     std::string whichProduction = getProduction(node);
     std::string P1 = "declaration_specifiers declarator compound_statement";
 
-    if(whichProduction == P1){
+    if (whichProduction == P1)
+    {
         // Data to be fetched from declaration_specifiers
         std::vector<std::string> valueVector;
         // Call the declaration_specifiers handler
         declaration_specifiers_H(node->children[0], valueVector);
 
-    
         // Process the declaration_specifiers
         TypeExpression inh_type;
         StorageClass storageClass = StorageClass::NONE;
         int check = ProcessDecSpecifiers(valueVector, inh_type, storageClass);
-        if(check != OKAY){
+        if (check != OKAY)
+        {
             // SEMANTIC ERROR 🚨 : Error in ProcessDecSpecifiers
         }
 
-        if(storageClass != StorageClass::NONE){
+        if (storageClass != StorageClass::NONE)
+        {
             // SEMANTIC ERROR 🚨 : Functions don't have storage class
         }
-
 
         // Data to be fetched from declarator
         std::string varName;
@@ -503,38 +518,43 @@ void function_definition_H(ASTNode *node)
 
         // Check if type1 is a function type
         Type type = whatIsType(type1);
-        if(type != Type::FUNCTION){
+        if (type != Type::FUNCTION)
+        {
             // SEMANTIC ERROR 🚨 : Function Definition is not a function type
         }
 
         // Check if the function is already defined
         GenericSymbol *sym = nullptr;
         int lookupCheck = SYM_TABLE.lookup(varName, sym);
-        if(lookupCheck == LOOKUP_SUCCESS){
+        if (lookupCheck == LOOKUP_SUCCESS)
+        {
             // Function name already exists // check if declared or not
-            Function *func = dynamic_cast<Function*>(sym);
+            Function *func = dynamic_cast<Function *>(sym);
             bool isDefined = func->isDefined;
             bool sameSignature = true;
 
             // Check if the function signature is same
             // To use CheckEquivalence function
 
-            if(sameSignature){
+            if (sameSignature)
+            {
                 // Function is already defined
-                if(isDefined){
+                if (isDefined)
+                {
                     // SEMANTIC ERROR 🚨 : Function already defined
                 }
-                else{
+                else
+                {
                     // Function is declared
                     func->isDefined = true;
                     A_PTree node->addAttribute("Function ☞ \"" + varName + "\"" + " defined"); // 🌴 Adding syn_attr
                 }
             }
-            else{
+            else
+            {
                 // SEMANTIC ERROR 🚨 : Function signature mismatch
                 // WE are not supporting overloading of functions
             }
-
         }
         else
         {
@@ -548,10 +568,12 @@ void function_definition_H(ASTNode *node)
 
             // Add the symbol to the symbol table
             int insertCheck = SYM_TABLE.insert(varName, func);
-            if(insertCheck == INSERT_FAILURE){
+            if (insertCheck == INSERT_FAILURE)
+            {
                 // SEMANTIC ERROR 🚨 : Function already present in the current scope
             }
-            else{
+            else
+            {
                 // Okay
                 A_PTree node->addAttribute("Function dec+def added ☞ \"" + varName + "\""); // 🌴 Adding syn_attr
             }
@@ -562,31 +584,36 @@ void function_definition_H(ASTNode *node)
         TypeExpression funcType = type1;
 
         LevelInfo *levelInfo = funcType.levelStack.top();
-        ParameterInfo *paramInfo = dynamic_cast<ParameterInfo*>(levelInfo);
+        ParameterInfo *paramInfo = dynamic_cast<ParameterInfo *>(levelInfo);
 
         // Check if funtion definition is not abstract
         bool isAbstract = paramInfo->isAbstract;
-        if(isAbstract){
+        if (isAbstract)
+        {
             // SEMANTIC ERROR 🚨 : Function is abstract
         }
-        else{
+        else
+        {
             // OKAY
             TypeExpression returnType = funcType;
             int check = popALevel(returnType);
-            if(check != POP_SUCCESS){
-                *handlerLog << "Error in popALevel" << std::endl;
+            if (check != POP_SUCCESS)
+            {
+                ENTRY_MSG << "Error in popALevel" << std::endl;
             }
-            
+
             // Now we have parameter list
             std::vector<TypeExpression> paramVector = paramInfo->paramsType;
             std::vector<std::string> paramNames = paramInfo->paramsName;
 
             // OPEN a NEW SCOPE
             int scopeNo = SYM_TABLE.enterScope();
+            A_PTree node->addAttribute("S" + std::to_string(scopeNo) + " : " + varName + " function's Scope Entry"); // 🌴 Adding syn_attr
             // Add the parameters to the symbol table
 
             int k = paramVector.size();
-            for(int i = 0; i < k; i++){
+            for (int i = 0; i < k; i++)
+            {
                 // Create a Symbol
                 Variable *var = new Variable();
                 var->symbolName = (!isAbstract) ? paramNames[i] : NO_ARG_NAME;
@@ -595,33 +622,35 @@ void function_definition_H(ASTNode *node)
 
                 // Add the symbol to the symbol table
                 int insertCheck = SYM_TABLE.insert(paramNames[i], var);
-                if(insertCheck == INSERT_FAILURE){
+                if (insertCheck == INSERT_FAILURE)
+                {
                     // SEMANTIC ERROR 🚨 : Parameter already present in the current scope
-                }     
-                else{
+                }
+                else
+                {
                     // Okay
                     A_PTree node->addAttribute("Parameter added ☞ \"" + paramNames[i] + "\""); // 🌴 Adding syn_attr
                 }
             }
+        }
+
+        // 🔖IR Cdoe
+        CODE_BASE.addTAC(NO_ARG, FUNCTION_LABEL, varName, NO_ARG);
+
+        // Call the compound_statement handler
+        bool earlyScopeEnter = true; // inh_attr to be passed to compound_statement
+        compound_statement_H(node->children[2], earlyScopeEnter);
+
+        // [ToDecide - HOW TO CHECK RETURN TYPE OF FUNCTION]
+
+        // EXIT the SCOPE
+        SYM_TABLE.exitScope();
+        CODE_BASE.addTAC(NO_ARG, BLANK, NO_ARG, NO_ARG); // To be added
     }
-
-    // 🔖IR Cdoe
-    CODE_BASE.addTAC(NO_ARG, FUNCTION_LABEL, varName, NO_ARG);
-
-    // Call the compound_statement handler
-    bool earlyScopeEnter = true; // inh_attr to be passed to compound_statement
-    compound_statement_H(node->children[2], earlyScopeEnter);
-
-    // [ToDecide - HOW TO CHECK RETURN TYPE OF FUNCTION]
-
-    // EXIT the SCOPE
-    SYM_TABLE.exitScope();
-    CODE_BASE.addTAC(NO_ARG,BLANK,NO_ARG,NO_ARG); // To be added
-
-    }
-    else{
+    else
+    {
         // Wrong Production
-        *handlerLog << "Wrong Production in function_definition_H" << std::endl;
+        ENTRY_MSG << "Wrong Production in function_definition_H" << std::endl;
     }
 
     return;
