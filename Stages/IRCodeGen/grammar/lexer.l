@@ -14,6 +14,10 @@
 #define COLUMN column+=yyleng;
 #define TOKEN(t) lastToken=currentToken; currentToken=std::string(yytext); yylval.tokenAtr=new TokenAttribute(t,yytext, yylineno, column); column+=yyleng; return t;
 
+// #define TOKEN(t) lastToken=currentToken; currentToken=std::string(yytext); yylval.tokenAtr=new TokenAttribute(t,yytext, yylineno, column); column+=yyleng; std::cerr << t << " : " << yytext << std::endl; return t;
+
+
+// std::set<std::string> typeDefIDs; // Set to store typedefs [ Will come form utility.h ]
 
 // std::ofstream LEXlog("lexer.log", std::ios::trunc);
 
@@ -26,6 +30,22 @@ std::string lastToken;
 
 
 std::vector<std::string> lexerLOG;
+
+int checkForTypeDef(std::string id){
+    // Check if the identifier is a typedef
+    std::cerr << "Checking for typedef: " << id ;
+    std::cerr << " | Expecting typedef: " << (expectingTypeName?"YES":"NO") << std::endl;
+
+    if(expectingTypeName==false){
+        return 0; // We are not expecting a typedefID
+    }
+    
+    if (typeDefIDs.find(id) != typeDefIDs.end()) {
+        return 1; // It is a typedef
+    }
+    return 0; // Not a typedef just ID
+}
+
 
 // Function to handle errors
 void yyerror(const char *s);
@@ -167,9 +187,9 @@ COMMENT2   "/*"([^*]|\*+[^*/])*\*+"/"
 "const"                         { TOKEN(CONST)  }
 "volatile"                      { TOKEN(VOLATILE)  }
 "void"                          { TOKEN(VOID)  }
-"struct"                        { TOKEN(STRUCT)  }
-"union"                         { TOKEN(UNION)  }
-"enum"                          { TOKEN(ENUM)  }
+"struct"                        { expectingTypeName==false; TOKEN(STRUCT)  }
+"union"                         { expectingTypeName==false; TOKEN(UNION)  }
+"enum"                          { expectingTypeName==false; TOKEN(ENUM)  }
 "..."                           { TOKEN(ELLIPSIS)  }
 "case"                          { TOKEN(CASE)  }
 "default"                       { TOKEN(DEFAULT)  }
@@ -185,7 +205,15 @@ COMMENT2   "/*"([^*]|\*+[^*/])*\*+"/"
 "return"                        { TOKEN(RETURN)  }
 "until"                         { TOKEN(UNTIL)  }
 
-{ID}                            { TOKEN(IDENTIFIER)  }
+{ID}                            { 
+                                    if (checkForTypeDef(yytext)) {
+                                        std::cerr << "TypeDef ID: " << yytext << std::endl;
+                                        TOKEN(TYPE_NAME);
+                                    } else {
+                                        std::cerr << "ID: " << yytext << std::endl;
+                                        TOKEN(IDENTIFIER);
+                                    }
+                                }
 
 {WHITESPACE}                    { COLUMN /* Ignore spaces and tabs */ }
 

@@ -28,6 +28,12 @@ extern std::ofstream *handlerLog; // This will be used to log the errors
 
 extern int orderOfEval;
 
+#define EMPTY_VAL "!!EMPTY!!"
+#define TYPEDEF_FOUND "!!TYPEDEF!!"
+extern bool expectingTypeName;
+
+extern std::set<std::string> typeDefIDs; // Set to store typedefs
+
 // ASTNode class definition
 class ASTNode {
 public:

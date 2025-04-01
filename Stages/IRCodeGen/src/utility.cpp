@@ -3,11 +3,13 @@
 
 int orderOfEval = 0; // Global variable to keep track of the order of evaluation
 
-#define EMPTY_VAL "!!EMPTY!!"
+std::set<std::string> typeDefIDs; // Defined Here
+bool expectingTypeName = false; // Global variable to check if we are expecting a type name
 
 //----------- ASTNode Class
 
     void ASTNode::addAttribute(std::string attribute) {
+        // std::cerr << "Adding attribute: " << attribute << std::endl;
         attribute += " (" + std::to_string(orderOfEval) + ")";
         orderOfEval++;
         this->attributes.push_back(attribute);
@@ -263,19 +265,24 @@ void writeNode(std::ofstream &out, ASTNode* node, int parentId, int &nodeCount) 
 
     int currentId = nodeCount++;
     out << "    node" << currentId << " [label=\"";
-    if(node->value == "!!EMPTY!!") {
-        out << node->type;
-    } else {
-        // if the value is a string, escape the quotes
-        std::string value = node->value;
-        for (size_t i = 0; i < value.size(); ++i) {
-            if (value[i] == '\"') {
-                value.insert(i, "\\");
-                i++;
-            }
+    std::string nodeType = node->type;
+
+    // if the value is a string, escape the quotes
+    std::string nodeValue = node->value;
+    for (size_t i = 0; i < nodeValue.size(); ++i) {
+        if (nodeValue[i] == '\"') {
+            nodeValue.insert(i, "\\");
+            i++;
         }
-        out << value;
     }
+    
+    std::string header = nodeType + (nodeValue != EMPTY_VAL ? (" : " + nodeValue): "");
+
+    // std::string expectingTypeNameStr = expectingTypeName ? "true" : "false";
+    // header += "\\n expectingTypeName = " + expectingTypeNameStr;
+
+    out << header << "\\n";
+    
     std::string styleSettings = ASTStyle(node);
     out << "\", " << styleSettings << "];\n";
 
@@ -290,9 +297,15 @@ void writeNode(std::ofstream &out, ASTNode* node, int parentId, int &nodeCount) 
 
 // Generates a DOT file to visualize the AST
 void generateDOT(ASTNode* root, const std::string& filename) {
+    std::cerr << "UnAnnotated DOT File" << std::endl;
     std::ofstream out(filename);
     if (!out) {
         std::cerr << "Error: Could not open file " << filename << "\n";
+        return;
+    }
+
+    if(root == nullptr){
+        std::cerr << "Error: Root node is null\n";
         return;
     }
 
@@ -335,24 +348,22 @@ void writeNode_A(std::ofstream &out, ASTNode *node, int parentId, int &nodeCount
     
     int currentId = nodeCount++;
     std::string header;
-    if (node->value == "!!EMPTY!!")
+
+    std::string nodeType = node->type;
+
+    // if the value is a string, escape the quotes
+    std::string nodeValue = node->value;
+    for (size_t i = 0; i < nodeValue.size(); ++i)
     {
-        header = node->type;
-    }
-    else
-    {
-        // if the value is a string, escape the quotes
-        std::string value = node->value;
-        for (size_t i = 0; i < value.size(); ++i)
+        if (nodeValue[i] == '\"')
         {
-            if (value[i] == '\"')
-            {
-                value.insert(i, "\\");
-                i++;
-            }
+            nodeValue.insert(i, "\\");
+            i++;
         }
-        header = value;
     }
+
+    header = nodeType + (nodeValue != EMPTY_VAL ? (" : " + nodeValue) : "");
+
     std::string styleSettings = ASTStyle(node);
 
     //-----
@@ -365,8 +376,11 @@ void writeNode_A(std::ofstream &out, ASTNode *node, int parentId, int &nodeCount
     out << "  <tr><td><FONT COLOR=\"" << headerColor << "\"><font point-size=\"14\"><b>" << header << "</b></font></FONT></td></tr>\n";
 
     // Extra info with smaller font
+    // int size = node->attributes.size();
+    // std::cerr << "Size of attributes: " << size << std::endl;
     for (const auto &info : node->attributes)
     {
+        // std::cerr << "Printing attribute " << std::endl;
         // Check for syn_attr and inh_attr 
         // Fetch first 3 characters ignoring space
         std::string infoStr = info;
@@ -403,10 +417,17 @@ void writeNode_A(std::ofstream &out, ASTNode *node, int parentId, int &nodeCount
 
 void generateDOT_A(ASTNode *root, const std::string &filename)
 {
+    std::cerr << "Annotated DOT File" << std::endl;
     std::ofstream out(filename);
     if (!out)
     {
         std::cerr << "Error: Could not open file " << filename << "\n";
+        return;
+    }
+
+    if(root == nullptr)
+    {
+        std::cerr << "Error: Root node is null\n";
         return;
     }
 

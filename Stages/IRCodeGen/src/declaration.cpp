@@ -17,6 +17,8 @@ void declaration_H(ASTNode *node){
     std::string P1 = "declaration_specifiers SEMI_COLON";
     std::string P2 = "declaration_specifiers init_declarator_list SEMI_COLON";
 
+    // CERR << "Production: " << whichProduction << std::endl;
+    
     if(whichProduction != P1 && whichProduction != P2){
         // Wrong Production
         CERR << "Wrong Production: " << whichProduction << std::endl;
@@ -31,25 +33,30 @@ void declaration_H(ASTNode *node){
         declaration_specifiers_H(node->children[0], valueVector);
 
     // 2. Prepare data to be sent down to next child
-        // 2.1 Create a BaseInfo object
-            BaseInfo *base = new BaseInfo();
-            StorageClass inh_storageClass = StorageClass::NONE;
-            int check = ProcessDecSpecifiers(valueVector, base, inh_storageClass);
+        // 2.1 Create a TypeExpression object
+        TypeExpression inh_type;
+        StorageClass inh_storageClass = StorageClass::NONE;
+        int check = ProcessDecSpecifiers(valueVector, inh_type, inh_storageClass);
+        if(check != OKAY){
+            // SEMANTIC ERROR 🚨 : Error in ProcessDecSpecifiers
+            CERR << "Error in ProcessDecSpecifiers" << std::endl;
+        }
 
-            // 2.2 Create a TypeExpression object
-            TypeExpression inh_type;
-            inh_type.levelStack.push(base); // inh_attr for init_declarator_list 🔴
+        // CERR << "Processed Type: " << toString(inh_type) << std::endl;
 
-    if (whichProduction == P1)
-    {
-        // NOTHING to send
-    }else if(whichProduction == P2){
-        // 3. inh_data ⬇️ | NO syn_data (init_declarator_list)
-        init_declarator_list_H(node->children[1], inh_type, inh_storageClass);
-    }
-    else{
-        // Wrong Production
-    }
+        if (whichProduction == P1)
+        {
+            // NOTHING to send
+        }else if(whichProduction == P2){
+            // 3. inh_data ⬇️ | NO syn_data (init_declarator_list)
+            init_declarator_list_H(node->children[1], inh_type, inh_storageClass);
+        }
+        else{
+            // Wrong Production
+        }
+
+    A_PTree node->addAttribute("inh_type = "+ toString(inh_type)); // 🌳 Adding inh_attr
+
     return;
 }
 
@@ -125,16 +132,26 @@ void init_declarator_H(ASTNode* node, TypeExpression inh_type, StorageClass inh_
         TypeExpression type; // to be fetched ⬆️
         declarator_H(node->children[0], inh_type, varName, type);
 
-        // 1. Create Symbol (Variable or Function)
+        // 1. Create Symbol (Variable or Function or typedef)
             Type whichType = whatIsType(type);
             GenericSymbol *symbol;
+            if(inh_storageClass == StorageClass::TYPEDEF){
+                // This is a typedef definition
+                TypeDefs *typedefDef = new TypeDefs();
+                typedefDef->symbolName = varName;
+                typedefDef->type = type;
+                symbol = typedefDef;
 
-            if(whichType == Type::FUNCTION){
+                // SEMANTIC ERROR 🚨 : SHOULD NOT HAVE INITIALIZER
+
+            } else if(whichType == Type::FUNCTION){
                 // Function 
                 Function *func = new Function();
                 func->symbolName = varName;
                 func->type = type;
                 func->isDefined = false; // To be set to true when the function is defined
+
+                //SEMANTIC ERROR 🚨 : SHOULD NOT HAVE INITIALIZER
 
                 if(inh_storageClass == StorageClass::AUTO){
                     // INVALID in NEW C99
@@ -153,7 +170,7 @@ void init_declarator_H(ASTNode* node, TypeExpression inh_type, StorageClass inh_
             // [📴 Offset to be filled]
 
             symbol = var;
-        }
+            }
 
         // 2. Add the symbol to the symbol table
             int check = SYM_TABLE.insert(varName, symbol);
@@ -165,7 +182,6 @@ void init_declarator_H(ASTNode* node, TypeExpression inh_type, StorageClass inh_
 
         // Done - NO 🔖IRCode
     }
-
 
     if(whichProduction == P2){
         // [ToThink about Initializer LOGIC]
@@ -358,7 +374,7 @@ void type_specifier_H(ASTNode* node, std::string &value){
     }
     // Type Name
     else if(whichProduction == P12){
-        // IGNORED
+        std::string resValue = "typedef " + node->children[0]->value;
     }else{
         // Wrong Production
     }
@@ -547,17 +563,13 @@ void struct_declaration_H(ASTNode* node, std::map<std::string, TypeExpression> &
     // 0. Call the function again to fetch the next value
         specifier_qualifier_list_H(node->children[0], valueVector);
     
-    // 1. Create a BaseInfo object
-        BaseInfo* base = new BaseInfo();
-        StorageClass inh_storageClass=StorageClass::NONE; // NOT ALLOWED ❌ [Will be syntax checked]
-        int check = ProcessDecSpecifiers(valueVector, base, inh_storageClass);
-        if(check == -1){
+    // 1. Create a TypeExpression object
+        TypeExpression inh_type;
+        StorageClass inh_storageClass = StorageClass::NONE; // NOT ALLOWED ❌ [Will be syntax checked]
+        int check = ProcessDecSpecifiers(valueVector, inh_type, inh_storageClass);
+        if(check != OKAY){
             // SEMANTIC ERROR 🚨 : Invalid TypeSpecifier
         }
-
-    // 2. Create a TypeExpression object
-        TypeExpression inh_type;
-        inh_type.levelStack.push(base);
 
     // Pass the inh_data ⬇️ & fetch the syn_attr(members) ⬆️
         std::map<std::string, TypeExpression> syn_members;
@@ -1236,10 +1248,10 @@ void parameter_declaration_H(ASTNode* node, TypeExpression &type, std::string va
     declaration_specifiers_H(node->children[0], valueVector);
 
     // Create a BaseInfo object
-    BaseInfo *base = new BaseInfo();
+    TypeExpression inh_type;
     StorageClass inh_storageClass = StorageClass::NONE;
-    int check = ProcessDecSpecifiers(valueVector, base, inh_storageClass);
-    if (check == -1)
+    int check = ProcessDecSpecifiers(valueVector, inh_type, inh_storageClass);
+    if (check != OKAY)
     {
         // SEMANTIC ERROR 🚨 : Invalid TypeSpecifier
     }
@@ -1247,10 +1259,6 @@ void parameter_declaration_H(ASTNode* node, TypeExpression &type, std::string va
     {
         // SEMANTIC ERROR 🚨 : Storage Class NOT ALLOWED Here
     }
-
-    // 2. Create a TypeExpression object
-    TypeExpression inh_type;
-    inh_type.levelStack.push(base);
 
     CERR << "inh_type = " << toString(inh_type) << std::endl;
 
@@ -1343,18 +1351,15 @@ void type_name_H(ASTNode* node, TypeExpression &type){
         // 1. Call the function again to fetch the next value
         specifier_qualifier_list_H(node->children[0], valueVector);
 
-        // 2. Create a BaseInfo object
-        BaseInfo *base = new BaseInfo();
+        // 2. Create a TypeExpression object
+        TypeExpression inh_type;;
         StorageClass inh_storageClass = StorageClass::NONE; // [Syntax Checked]
-        int check = ProcessDecSpecifiers(valueVector, base, inh_storageClass);
-        if (check == -1)
+        int check = ProcessDecSpecifiers(valueVector, inh_type, inh_storageClass);
+        if (check != OKAY)
         {
             // SEMANTIC ERROR 🚨 : Invalid TypeSpecifier
         }
 
-        // 3. Create a TypeExpression object
-        TypeExpression inh_type;
-        inh_type.levelStack.push(base);
 
         // Pass the data up
         type = inh_type; // send syn_attr ⬆️
@@ -1365,18 +1370,14 @@ void type_name_H(ASTNode* node, TypeExpression &type){
         // 1. Call the function again to fetch the next value
         specifier_qualifier_list_H(node->children[0], valueVector);
 
-        // 2. Create a BaseInfo object
-        BaseInfo *base = new BaseInfo();
+        // 2. Create a TypeExpression object
+        TypeExpression inh_type;
         StorageClass inh_storageClass = StorageClass::NONE;
-        int check = ProcessDecSpecifiers(valueVector, base, inh_storageClass);
-        if (check == -1)
+        int check = ProcessDecSpecifiers(valueVector, inh_type, inh_storageClass);
+        if (check != OKAY)
         {
             // SEMANTIC ERROR 🚨 : Invalid TypeSpecifier
         }
-
-        // 3. Create a TypeExpression object
-        TypeExpression inh_type;
-        inh_type.levelStack.push(base);
 
         // 4. Call the function again to fetch the next value
         abstract_declarator_H(node->children[1], inh_type, type);

@@ -32,7 +32,7 @@ TAC CODE_BASE;         // Global TAC Code Base
 
 //====================[ Annotated Parse Tree ]=========================================================================================
 
-int ANNOTATE; // 0 - OFF | 1 - ON [extern declared in header.h]
+int ANNOTATE = 1; // 0 - OFF | 1 - ON [extern declared in header.h]
 
 
 //=====================[ toString Utilities ]=========================================================================================
@@ -158,6 +158,30 @@ std::string toString(std::vector<TypeExpression> &paramVector)
 
 //====================[ Helper Functions ]=========================================================================================
 
+StorageClass getStorageClass(const std::string &value)
+{
+    if (value == "auto")
+        return StorageClass::AUTO;
+    else if (value == "static")
+        return StorageClass::STATIC;
+    else if (value == "extern")
+        return StorageClass::EXTERN;
+    else
+        return StorageClass::NONE;
+}
+
+TypeQualifier getTypeQualifier(const std::string &value)
+{
+    if (value == "const")
+        return TypeQualifier::CONST;
+    else if (value == "volatile")
+        return TypeQualifier::VOLATILE;
+    else if (value == "restrict")
+        return TypeQualifier::RESTRICT;
+    else
+        return TypeQualifier::NONE;
+}
+
 std::string getProduction(ASTNode *node)
 {
     std::string production = "";
@@ -173,60 +197,198 @@ std::string getProduction(ASTNode *node)
     return production;
 }
 //TODO : do error handling
-int ProcessDecSpecifiers(std::vector<std::string> &valueVector, BaseInfo *&base, StorageClass &storageClass)
+int ProcessDecSpecifiers(std::vector<std::string> &valueVector, TypeExpression &type, StorageClass &storageClass)
 {
     // 1. Initialize the base and storageClass
-    int check = 0;
+    int check = OKAY;
 
-    if (base == nullptr)
-    {
-        *handlerLog << "BaseInfo was NULL" << std::endl;
-        base = new BaseInfo();
-    }
+    // Print the valueVector
+    // for(size_t i = 0; i < valueVector.size(); ++i)
+    // {
+    //     CERR << "Value: " << valueVector[i] << std::endl;
+    // }
+    
+    std::vector<StorageClass> storageClassVector;
+    std::vector<TypeQualifier> typeQualifierVector;
+    std::vector<std::string> typeSpecifierVector;
 
+    TypeExpression resultType;
+
+    // Put all values in respective vectors
     for (size_t i = 0; i < valueVector.size(); ++i)
     {
         std::string value = valueVector[i];
-        // The TypeQualifier will be added to the base->typeQualifiers
-        if (value == "const")
+        if (value == "auto" || value == "static" || value == "extern" || value == "typedef")
         {
-            TypeQualifier typeQualifier = TypeQualifier::CONST;
-            base->typeQualifiers.push_back(typeQualifier);
+            StorageClass sc = getStorageClass(value);
+            storageClassVector.push_back(sc);
         }
-        else if (value == "volatile")
+        else if (value == "const" || value == "volatile" || value == "restrict")
         {
-            TypeQualifier typeQualifier = TypeQualifier::VOLATILE;
-            base->typeQualifiers.push_back(typeQualifier);
+            TypeQualifier tq = getTypeQualifier(value);
+            typeQualifierVector.push_back(tq);
         }
-        else if (value == "restrict")
-        {
-            TypeQualifier typeQualifier = TypeQualifier::RESTRICT;
-            base->typeQualifiers.push_back(typeQualifier);
-        }
-
-        // The StorageClass will be added to the storageClass
-        else if (value == "auto")
-        {
-            storageClass = StorageClass::AUTO;
-        }
-        else if (value == "static")
-        {
-            storageClass = StorageClass::STATIC;
-        }
-        else if (value == "extern")
-        {
-            storageClass = StorageClass::EXTERN;
-        }
-
-        // The TypeSpecifier will wil loaded as it is
         else
         {
-            // Assuming rest is typeSpecifier
-            base->baseType = value;
+            typeSpecifierVector.push_back(value);
         }
     }
 
-    return 0;
+    // print all values
+    // for(size_t i = 0; i < storageClassVector.size(); ++i)
+    // {
+    //     CERR << "StorageClass: " << toString(storageClassVector[i]) << std::endl;
+    // }
+    // for(size_t i = 0; i < typeQualifierVector.size(); ++i)
+    // {
+    //     CERR << "TypeQualifier: " << toString(typeQualifierVector[i]) << std::endl;
+    // }
+    // for(size_t i = 0; i < typeSpecifierVector.size(); ++i)
+    // {
+    //     CERR << "TypeSpecifier: " << typeSpecifierVector[i] << std::endl;
+    // }
+
+
+    // 2. Process the storageClass
+    if (storageClassVector.size() > 1)
+    {
+        // SEMANTIC ERROR 🚨 : Multiple storage classes
+        check = LOW_ERROR; // ERROR
+    }
+    else if (storageClassVector.size() == 1)
+    {
+        storageClass = storageClassVector[0];
+    }
+    else
+    {
+        storageClass = StorageClass::NONE;
+    }
+
+    BaseInfo *base = new BaseInfo();
+
+    // 3. Process the typeQualifier
+    std::vector<bool> isPresent(3, false);
+    bool duplicate = false;
+    for (size_t i = 0; i < typeQualifierVector.size(); ++i)
+    {
+        TypeQualifier tq = typeQualifierVector[i];
+        if (tq == TypeQualifier::CONST)
+        {
+            if(!isPresent[0]){
+                base->typeQualifiers.push_back(TypeQualifier::CONST);
+                isPresent[0] = true;
+            }
+            else{
+                duplicate = true;
+            }
+        }
+        else if (tq == TypeQualifier::VOLATILE)
+        {
+            if(!isPresent[1]){
+                base->typeQualifiers.push_back(TypeQualifier::VOLATILE);
+                isPresent[1] = true;
+            }
+            else{
+                duplicate = true;
+            }
+        }
+        else if (tq == TypeQualifier::RESTRICT)
+        {
+            if(!isPresent[2]){
+                base->typeQualifiers.push_back(TypeQualifier::RESTRICT);
+                isPresent[2] = true;
+            }
+            else{
+                duplicate = true;
+            }
+        }
+    }
+
+    if(duplicate){
+        // SEMANTIC ERROR 🚨 : Duplicate Type Qualifier
+        check = WARNING;
+    }
+
+    // 4. Process "typedef"
+    if(storageClass == StorageClass::TYPEDEF){
+        // This is a definition of a typedef // Should give back a type
+        // Move On
+    }
+
+    // 5. Process the type specifiers [Two case - all Are a C InbuiltType or only one TypeDef Defined TYPE_NAME]
+        // 5.1 First we check if the values are only primiteve types
+        bool allAreInbuiltType = true;
+        for (size_t i = 0; i < typeSpecifierVector.size(); ++i)
+        {
+            std::string value = typeSpecifierVector[i];
+            if (!isA_InbuiltType(value))
+            {
+                allAreInbuiltType = false;
+                break;
+            }
+        }
+
+        if (!allAreInbuiltType)
+        {
+            CERR << "Not all are inbuilt types" << std::endl;
+            // Are are not Primtive
+            // Then there must be only one typedef defined type
+            if (typeSpecifierVector.size() != 1)
+            {
+                // SEMANTIC ERROR 🚨 : Multiple type specifiers
+                check = LOW_ERROR; // ERROR
+            }
+            else
+            {
+                // TypeSpecifier must be a TYPE_NAME
+                // Check in Symbol Table if present
+                std::string typeName = typeSpecifierVector[0];
+                GenericSymbol *sym = nullptr;
+                int lookupCheck = SYM_TABLE.lookup(typeName, sym);
+                if (lookupCheck == LOOKUP_FAILURE)
+                {
+                    // SEMANTIC ERROR 🚨 : Type name not found
+                    check = LOW_ERROR; // ERROR
+                }
+                else
+                {
+                    // Type name found
+                    TypeDefs *typedefDef = dynamic_cast<TypeDefs *>(sym);
+                    if (typedefDef != nullptr)
+                    {
+                        // This is a typedef definition
+                        resultType = typedefDef->type;                    
+                    }
+                    else
+                    {
+                        // SEMANTIC ERROR 🚨 : Not a typedef definition
+                        check = LOW_ERROR; // ERROR
+                    }
+                }
+            }
+        }else{
+            // All are inbuilt types
+            CERR << "All are inbuilt types" << std::endl;
+
+            std::string finalBase = combineType(typeSpecifierVector);
+            CERR << "Final Base: " << finalBase << std::endl;
+            if(finalBase == INVALID_COMBINATION){
+                // SEMANTIC ERROR 🚨 : Invalid TypeSpecifier's Combination
+                check = LOW_ERROR; // ERROR
+            }
+            else{
+                base->baseType = finalBase;
+                resultType.levelStack.push(base);
+            }
+
+        }
+
+    type = resultType;
+
+    CERR << "TypeExpression: " << toString(type) << std::endl;
+    CERR << "Check: " << check << std::endl;
+    return check;
+
 }
 
 //=====================[ Main Semantic Pass Handler ]=========================================================================================
@@ -315,24 +477,22 @@ void function_definition_H(ASTNode *node)
     if(whichProduction == P1){
         // Data to be fetched from declaration_specifiers
         std::vector<std::string> valueVector;
-        BaseInfo *base = nullptr;
-        StorageClass storageClass = StorageClass::NONE;
         // Call the declaration_specifiers handler
         declaration_specifiers_H(node->children[0], valueVector);
 
+    
         // Process the declaration_specifiers
-        int check = ProcessDecSpecifiers(valueVector, base, storageClass);
-        if(check != 0){
+        TypeExpression inh_type;
+        StorageClass storageClass = StorageClass::NONE;
+        int check = ProcessDecSpecifiers(valueVector, inh_type, storageClass);
+        if(check != OKAY){
             // SEMANTIC ERROR 🚨 : Error in ProcessDecSpecifiers
         }
 
         if(storageClass != StorageClass::NONE){
-            // SEMANTIC ERROR 🚨 : [To Decide]
+            // SEMANTIC ERROR 🚨 : Functions don't have storage class
         }
 
-        // Create a TypeExpression object
-        TypeExpression inh_type;
-        inh_type.levelStack.push(base);
 
         // Data to be fetched from declarator
         std::string varName;

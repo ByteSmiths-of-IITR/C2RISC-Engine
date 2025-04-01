@@ -93,7 +93,7 @@ $(OUTPUT): $(OUTPUT_DIR)
 	@touch $(OUTPUT)
 
 run: $(EXECUTABLE) $(INPUT) $(OUTPUT) $(CERR) $(OUTPUT_DIR) $(BUILD_DIR) $(OBJ_DIR) 
-	./$(EXECUTABLE) $(INPUT) $(OUTPUT) 2> $(CERR) 
+	@./$(EXECUTABLE) $(INPUT) $(OUTPUT) 2> $(CERR) 
 
 # This will only run the parser and generate the output file [NO RESULT]
 
@@ -121,12 +121,10 @@ $(OBJ_DIR):
 ast: $(INPUT) $(OUTPUT) $(EXECUTABLE) $(OUTPUT_DIR) $(BUILD_DIR) 
 	@./$(EXECUTABLE) $(INPUT) $(OUTPUT) -ast $(DOTFile) 2> $(CERR)
 	@$(DOT) -Tpdf $(DOTFile) -o $(DOTPDF)
-	open $(DOTPDF)
 
 ptree: $(INPUT) $(OUTPUT) $(EXECUTABLE) $(OUTPUT_DIR) $(BUILD_DIR) 
 	@./$(EXECUTABLE) $(INPUT) $(OUTPUT) -ptree $(DOTFile) 2> $(CERR)
 	@$(DOT) -Tpdf $(DOTFile) -o $(DOTPDF)
-	open $(DOTPDF) 
 
 DOTFile2 = $(BUILD_DIR)/annotated_ast_graph.dot
 DOTPDF2 = $(OUTPUT_DIR)/A_PTree.svg
@@ -162,22 +160,30 @@ again:
 
 
 semantic: $(EXECUTABLE) $(INPUT) $(OUTPUT)
-	@echo "-------------------------------------------Our Syntax Analysis-------------------------------------------"
-	@./$(EXECUTABLE) $(INPUT) $(OUTPUT) 2> $(CERR)
 	@echo "---------------------------------------------GCC Compilation---------------------------------------------"
 	@gcc -fsyntax-only $(INPUT) && echo "✅ Successfully Compiled by GCC"
+	@echo "-------------------------------------------Our Syntax Analysis-------------------------------------------"
+	@./$(EXECUTABLE) $(INPUT) $(OUTPUT) 2> $(CERR)
+	
 
 execute: $(INPUT)
 	@gcc $(INPUT) -o $(BIN_DIR)/input_exec
 	@./$(BIN_DIR)/input_exec
 
 sem_ast: $(EXECUTABLE) $(INPUT) $(OUTPUT)
-	@echo "-------------------------------------------Our Syntax Analysis-------------------------------------------"
-	@./$(EXECUTABLE) $(INPUT) $(OUTPUT) -ast $(DOTFile) 2> $(CERR)
 	@echo "---------------------------------------GCC Compilation---------------------------------------"
 	@-gcc -fsyntax-only $(INPUT) && echo "✅ Successfully Compiled by GCC"
+	@echo "-------------------------------------------Our Syntax Analysis-------------------------------------------"
+	@./$(EXECUTABLE) $(INPUT) $(OUTPUT) -ast $(DOTFile) 2> $(CERR)
 	@$(DOT) -Tpdf $(DOTFile) -o $(DOTPDF)
 	@open $(DOTPDF)
+
+sem_ptree: $(EXECUTABLE) $(INPUT) $(OUTPUT)
+	@echo "---------------------------------------GCC Compilation---------------------------------------"
+	@-gcc -fsyntax-only $(INPUT) && echo "✅ Successfully Compiled by GCC"
+	@echo "-------------------------------------------Our Syntax Analysis-------------------------------------------"
+	@./$(EXECUTABLE) $(INPUT) $(OUTPUT) -ptree $(DOTFile) 2> $(CERR)
+	@$(DOT) -Tpdf $(DOTFile) -o $(DOTPDF)
 
 ASSEMBLY = $(OUTPUT_DIR)/assembly.s
 LLVMIR = $(OUTPUT_DIR)/llvm_ir.ll

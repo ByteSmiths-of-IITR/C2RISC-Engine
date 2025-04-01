@@ -19,8 +19,7 @@
 #include "utility.h"  
 #include "header.h"
 
-#define EMPTY_VAL "!!EMPTY!!"
-
+// exterstd::set<std::string> typeDefIDs; // Will come from utility.h
 
 std::string whereWasILast;
 
@@ -32,8 +31,7 @@ int noOfyyerrorCalls = 0;
 
 // #define LINE std::cerr<< "Production - " << __LINE__<<std::endl;
 #define LINE /**/
-#define LINE1 std::cerr << "Reaching line no - " << __LINE__ << std::endl;
-// #define LINE1 /**/
+
 
 #define PARSERLOGHEADER "----------------------------------- PARSER LOG -----------------------------------"
 #define LOGFOOTER       "----------------------------------- END OF LOG -----------------------------------"
@@ -1042,6 +1040,15 @@ declaration
         $$ = new ASTNode("declaration"); 
         $$->addChild($1); 
         $$->addChild($2);
+        
+        std::string specifier = $1->value;
+
+        if(specifier == TYPEDEF_FOUND){
+            std::string error = "Syntax Error at line " + std::to_string(yylineno) + " near token: " + lastToken;
+            error += " | Error Description: Typedef Declaration without Declarator";
+            parserLOG.push_back(error);
+        }
+        expectingTypeName = true;
     }
     | declaration_specifiers init_declarator_list semi_colon 
     { 
@@ -1050,6 +1057,16 @@ declaration
         $$->addChild($1);  
         $$->addChild($2);
         $$->addChild($3);
+
+        // Here we need to handler TYPEDEF for Inserting them in a set so lexer can detect them
+        std::string specifier = $1->value;
+        std::string declarator = $2->value;
+
+        if(specifier == TYPEDEF_FOUND){
+            typeDefIDs.insert(declarator);
+            std::cerr << "Inserting \'" << declarator << "\' in typedefID's SET" << std::endl;
+        }
+        expectingTypeName = true;
     }
     ;
 
@@ -1057,13 +1074,24 @@ declaration_specifiers
     : storage_class_specifier 
     { 
         LINE
-        $$ = new ASTNode("declaration_specifiers");
+        std::string p1 = $1->value;
+        std::string final = EMPTY_VAL;
+        if(p1 == TYPEDEF_FOUND){
+            final = TYPEDEF_FOUND;
+        }
+        $$ = new ASTNode("declaration_specifiers", final);
         $$->addChild($1);
     }
     | storage_class_specifier declaration_specifiers 
     { 
         LINE
-        $$ = new ASTNode("declaration_specifiers");
+        std::string p1 = $1->value;
+        std::string p2 = $2->value;
+        std::string final = EMPTY_VAL;
+        if(p1 == TYPEDEF_FOUND || p2 == TYPEDEF_FOUND){
+            final = TYPEDEF_FOUND;
+        }
+        $$ = new ASTNode("declaration_specifiers", final);
         $$->addChild($1);
         if(compressed){
             $$->addChildren($2->children); //In case of compressed, add all children
@@ -1080,7 +1108,13 @@ declaration_specifiers
     | type_specifier declaration_specifiers 
     { 
         LINE
-        $$ = new ASTNode("declaration_specifiers");
+        std::string p1 = $1->value;
+        std::string p2 = $2->value;
+        std::string final = EMPTY_VAL;
+        if(p1 == TYPEDEF_FOUND || p2 == TYPEDEF_FOUND){
+            final = TYPEDEF_FOUND;
+        }
+        $$ = new ASTNode("declaration_specifiers", final);
         $$->addChild($1);
         if(compressed){
             $$->addChildren($2->children); //In case of compressed, add all children
@@ -1097,7 +1131,13 @@ declaration_specifiers
     | type_qualifier declaration_specifiers 
     { 
         LINE
-        $$ = new ASTNode("declaration_specifiers");
+        std::string p1 = $1->value;
+        std::string p2 = $2->value;
+        std::string final = EMPTY_VAL;
+        if(p1 == TYPEDEF_FOUND || p2 == TYPEDEF_FOUND){
+            final = TYPEDEF_FOUND;
+        }
+        $$ = new ASTNode("declaration_specifiers", final);
         $$->addChild($1);
         if(compressed){
             $$->addChildren($2->children); //In case of compressed, add all children
@@ -1108,10 +1148,10 @@ declaration_specifiers
     ;
 
 init_declarator_list
-    : init_declarator 
+    : init_declarator
     {
         LINE
-        $$ = new ASTNode("init_declarator_list");
+        $$ = new ASTNode("init_declarator_list",$1->value);
         $$->addChild($1); 
     }
     | init_declarator_list COMMA init_declarator
@@ -1120,7 +1160,7 @@ init_declarator_list
         if(compressed){
             $$ = $1;
         }else{
-            $$ = new ASTNode("init_declarator_list");
+            $$ = new ASTNode("init_declarator_list", $1->value);
             $$->addChild($1);
         }
         $$->addChild($2);
@@ -1132,13 +1172,13 @@ init_declarator
     : declarator 
     {
         LINE  
-        $$ = new ASTNode("init_declarator");
+        $$ = new ASTNode("init_declarator",$1->value);
         $$->addChild($1); 
     }
     | declarator ASSIGN initializer 
     {
         LINE 
-        $$ = new ASTNode("init_declarator"); 
+        $$ = new ASTNode("init_declarator", $1->value);
         $$->addChild($1); 
         $$->addChild($2); 
         $$->addChild($3); 
@@ -1149,7 +1189,7 @@ storage_class_specifier
     : TYPEDEF 
     {
         LINE 
-        $$ = new ASTNode("special");
+        $$ = new ASTNode("special", TYPEDEF_FOUND);
         $$->addChild($1);
     }
     | EXTERN 
@@ -1184,78 +1224,91 @@ type_specifier
         LINE 
         $$ = new ASTNode("type_specifier");
         $$->addChild($1);
+        
     }
     | VOID 
     {
         LINE
         $$ = new ASTNode("type_specifier");
         $$->addChild($1);
+        
     }
     | CHAR 
     {
         LINE
         $$ = new ASTNode("type_specifier");
         $$->addChild($1);
+        
     }
     | SHORT 
     {
         LINE 
         $$ = new ASTNode("type_specifier");
         $$->addChild($1);
+        
     }
     | INT 
     {
         LINE 
         $$ = new ASTNode("type_specifier");
         $$->addChild($1);
+        
     }
     | LONG 
     {
         LINE 
         $$ = new ASTNode("type_specifier");
         $$->addChild($1);
+        
     }
     | FLOAT 
     {
         LINE
         $$ = new ASTNode("type_specifier");
         $$->addChild($1);
+        
     }
     | DOUBLE 
     {
         LINE
         $$ = new ASTNode("type_specifier");
         $$->addChild($1);
+        
     }
     | SIGNED 
     {
         LINE
         $$ = new ASTNode("type_specifier");
         $$->addChild($1);
+        
     }
     | UNSIGNED 
     {
         LINE
         $$ = new ASTNode("type_specifier");
         $$->addChild($1);
+        
     }
     | struct_or_union_specifier 
     {
         LINE
         $$ = new ASTNode("type_specifier");
         $$->addChild($1);
+        
     }
     | enum_specifier 
     {
         LINE 
         $$ = new ASTNode("type_specifier");
         $$->addChild($1);
+        
     }
     | TYPE_NAME 
     {
         LINE 
         $$ = new ASTNode("type_specifier");
         $$->addChild($1);
+        expectingTypeName = false;
     } /* THIS APPROACH WILL NEVER WORK ❌ ❌ ❌ ❌ [NO way to support typedef as of now]
     | identifier 
     {
@@ -1300,11 +1353,13 @@ struct_or_union
     {
         LINE 
         $$ = new ASTNode("struct_or_union", "struct");
+        expectingTypeName = false;
     }
     | UNION 
     {
         LINE 
         $$ = new ASTNode("struct_or_union", "union");
+        expectingTypeName = false;
     }
     ;
 
@@ -1509,14 +1564,14 @@ declarator
     : pointer direct_declarator
     {
         LINE
-        $$ = new ASTNode("declarator");
+        $$ = new ASTNode("declarator", $2->value); // Pass the identifier value up
         $$->addChild($1); 
         $$->addChild($2); 
     }
     | direct_declarator
     {
         LINE
-        $$ = new ASTNode("declarator");
+        $$ = new ASTNode("declarator", $1->value); // Pass the identifier value up
         $$->addChild($1);
     }
     ;
@@ -1525,13 +1580,13 @@ direct_declarator
     : identifier
     {
         LINE
-        $$ = new ASTNode("direct_declarator");
+        $$ = new ASTNode("direct_declarator", $1->value); // Pass the identifier value up
         $$->addChild($1);
     }
     | LPAREN declarator rparen
     {
         LINE
-        $$ = new ASTNode("direct_declarator");
+        $$ = new ASTNode("direct_declarator",$2->value);
         $$->addChild($1);
         $$->addChild($2);
         $$->addChild($3);
@@ -1539,7 +1594,7 @@ direct_declarator
     | direct_declarator LSQUARE constant_expression rsquare
     {
         LINE
-        $$ = new ASTNode("direct_declarator");
+        $$ = new ASTNode("direct_declarator", $1->value);
         $$->addChild($1);
         $$->addChild($2);
         $$->addChild($3);
@@ -1548,7 +1603,7 @@ direct_declarator
     | direct_declarator LSQUARE rsquare
     {
         LINE
-        $$ = new ASTNode("direct_declarator");
+        $$ = new ASTNode("direct_declarator", $1->value);
         $$->addChild($1);
         $$->addChild($2);
         $$->addChild($3);
@@ -1556,7 +1611,7 @@ direct_declarator
     | direct_declarator LPAREN parameter_type_list rparen
     {
         LINE
-        $$ = new ASTNode("direct_declarator");
+        $$ = new ASTNode("direct_declarator", $1->value);
         $$->addChild($1);
         $$->addChild($2);
         $$->addChild($3);
@@ -1565,7 +1620,7 @@ direct_declarator
     | direct_declarator LPAREN identifier_list rparen
     {
         LINE
-        $$ = new ASTNode("direct_declarator");
+        $$ = new ASTNode("direct_declarator", $1->value);
         $$->addChild($1);
         $$->addChild($2);
         $$->addChild($3);
@@ -1574,7 +1629,7 @@ direct_declarator
     | direct_declarator LPAREN rparen
     {
         LINE
-        $$ = new ASTNode("direct_declarator");
+        $$ = new ASTNode("direct_declarator", $1->value);
         $$->addChild($1);
         $$->addChild($2);
         $$->addChild($3);
@@ -2544,7 +2599,12 @@ void yyerror(const char* s) {
     // We stop Custom Error Handling 
     // add to bison LOG
     noOfyyerrorCalls++;
-    if(!TURN_OFF && stopYYERROR) return;
+
+    if(stopYYERROR){
+        return;
+    }
+
+    std::cerr << "Reaching here\n";
 
     std::string error = "Syntax Error: " + std::string(s) + " at Line: " + std::to_string(yylineno) + " near Token: " + yytext;
     bisonLOG.push_back(error);

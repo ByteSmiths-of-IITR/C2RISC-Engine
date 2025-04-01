@@ -382,6 +382,9 @@ bool isUserDType(const GenericSymbol &sym)
     return dynamic_cast<const UserDType *>(&sym);
 }
 
+bool isTypeDefs(const GenericSymbol &sym){
+    return dynamic_cast<const TypeDefs *>(&sym);
+}
 std::string newRecordName()
 {
     static int recordCount = 0;

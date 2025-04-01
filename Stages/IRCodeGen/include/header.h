@@ -59,33 +59,37 @@ class TypeExpression{
     };
 
         //~~~~~~~~~~~~~~~~[ TypeQualifiers & StorageClassSpecifiers Enum Classes ]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        enum class TypeQualifier
-        {
-            CONST,
-            VOLATILE,
-            RESTRICT,
-            UNKNOWN
-        };
+    enum class TypeQualifier
+    {
+        CONST,
+        VOLATILE,
+        RESTRICT,
+        UNKNOWN,
+        NONE
+    };
 
-        enum class StorageClass
-        {
-            AUTO,
-            STATIC,
-            EXTERN,
-            NONE,
-            UNKNOWN
-        };
+    enum class StorageClass
+    {
+        AUTO,
+        STATIC,
+        EXTERN,
+        NONE,
+        UNKNOWN,
+        TYPEDEF // This will be used for typedef
+    };
 
-        //~~~~~~~~~~~~~~~~[ SubLevel TypeExpressions Classes ]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        class LevelInfo {
-        public:
-    
-            LevelInfo() {
-                MEM("LevelInfo Constructor");
-            }
-            virtual ~LevelInfo() { // Virtual Destructor
-                MEM("LevelInfo Destructor");
-            }
+    //~~~~~~~~~~~~~~~~[ SubLevel TypeExpressions Classes ]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    class LevelInfo
+    {
+    public:
+        LevelInfo()
+        {
+            MEM("LevelInfo Constructor");
+        }
+        virtual ~LevelInfo()
+        { // Virtual Destructor
+            MEM("LevelInfo Destructor");
+        }
         };
 
         class ParenthesisInfo : public LevelInfo {
@@ -183,10 +187,11 @@ int width(const TypeExpression &typeExpr);
 
 int checkEquivalance(const TypeExpression &typeExpr1, const TypeExpression &typeExpr2);
     // Return Values
-    extern int const EQUIVALENT;
-    extern int const WARNING;
-    extern int const LOW_ERROR;
-    extern int const HIGH_ERROR;
+extern const int OKAY;
+extern int const EQUIVALENT;
+extern int const WARNING;
+extern int const LOW_ERROR;
+extern int const HIGH_ERROR;
 
 TypeExpression createTypeExpression(GenericSymbol *symbol); // This will create a type expression from the symbol
 
@@ -404,12 +409,20 @@ public:
             CON_DES(UserDType)
         };
 
+        class TypeDefs : public GenericSymbol {
+        public:
+            TypeExpression type; // This will be used for typedef
+
+            CON_DES(TypeDefs)
+        };
+
 //=====================[ Symbol Utilities ]=========================================================================================
 
 bool isVariable(const GenericSymbol &sym);
 bool isEnumConstant(const GenericSymbol &sym);
 bool isFunction(const GenericSymbol &sym);
 bool isUserDType(const GenericSymbol &sym);
+bool isTypeDefs(const GenericSymbol &sym);
 
 std::string newRecordName(); // For Un-Named Struct/Union/Enum
 
@@ -488,6 +501,12 @@ bool isIntegral(const TypeExpression &typeExpr);
 bool isConstant(const TypeExpression &typeExpr);
 std::string isPrimitive(const TypeExpression &typeExpr);
 // Return values will be Primitive Types
+bool isA_InbuiltType(std::string baseType); // Check if base type is primitive
+bool isA_IntegralType(std::string baseType); // Check if base type is integral
+bool isA_FloatingType(std::string baseType); // Check if base type is floating
+std::string combineType(std::vector<std::string> typeSpecifierVector); // Combine the types
+// Return value
+extern std::string INVALID_COMBINATION; // This will be used for invalid combination of types
 
 //======================[ TypeCasting Utilities 🆎 ]=========================================================================================
 
@@ -516,10 +535,10 @@ std::string toString(std::vector<TypeExpression> &paramVector);
 
 //====================[ Helper Functions ]=========================================================================================
 std::string getProduction(ASTNode *node);
-int ProcessDecSpecifiers(std::vector<std::string> &valueVector, BaseInfo *&base, StorageClass &storageClass);
+int ProcessDecSpecifiers(std::vector<std::string> &valueVector, TypeExpression &type, StorageClass &storageClass);
 
-    //====================[ Globally Accessible Variables ]=========================================================================================
-    extern SymbolTable SYM_TABLE; // Global Symbol Table
+//====================[ Globally Accessible Variables ]=========================================================================================
+extern SymbolTable SYM_TABLE; // Global Symbol Table
 extern TAC CODE_BASE;         // Global TAC Code Base
 
 //====================[ Annotated Parse Tree ]=========================================================================================
@@ -532,12 +551,18 @@ extern int ANNOTATE; // 0 - OFF | 1 - ON [extern declared in header.h]
 
 extern std::ofstream* handlerLog; // This will be used to log the errors
 
-#define HERE *handlerLog << "AT line " << __LINE__ << " in function " << lastFuncCalled << std::endl
+#define HERE *handlerLog << "AT line " << __LINE__ << " in " << __FILE__ << std::endl
+#define HEREFUNC *handlerLog << "AT line " << __LINE__ << " in " << __FILE__ << " in function: " << lastFuncCalled << std::endl
 
-#define CERR *handlerLog << "[" << __LINE__ << "] "
+#define CERR *handlerLog << "[" << __FILE__ << " : " << __LINE__ <<  "] "
+
+// #define LINE1 std::cerr << "At line " << __LINE__ << " in " << __FILE__ << std::endl;
+#define LINE1 /**/
 
 void openHandlerLog(const std::string &filename);
 void closeHandlerLog();
+
+extern std::string IN_SYNTAX_PHASE;
 
 //=====================[ Main Semantic Pass Handler ]=========================================================================================
 
