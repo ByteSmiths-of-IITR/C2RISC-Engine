@@ -118,7 +118,7 @@ void SymbolTable::exitScope()
     this->lastScopeNo.pop();
 }
 
-int SymbolTable::insert(const std::string &key, GenericSymbol *symbol)
+int SymbolTable::insert(SYMBOL_TYPE symbolType,const std::string &key, GenericSymbol *symbol)
 {
 
     lastFuncCalled = "SymbolTable::insert";
@@ -154,6 +154,8 @@ int SymbolTable::insert(const std::string &key, GenericSymbol *symbol)
         std::cerr << "Error: Symbol is nullptr\n";
         return BUG;
     }
+
+    symbol->symbolType = symbolType;
 
     // symbol->symbolName = key; [WE can't set this here, since records have a different key and name]
     // The name of symbol will be filled by the caller
@@ -350,7 +352,7 @@ int SymbolTable::insertRecord(const std::string &key, GenericSymbol *symbol)
 {
 
     std::string newKey = RECORD_PREFIX + key;
-    return this->insert(newKey, symbol);
+    return this->insert(SYMBOL_TYPE::USER_DTYPE, newKey, symbol);
 }
 
 int SymbolTable::lookupRecord(const std::string &key, GenericSymbol *&sym)
@@ -373,26 +375,26 @@ int SymbolTable::lookupRecordNode(const std::string &key, SymbolNode *&node)
 
 bool isVariable(const GenericSymbol &sym)
 {
-    return dynamic_cast<const Variable *>(&sym);
+    return (sym.symbolType == SYMBOL_TYPE::VARIABLE);
 }
 
 bool isFunction(const GenericSymbol &sym)
 {
-    return dynamic_cast<const Function *>(&sym);
+    return (sym.symbolType == SYMBOL_TYPE::FUNCTION);
 }
 
 bool isEnumConstant(const GenericSymbol &sym)
 {
-    return dynamic_cast<const EnumConstant *>(&sym);
+    return (sym.symbolType == SYMBOL_TYPE::ENUM_CONSTANT);
 }
 
 bool isUserDType(const GenericSymbol &sym)
 {
-    return dynamic_cast<const UserDType *>(&sym);
+    return (sym.symbolType == SYMBOL_TYPE::USER_DTYPE);
 }
 
 bool isTypeDefs(const GenericSymbol &sym){
-    return dynamic_cast<const TypeDefs *>(&sym);
+    return (sym.symbolType == SYMBOL_TYPE::TYPEDEF);
 }
 std::string newRecordName()
 {

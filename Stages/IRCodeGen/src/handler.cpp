@@ -71,6 +71,8 @@ std::string toString(StorageClass storageClass)
         return "static";
     case StorageClass::EXTERN:
         return "extern";
+    case StorageClass::TYPEDEF:
+        return "typedef";
     case StorageClass::NONE:
         return "";
     default:
@@ -166,8 +168,11 @@ StorageClass getStorageClass(const std::string &value)
         return StorageClass::STATIC;
     else if (value == "extern")
         return StorageClass::EXTERN;
+    else if (value == "typedef")
+        return StorageClass::TYPEDEF;
     else
         return StorageClass::NONE;
+    // TODO : Add error handling
 }
 
 TypeQualifier getTypeQualifier(const std::string &value)
@@ -199,7 +204,7 @@ std::string getProduction(ASTNode *node)
 // TODO : do error handling
 int ProcessDecSpecifiers(std::vector<std::string> &valueVector, TypeExpression &type, StorageClass &storageClass)
 {
-    CERR << "--- Calling ProcessDecSpecifiers ---" << std::endl;
+    // CERR << "--- Calling ProcessDecSpecifiers ---" << std::endl;
     // 1. Initialize the base and storageClass
     int check = OKAY;
 
@@ -211,10 +216,12 @@ int ProcessDecSpecifiers(std::vector<std::string> &valueVector, TypeExpression &
     }
 
     // Print the valueVector
+    std::string args = "";
     for(size_t i = 0; i < valueVector.size(); ++i)
     {
-        CERR << "Value: " << valueVector[i] << std::endl;
+        args += "| " + valueVector[i] + "|" + (i == valueVector.size() - 1 ? "" : ", ");
     }
+    CERR << "Arguments to ProcessDecSpe: " << args << std::endl;
 
     std::vector<StorageClass> storageClassVector;
     std::vector<TypeQualifier> typeQualifierVector;
@@ -228,6 +235,7 @@ int ProcessDecSpecifiers(std::vector<std::string> &valueVector, TypeExpression &
         std::string value = valueVector[i];
         if (value == "auto" || value == "static" || value == "extern" || value == "typedef")
         {
+            CERR << "Found StorageClass: " << value << std::endl;
             StorageClass sc = getStorageClass(value);
             storageClassVector.push_back(sc);
         }
@@ -374,14 +382,23 @@ int ProcessDecSpecifiers(std::vector<std::string> &valueVector, TypeExpression &
                 if (lookupCheck == LOOKUP_FAILURE)
                 {
                     // SEMANTIC ERROR 🚨 : Type name not found
-                    CERR << "Lookup Failure" << std::endl;
+                    CERR << "Lookup for " << typeName << " failed" << std::endl;
                     check = LOW_ERROR; // ERROR
                 }
                 else
                 {
-                    CERR << "Lookup Success" << std::endl;
+                    CERR << "Lookup for " << typeName << " was successful" << std::endl;
                     // Type name found
-                    resultType = ((TypeDefs *)sym)->type;
+                    if(sym->symbolType == SYMBOL_TYPE::TYPEDEF)
+                    {
+                        resultType = ((TypeDefs *)sym)->type;
+                    }
+                    else
+                    {
+                        // SEMANTIC ERROR 🚨 : Not a typedef
+                        CERR << typeName << " is not a typedef" << std::endl;
+                        check = LOW_ERROR; // ERROR
+                    }
                 }
             }
         }
@@ -408,6 +425,7 @@ int ProcessDecSpecifiers(std::vector<std::string> &valueVector, TypeExpression &
     type = resultType;
 
     CERR << "TypeExpression: " << toString(type) << std::endl;
+    CERR << "StorageClass: " << toString(storageClass) << std::endl;
     CERR << "Check: " << check << std::endl;
     return check;
 }
@@ -579,7 +597,7 @@ void function_definition_H(ASTNode *node)
             func->isDefined = true; // To be set to true when the function is defined
 
             // Add the symbol to the symbol table
-            int insertCheck = SYM_TABLE.insert(varName, func);
+            int insertCheck = SYM_TABLE.insert(SYMBOL_TYPE::FUNCTION, varName, func);
             if (insertCheck == INSERT_FAILURE)
             {
                 // SEMANTIC ERROR 🚨 : Function already present in the current scope
@@ -633,7 +651,7 @@ void function_definition_H(ASTNode *node)
                 var->storageClass = StorageClass::NONE;
 
                 // Add the symbol to the symbol table
-                int insertCheck = SYM_TABLE.insert(paramNames[i], var);
+                int insertCheck = SYM_TABLE.insert(SYMBOL_TYPE::VARIABLE,paramNames[i], var);
                 if (insertCheck == INSERT_FAILURE)
                 {
                     // SEMANTIC ERROR 🚨 : Parameter already present in the current scope

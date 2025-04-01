@@ -257,13 +257,24 @@ VALUE_TYPE getValueType(const TypeExpression &typeExpr); // Only Valid for Ident
 
 //=====================[ Symbols (VarSymbol & UserDType) | SymbolTable ]=========================================================================================
 
+enum class SYMBOL_TYPE
+{
+    VARIABLE,
+    ENUM_CONSTANT,
+    FUNCTION,
+    USER_DTYPE,
+    TYPEDEF,
+    NONE
+};
+
 class GenericSymbol
 {
 public:
     // General Info
-    std::pair<int, int> location; 
-    std::string symbolName;      
-    int scopeNo;            
+    std::pair<int, int> location;
+    std::string symbolName;
+    int scopeNo;
+    SYMBOL_TYPE symbolType; // This will be used to identify the type of symbol
 
     GenericSymbol()
     {
@@ -312,6 +323,7 @@ extern int const INSERT_FAILURE;              // Already present in the current 
 extern int const LOOKUP_SUCCESS; // Found
 extern int const LOOKUP_FAILURE; // Not Found
 
+
 class SymbolTable
 {
 public:
@@ -322,6 +334,7 @@ public:
     std::stack<int> scopeBottom;        // Track the bottom marker to above stack of symbols
 
     int globalScope;
+
 
     std::stack<int> lastScopeNo; // A ancestor scope tracker
     int scopeNo; // This will keep the current scope number [unique to each scope] [not like level]
@@ -345,7 +358,7 @@ public:
     int getGlobaScopeNo();
 
     int insertRecord(const std::string &key, GenericSymbol *symbol);
-    int insert(const std::string &key, GenericSymbol *symbol);
+    int insert(SYMBOL_TYPE symbolType,const std::string &key, GenericSymbol *symbol);
         
     int lookupRecord(const std::string &key, GenericSymbol *&sym);
     int lookup(const std::string &key, GenericSymbol *&sym);

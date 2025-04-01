@@ -142,6 +142,7 @@ void init_declarator_H(ASTNode *node, TypeExpression inh_type, StorageClass inh_
         std::string varName; // to be fetched ⬆️
         TypeExpression type; // to be fetched ⬆️
         declarator_H(node->children[0], inh_type, varName, type);
+        SYMBOL_TYPE symbolInsertedType = SYMBOL_TYPE::NONE;
 
         // 1. Create Symbol (Variable or Function or typedef)
         Type whichType = whatIsType(type);
@@ -153,6 +154,7 @@ void init_declarator_H(ASTNode *node, TypeExpression inh_type, StorageClass inh_
             typedefDef->symbolName = varName;
             typedefDef->type = type;
             symbol = typedefDef;
+            symbolInsertedType = SYMBOL_TYPE::TYPEDEF;
 
             // SEMANTIC ERROR 🚨 : SHOULD NOT HAVE INITIALIZER
         }
@@ -163,6 +165,7 @@ void init_declarator_H(ASTNode *node, TypeExpression inh_type, StorageClass inh_
             func->symbolName = varName;
             func->type = type;
             func->isDefined = false; // To be set to true when the function is defined
+            symbolInsertedType = SYMBOL_TYPE::FUNCTION;
 
             // SEMANTIC ERROR 🚨 : SHOULD NOT HAVE INITIALIZER
 
@@ -183,19 +186,36 @@ void init_declarator_H(ASTNode *node, TypeExpression inh_type, StorageClass inh_
             var->symbolName = varName;
             var->type = type;
             var->storageClass = inh_storageClass;
+            symbolInsertedType = SYMBOL_TYPE::VARIABLE;
             // [📴 Offset to be filled]
 
             symbol = var;
         }
 
         // 2. Add the symbol to the symbol table
-        int check = SYM_TABLE.insert(varName, symbol);
+        int check = SYM_TABLE.insert(symbolInsertedType,varName, symbol);
         if (check == INSERT_FAILURE)
         {
             // SEMANTIC ERROR 🚨 : Variable already present in the current scope
         }
-
-        A_PTree node->addAttribute("Symbol added ☞ \"" + varName + "\""); // 🌴 Adding syn_attr
+        std::string symbolTypeStr = "";
+        if (symbolInsertedType == SYMBOL_TYPE::VARIABLE)
+        {
+            symbolTypeStr = "Variable";
+        }
+        else if (symbolInsertedType == SYMBOL_TYPE::FUNCTION)
+        {
+            symbolTypeStr = "Function";
+        }
+        else if (symbolInsertedType == SYMBOL_TYPE::TYPEDEF)
+        {
+            symbolTypeStr = "Typedef";
+        }
+        else
+        {
+            symbolTypeStr = "Unknown";
+        }
+        A_PTree node->addAttribute("Symbol added ☞ \"" + varName + "\" of type " + symbolTypeStr); // 🌴 Adding syn_attr
 
         // Done - NO 🔖IRCode
     }
@@ -884,7 +904,7 @@ void enumerator_list_H(ASTNode *node, std::string recordID, int &lastInitValue)
         enumConst->symbolName = varName;
         enumConst->value = currInitValue;
 
-        int check = SYM_TABLE.insert(enumConst->symbolName, enumConst);
+        int check = SYM_TABLE.insert(SYMBOL_TYPE::ENUM_CONSTANT,enumConst->symbolName, enumConst);
         if (check == INSERT_FAILURE)
         {
             // SEMANTIC ERROR 🚨 : Enum Constant already present in the current scope
@@ -923,7 +943,7 @@ void enumerator_list_H(ASTNode *node, std::string recordID, int &lastInitValue)
         EnumConstant *enumConst = new EnumConstant();
         enumConst->symbolName = varName;
         enumConst->value = currInitValue;
-        int check = SYM_TABLE.insert(enumConst->symbolName, enumConst);
+        int check = SYM_TABLE.insert(SYMBOL_TYPE::ENUM_CONSTANT,enumConst->symbolName, enumConst);
         if (check == INSERT_FAILURE)
         {
             // SEMANTIC ERROR 🚨 : Enum Constant already present in the current scope

@@ -1,3 +1,3 @@
-typedef long long ll;
+typedef short int kk;
 
-ll a;
+kk var;
