@@ -649,6 +649,8 @@ void struct_declaration_H(ASTNode *node, std::map<std::string, TypeExpression> &
         // SEMANTIC ERROR 🚨 : Invalid TypeSpecifier
     }
 
+
+
     // Pass the inh_data ⬇️ & fetch the syn_attr(members) ⬆️
     std::map<std::string, TypeExpression> syn_members;
     struct_declarator_list_H(node->children[1], inh_type, syn_members);
@@ -1512,6 +1514,10 @@ void type_name_H(ASTNode *node, TypeExpression &type)
         if (check != OKAY)
         {
             // SEMANTIC ERROR 🚨 : Invalid TypeSpecifier
+        }
+        if(inh_storageClass != StorageClass::NONE)
+        {
+            // SEMANTIC ERROR 🚨 : TO Check if StorageClass Allowed Here or NOT
         }
 
         // Pass the data up
