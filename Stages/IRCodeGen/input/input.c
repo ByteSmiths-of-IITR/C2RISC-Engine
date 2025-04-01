@@ -1,10 +1,3 @@
-struct A{
-    int a, b;
-} var;
+typedef long long ll;
 
-int main(){
-    return 0;
-    struct A{
-        int a, b;
-    } var;
-}
+ll a;

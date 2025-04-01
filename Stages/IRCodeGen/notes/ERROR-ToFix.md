@@ -24,3 +24,7 @@ Things Getting TOOOO MUCH Complicated, first read about error and yyerrok and yy
 - To support varadic function we need to make changes in the grammar.
 Put the varadics.c code into `input.c` and run `make semantic`
 You can see the parsing is failed, althought gcc accepts it.
+
+
+# BIG ERROR
+isVariable() function fails due to issue in TypeCasting Logics

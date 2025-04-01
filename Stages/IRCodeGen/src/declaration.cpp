@@ -415,7 +415,7 @@ void type_specifier_H(ASTNode *node, std::string &value)
     // Type Name
     else if (whichProduction == P12)
     {
-        std::string resValue = "typedef " + node->children[0]->value;
+        value = node->children[0]->value;
     }
     else
     {

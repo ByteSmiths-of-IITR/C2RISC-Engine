@@ -199,14 +199,22 @@ std::string getProduction(ASTNode *node)
 // TODO : do error handling
 int ProcessDecSpecifiers(std::vector<std::string> &valueVector, TypeExpression &type, StorageClass &storageClass)
 {
+    CERR << "--- Calling ProcessDecSpecifiers ---" << std::endl;
     // 1. Initialize the base and storageClass
     int check = OKAY;
 
+    // Check if the valueVector is empty
+    if (valueVector.empty())
+    {
+        CERR << "Error: valueVector is empty" << std::endl;
+        // return LOW_ERROR; // ERROR
+    }
+
     // Print the valueVector
-    // for(size_t i = 0; i < valueVector.size(); ++i)
-    // {
-    //     CERR << "Value: " << valueVector[i] << std::endl;
-    // }
+    for(size_t i = 0; i < valueVector.size(); ++i)
+    {
+        CERR << "Value: " << valueVector[i] << std::endl;
+    }
 
     std::vector<StorageClass> storageClassVector;
     std::vector<TypeQualifier> typeQualifierVector;
@@ -335,6 +343,7 @@ int ProcessDecSpecifiers(std::vector<std::string> &valueVector, TypeExpression &
         }
     }
 
+
     if (!allAreInbuiltType)
     {
         CERR << "Not all are inbuilt types" << std::endl;
@@ -343,33 +352,36 @@ int ProcessDecSpecifiers(std::vector<std::string> &valueVector, TypeExpression &
         if (typeSpecifierVector.size() != 1)
         {
             // SEMANTIC ERROR 🚨 : Multiple type specifiers
+            CERR << "Multiple USER Defined type specifiers" << std::endl;
             check = LOW_ERROR; // ERROR
         }
         else
         {
-            // TypeSpecifier must be a TYPE_NAME
-            // Check in Symbol Table if present
-            std::string typeName = typeSpecifierVector[0];
-            GenericSymbol *sym = nullptr;
-            int lookupCheck = SYM_TABLE.lookup(typeName, sym);
-            if (lookupCheck == LOOKUP_FAILURE)
+            std::string firstPart = typeSpecifierVector[0].substr(0, typeSpecifierVector[0].find(" "));
+            if (firstPart == TYPE_STRUCT || firstPart == TYPE_UNION || firstPart == TYPE_ENUM)
             {
-                // SEMANTIC ERROR 🚨 : Type name not found
-                check = LOW_ERROR; // ERROR
+                // This is a struct or union or enum
+                base->baseType = typeSpecifierVector[0];
+                resultType.levelStack.push(base);
             }
-            else
-            {
-                // Type name found
-                TypeDefs *typedefDef = dynamic_cast<TypeDefs *>(sym);
-                if (typedefDef != nullptr)
+            else{
+                // TypeSpecifier must be a TYPE_NAME
+                // Check in Symbol Table if present
+                std::string typeName = typeSpecifierVector[0];
+                GenericSymbol *sym = nullptr;
+                CERR << "Looking up: " << typeName << std::endl;
+                int lookupCheck = SYM_TABLE.lookup(typeName, sym);
+                if (lookupCheck == LOOKUP_FAILURE)
                 {
-                    // This is a typedef definition
-                    resultType = typedefDef->type;
+                    // SEMANTIC ERROR 🚨 : Type name not found
+                    CERR << "Lookup Failure" << std::endl;
+                    check = LOW_ERROR; // ERROR
                 }
                 else
                 {
-                    // SEMANTIC ERROR 🚨 : Not a typedef definition
-                    check = LOW_ERROR; // ERROR
+                    CERR << "Lookup Success" << std::endl;
+                    // Type name found
+                    resultType = ((TypeDefs *)sym)->type;
                 }
             }
         }

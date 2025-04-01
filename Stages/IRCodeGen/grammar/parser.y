@@ -1189,7 +1189,7 @@ storage_class_specifier
     : TYPEDEF 
     {
         LINE 
-        $$ = new ASTNode("special", TYPEDEF_FOUND);
+        $$ = new ASTNode("storage_class_specifier", TYPEDEF_FOUND);
         $$->addChild($1);
     }
     | EXTERN 

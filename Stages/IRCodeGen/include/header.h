@@ -423,6 +423,7 @@ public:
 
 //=====================[ Symbol Utilities ]=========================================================================================
 
+
 bool isVariable(const GenericSymbol &sym);
 bool isEnumConstant(const GenericSymbol &sym);
 bool isFunction(const GenericSymbol &sym);
@@ -557,6 +558,8 @@ extern int ANNOTATE; // 0 - OFF | 1 - ON [extern declared in header.h]
 extern std::ofstream* handlerLog; // This will be used to log the errors
 
 #define ENTRY_MSG *handlerLog << "[" << __LINE__ << "] " 
+// #define ENTRY_MSG /**/ //
+
 #define HERE *handlerLog << "AT line " << __LINE__ << " in " << __FILE__ << std::endl
 #define HEREFUNC *handlerLog << "AT line " << __LINE__ << " in " << __FILE__ << " in function: " << lastFuncCalled << std::endl
 
