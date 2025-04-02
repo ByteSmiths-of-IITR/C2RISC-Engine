@@ -170,6 +170,9 @@ std::string toString(SPACE space){
     else if(space == SPACE::UNKNOWN_SPACE){
         return "unknown_space";
     }
+    else {
+        return "don't_know_space";
+    }
 }
 
 std::string toString(VALUE_TYPE valueType)
@@ -253,9 +256,9 @@ int ProcessDecSpecifiers(std::vector<std::string> &valueVector, TypeExpression &
     std::string args = "";
     for(size_t i = 0; i < valueVector.size(); ++i)
     {
-        args += "| " + valueVector[i] + "|" + (i == valueVector.size() - 1 ? "" : ", ");
+        args += "|" + valueVector[i] + "|" + (i == valueVector.size() - 1 ? "" : ", ");
     }
-    CERR << "Arguments to ProcessDecSpe: " << args << std::endl;
+    // CERR << "Arguments to ProcessDecSpe: " << args << std::endl;
 
     std::vector<StorageClass> storageClassVector;
     std::vector<TypeQualifier> typeQualifierVector;
@@ -411,7 +414,7 @@ int ProcessDecSpecifiers(std::vector<std::string> &valueVector, TypeExpression &
                 // Check in Symbol Table if present
                 std::string typeName = typeSpecifierVector[0];
                 GenericSymbol *sym = nullptr;
-                CERR << "Looking up: " << typeName << std::endl;
+                // CERR << "Looking up: " << typeName << std::endl;
                 int lookupCheck = SYM_TABLE.lookup(typeName, sym);
                 if (lookupCheck == LOOKUP_FAILURE)
                 {
@@ -421,7 +424,7 @@ int ProcessDecSpecifiers(std::vector<std::string> &valueVector, TypeExpression &
                 }
                 else
                 {
-                    CERR << "Lookup for " << typeName << " was successful" << std::endl;
+                    // CERR << "Lookup for " << typeName << " was successful" << std::endl;
                     // Type name found
                     if(sym->symbolType == SYMBOL_TYPE::TYPEDEF)
                     {
@@ -440,10 +443,10 @@ int ProcessDecSpecifiers(std::vector<std::string> &valueVector, TypeExpression &
     else
     {
         // All are inbuilt types
-        CERR << "All are inbuilt types" << std::endl;
+        // CERR << "All are inbuilt types" << std::endl;
 
         std::string finalBase = combineType(typeSpecifierVector);
-        CERR << "Final Base: " << finalBase << std::endl;
+        // CERR << "Final Base: " << finalBase << std::endl;
         if (finalBase == INVALID_COMBINATION)
         {
             // SEMANTIC ERROR 🚨 : Invalid TypeSpecifier's Combination
@@ -458,9 +461,8 @@ int ProcessDecSpecifiers(std::vector<std::string> &valueVector, TypeExpression &
 
     type = resultType;
 
-    CERR << "TypeExpression: " << toString(type) << std::endl;
-    CERR << "StorageClass: " << toString(storageClass) << std::endl;
-    CERR << "Check: " << check << std::endl;
+    std::string output = "|" + toString(storageClass) + "|"+toString(type)+ "| CHECK: " + toString(check) + "";
+    CERR << output << std::endl;
     return check;
 }
 
@@ -495,9 +497,12 @@ void translation_unit_H(ASTNode *node)
 
     if (whichProduction == P1)
     {
-        // We will openScope here
-        int globalScope = SYM_TABLE.enterScope();                                          // GlobalScope
-        A_PTree node->addAttribute("S" + toString(globalScope) + " : Global Scope Entry"); // 🌴 Adding syn_attr
+        // We will openScope here 
+        int globalScope = SYM_TABLE.enterScope();                                         // GlobalScope
+        std::string scopeName = GLOBAL_SCOPE + " " + toString(globalScope); // Global Scope Name
+        SYM_TABLE.setScopeName(scopeName);                                   // Set the name of the scope
+        A_PTree node->addAttribute("Scope (Global) : S" + std::to_string(globalScope) + " ⤵️"); // 🌴 Adding syn_attr
+
 
         // Call the external_declaration handler
         external_declaration_H(node->children[0]);
@@ -514,6 +519,11 @@ void translation_unit_H(ASTNode *node)
     {
         // Wrong Production
     }
+
+    // SCOPE EXIT
+    int globalScope = SYM_TABLE.exitScope(); // GlobalScope
+    A_PTree node->addAttribute("Scope (Global) S" + std::to_string(globalScope) + " Exited ↙️"); // 🌴 Adding syn_attr 
+
     return;
 }
 
@@ -671,8 +681,12 @@ void function_definition_H(ASTNode *node)
             std::vector<std::string> paramNames = paramInfo->paramsName;
 
             // OPEN a NEW SCOPE
-            int scopeNo = SYM_TABLE.enterScope();
-            A_PTree node->addAttribute("S" + std::to_string(scopeNo) + " : " + varName + " function's Scope Entry"); // 🌴 Adding syn_attr
+            int scopeNo = SYM_TABLE.enterScope(); //  [☀️ EarlyScope Entry]
+            SYM_TABLE.ignoreNextEntry(); // This will tell the symbol table to ignore the next entry by compound_statement
+            
+            std::string scopeName = varName + " S" + std::to_string(scopeNo); // Function Scope Name
+            A_PTree node->addAttribute("Early Scope Entry : " + scopeName + " ☀️"); // 🌴 Adding syn_attr
+            
             // Add the parameters to the symbol table
 
             int k = paramVector.size();
@@ -702,13 +716,14 @@ void function_definition_H(ASTNode *node)
         CODE_BASE.addTAC(NO_ARG, FUNCTION_LABEL, varName, NO_ARG);
 
         // Call the compound_statement handler
-        bool earlyScopeEnter = true; // inh_attr to be passed to compound_statement
-        compound_statement_H(node->children[2], earlyScopeEnter);
+        SYM_TABLE.ignoreNextEntry(); // This will tell compound_statement to ignore the next entry
+        compound_statement_H(node->children[2]);
 
         // [ToDecide - HOW TO CHECK RETURN TYPE OF FUNCTION]
 
-        // EXIT the SCOPE
-        SYM_TABLE.exitScope();
+        // SYM_TABLE.exitScope();  
+        // [Will be Handled by Compound Statments this is due to - ☀️ EarlyScope Entry]
+
         CODE_BASE.addTAC(NO_ARG, BLANK, NO_ARG, NO_ARG); // To be added
     }
     else

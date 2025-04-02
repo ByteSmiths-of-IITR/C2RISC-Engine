@@ -1,9 +1,8 @@
-
-struct A{
+int a;
+int main(){
     int a;
-};
-int main()
-{
-    struct A a;
-    a++;
+    int b;
+    a = b;
+
+    a = a++;
 }

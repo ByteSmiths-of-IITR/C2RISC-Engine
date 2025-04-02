@@ -1,7 +1,132 @@
 #include "header.h"
 
+//=====================[ Width Utilities ]=========================================================================================
 
+int width(const UserDType &dtype)
+{
+    if (dtype.totalSize == -1)
+    {
+        // has not been calculated yet
+        int size = 0;
+        for (auto &pair : dtype.members)
+        {
+            std::string memberName = pair.first;
+            TypeExpression memberType = pair.second;
 
+            int memberSize = width(memberType);
+            if (memberSize == -1)
+            {
+                CERR << "Error: Member \"" + memberName + "\" not found\n";
+                return -1;
+            }
+            size += memberSize;
+        }
+    }
+}
+
+int width(const BaseInfo &info)
+{
+    TypeExpression typeExpr;
+    typeExpr.levelStack.push((LevelInfo *)&info);
+    Type topType = whatIsType(typeExpr);
+    if (topType == Type::VARIABLE)
+    {
+        std::string baseType = info.baseType;
+        int w = width(baseType);
+        if (w == -1)
+        {
+            CERR << "Error: Base Type \"" + baseType + "\" not found\n";
+            return -1;
+        }
+        return w;
+    }
+    else if (topType == Type::ENUM)
+    {
+        return WORD_SIZE; // Size of enum
+    }
+    else if (topType == Type::STRUCT_UNION)
+    {
+        // Need to check in symbol table & find
+        std::string baseType = info.baseType;
+
+        std::string recordType = baseType.substr(0, baseType.find(" "));
+        std::string recordName = baseType.substr(baseType.find(" ") + 1, baseType.length());
+        std::string lastPart = baseType.substr(baseType.find_last_of(" ") + 1, baseType.length());
+        std::string scopeNoStr = lastPart.substr(1, lastPart.length() - 1);
+        int scopeNo = std::stoi(scopeNoStr);
+
+        GenericSymbol *recordSymbol = nullptr;
+        int recordCheck = SYM_TABLE.lookupRecord(recordName, recordSymbol, scopeNo);
+        if (recordCheck == LOOKUP_FAILURE)
+        {
+            std::cerr << "Error: Record \"" + recordName + "\" not found in symbol table\n";
+            return -1;
+        }
+        else
+        {
+            // Find the width of the record
+            UserDType *record = dynamic_cast<UserDType *>(recordSymbol);
+            return width(*record);
+        }
+    }
+    else if (topType == Type::ENUM_CONSTANT)
+    {
+        return WORD_SIZE; // Size of enum constant
+    }
+
+    return -10;
+}
+
+int width(const TypeExpression &typeExpr)
+{
+    TypeExpression temp = typeExpr;
+
+    // First Remove top Parenthesis
+    removeTopParenthesis(temp);
+
+    if(isEmpty(temp))
+    {
+        CERR << "Error: TypeExpression is empty\n";
+        return 1;
+    }
+
+    Type topType = whatIsType(temp);
+
+    bool isbase = (topType == Type::VARIABLE);
+    isbase = isbase || (topType == Type::ENUM_CONSTANT);
+    isbase = isbase || (topType == Type::ENUM);
+    isbase = isbase || (topType == Type::STRUCT_UNION);
+
+    int size = 0;
+    if (isbase)
+    {
+        BaseInfo *base = dynamic_cast<BaseInfo *>(temp.levelStack.top());
+        size = width(*base);
+    }
+    else if (topType == Type::POINTER)
+    {
+        size = ADDRESS_SIZE;
+    }
+    else if (topType == Type::ARRAY)
+    {
+        ArrayInfo *array = dynamic_cast<ArrayInfo *>(temp.levelStack.top());
+        TypeExpression element = temp;
+        popALevel(element);
+        size = array->dimSize * width(element);
+    }
+    else if (topType == Type::FUNCTION)
+    {
+        size = 1;
+    }
+    else
+    {
+        std::cerr << "Error : Something wrong in width(TypeExpression)\n";
+        return -1;
+    }
+
+    // This will return the width of the type expression
+    return size;
+}
 
 //=================[ TypeExpression ]================================================================================]
 

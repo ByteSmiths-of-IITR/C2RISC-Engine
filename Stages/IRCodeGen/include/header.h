@@ -328,6 +328,8 @@ extern int const INSERT_FAILURE;              // Already present in the current 
 extern int const LOOKUP_SUCCESS; // Found
 extern int const LOOKUP_FAILURE; // Not Found
 
+extern std::string GLOBAL_SCOPE;
+extern std::string LOCAL_SCOPE;
 
 class SymbolTable
 {
@@ -340,6 +342,8 @@ public:
 
     int globalScope;
 
+    std::string currnetScope;
+    bool earlyEntry; // This will be used to ignore the next entry in the symbol table
 
     std::stack<int> lastScopeNo; // A ancestor scope tracker
     int scopeNo; // This will keep the current scope number [unique to each scope] [not like level]
@@ -358,9 +362,18 @@ public:
     ~SymbolTable();
 
     int enterScope(); // This will create a new scope and return the scope number
-    void exitScope(); // This will remove all the symbols of the current scope
+    int exitScope(); // Will return the ScopeNo that has been exited.
 
+
+    // Concept of ScopeName name will be needed for function signature checking
+    void setScopeName(const std::string &scopeName);
+    std::string getScopeName(); // Will be used to find name of function we are in- to check retrun type match the signature
+    
     int getGlobaScopeNo();
+
+    // There are time when we need to have early scopeEntry - This will make sure One-such call get's ignored
+    void ignoreNextEntry(); 
+
 
     int insertRecord(const std::string &key, GenericSymbol *symbol);
     int insert(SYMBOL_TYPE symbolType,const std::string &key, GenericSymbol *symbol);
@@ -484,7 +497,7 @@ int width(const UserDType &dtype); // This will return the width of the user def
         extern std::string BSS;
         extern std::string PARAM;
         extern std::string CALL ;
-
+        extern std::string ASSIGN_OP;
 
         class TAC_Quadruple
         {
@@ -536,6 +549,7 @@ class TAC{
 bool isIntegral(const TypeExpression &typeExpr);
 bool isConstant(const TypeExpression &typeExpr);
 bool isNumeric(const TypeExpression &typeExpr);
+bool isFloatingPoint(const TypeExpression &typeExpr);
 std::string isPrimitive(const TypeExpression &typeExpr);
 // Return values will be Primitive Types
 bool isA_InbuiltType(std::string baseType); // Check if base type is primitive
@@ -598,6 +612,8 @@ extern std::ofstream* handlerLog; // This will be used to log the errors
 
 #define CERR *handlerLog << "[" << __FILE__ << " : " << __LINE__ <<  "] "
 
+#define REPORT *handlerLog << "[" << __FILE__ << " : " << __LINE__ <<  "] "
+
 // #define LINE1 std::cerr << "At line " << __LINE__ << " in " << __FILE__ << std::endl;
 #define LINE1 /**/
 
@@ -626,7 +642,15 @@ void function_definition_H(ASTNode *node);
 //=====================[ Statements Handlers ]=========================================================================================
 
 void statement_H(ASTNode *node);
-void compound_statement_H(ASTNode* node, bool earlyScopeEntry);
+void statement_list_H(ASTNode *node);
+
+void labeled_statement_H(ASTNode* node); // 1
+void compound_statement_H(ASTNode* node); // 2
+void expression_statement_H(ASTNode* node); // 3
+void selection_statement_H(ASTNode* node); // 4
+void iteration_statement_H(ASTNode* node); // 5
+void jump_statement_H(ASTNode* node); // 6
+// void declaration(ASTNode* node); // 7 [In Declaration Handler Section]
 
 //=====================[ Declaration Handlers ]=========================================================================================
 

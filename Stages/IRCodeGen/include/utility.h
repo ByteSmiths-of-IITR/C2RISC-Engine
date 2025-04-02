@@ -27,6 +27,7 @@ class ASTNode;
 extern std::ofstream *handlerLog; // This will be used to log the errors
 
 extern int orderOfEval;
+extern std::vector<std::pair<std::pair<int, int>, std::pair<std::string, std::string>>> PARSER_TABLE;
 
 #define EMPTY_VAL "!!EMPTY!!"
 #define TYPEDEF_FOUND "!!TYPEDEF!!"

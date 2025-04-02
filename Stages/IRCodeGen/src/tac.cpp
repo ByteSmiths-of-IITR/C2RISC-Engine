@@ -13,6 +13,7 @@ std::string DATA = ".data";
 std::string BSS = ".bss";
 std::string PARAM = "param";
 std::string CALL = "call";
+std::string ASSIGN_OP = "=";
 
 TAC_Quadruple::TAC_Quadruple(std::string op, std::string arg1, std::string arg2, std::string result)
 {
@@ -93,6 +94,10 @@ std::string TAC_Quadruple::toString() const {
         return str;
     }
 
+    if(op == ASSIGN_OP){
+        str = result + " = " + arg1; // result = arg1
+        return str;
+    }
 
     if (result != NO_ARG) {
         str = result + " = " + arg1 + " " + op + " " + arg2; // result = arg1 op arg2
@@ -107,6 +112,8 @@ std::string newTemp() {
     static int tempCount = 0; // This will keep the count of the temporary variables
     return "$t" + std::to_string(tempCount++);
 }
+
+
 
 std::string newLabel() {
     static int labelCount = 0; // This will keep the count of the labels

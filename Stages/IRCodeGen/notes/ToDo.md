@@ -34,3 +34,5 @@ Was it a error in the input code OR is our Compiler bug
 # For Initialization logic - we won't use INITIALIZER LIST
 
 # TODO for unsigned types
+
+# In expressions change operator depending on type

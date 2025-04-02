@@ -37,6 +37,7 @@ int noOfyyerrorCalls = 0;
 #define LOGFOOTER       "----------------------------------- END OF LOG -----------------------------------"
 #define LEXERLOGHEADER  "----------------------------------- LEXER LOG ------------------------------------"
 #define BISONLOGHEADER  "----------------------------------- BISON LOG ------------------------------------"
+#define SEMANTICLOGHEADER "----------------------------------- SEMANTIC LOG -----------------------------------"
 
 // Global DS 
 std::vector<std::pair<std::pair<int,int>, std::pair<std::string, std::string>> > PARSER_TABLE;
@@ -2475,10 +2476,14 @@ int main(int argc, char **argv) {
 
     bool syntaxError = parseError || lexerFailed || bisonError;
 
+    std::string terminalMsg = "";
+
     if(lexerFailed){
         *output << "\U0001F6A8 Input Program failed in Lexical Analysis Phase \U0001F6A8\n" << std::endl;
+        terminalMsg = "Lexical Analysis ❌\n";
+
         if(TERMINAL_MESSAGE){
-            std::cout << "\U0001F6A8 Input Program failed in Lexical Analysis Phase \U0001F6A8" << std::endl;
+            std::cout << terminalMsg << std::endl;
         }
         
         *output << LEXERLOGHEADER << std::endl;
@@ -2497,11 +2502,11 @@ int main(int argc, char **argv) {
 
     if(syntaxError){
         *output << "\U0001F6A8 Input Program failed in Syntax Analysis Phase \U0001F6A8\n" << std::endl;
-        
+        terminalMsg = "Lexical Analysis 👍 | Syntax Analysis ❌\n";
         *output << "\U0001F6A8 yyerror() was called " << noOfyyerrorCalls << " times \U0001F6A8\n" << std::endl;
 
         if(TERMINAL_MESSAGE){
-            std::cout << "\U0001F6A8 Input Program failed in Syntax Analysis Phase \U0001F6A8" << std::endl;
+            std::cout << terminalMsg << std::endl;
         }
 
         // We print ourCustom Error Only if Bison-don't Report any Error
@@ -2542,10 +2547,7 @@ int main(int argc, char **argv) {
     
     if(!syntaxError){
         *output << "\U0001F44D Input Program passed Syntax Analysis Phase \U0001F44D\n" << std::endl;
-
-        if(TERMINAL_MESSAGE){
-            std::cout << "\U0001F44D Input Program passed Syntax Analysis Phase \U0001F44D" << std::endl;
-        }
+        terminalMsg = "Lexical Analysis 👍 | Syntax Analysis 👍\n";
     }
     // ------------------------- Printing Various Outputs ------------------------
 
@@ -2592,21 +2594,55 @@ int main(int argc, char **argv) {
 
     std::string handlerLogFile = "output/handlers.log";
 
-    std::cout << "\n\U0001F170\U0000FE0F ---- Starting Semantic Analysis Phase ---- \U0001F170\U0000FE0F\n";
+    /* std::cout << "\n\U0001F170\U0000FE0F ---- Starting Semantic Analysis Phase ---- \U0001F170\U0000FE0F\n"; */
 
     LINE1
     semanticPass(root, handlerLogFile); // Call the semantic pass 
     LINE1
+    
+
+    // We print the semantic log in the output file
+    bool semanticError = (semanticLOG.size() > 0);
+    if(semanticError){
+        terminalMsg = "Lexical Analysis 👍 | Syntax Analysis 👍 | Semantic Analysis ❌\n";
+        *output << "\U0001F6A8 Input Program failed in Semantic Analysis Phase \U0001F6A8\n" << std::endl;
+        *output << SEMANTICLOGHEADER << std::endl;
+        for(auto log : semanticLOG){
+            *output << log << std::endl;
+        }
+        *output << LOGFOOTER << std::endl;
+        if(TERMINAL_MESSAGE){
+            std::cout << terminalMsg << std::endl;
+        }
+    }
+    else{
+        terminalMsg = "Lexical Analysis 👍 | Syntax Analysis 👍 | Semantic Analysis 👍 | 🔖 IRCode Gen";
+        *output << "🥳  Input Program passed Semantic Analysis Phase \U0001F170\U0000FE0F\n" << std::endl;
+        if(TERMINAL_MESSAGE){
+            std::cout << terminalMsg << std::endl;
+        }
+    }
+
     // Print the Annotated Parse Tree
     if(APTree){
         generateDOT_A(root, dot_file_2);
         *output << "\U0001F53A Annotated Parse Tree generated as DOT file: " << dot_file_2 << " can be visualized using Graphviz\n";
+        if(TERMINAL_MESSAGE){
+            std::cout << "\U0001F53A Annotated Parse Tree generated" << std::endl;
+        }
     }
 
+
+    // IR Code Generation
+    
     if(tac){
         std::ofstream tacOut(tac_file);
         CODE_BASE.printTAC(tacOut);
-    }
+        if(TERMINAL_MESSAGE){
+            std::cout << "\U0001F53A Three Address Code generated in: " << tac_file << "\n";
+        }
+        tacOut.close();
+    }    
 
 
 
@@ -2632,100 +2668,3 @@ void yyerror(const char* s) {
     yyclearin; // Clear the buffer
 }
 
-// Handler Functions Removed
-
-// PARSER_TABLE
-void printParserTable(std::ostream& out) {
-    // Sort by (lineNo, columnNo)
-    std::sort(PARSER_TABLE.begin(), PARSER_TABLE.end(), 
-        [](const auto& a, const auto& b) {
-            return (a.first.first < b.first.first) || 
-                (a.first.first == b.first.first && a.first.second < b.first.second);
-        });
-
-    // Set dynamic column widths
-    int positionWidth = 14;   // Width for "LineNo:Column"
-    int idNameWidth = 20;     // Width for Identifier Name
-    int idTypeWidth = 35;     // Width for Identifier Type
-
-    // Print table header
-    out << "+" << std::string(positionWidth + 2, '-') 
-        << "+" << std::string(idNameWidth + 2, '-') 
-        << "+" << std::string(idTypeWidth + 2, '-') 
-        << "+" << std::endl;
-
-    out << "| " << std::setw(positionWidth) << std::left << "Position"
-        << " | " << std::setw(idNameWidth) << std::left << "Identifier Name"
-        << " | " << std::setw(idTypeWidth) << std::left << "Identifier Type"
-        << " |" << std::endl;
-
-    out << "+" << std::string(positionWidth + 2, '-') 
-        << "+" << std::string(idNameWidth + 2, '-') 
-        << "+" << std::string(idTypeWidth + 2, '-') 
-        << "+" << std::endl;
-
-    // Print each entry
-    for (const auto& entry : PARSER_TABLE) {
-        int line = entry.first.first;
-        int column = entry.first.second;
-        std::string idName = entry.second.first;
-        std::string idType = entry.second.second;
-
-        out << "| " << std::setw(positionWidth) << std::left << (std::to_string(line) + ":" + std::to_string(column))
-            << " | " << std::setw(idNameWidth) << std::left << idName
-            << " | " << std::setw(idTypeWidth) << std::left << idType
-            << " |" << std::endl;
-    }
-
-    // Print table footer
-    out << "+" << std::string(positionWidth + 2, '-') 
-        << "+" << std::string(idNameWidth + 2, '-') 
-        << "+" << std::string(idTypeWidth + 2, '-') 
-        << "+" << std::endl;
-}
-
-void writeLatexTable(std::ostream &out) {
-    // LaTeX document header
-    out << "\\documentclass{article}\n";
-    out << "\\usepackage[a4paper,margin=1in]{geometry}\n";
-    out << "\\usepackage{longtable}\n";
-    out << "\\usepackage[table]{xcolor}\n";
-    out << "\\definecolor{headercolor}{RGB}{79, 129, 189}\n";
-    out << "\\definecolor{rowcolor}{RGB}{217, 225, 242}\n";
-    out << "\\begin{document}\n\n";
-    out << "\\begin{center}\n";
-    out << "    {\\LARGE \\textbf{Parser Table of Input Program}} \\\\[10pt]\n";
-    out << "\\end{center}\n\n";
-    out << "\\renewcommand{\\arraystretch}{1.3}\n";
-    out << "\\setlength{\\arrayrulewidth}{0.7mm}\n";
-    out << "\\rowcolors{2}{rowcolor}{white}\n";
-
-    
-    // Begin table
-    out << "\\begin{longtable}{|l|c|c|}\n";
-    out << "    \\hline\n";
-    out << "    \\rowcolor{headercolor} \\textbf{lineNo:columnNo} & \\textbf{Identifier Name} & \\textbf{Identifier Type} \\\\ \n";
-    out << "    \\hline\n";
-    out << "    \\endfirsthead\n";
-    out << "    \\hline\n";
-    out << "    \\rowcolor{headercolor} \\textbf{lineNo:columnNo} & \\textbf{Identifier Name} & \\textbf{Identifier Type} \\\\ \n";
-    out << "    \\hline\n";
-    out << "    \\endhead\n";
-    // Populate table rows from PARSER_TABLE
-    for (const auto &entry : PARSER_TABLE) {
-        std::string correctTokenName;
-        // Replace _ with \\_
-        for (char c : entry.second.first) {
-            if (c == '_') correctTokenName += "\\_";
-            else correctTokenName += c;
-        }
-        out << "    " << entry.first.first << ":" << entry.first.second << " & "
-            << correctTokenName << " & "
-            << entry.second.second << " \\\\ \n";
-        out << "    \\hline\n";
-    }
-
-    // End table and document
-    out << "\\end{longtable}\n\n";
-    out << "\\end{document}\n";
-}

@@ -229,3 +229,13 @@ UNIT_TEST_EXECUTABLE = $(BIN_DIR)/unit_test
 unitTest: $(UNIT_TEST) $(OBJ_FILES) 
 	$(CXX) $(CXXFLAGS) $(UNIT_TEST) $(OBJ_FILES) -o $(UNIT_TEST_EXECUTABLE)
 	./$(UNIT_TEST_EXECUTABLE)
+
+
+IRCodeFile = $(OUTPUT_DIR)/IRCode.txt
+
+$(IRCodeFile):
+	@touch $(IRCodeFile)
+
+irCode: $(EXECUTABLE) $(INPUT) $(OUTPUT) $(CERR) $(OUTPUT_DIR) $(BUILD_DIR) $(OBJ_DIR) $(IRCodeFile)
+	@./$(EXECUTABLE) $(INPUT) $(OUTPUT) -tac $(IRCodeFile) -APTree $(DOTFile2) 2> $(CERR)
+	@$(DOT) -Tsvg $(DOTFile2) -o $(DOTPDF2)

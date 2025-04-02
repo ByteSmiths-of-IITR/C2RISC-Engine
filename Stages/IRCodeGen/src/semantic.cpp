@@ -269,6 +269,18 @@ std::string combineType(std::vector<std::string> typeSpecifierVector){
     return INVALID_COMBINATION;
 }
 
+bool isFloatingPoint(const TypeExpression &typeExpr) {
+    // Check if the type expression is a floating point type
+    Type topType = whatIsType(typeExpr);
+    if(topType == Type::VARIABLE) {
+        BaseInfo *baseInfo = dynamic_cast<BaseInfo *>(typeExpr.levelStack.top());
+        std::string baseType = baseInfo->baseType;
+        if(baseType == TYPE_FLOAT || baseType == TYPE_DOUBLE || baseType == TYPE_LONG_DOUBLE) {
+            return true;
+        }
+    }
+    return false;
+}
 
 std::string INVALID_COMBINATION = "#INVALID_COMBINATION#"; // This will be used for invalid combination of types
 
