@@ -470,11 +470,21 @@ int ProcessDecSpecifiers(std::vector<std::string> &valueVector, TypeExpression &
 
 void semanticPass(ASTNode *node, std::string filename)
 {
+    std::string whichProduction = getProduction(node);
+    std::string P1 = "translation_unit";
+
+    if (whichProduction != P1)
+    {
+        // SEMANTIC ERROR 🚨 : Invalid Production
+        CERR << "Invalid Production" << std::endl;
+        return;
+    }
+
     lastFuncCalled = "semanticPass";
     openHandlerLog(filename);
     ENTRY_MSG << "semanticPass" << std::endl;
     ENTRY_MSG << "--==[ Semantic Pass ]==--" << std::endl;
-    translation_unit_H(node);
+    translation_unit_H(node->children[0]);
 
     closeHandlerLog();
 }

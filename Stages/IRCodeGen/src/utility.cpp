@@ -64,6 +64,7 @@ bool expectingTypeName = false; // Global variable to check if we are expecting 
         this->value = child->value;
         this->position = child->position;
         this->children = child->children;
+        this->attributes = child->attributes;
     }
 
     // Destructor that deletes child nodes
@@ -150,12 +151,15 @@ std::string ASTStyle(ASTNode* node) {
     else if (param == "STRING_LITERAL"){
         return "shape=box, style=rounded, fillcolor=lightcoral";
     }
-    
-
+    // Program
+    else if(param == "Program")
+    {
+        return "shape=doubleoctagon, style=filled, fillcolor=lightblue";
+    }
     // Root 
     else if (param == "translation_unit")
     {
-        return "shape=doubleoctagon, style=filled, fillcolor=lightcoral";
+        return "shape=octagon, style=filled, fillcolor=lightcoral";
     }
 
     // Struct Union Enum

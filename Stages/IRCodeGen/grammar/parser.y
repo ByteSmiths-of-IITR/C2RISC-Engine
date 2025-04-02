@@ -2596,8 +2596,13 @@ int main(int argc, char **argv) {
 
     /* std::cout << "\n\U0001F170\U0000FE0F ---- Starting Semantic Analysis Phase ---- \U0001F170\U0000FE0F\n"; */
 
+    // Adding a Extra Node on the top of the Ptree
+    ASTNode *topNode = new ASTNode("Program");
+    topNode->addChild(root);
+
+
     LINE1
-    semanticPass(root, handlerLogFile); // Call the semantic pass 
+    semanticPass(topNode, handlerLogFile); // Call the semantic pass 
     LINE1
     
 
@@ -2625,7 +2630,7 @@ int main(int argc, char **argv) {
 
     // Print the Annotated Parse Tree
     if(APTree){
-        generateDOT_A(root, dot_file_2);
+        generateDOT_A(topNode, dot_file_2);
         *output << "\U0001F53A Annotated Parse Tree generated as DOT file: " << dot_file_2 << " can be visualized using Graphviz\n";
         if(TERMINAL_MESSAGE){
             std::cout << "\U0001F53A Annotated Parse Tree generated" << std::endl;
