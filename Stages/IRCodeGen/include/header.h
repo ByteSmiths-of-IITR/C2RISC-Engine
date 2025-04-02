@@ -183,6 +183,8 @@ int popALevel(TypeExpression &typeExpr); // Clear's ParenthesisInfo
     extern int const POP_SUCCESS;
     extern int const POP_FAILURE; // if empty
 
+int width(std::string primType); // This will return the width of the primitive type
+
 int width(const TypeExpression &typeExpr);
 
 int checkEquivalance(const TypeExpression &typeExpr1, const TypeExpression &typeExpr2);
@@ -218,30 +220,33 @@ enum class VALUE_TYPE
 
 VALUE_TYPE getValueType(const TypeExpression &typeExpr); // Only Valid for Identifiers [not any general type expression]
 
+TypeExpression TypeExpressionForConstants(std::string constant); // This will create a type expression for constants
+
     //================[ SubLevel Type's Utilities ]=========================================================================================
     int checkEquivalance(const LevelInfo &info1, const LevelInfo &info2);
-        
-    int checkEquivalance(const BaseInfo &info1, const BaseInfo &info2);
-    int checkEquivalance(const PointerInfo &info1, const PointerInfo &info2);
-    int checkEquivalance(const ArrayInfo &info1, const ArrayInfo &info2);
-    int checkEquivalance(const ParameterInfo &info1, const ParameterInfo &info2);
-    // int checkEquivalance(const ParenthesisInfo &info1, const ParenthesisInfo &info2); [Not Needed]
 
+int checkEquivalance(const BaseInfo &info1, const BaseInfo &info2);
+int checkEquivalance(const PointerInfo &info1, const PointerInfo &info2);
+int checkEquivalance(const ArrayInfo &info1, const ArrayInfo &info2);
+int checkEquivalance(const ParameterInfo &info1, const ParameterInfo &info2);
+// int checkEquivalance(const ParenthesisInfo &info1, const ParenthesisInfo &info2); [Not Needed]
 
-    int whichLevelInfo(const LevelInfo &info);
-        // Return Values
-        int const BASE_LEVEL = 0;
-        int const POINTER_LEVEL = 1;
-        int const ARRAY_LEVEL = 2;
-        int const PARAMETER_LEVEL = 3;
-        int const PARENTHESIS_LEVEL = 4;
-        int const UNKNOWN_LEVEL = -1;
-    
-    bool isParenthesisInfo(const LevelInfo &info);
-    bool isArrayInfo(const LevelInfo &info);
-    bool isPointerInfo(const LevelInfo &info);
-    bool isBaseInfo(const LevelInfo &info);
-    bool isParameterInfo(const LevelInfo &info);
+int width(const BaseInfo &info);
+
+int whichLevelInfo(const LevelInfo &info);
+// Return Values
+int const BASE_LEVEL = 0;
+int const POINTER_LEVEL = 1;
+int const ARRAY_LEVEL = 2;
+int const PARAMETER_LEVEL = 3;
+int const PARENTHESIS_LEVEL = 4;
+int const UNKNOWN_LEVEL = -1;
+
+bool isParenthesisInfo(const LevelInfo &info);
+bool isArrayInfo(const LevelInfo &info);
+bool isPointerInfo(const LevelInfo &info);
+bool isBaseInfo(const LevelInfo &info);
+bool isParameterInfo(const LevelInfo &info);
 
 
 /*
@@ -385,6 +390,7 @@ public:
             StorageClass storageClass; 
 
             // Think about Initialized values ? [ToThink 🧠]
+            int offset;
 
             long compileTimeConstant; // This will be used for constant variables
 
@@ -424,6 +430,10 @@ public:
             // Members of the record
             std::map<std::string, TypeExpression> members; // Enum won't use this
 
+            std::map<std::string, int> membersOffset; // This will be used for struct, union
+
+            int totalSize; // This will be used for struct, union
+
             CON_DES(UserDType)
         };
 
@@ -461,12 +471,19 @@ int width(const UserDType &dtype); // This will return the width of the user def
 //=====================[ Three Address Code ]=========================================================================================
 
     //==================[ Custom TAC Arguments ]=========================================================================================
-        extern const std::string NO_ARG;
-        extern const std::string RIGHT_STAR;
-        extern const std::string LEFT_STAR;
-        extern const std::string FUNCTION_LABEL;
-        extern const std::string BLANK;
-
+        extern std::string NO_ARG;
+        extern std::string RIGHT_STAR;
+        extern std::string LEFT_STAR;
+        extern std::string FUNCTION_LABEL;
+        extern std::string BLANK;
+        extern std::string CAST;
+        extern std::string LABEL;
+        extern std::string AMPERSEND;
+        extern std::string RO_DATA;
+        extern std::string DATA;
+        extern std::string BSS;
+        extern std::string PARAM;
+        extern std::string CALL ;
 
 
         class TAC_Quadruple
@@ -518,6 +535,7 @@ class TAC{
 
 bool isIntegral(const TypeExpression &typeExpr);
 bool isConstant(const TypeExpression &typeExpr);
+bool isNumeric(const TypeExpression &typeExpr);
 std::string isPrimitive(const TypeExpression &typeExpr);
 // Return values will be Primitive Types
 bool isA_InbuiltType(std::string baseType); // Check if base type is primitive
@@ -550,6 +568,8 @@ std::string toString(std::vector<TypeQualifier> typeQualifiers);
 std::string toString(std::map<std::string, TypeExpression> members);
 std::string toString(std::vector<PointerInfo> ptrInfo);
 std::string toString(std::vector<TypeExpression> &paramVector);
+std::string toString(SPACE space);
+std::string toString(VALUE_TYPE valueType);
 
 
 //====================[ Helper Functions ]=========================================================================================
@@ -583,6 +603,8 @@ extern std::ofstream* handlerLog; // This will be used to log the errors
 
 void openHandlerLog(const std::string &filename);
 void closeHandlerLog();
+
+extern std::vector<std::string> semanticLOG; // [declared in handler.cpp]
 
 extern std::string IN_SYNTAX_PHASE;
 
@@ -667,11 +689,23 @@ void initializer_list_H(ASTNode *node);
 
 //======================[ Expression Handlers ]=========================================================================================
 
+void expression_H(ASTNode *node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace);
+void primary_expression_H(ASTNode* node,std::string inh_whereToSendString, std::string &varName, TypeExpression &type,VALUE_TYPE &valueType, SPACE &valueSpace);
+void postfix_expression_H(ASTNode* node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace);
+void unary_expression_H(ASTNode* node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace);
+void multiplicative_expression_H(ASTNode* node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace);
+void additive_expression_H(ASTNode* node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace);
+void shift_expression_H(ASTNode* node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace);
+void relational_expression_H(ASTNode* node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace);
+void equality_expression_H(ASTNode* node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace);
+void and_expression_H(ASTNode* node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace);
+void exclusive_or_expression_H(ASTNode* node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace);
+void inclusive_or_expression_H(ASTNode* node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace);
+void logical_and_expression_H(ASTNode* node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace);
+void logical_or_expression_H(ASTNode* node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace);
+void conditional_expression_H(ASTNode* node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace);
+void assignment_expression_H(ASTNode* node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace);
+
 void constant_expression_H(ASTNode *node, std::string &value);
-       
-
-
-
-
 
 #endif // !HEADER_H

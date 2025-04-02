@@ -214,6 +214,12 @@ TypeExpression createTypeExpression(GenericSymbol *symbol)
     return typeExpr;
 }
 
+// Needed for TypeExpression Creation of Constants
+TypeExpression TypeExpressionForConstants(std::string constant){
+    // [📍ToDo]
+    return TypeExpression();
+}
+
 // Needed during Space & ValueType Logics
 SPACE getSpace(const TypeExpression &typeExpr)
 {

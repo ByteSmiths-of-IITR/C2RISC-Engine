@@ -1,13 +1,21 @@
 #include "header.h"
 
-const std::string NO_ARG = "";
-const std::string RIGHT_STAR = "right_star";
-const std::string LEFT_STAR = "left_star";
-const std::string FUNCTION_LABEL = "function_label";
-const std::string BLANK = "blank";
+std::string NO_ARG = "";
+std::string RIGHT_STAR = "right_star";
+std::string LEFT_STAR = "left_star";
+std::string FUNCTION_LABEL = "function_label";
+std::string BLANK = "blank";
+std::string CAST = "cast";
+std::string LABEL = "label";
+std::string AMPERSEND = "&";
+std::string RO_DATA = ".rodata";
+std::string DATA = ".data";
+std::string BSS = ".bss";
+std::string PARAM = "param";
+std::string CALL = "call";
 
-
-TAC_Quadruple::TAC_Quadruple(std::string op, std::string arg1, std::string arg2, std::string result) {
+TAC_Quadruple::TAC_Quadruple(std::string op, std::string arg1, std::string arg2, std::string result)
+{
     this->op = op;
     this->arg1 = arg1;
     this->arg2 = arg2;
@@ -15,8 +23,83 @@ TAC_Quadruple::TAC_Quadruple(std::string op, std::string arg1, std::string arg2,
 }
 
 std::string TAC_Quadruple::toString() const {
-    std::string result = "";
-    // [📍 ToDo] - Implement the toString function
+    std::string str = "";
+
+    if(op==CALL){
+        if(result == NO_ARG){
+            str = "call " + arg1 + ", " + arg2; // CALL p, n 
+        }
+        else{
+            str = result + " = call " + arg1 + ", " + arg2 ; // res = CALL p, n 
+        }
+        return str;
+    }
+
+    if(op == PARAM){
+        str = "param " + arg1; // PARAM p
+        return str;
+    }
+
+    if(op == FUNCTION_LABEL){
+        str = arg1 + ": "; // FUNCTION_LABEL p
+        return str;
+    }
+
+    // if(op == RO_DATA){
+    //     str = arg1 + ": " + arg2; // RO_DATA p, n
+    //     return str;
+    // }
+    
+    // if(op == DATA){
+    //     str = arg1 + ": " + arg2; // DATA p, n
+    //     return str;
+    // }
+
+    // if(op == BSS){
+    //     str = arg1 + ": " + arg2; // BSS p, n
+    //     return str;
+    // }
+
+    if(op == LABEL){
+        str = arg1 + ": "; //Control Flow Labels
+        if(arg2 != NO_ARG){
+            str = result + ": " + arg1 + ": "; // LABEL : "string"
+        }
+        return str;
+    }
+
+    if(op == AMPERSEND){
+        str = result + " = &" + arg1; // result = &arg1
+        return str;
+    }
+
+    if(op == LEFT_STAR){
+        str = "*" + result + " = " + arg1; // *result = arg1
+        return str;
+    }
+
+    if(op == RIGHT_STAR){
+        str = result + " = *"+ arg1; // result = *arg1
+        return str;
+    }
+
+    if(op == CAST){
+        str = result + " = (" + arg1 + ")" + arg2; // result = (arg1)arg2
+        return str;
+    }
+
+    if(op == BLANK){
+        str = "-------------------------------";
+        return str;
+    }
+
+
+    if (result != NO_ARG) {
+        str = result + " = " + arg1 + " " + op + " " + arg2; // result = arg1 op arg2
+    } else {
+        str = arg1 + " " + op + " " + arg2; // arg1 op arg2
+    }
+
     return result;
 }
 

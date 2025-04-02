@@ -15,13 +15,47 @@ bool isIntegral(const TypeExpression &typeExpr) {
         if(baseType == ENUM_CONSTANT){
             return true;
         }
+        if(topType == Type::ENUM){
+            return true; // Enum Objects are also INT_TYPE
+        }
     }
     return false;
 }
 
-bool isConstant(){
-    // [📍 ToDo]
-    return true;
+bool isConstant(const TypeExpression &typeExpr) {
+    // Check if the type expression is a constant type
+    Type topType = whatIsType(typeExpr);
+    if(topType == Type::ENUM_CONSTANT){
+        return true; // Enum constant is treated as constant
+    }
+    else if(topType == Type::VARIABLE) {
+        BaseInfo *baseInfo = dynamic_cast<BaseInfo *>(typeExpr.levelStack.top());
+        // Check if "const" qualifier is present
+        for(auto qualifier : baseInfo->typeQualifiers) {
+            if(qualifier == TypeQualifier::CONST) {
+                return true;
+            }
+        }
+    }
+}
+
+bool isNumeric(const TypeExpression &typeExpr){
+    // Must be base 
+    Type topType = whatIsType(typeExpr);
+    if(topType == Type::VARIABLE) {
+        BaseInfo *baseInfo = dynamic_cast<BaseInfo *>(typeExpr.levelStack.top());
+        std::string baseType = baseInfo->baseType;
+        if(baseType == TYPE_INT || baseType == TYPE_CHAR || baseType == TYPE_SHORT || baseType == TYPE_LONG || baseType == TYPE_LONG_LONG ||
+            baseType == TYPE_FLOAT || baseType == TYPE_DOUBLE || baseType == TYPE_LONG_DOUBLE) {
+            return true;
+        }
+    }
+    else if(topType == Type::ENUM_CONSTANT){
+        return true; // Enum constant is treated as numeric
+    }
+    else if(topType == Type::ENUM){
+        return true; // Enum is treated as numeric
+    }
 }
 
 std::string isPrimitive(const TypeExpression &typeExpr){
@@ -37,11 +71,23 @@ std::string isPrimitive(const TypeExpression &typeExpr){
             baseType == TYPE_FLOAT || baseType == TYPE_DOUBLE || baseType == TYPE_LONG_DOUBLE) {
             return baseType;
         }
+
+        // Can a combination of signed/unsigned and primitive types be a primitive type?
+        std::string firstPart = baseType.substr(0, baseType.find(" "));
+        std::string restPart = baseType.substr(baseType.find(" ") + 1);
+        if(firstPart == TYPE_UNSIGNED){
+            if(restPart == TYPE_INT || restPart == TYPE_CHAR || restPart == TYPE_SHORT || restPart == TYPE_LONG || restPart == TYPE_LONG_LONG){
+                return baseType;
+            }
+        }
     }
     else if(topType == Type::ENUM_CONSTANT){
         return TYPE_INT; // Enum constant is treated as int
     }
-    
+    else if(topType == Type::ENUM){
+        return TYPE_INT; // Enum is treated as int
+    }
+
     return "NOT_PRIMITIVE";
 }
 
@@ -228,9 +274,8 @@ std::string INVALID_COMBINATION = "#INVALID_COMBINATION#"; // This will be used 
 
 //=====================[ TypeCasting Utilites 🆎 ]========================================================================================
 
-std::string maxWidth(std::string primTyp1,std::string primType2){
-    // [📍 ToDo]
-    std::map<std::string,int> widthMap;
+int width(std::string primType){
+    std::map<std::string, int> widthMap;
     widthMap[TYPE_CHAR] = BYTE_SIZE;
     widthMap[TYPE_SHORT] = BYTE_SIZEx2;
     widthMap[TYPE_INT] = WORD_SIZE;
@@ -240,14 +285,25 @@ std::string maxWidth(std::string primTyp1,std::string primType2){
     widthMap[TYPE_DOUBLE] = WORD_SIZEx2;
     widthMap[TYPE_LONG_DOUBLE] = WORD_SIZEx4;
 
-    // Check if arguments are primitive types
-    if(widthMap.find(primTyp1) == widthMap.end() || widthMap.find(primType2) == widthMap.end()){
+    // Check if the primitive type is present in the map
+    if(widthMap.find(primType) == widthMap.end()){
+        // SEMANTIC ERROR 🚨 : Not a primitive type
+        return -1;
+    }
+    // Return the width of the primitive type
+    return widthMap[primType];
+}
+
+std::string maxWidth(std::string primTyp1,std::string primType2){
+    // [📍 ToDo]
+    
+    int width1 = width(primTyp1);
+    int width2 = width(primType2);
+    
+    if(width1 == -1 || width2 == -1){
         // SEMANTIC ERROR 🚨 : Not a primitive type
         return "NOT_PRIMITIVE";
     }
-
-    int width1 = widthMap[primTyp1];
-    int width2 = widthMap[primType2];
 
     int finalWidth = std::max(width1, width2);
     finalWidth = (finalWidth < WORD_SIZE) ? WORD_SIZE : finalWidth;

@@ -26,6 +26,8 @@ void closeHandlerLog()
     }
 }
 
+std::vector<std::string> semanticLOG; // [extern declared in header.h]
+
 //====================[ Globally Accessible Variables ]=========================================================================================
 SymbolTable SYM_TABLE; // Global Symbol Table
 TAC CODE_BASE;         // Global TAC Code Base
@@ -156,6 +158,38 @@ std::string toString(std::vector<TypeExpression> &paramVector)
     }
     str += ")";
     return str;
+}
+
+std::string toString(SPACE space){
+    if(space == SPACE::VALUE_SPACE){
+        return "value_space";
+    }
+    else if(space == SPACE::ADDRESS_SPACE){
+        return "address_space";
+    }
+    else if(space == SPACE::UNKNOWN_SPACE){
+        return "unknown_space";
+    }
+}
+
+std::string toString(VALUE_TYPE valueType)
+{
+    if (valueType == VALUE_TYPE::NM_LVALUE)
+    {
+        return "NON-M_LVALUE";
+    }
+    else if (valueType == VALUE_TYPE::M_LVALUE)
+    {
+        return "M_LVALUE";
+    }
+    else if (valueType == VALUE_TYPE::RVALUE)
+    {
+        return "R-VALUE";
+    }
+    else
+    {
+        return "UNKNOWN_VALUE_TYPE";
+    }
 }
 
 //====================[ Helper Functions ]=========================================================================================
@@ -593,7 +627,7 @@ void function_definition_H(ASTNode *node)
             // Create a Symbol Table Entry
             Function *func = new Function();
             func->symbolName = varName;
-            func->type = type1;
+            func->type = type1; //🐛🐛🐛🐛🐛🐛 TO CHECK IF VALID FUNCTION TYPE [make a utility]
             func->isDefined = true; // To be set to true when the function is defined
 
             // Add the symbol to the symbol table

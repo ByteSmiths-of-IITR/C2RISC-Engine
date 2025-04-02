@@ -11,6 +11,7 @@ GRAMMAR_DIR = grammar
 
 # Compiler and flags
 CXX = g++ -std=c++17 # Added Latest Version [Some error due to old compiler]
+CC = gcc
 CXXFLAGS = -w -lm -I $(INCLUDE_DIR)
 
 
@@ -161,18 +162,18 @@ again:
 
 semantic: $(EXECUTABLE) $(INPUT) $(OUTPUT)
 	@echo "---------------------------------------------GCC Compilation---------------------------------------------"
-	@gcc -fsyntax-only $(INPUT) && echo "✅ Successfully Compiled by GCC"
+	@$(CC) -fsyntax-only $(INPUT) && echo "✅ Successfully Compiled by GCC"
 	@echo "-------------------------------------------Our Syntax Analysis-------------------------------------------"
 	@./$(EXECUTABLE) $(INPUT) $(OUTPUT) 2> $(CERR)
 	
 
 execute: $(INPUT)
-	@gcc $(INPUT) -o $(BIN_DIR)/input_exec
+	@$(CC) $(INPUT) -o $(BIN_DIR)/input_exec
 	@./$(BIN_DIR)/input_exec
 
 sem_ast: $(EXECUTABLE) $(INPUT) $(OUTPUT)
 	@echo "---------------------------------------GCC Compilation---------------------------------------"
-	@-gcc -fsyntax-only $(INPUT) && echo "✅ Successfully Compiled by GCC"
+	@-$(CC) -fsyntax-only $(INPUT) && echo "✅ Successfully Compiled by GCC"
 	@echo "-------------------------------------------Our Syntax Analysis-------------------------------------------"
 	@./$(EXECUTABLE) $(INPUT) $(OUTPUT) -ast $(DOTFile) 2> $(CERR)
 	@$(DOT) -Tpdf $(DOTFile) -o $(DOTPDF)
@@ -180,7 +181,7 @@ sem_ast: $(EXECUTABLE) $(INPUT) $(OUTPUT)
 
 sem_ptree: $(EXECUTABLE) $(INPUT) $(OUTPUT)
 	@echo "---------------------------------------GCC Compilation---------------------------------------"
-	@-gcc -fsyntax-only $(INPUT) && echo "✅ Successfully Compiled by GCC"
+	@-$(CC) -fsyntax-only $(INPUT) && echo "✅ Successfully Compiled by GCC"
 	@echo "-------------------------------------------Our Syntax Analysis-------------------------------------------"
 	@./$(EXECUTABLE) $(INPUT) $(OUTPUT) -ptree $(DOTFile) 2> $(CERR)
 	@$(DOT) -Tpdf $(DOTFile) -o $(DOTPDF)

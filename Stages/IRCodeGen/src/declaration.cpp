@@ -9,7 +9,6 @@ std::string NO_ARG_NAME = "0000";
 void declaration_H(ASTNode *node)
 {
     ENTRY_MSG << "declaration_H" << std::endl;
-    ENTRY_MSG << "declaration_H" << std::endl;
     lastFuncCalled = "declaration_H";
 
     std::string whichProduction = getProduction(node);
@@ -163,7 +162,7 @@ void init_declarator_H(ASTNode *node, TypeExpression inh_type, StorageClass inh_
             // Function
             Function *func = new Function();
             func->symbolName = varName;
-            func->type = type;
+            func->type = type;//🐛🐛🐛🐛🐛🐛 TO CHECK IF VALID FUNCTION TYPE [make a utility]
             func->isDefined = false; // To be set to true when the function is defined
             symbolInsertedType = SYMBOL_TYPE::FUNCTION;
 

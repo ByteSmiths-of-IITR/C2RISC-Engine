@@ -2357,6 +2357,7 @@ int main(int argc, char **argv) {
         inputInstructions += "[-ptree <dot_file> ] : Generate Parser Tree\n";
         inputInstructions += "[-s <SExp_file>] : Generate S-Expression\n";
         inputInstructions += "[-APTree <dot_file>] : Generate a Annotated PTree During Semantic Phase\n";
+        inputInstructions += "[-tac <tac_file> ] : Write TAC Code to this File";
 
         /* std::cout << "argc: " << argc << std::endl; */
         if (argc < 2) {
@@ -2371,6 +2372,7 @@ int main(int argc, char **argv) {
         std::string recursive_output_file = "recursive_output.txt";
         std::string SExp_file = "SExp.txt";
         std::string LaTeXParserTable = "parser_table.tex";    
+        std::string tac_file = "ThreeAC.txt";
 
         bool ast_flag = false;
         bool APTree = false;
@@ -2378,6 +2380,7 @@ int main(int argc, char **argv) {
         bool recursive_flag = false;
         bool parser_table_flag = false;
         bool SExp_flag = false;
+        bool tac = false;
 
         // Open default output file
         yyin = fopen(input_file.c_str(), "r");
@@ -2403,7 +2406,20 @@ int main(int argc, char **argv) {
                     std::cerr << inputInstructions;
                     return 1;
                 }
-            }else if (std::string(argv[i]) == "-ast") {
+            }else if(std::string(argv[i])=="-tac"){
+                tac = true;
+                compressed = false;
+                if(i+1<argc){
+                    tac_file = argv[i+1];
+                    i++;
+                }
+                else{
+                    std::cerr << "Error: Missing argument for -tac\n";
+                    std::cerr << inputInstructions;
+                    return 1;
+                }
+            }
+            else if (std::string(argv[i]) == "-ast") {
                 ast_flag = true;
                 compressed = true; // we want compressed AST
                 if (i + 1 < argc) {
@@ -2566,7 +2582,7 @@ int main(int argc, char **argv) {
 
     */
 
-    if(!APTree){ // We don't want to run semantic pass if we are NOT generating APTree
+    if(!APTree && !tac){ // We don't want to run semantic pass if we are NOT generating APTree
         if(yyin) fclose(yyin);  // Close the input file if opened
         closeOutputFile();  // Close the output file
         return 0;
@@ -2585,6 +2601,11 @@ int main(int argc, char **argv) {
     if(APTree){
         generateDOT_A(root, dot_file_2);
         *output << "\U0001F53A Annotated Parse Tree generated as DOT file: " << dot_file_2 << " can be visualized using Graphviz\n";
+    }
+
+    if(tac){
+        std::ofstream tacOut(tac_file);
+        CODE_BASE.printTAC(tacOut);
     }
 
 
