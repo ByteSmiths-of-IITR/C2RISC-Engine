@@ -36,3 +36,4 @@ Was it a error in the input code OR is our Compiler bug
 # TODO for unsigned types
 
 # In expressions change operator depending on type
+# write CONST handler

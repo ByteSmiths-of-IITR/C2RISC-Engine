@@ -18,12 +18,13 @@ void openHandlerLog(const std::string &filename)
 
 void closeHandlerLog()
 {
-    if (handlerLog)
+    if (handlerLog->is_open())
     {
         handlerLog->close();
         delete handlerLog;
         handlerLog = nullptr;
     }
+    return;
 }
 
 std::vector<std::string> semanticLOG; // [extern declared in header.h]
@@ -160,17 +161,22 @@ std::string toString(std::vector<TypeExpression> &paramVector)
     return str;
 }
 
-std::string toString(SPACE space){
-    if(space == SPACE::VALUE_SPACE){
+std::string toString(SPACE space)
+{
+    if (space == SPACE::VALUE_SPACE)
+    {
         return "value_space";
     }
-    else if(space == SPACE::ADDRESS_SPACE){
+    else if (space == SPACE::ADDRESS_SPACE)
+    {
         return "address_space";
     }
-    else if(space == SPACE::UNKNOWN_SPACE){
+    else if (space == SPACE::UNKNOWN_SPACE)
+    {
         return "unknown_space";
     }
-    else {
+    else
+    {
         return "don't_know_space";
     }
 }
@@ -226,6 +232,7 @@ TypeQualifier getTypeQualifier(const std::string &value)
 
 std::string getProduction(ASTNode *node)
 {
+    // lastFuncCalled = "getProduction";
     std::string production = "";
     int numChildren = node->children.size();
     for (int i = 0; i < numChildren; i++)
@@ -241,24 +248,21 @@ std::string getProduction(ASTNode *node)
 // TODO : do error handling
 int ProcessDecSpecifiers(std::vector<std::string> &valueVector, TypeExpression &type, StorageClass &storageClass)
 {
-    // CERR << "--- Calling ProcessDecSpecifiers ---" << std::endl;
     // 1. Initialize the base and storageClass
     int check = OKAY;
 
     // Check if the valueVector is empty
     if (valueVector.empty())
     {
-        CERR << "Error: valueVector is empty" << std::endl;
         // return LOW_ERROR; // ERROR
     }
 
     // Print the valueVector
     std::string args = "";
-    for(size_t i = 0; i < valueVector.size(); ++i)
+    for (size_t i = 0; i < valueVector.size(); ++i)
     {
         args += "|" + valueVector[i] + "|" + (i == valueVector.size() - 1 ? "" : ", ");
     }
-    // CERR << "Arguments to ProcessDecSpe: " << args << std::endl;
 
     std::vector<StorageClass> storageClassVector;
     std::vector<TypeQualifier> typeQualifierVector;
@@ -272,7 +276,6 @@ int ProcessDecSpecifiers(std::vector<std::string> &valueVector, TypeExpression &
         std::string value = valueVector[i];
         if (value == "auto" || value == "static" || value == "extern" || value == "typedef")
         {
-            CERR << "Found StorageClass: " << value << std::endl;
             StorageClass sc = getStorageClass(value);
             storageClassVector.push_back(sc);
         }
@@ -286,20 +289,6 @@ int ProcessDecSpecifiers(std::vector<std::string> &valueVector, TypeExpression &
             typeSpecifierVector.push_back(value);
         }
     }
-
-    // print all values
-    // for(size_t i = 0; i < storageClassVector.size(); ++i)
-    // {
-    //     CERR << "StorageClass: " << toString(storageClassVector[i]) << std::endl;
-    // }
-    // for(size_t i = 0; i < typeQualifierVector.size(); ++i)
-    // {
-    //     CERR << "TypeQualifier: " << toString(typeQualifierVector[i]) << std::endl;
-    // }
-    // for(size_t i = 0; i < typeSpecifierVector.size(); ++i)
-    // {
-    //     CERR << "TypeSpecifier: " << typeSpecifierVector[i] << std::endl;
-    // }
 
     // 2. Process the storageClass
     if (storageClassVector.size() > 1)
@@ -388,16 +377,13 @@ int ProcessDecSpecifiers(std::vector<std::string> &valueVector, TypeExpression &
         }
     }
 
-
     if (!allAreInbuiltType)
     {
-        CERR << "Not all are inbuilt types" << std::endl;
         // Are are not Primtive
         // Then there must be only one typedef defined type
         if (typeSpecifierVector.size() != 1)
         {
             // SEMANTIC ERROR 🚨 : Multiple type specifiers
-            CERR << "Multiple USER Defined type specifiers" << std::endl;
             check = LOW_ERROR; // ERROR
         }
         else
@@ -409,31 +395,29 @@ int ProcessDecSpecifiers(std::vector<std::string> &valueVector, TypeExpression &
                 base->baseType = typeSpecifierVector[0];
                 resultType.levelStack.push(base);
             }
-            else{
+            else
+            {
                 // TypeSpecifier must be a TYPE_NAME
                 // Check in Symbol Table if present
                 std::string typeName = typeSpecifierVector[0];
                 GenericSymbol *sym = nullptr;
-                // CERR << "Looking up: " << typeName << std::endl;
                 int lookupCheck = SYM_TABLE.lookup(typeName, sym);
                 if (lookupCheck == LOOKUP_FAILURE)
                 {
                     // SEMANTIC ERROR 🚨 : Type name not found
-                    CERR << "Lookup for " << typeName << " failed" << std::endl;
                     check = LOW_ERROR; // ERROR
                 }
                 else
                 {
-                    // CERR << "Lookup for " << typeName << " was successful" << std::endl;
+                    ;
                     // Type name found
-                    if(sym->symbolType == SYMBOL_TYPE::TYPEDEF)
+                    if (sym->symbolType == SYMBOL_TYPE::TYPEDEF)
                     {
                         resultType = ((TypeDefs *)sym)->type;
                     }
                     else
                     {
                         // SEMANTIC ERROR 🚨 : Not a typedef
-                        CERR << typeName << " is not a typedef" << std::endl;
                         check = LOW_ERROR; // ERROR
                     }
                 }
@@ -443,10 +427,8 @@ int ProcessDecSpecifiers(std::vector<std::string> &valueVector, TypeExpression &
     else
     {
         // All are inbuilt types
-        // CERR << "All are inbuilt types" << std::endl;
 
         std::string finalBase = combineType(typeSpecifierVector);
-        // CERR << "Final Base: " << finalBase << std::endl;
         if (finalBase == INVALID_COMBINATION)
         {
             // SEMANTIC ERROR 🚨 : Invalid TypeSpecifier's Combination
@@ -461,8 +443,7 @@ int ProcessDecSpecifiers(std::vector<std::string> &valueVector, TypeExpression &
 
     type = resultType;
 
-    std::string output = "|" + toString(storageClass) + "|"+toString(type)+ "| CHECK: " + toString(check) + "";
-    CERR << output << std::endl;
+    std::string output = "|" + toString(storageClass) + "|" + toString(type) + "| CHECK: " + toString(check) + "";
     return check;
 }
 
@@ -470,23 +451,37 @@ int ProcessDecSpecifiers(std::vector<std::string> &valueVector, TypeExpression &
 
 void semanticPass(ASTNode *node, std::string filename)
 {
+    openHandlerLog(filename); // 😵‍💫🤬 Critical CODE [MUST be AT START]
+    if (node == nullptr)
+    {
+        return;
+    }
+
     std::string whichProduction = getProduction(node);
+
     std::string P1 = "translation_unit";
 
     if (whichProduction != P1)
     {
         // SEMANTIC ERROR 🚨 : Invalid Production
-        CERR << "Invalid Production" << std::endl;
         return;
     }
 
+    // We will openScope here
+    int globalScope = SYM_TABLE.enterScope();                                              // GlobalScope
+    std::string scopeName = GLOBAL_SCOPE + " " + toString(globalScope);                    // Global Scope Name
+    SYM_TABLE.setScopeName(scopeName);                                                     // Set the name of the scope
+    A_PTree node->addAttribute("Scope (Global) : S" + std::to_string(globalScope) + " ⤵️"); // 🌴 Adding syn_attr
+
     lastFuncCalled = "semanticPass";
-    openHandlerLog(filename);
-    ENTRY_MSG << "semanticPass" << std::endl;
-    ENTRY_MSG << "--==[ Semantic Pass ]==--" << std::endl;
+
     translation_unit_H(node->children[0]);
 
-    closeHandlerLog();
+    // SCOPE EXIT
+    globalScope = SYM_TABLE.exitScope();                                                        // GlobalScope
+    A_PTree node->addAttribute("Scope (Global) S" + std::to_string(globalScope) + " Exited ↙️"); // 🌴 Adding syn_attr
+
+    closeHandlerLog(); // 😵‍💫🤬 Critical CODE [MUST be at BOTTOM]
 }
 // SYM_TABLE - Will be Globaly available
 // CODE_BASE - Will be Globaly available (TAC)
@@ -495,31 +490,18 @@ void semanticPass(ASTNode *node, std::string filename)
 
 void translation_unit_H(ASTNode *node)
 {
-    ENTRY_MSG << "translation_unit_H" << std::endl;
     lastFuncCalled = "translation_unit_H";
     std::string whichProduction = getProduction(node);
     std::string P1 = "external_declaration";
     std::string P2 = "translation_unit external_declaration";
 
-    // SCOPE ENTRY
-
-    // CERR << "Production: " << whichProduction << std::endl;
-
     if (whichProduction == P1)
     {
-        // We will openScope here 
-        int globalScope = SYM_TABLE.enterScope();                                         // GlobalScope
-        std::string scopeName = GLOBAL_SCOPE + " " + toString(globalScope); // Global Scope Name
-        SYM_TABLE.setScopeName(scopeName);                                   // Set the name of the scope
-        A_PTree node->addAttribute("Scope (Global) : S" + std::to_string(globalScope) + " ⤵️"); // 🌴 Adding syn_attr
-
-
         // Call the external_declaration handler
         external_declaration_H(node->children[0]);
     }
     else if (whichProduction == P2)
     {
-        // HERE;
         // Call the translation_unit handler
         translation_unit_H(node->children[0]);
         // Call the external_declaration handler
@@ -529,17 +511,11 @@ void translation_unit_H(ASTNode *node)
     {
         // Wrong Production
     }
-
-    // SCOPE EXIT
-    int globalScope = SYM_TABLE.exitScope(); // GlobalScope
-    A_PTree node->addAttribute("Scope (Global) S" + std::to_string(globalScope) + " Exited ↙️"); // 🌴 Adding syn_attr 
-
     return;
 }
 
 void external_declaration_H(ASTNode *node)
 {
-    ENTRY_MSG << "external_declaration_H" << std::endl;
     lastFuncCalled = "external_declaration_H";
     std::string whichProduction = getProduction(node);
     std::string P1 = "function_definition";
@@ -566,7 +542,6 @@ void external_declaration_H(ASTNode *node)
 
 void function_definition_H(ASTNode *node)
 {
-    ENTRY_MSG << "function_definition_H" << std::endl;
     lastFuncCalled = "function_definition_H";
     // This will be used to fetch the function name
     std::string whichProduction = getProduction(node);
@@ -647,7 +622,7 @@ void function_definition_H(ASTNode *node)
             // Create a Symbol Table Entry
             Function *func = new Function();
             func->symbolName = varName;
-            func->type = type1; //🐛🐛🐛🐛🐛🐛 TO CHECK IF VALID FUNCTION TYPE [make a utility]
+            func->type = type1;     // 🐛🐛🐛🐛🐛🐛 TO CHECK IF VALID FUNCTION TYPE [make a utility]
             func->isDefined = true; // To be set to true when the function is defined
 
             // Add the symbol to the symbol table
@@ -683,7 +658,6 @@ void function_definition_H(ASTNode *node)
             int check = popALevel(returnType);
             if (check != POP_SUCCESS)
             {
-                ENTRY_MSG << "Error in popALevel" << std::endl;
             }
 
             // Now we have parameter list
@@ -692,11 +666,12 @@ void function_definition_H(ASTNode *node)
 
             // OPEN a NEW SCOPE
             int scopeNo = SYM_TABLE.enterScope(); //  [☀️ EarlyScope Entry]
-            SYM_TABLE.ignoreNextEntry(); // This will tell the symbol table to ignore the next entry by compound_statement
-            
-            std::string scopeName = varName + " S" + std::to_string(scopeNo); // Function Scope Name
+            SYM_TABLE.ignoreNextEntry();          // This will tell the symbol table to ignore the next entry by compound_statement
+
+            std::string scopeName = varName + " S" + std::to_string(scopeNo);      // Function Scope Name
+            SYM_TABLE.setScopeName(scopeName);                                     // Set the name of the scope
             A_PTree node->addAttribute("Early Scope Entry : " + scopeName + " ☀️"); // 🌴 Adding syn_attr
-            
+
             // Add the parameters to the symbol table
 
             int k = paramVector.size();
@@ -709,7 +684,7 @@ void function_definition_H(ASTNode *node)
                 var->storageClass = StorageClass::NONE;
 
                 // Add the symbol to the symbol table
-                int insertCheck = SYM_TABLE.insert(SYMBOL_TYPE::VARIABLE,paramNames[i], var);
+                int insertCheck = SYM_TABLE.insert(SYMBOL_TYPE::VARIABLE, paramNames[i], var);
                 if (insertCheck == INSERT_FAILURE)
                 {
                     // SEMANTIC ERROR 🚨 : Parameter already present in the current scope
@@ -723,7 +698,8 @@ void function_definition_H(ASTNode *node)
         }
 
         // 🔖IR Cdoe
-        CODE_BASE.addTAC(NO_ARG, FUNCTION_LABEL, varName, NO_ARG);
+
+        CODE_BASE.addTAC(node, NO_ARG, FUNCTION_LABEL, varName, NO_ARG);
 
         // Call the compound_statement handler
         SYM_TABLE.ignoreNextEntry(); // This will tell compound_statement to ignore the next entry
@@ -731,15 +707,14 @@ void function_definition_H(ASTNode *node)
 
         // [ToDecide - HOW TO CHECK RETURN TYPE OF FUNCTION]
 
-        // SYM_TABLE.exitScope();  
+        // SYM_TABLE.exitScope();
         // [Will be Handled by Compound Statments this is due to - ☀️ EarlyScope Entry]
 
-        CODE_BASE.addTAC(NO_ARG, BLANK, NO_ARG, NO_ARG); // To be added
+        CODE_BASE.addTAC(node, NO_ARG, BLANK, NO_ARG, NO_ARG); // To be added
     }
     else
     {
         // Wrong Production
-        ENTRY_MSG << "Wrong Production in function_definition_H" << std::endl;
     }
 
     return;

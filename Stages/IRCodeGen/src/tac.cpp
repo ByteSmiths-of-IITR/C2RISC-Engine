@@ -1,6 +1,6 @@
 #include "header.h"
 
-std::string NO_ARG = "";
+std::string NO_ARG = "#####";
 std::string RIGHT_STAR = "right_star";
 std::string LEFT_STAR = "left_star";
 std::string FUNCTION_LABEL = "function_label";
@@ -14,6 +14,11 @@ std::string BSS = ".bss";
 std::string PARAM = "param";
 std::string CALL = "call";
 std::string ASSIGN_OP = "=";
+std::string IF_FALSE = "if_false";
+std::string IF_TRUE = "if";
+std::string GOTO_LABEL = "goto";
+
+extern ASTNode *currentNode;
 
 TAC_Quadruple::TAC_Quadruple(std::string op, std::string arg1, std::string arg2, std::string result)
 {
@@ -23,7 +28,14 @@ TAC_Quadruple::TAC_Quadruple(std::string op, std::string arg1, std::string arg2,
     this->result = result;
 }
 
-std::string TAC_Quadruple::toString() const {
+std::string TAC_Quadruple::toString() {
+    
+    // std::string details = "";
+    // details += "op: " + op + ", ";
+    // details += "arg1: " + arg1 + ", ";
+    // details += "arg2: " + arg2 + ", ";
+    // details += "result: " + result;
+
     std::string str = "";
 
     if(op==CALL){
@@ -98,19 +110,14 @@ std::string TAC_Quadruple::toString() const {
         str = result + " = " + arg1; // result = arg1
         return str;
     }
-
-    if (result != NO_ARG) {
-        str = result + " = " + arg1 + " " + op + " " + arg2; // result = arg1 op arg2
-    } else {
-        str = arg1 + " " + op + " " + arg2; // arg1 op arg2
-    }
-
-    return result;
+    
+    str = result + " = " + arg1 + " " + op + " " + arg2; // result = arg1 op arg2
+    return str;
 }
 
 std::string newTemp() {
     static int tempCount = 0; // This will keep the count of the temporary variables
-    return "$t" + std::to_string(tempCount++);
+    return "$" + std::to_string(tempCount++);
 }
 
 
@@ -120,8 +127,11 @@ std::string newLabel() {
     return "L" + std::to_string(labelCount++);
 }
 
-void TAC::addTAC(std::string result, std::string op, std::string arg1, std::string arg2) {
+void TAC::addTAC(ASTNode* addedAt, std::string result, std::string op, std::string arg1, std::string arg2) {
     this->code.push_back(TAC_Quadruple(op, arg1, arg2, result));
+    
+    std::string details = this->code.back().toString();
+    A_PTree addedAt->addAttribute("TAC: " + details); // 🌴 Adding syn_attr
 }
 
 void TAC::addTAC(TAC_Quadruple q) {
@@ -129,13 +139,13 @@ void TAC::addTAC(TAC_Quadruple q) {
 }
 
 void TAC::printTAC(std::ofstream &file) {
-    for (const auto &quad : code) {
+    for ( auto &quad : code) {
         file << quad.toString() << std::endl;
     }
 }
 
 void TAC::printTAC() {
-    for (const auto &quad : code) {
+    for ( auto &quad : code) {
         std::cout << quad.toString() << std::endl;
     }
 }

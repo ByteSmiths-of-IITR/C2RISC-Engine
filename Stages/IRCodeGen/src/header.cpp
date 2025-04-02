@@ -37,9 +37,20 @@ int const LOOKUP_SUCCESS = 0; // Found
 int const LOOKUP_FAILURE = -1; // Not Found
 
 std::string IN_SYNTAX_PHASE = "$IN_SYNTAX_PHASE$"; // This will be used to check if we are in syntax phase or not
-
-    std::string lastFuncCalled = "init"; // Global variable to keep track of the last function called
+std::string PASS_ERROR = "0000"; // This will be used to pass error in the function
+std::string lastFuncCalled = "init"; // Global variable to keep track of the last function called
 
 //=== [Global Variables] ==========================================================================================================
 // SymbolTable SYM_TABLE; // Global Symbol Table
 // TAC CODE_BASE; // Global TAC Code Base [declared in handler.cpp]
+
+std::string getCurrentTime()
+{
+    std::time_t now = std::time(nullptr);      // Get current time
+    std::tm *localTime = std::localtime(&now); // Convert to local time
+
+    std::ostringstream oss;
+    oss << std::put_time(localTime, "%Y-%m-%d - %H:%M:%S"); // Format time
+
+    return oss.str(); // Convert stream to string
+}

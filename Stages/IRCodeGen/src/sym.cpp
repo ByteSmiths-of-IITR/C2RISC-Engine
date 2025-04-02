@@ -25,7 +25,7 @@ void SymbolNode::deleteCurrent()
 void SymbolNode::insertAfter(SymbolNode *node)
 {
 
-    lastFuncCalled = "SymbolNode::insertAfter";
+    // lastFuncCalled = "SymbolNode::insertAfter";
 
     if (this->next)
     {
@@ -39,7 +39,7 @@ void SymbolNode::insertAfter(SymbolNode *node)
 void SymbolNode::insertBefore(SymbolNode *node)
 {
 
-    lastFuncCalled = "SymbolNode::insertBefore";
+    // lastFuncCalled = "SymbolNode::insertBefore";
 
     if (this->prev)
     {
@@ -82,12 +82,10 @@ int SymbolTable::enterScope()
     return this->scopeNo;
 }
 
-
-
 int SymbolTable::exitScope()
 {
 
-    lastFuncCalled = "SymbolTable::exitScope";
+    // lastFuncCalled = "SymbolTable::exitScope";
 
     int exitedScopeNo = this->scopeNo;
 
@@ -104,7 +102,6 @@ int SymbolTable::exitScope()
     {
         bottom = this->scopeBottom.top();
         this->scopeBottom.pop();
-        debug << "Bottom: " << bottom << std::endl;
     }
 
     while (size > bottom)
@@ -121,8 +118,6 @@ int SymbolTable::exitScope()
         this->NodeCount--;
     }
 
-    debug << "Size after: " << size << std::endl;
-
     // Restoring the scope number
     this->scopeNo = this->lastScopeNo.top();
     this->lastScopeNo.pop();
@@ -130,10 +125,10 @@ int SymbolTable::exitScope()
     return exitedScopeNo;
 }
 
-int SymbolTable::insert(SYMBOL_TYPE symbolType,const std::string &key, GenericSymbol *symbol)
+int SymbolTable::insert(SYMBOL_TYPE symbolType, const std::string &key, GenericSymbol *symbol)
 {
 
-    lastFuncCalled = "SymbolTable::insert";
+    // lastFuncCalled = "SymbolTable::insert";
 
     // Checking if the symbol is already present
 
@@ -223,7 +218,8 @@ int SymbolTable::insert(SYMBOL_TYPE symbolType,const std::string &key, GenericSy
     // Incrementing the NodeCount
     this->NodeCount++;
 
-    if(status==0){
+    if (status == 0)
+    {
         return INSERT_SUCCESS;
     }
     return INSERT_SUCCESS_WITH_WARNING; // status = 1;
@@ -232,7 +228,7 @@ int SymbolTable::insert(SYMBOL_TYPE symbolType,const std::string &key, GenericSy
 int SymbolTable::lookup(const std::string &key, GenericSymbol *&sym)
 {
 
-    lastFuncCalled = "SymbolTable::lookup";
+    // lastFuncCalled = "SymbolTable::lookup";
 
     if (!this->symTable.count(key))
     {
@@ -259,7 +255,7 @@ int SymbolTable::lookup(const std::string &key, GenericSymbol *&sym)
 int SymbolTable::lookupNode(const std::string &key, SymbolNode *&node)
 {
 
-    lastFuncCalled = "SymbolTable::lookupNode";
+    // lastFuncCalled = "SymbolTable::lookupNode";
 
     if (!this->symTable.count(key))
     {
@@ -466,7 +462,8 @@ bool isUserDType(const GenericSymbol &sym)
     return (sym.symbolType == SYMBOL_TYPE::USER_DTYPE);
 }
 
-bool isTypeDefs(const GenericSymbol &sym){
+bool isTypeDefs(const GenericSymbol &sym)
+{
     return (sym.symbolType == SYMBOL_TYPE::TYPEDEF);
 }
 

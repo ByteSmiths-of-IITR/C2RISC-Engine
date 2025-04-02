@@ -154,7 +154,7 @@ std::string ASTStyle(ASTNode* node) {
     // Program
     else if(param == "Program")
     {
-        return "shape=doubleoctagon, style=filled, fillcolor=lightblue";
+        return "shape=doubleoctagon, style=filled, fillcolor=aqua";
     }
     // Root 
     else if (param == "translation_unit")
@@ -191,6 +191,8 @@ std::string ASTStyle(ASTNode* node) {
     }
 
 //--------------- Writes the AST to a DOT format file recursively
+
+
 
 void writeNode(std::ofstream &out, ASTNode* node, int parentId, int &nodeCount) {
     if (!node) return;
@@ -289,6 +291,62 @@ std::string getSecondLastWord(const std::string &infoStr)
                           lastSpace - (secondLastSpace == std::string::npos ? 0 : secondLastSpace + 1));
 }
 
+std::string getColor(std::string infoStr){
+    std::string firstWord = infoStr.substr(0, infoStr.find(" "));
+    std::string type = infoStr.substr(0, 3);
+    std::string lastWord = getSecondLastWord(infoStr);
+    // std::string lastWord = infoStr.substr(infoStr.find_last_of(" ") + 1);
+    // std::cout << "Type: " << type << std::endl;
+    std::string color = "darkorchid2";
+    // std::cerr << "Type: |" << type << "|" << std::endl;
+    // std::cerr << "First: |" << firstWord << "|" << std::endl;
+    // std::cerr << "Last: |" << lastWord << "|" << std::endl;
+    if (type == "syn" || firstWord == "⏫" || firstWord == "🔺" || firstWord == "⬆️" || lastWord == "⏫" || lastWord == "⬆️" || lastWord == "🔺")
+    {
+        color = "firebrick3";
+    }
+    else if (type == "inh" || firstWord == "🔻" || firstWord == "⏬" || firstWord == "⬇️" || lastWord == "🔻" || lastWord == "⏬" || lastWord == "⬇️")
+    {
+        color = "blue3";
+    }
+    else if (lastWord == "⤵️" || lastWord == "☀️" || lastWord == "↙️" || type == "Scope" || type == "Early")
+    {
+        color = "darkgreen";
+    }
+    else if (firstWord == "🥺")
+    {
+        // no attribute
+        color = "white";
+    }
+    else if (firstWord == "🟡")
+    {
+        // Stop attribute
+        color = "yellow";
+    }
+    else if(lastWord == "✌️"){
+        // Exit
+        color = "red";
+    }
+    else if(firstWord == "🤞"){
+        // Entry
+        color = "green";
+    }
+    else if(firstWord == "🚨"){
+        // Error 
+        color = "red";
+    }
+    else if(lastWord == "👆"){
+        // Pass the Error
+        color = "red";
+    }
+    else if(firstWord == "TAC:"){
+        // Three Addres Code
+        color = "lightblue";
+    }
+
+    return color;
+}
+
 //--------------- Write the Annotated PTree to a DOT format file recursively
 void writeNode_A(std::ofstream &out, ASTNode *node, int parentId, int &nodeCount)
 {
@@ -331,36 +389,10 @@ void writeNode_A(std::ofstream &out, ASTNode *node, int parentId, int &nodeCount
     {
         // std::cerr << "Printing attribute " << std::endl;
         // Check for syn_attr and inh_attr 
-        // Fetch first 3 characters ignoring space
-        std::string infoStr = info;
-        // infoStr.erase(remove_if(infoStr.begin(), infoStr.end(), isspace), infoStr.end());
-        std::string firstWord = infoStr.substr(0, infoStr.find(" "));
-        std::string type = infoStr.substr(0, 3);
-        std::string lastWord = getSecondLastWord(infoStr);
-        // std::string lastWord = infoStr.substr(infoStr.find_last_of(" ") + 1);
-        // std::cout << "Type: " << type << std::endl;
-        std::string color = "darkorchid2";
-        std::cerr << "Type: |" << type << "|" << std::endl;
-        std::cerr << "First: |" << firstWord << "|" << std::endl;
-        std::cerr << "Last: |" << lastWord << "|" << std::endl;
-        if (type == "syn" || firstWord == "⏫" || firstWord == "🔺" || firstWord == "⬆️" || lastWord == "⏫" || lastWord == "⬆️" || lastWord == "🔺")
-        {
-            color = "firebrick3";
-        }
-        else if (type == "inh" || firstWord == "🔻" || firstWord == "⏬" || firstWord == "⬇️" || lastWord == "🔻" || lastWord == "⏬" || lastWord == "⬇️") 
-        {
-            color = "blue3";
-        }
-        else if (lastWord == "⤵️" || lastWord == "☀️" || lastWord == "↙️" || type == "Scope" || type == "Early")
-        {
-            color = "darkgreen";
-        }else if(firstWord == "🥺"){
-            // no attribute
-            color = "white";    
-        }else if(firstWord == "🟡"){
-            // Stop attribute
-            color = "yellow";
-        }
+        
+        // Customize the color based on the attribute type
+        std::string color = getColor(info);
+        
         out << "  <tr><td><FONT COLOR=\"" << color << "\"><font point-size=\"10\">" << escapeBrackets(info) << "</font></FONT></td></tr>\n";
     }
 

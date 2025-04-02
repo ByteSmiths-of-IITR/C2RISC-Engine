@@ -16,7 +16,6 @@ int width(const UserDType &dtype)
             int memberSize = width(memberType);
             if (memberSize == -1)
             {
-                CERR << "Error: Member \"" + memberName + "\" not found\n";
                 return -1;
             }
             size += memberSize;
@@ -35,8 +34,7 @@ int width(const BaseInfo &info)
         int w = width(baseType);
         if (w == -1)
         {
-            CERR << "Error: Base Type \"" + baseType + "\" not found\n";
-            return -1;
+                    return -1;
         }
         return w;
     }
@@ -84,10 +82,9 @@ int width(const TypeExpression &typeExpr)
     // First Remove top Parenthesis
     removeTopParenthesis(temp);
 
-    if(isEmpty(temp))
+    if (isEmpty(temp))
     {
-        CERR << "Error: TypeExpression is empty\n";
-        return 1;
+            return 1;
     }
 
     Type topType = whatIsType(temp);
@@ -126,6 +123,37 @@ int width(const TypeExpression &typeExpr)
 
     // This will return the width of the type expression
     return size;
+}
+
+int elementWidth(const TypeExpression &typeExpr){
+    // Remove Top Parenthesis
+    TypeExpression temp = typeExpr;
+    removeTopParenthesis(temp);
+
+    if(isEmpty(temp))
+    {
+        return -1;
+    }
+
+    // If base type
+    Type topType = whatIsType(temp);
+    if(topType == Type::VARIABLE || topType == Type::ENUM_CONSTANT || topType == Type::ENUM || topType == Type::STRUCT_UNION)
+    {
+        return 1;
+    }
+    else if(topType == Type::FUNCTION){
+        return 1;
+    }
+    else if(topType == Type::POINTER || topType == Type::ARRAY)
+    {
+        // Find width of below level
+        TypeExpression belowLevel = temp;
+        popALevel(belowLevel);
+        return width(belowLevel);
+    }
+
+    std::cerr << "Error: Something wrong in elementWidth(TypeExpression)\n";
+    return -1;
 }
 
 //=================[ TypeExpression ]================================================================================]
@@ -213,7 +241,7 @@ Type whatIsType(const TypeExpression &typeExpr)
 
 std::string toString(const TypeExpression &typeExpr)
 {
-    //Clear topParenthesis
+    // Clear topParenthesis
     TypeExpression temp = typeExpr;
     removeTopParenthesis(temp);
 
@@ -339,10 +367,19 @@ TypeExpression createTypeExpression(GenericSymbol *symbol)
     return typeExpr;
 }
 
-// Needed for TypeExpression Creation of Constants
-TypeExpression TypeExpressionForConstants(std::string constant){
-    // [📍ToDo]
-    return TypeExpression();
+int ProcessConstants(std::string inputValue, TypeExpression &typeExpr, std::string &finalValue)
+{
+    // [TODO] - To be implemented
+
+    // Dummy Implementation
+    BaseInfo *base = new BaseInfo();
+    base->baseType = TYPE_INT;
+    typeExpr.levelStack.push(base);
+
+    // Set the final value
+    finalValue = "1234";
+
+    return 0;
 }
 
 // Needed during Space & ValueType Logics
@@ -445,7 +482,8 @@ bool isModifiableLvalue(const TypeExpression &type)
         //     }
     }
 
-    if(topType == Type::ENUM_CONSTANT){
+    if (topType == Type::ENUM_CONSTANT)
+    {
         return false; // It's a Rvalue [Not a Lvalue]
     }
 
@@ -525,6 +563,48 @@ int checkEquivalance(const TypeExpression &typeExpr1, const TypeExpression &type
     // Only if this level is pointer we can reduce to warning else No Reduction
     return res;
 }
+
+
+
+int ourEquivalent(const TypeExpression &type1, const TypeExpression &type2){
+    
+
+    // REmove Parenthesis
+    TypeExpression temp1 = type1;
+    TypeExpression temp2 = type2;
+    removeTopParenthesis(temp1);
+    removeTopParenthesis(temp2);
+    // If top is pointer Type - POINTER, FUNCTION, ARRAY
+    // Then ignore lower levels
+    Type topType1 = whatIsType(temp1);
+    Type topType2 = whatIsType(temp2);
+    if (topType1 == Type::POINTER || topType1 == Type::FUNCTION || topType1 == Type::ARRAY)
+    {
+        // Check equivalance of top level
+        return EQUIVALENT;
+    }
+
+    // Check equivalance of base level
+    bool isNumeric1 = isNumeric(type1);
+    bool isNumeric2 = isNumeric(type2);
+    if (isNumeric1 && isNumeric2)
+    {
+        // Both are numeric
+        return EQUIVALENT;
+    }
+
+    // Then we need to check for custom types
+    if(topType1 == Type::STRUCT_UNION && topType2 == Type::STRUCT_UNION){
+        // Both are struct/union
+        // Check if they are same
+        BaseInfo *base1 = dynamic_cast<BaseInfo *>(temp1.levelStack.top());
+        BaseInfo *base2 = dynamic_cast<BaseInfo *>(temp2.levelStack.top());
+        if(base1->baseType == base2->baseType){
+            return EQUIVALENT;
+        }
+    }
+}
+
 
 /*
 
@@ -636,22 +716,28 @@ int checkEquivalance(const BaseInfo &info1, const BaseInfo &info2)
 int whichLevelInfo(const LevelInfo &info)
 {
     // This will return the level of the info
-    if(dynamic_cast<const BaseInfo *>(&info)){
+    if (dynamic_cast<const BaseInfo *>(&info))
+    {
         return BASE_LEVEL;
     }
-    else if(dynamic_cast<const PointerInfo *>(&info)){
+    else if (dynamic_cast<const PointerInfo *>(&info))
+    {
         return POINTER_LEVEL;
     }
-    else if(dynamic_cast<const ArrayInfo *>(&info)){
+    else if (dynamic_cast<const ArrayInfo *>(&info))
+    {
         return ARRAY_LEVEL;
     }
-    else if(dynamic_cast<const ParameterInfo *>(&info)){
+    else if (dynamic_cast<const ParameterInfo *>(&info))
+    {
         return PARAMETER_LEVEL;
     }
-    else if(dynamic_cast<const ParenthesisInfo *>(&info)){
+    else if (dynamic_cast<const ParenthesisInfo *>(&info))
+    {
         return PARENTHESIS_LEVEL;
     }
-    else{
+    else
+    {
         return UNKNOWN_LEVEL;
     }
 }
@@ -680,4 +766,3 @@ bool isParameterInfo(const LevelInfo &info)
 {
     return dynamic_cast<const ParameterInfo *>(&info);
 }
-

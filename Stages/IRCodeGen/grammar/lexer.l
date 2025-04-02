@@ -33,8 +33,8 @@ std::vector<std::string> lexerLOG;
 
 int checkForTypeDef(std::string id){
     // Check if the identifier is a typedef
-    std::cerr << "Checking for typedef: " << id ;
-    std::cerr << " | Expecting typedef: " << (expectingTypeName?"YES":"NO") << std::endl;
+    // std::cerr << "Checking for typedef: " << id ;
+    // std::cerr << " | Expecting typedef: " << (expectingTypeName?"YES":"NO") << std::endl;
 
     if(expectingTypeName==false){
         return 0; // We are not expecting a typedefID

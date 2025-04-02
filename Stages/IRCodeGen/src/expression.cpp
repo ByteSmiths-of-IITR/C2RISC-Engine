@@ -3,34 +3,69 @@
 
 //====================[ Expressions Handler ]=========================================================================================
 
+ASTNode *currentNode = nullptr;
+
+//--- Constatn Expression Handler
+
+// 1. constant_expression
+void constant_expression_H(ASTNode *node, std::string &value)
+{
+    ENTRY_H;
+    std::string whichProduction = getProduction(node);
+    std::string P1 = "conditional_expression";
+
+    A_PTree node->addAttribute("inh_value = " + value); 
+    if (whichProduction == P1)
+    {
+        // 0. syn_data to fetch ⬆️
+        std::string value1 = ""; // to be fetched ⬆️
+        TypeExpression type1;    // to be fetched ⬆️
+        VALUE_TYPE valuetype1;
+        SPACE valueSpace1;
+        // 1. Call the function again to fetch the next value
+        conditional_expression_H(node->children[0], "NONE", value1, type1, valuetype1, valueSpace1);
+        PASS_THE_ERROR(value1);
+
+        // 🅱️ TypeCheck for const [📍📍📍TODO]
+
+        // 2. Pass the data up
+        value = value1; // send syn_attr ⬆️
+    }
+    else
+    {
+        ERROR_EXIT_H;
+        // Setup Dummy Data
+        value = "0"; // send syn_attr ⬆️
+        return;
+    }
+
+    EXIT_H;
+}
+
 //--- Expression Handler
-void expression_H(ASTNode *node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace){
-    ENTRY_MSG << "expression_H" << std::endl;
-    lastFuncCalled = "expression_H";
+void expression_H(ASTNode *node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace)
+{
+
+    ENTRY_H;
     std::string whichProduction = getProduction(node);
     std::string P1 = "assignment_expression";
     std::string P2 = "expression COMMA assignment_expression";
 
-    CERR << "Production:  |" << whichProduction << "|" << std::endl;
-
-    if(!node){
-        CERR << "Node is NULL" << std::endl;
+    if (!node)
+    {
+        ERROR_EXIT_H;
+        // Setup Dummy Data
+        varName = PASS_ERROR;
         return;
     }
 
-    HERE;
-    A_PTree node->addAttribute("😵‍💫 whereToSendString = " + inh_whereToSendString);  // 🌳 Adding inh_attr
-    HERE;
-    // A_PTree node->addAttribute("⏬ " + toString(type));                      // 🌳 Adding inh_attr
-    HERE;
-    // A_PTree node->addAttribute("⏬ "+ toString(valueType));            // 🌳 Adding inh_attr
-    HERE;
-        // A_PTree node->addAttribute("⏬  " + toString(valueSpace));         // 🌳 Adding inh_attr         // 🌳 Adding inh_attr
-    HERE;
-    // A_PTree node->addAttribute("⏬  varName = " + varName); // 🌳 Adding inh_attr
-    HERE;
+    A_PTree node->addAttribute("😵‍💫 whereToSendString = " + inh_whereToSendString); 
+    A_PTree node->addAttribute("⏬ " + toString(type));                  
+    A_PTree node->addAttribute("⏬ "+ toString(valueType));           
+    A_PTree node->addAttribute("⏬  " + toString(valueSpace));         
+    A_PTree node->addAttribute("⏬  varName = " + varName); 
 
-    if(whichProduction == P1)
+    if (whichProduction == P1)
     {
         // Call the assignment_expression handler
         std::string varName1 = "Just a Dummy";
@@ -38,6 +73,7 @@ void expression_H(ASTNode *node, std::string inh_whereToSendString, std::string 
         VALUE_TYPE valueType1;
         SPACE valueSpace1;
         assignment_expression_H(node->children[0], inh_whereToSendString, varName1, type1, valueType1, valueSpace1);
+        PASS_THE_ERROR(varName1);
 
         // Pass the data up
         varName = varName1;
@@ -45,21 +81,25 @@ void expression_H(ASTNode *node, std::string inh_whereToSendString, std::string 
         valueType = valueType1;
         valueSpace = valueSpace1;
     }
-    else if(whichProduction == P2)
+    else if (whichProduction == P2)
     {
         // Call the expression handler
         std::string varName1 = "Just a Dummy";
         TypeExpression type1;
         VALUE_TYPE valueType1;
         SPACE valueSpace1;
+
         expression_H(node->children[0], inh_whereToSendString, varName1, type1, valueType1, valueSpace1);
+        PASS_THE_ERROR(varName1);
 
         // Call the assignment_expression handler
         std::string varName2;
         TypeExpression type2;
         VALUE_TYPE valueType2;
         SPACE valueSpace2;
+
         assignment_expression_H(node->children[2], inh_whereToSendString, varName2, type2, valueType2, valueSpace2);
+        PASS_THE_ERROR(varName2);
 
         // Pass the data from expression1 up
         varName = varName1;
@@ -69,34 +109,32 @@ void expression_H(ASTNode *node, std::string inh_whereToSendString, std::string 
 
         // Semantic Warning
         semanticLOG.push_back("Warning: Expression \"" + varName2 + "\"'s result is not used");
-        
     }
     else
     {
-        // Wrong Production
+        ERROR_EXIT_H;
+        return;
     }
 
+    EXIT_H;
 }
-
-//--- Conditional Expression Handler
-
 
 //--- Primary Expression Handler
 void primary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace)
 {
-    ENTRY_MSG << "primary_expression_H" << std::endl;
-    lastFuncCalled = "primary_expression_H";
+
+    ENTRY_H;
     std::string whichProduction = getProduction(node);
     std::string P1 = "IDENTIFIER";
     std::string P2 = "CONSTANT";
     std::string P3 = "STRING_LITERAL";
     std::string P4 = "LPAREN expression RPAREN";
 
-    // A_PTree node->addAttribute("⏬  whereToSendString = " + inh_whereToSendString); // 🌳 Adding inh_attr
-    // A_PTree node->addAttribute("⏬  varName = " + varName);                          // 🌳 Adding inh_attr
-    // A_PTree node->addAttribute("⏬ " + toString(type));                      // 🌳 Adding inh_attr
-    // A_PTree node->addAttribute("⏬ "+ toString(valueType));            // 🌳 Adding inh_attr
-    // A_PTree node->addAttribute("⏬  " + toString(valueSpace));         // 🌳 Adding inh_attr         // 🌳 Adding inh_attr
+    // A_PTree node->addAttribute("⏬  whereToSendString = " + inh_whereToSendString); 
+    // A_PTree node->addAttribute("⏬  varName = " + varName);                          
+    // A_PTree node->addAttribute("⏬ " + toString(type));                      
+    // A_PTree node->addAttribute("⏬ "+ toString(valueType));            
+    // A_PTree node->addAttribute("⏬  " + toString(valueSpace));                  
 
     if (whichProduction == P1)
     {
@@ -111,12 +149,19 @@ void primary_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
         if (lookupCheck == LOOKUP_FAILURE)
         {
             semanticLOG.push_back("Error: Identifier \"" + varName1 + "\" not found in symbol table");
+            varName = varName1;
+            type = type0;
+            valueType = VALUE_TYPE::UNKNOWN;
+            valueSpace = SPACE::UNKNOWN_SPACE;
+            // SEMANTIC ERROR 🚨 : Identifier not found
+            ERROR_EXIT_H; // SetUp Dummy Data
+            varName = PASS_ERROR;
+            return;
         }
         else
         {
             // To Check what all possible symbols are allowed
             // - Variable + EnumConstant + Function ✅ | ToCheck 🔍 for + TypeDef + RecordType
-
             SYMBOL_TYPE symbolType = symbol->symbolType;
             if (symbolType == SYMBOL_TYPE::VARIABLE)
             {
@@ -140,6 +185,10 @@ void primary_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
             {
                 // SEMANTIC ERROR 🚨 : Not a variable or enum constant
                 semanticLOG.push_back("Error: Identifier \"" + varName1 + "\" is not a variable or enum constant");
+                ERROR_EXIT_H;
+                // SetUp Dummy Data
+                varName = PASS_ERROR;
+                return;
             }
         }
 
@@ -155,7 +204,6 @@ void primary_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
 
         if (val0Space == SPACE::ADDRESS_SPACE)
         {
-            //
             // If in address space we need to deal with offset
 
             // Space 🚀Change 🔖IR Code
@@ -163,7 +211,7 @@ void primary_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
             // std::string id_offset = std::to_string(((Variable *)symbol)->offset);
             std::string id_offset = varName1 + ".offset";
 
-            CODE_BASE.addTAC(address, "=", id_offset, NO_ARG);
+            CODE_BASE.addTAC(node, address, "=", id_offset, NO_ARG);
 
             varName1 = address; // Change the name to the address
         }
@@ -186,6 +234,10 @@ void primary_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
         {
             // SEMANTIC ERROR 🚨 : Unknown Space
             semanticLOG.push_back("Error: Unknown Space for Identifier \"" + varName1 + "\"");
+            ERROR_EXIT_H;
+            // SetUp Dummy Data
+            varName = PASS_ERROR;
+            return;
         }
 
         // Pass all syn_attribute to up
@@ -197,19 +249,38 @@ void primary_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
     else if (whichProduction == P2)
     {
 
-        // 🟡 VarName is the constant's value itself
         varName = node->children[0]->value;
 
         // 🟡 type
-        // [ToWrite a Function that takes a string constant and find it's type]
-        TypeExpression type0 = TypeExpressionForConstants(varName);
+        // [ToWrite a Function that takes a string constant and find it's type] & [string format number]
+        TypeExpression type0;
+        std::string finalValue = "ToBeFetched"; // To be fetched from constant_expression
+        int check = ProcessConstants(varName, type0, finalValue);
+        if (check != OKAY)
+        {
+            // SEMANTIC ERROR 🚨 : Error in ProcessContants
+            semanticLOG.push_back("Error: Error in ProcessContants CONSTANT-\"" + varName + "\"");
+            ERROR_EXIT_H;
+            // SetUp Dummy Data
+            varName = PASS_ERROR;
+            return;
+        }
         type = type0;
+
+        // 🟡 VarName is the constant's value itself
+        varName = finalValue; // Change the name to the value
 
         // 🟡 valueType
         Type whichType = whatIsType(type0);
 
         // 🟡 valueSpace
         SPACE val0Space = getSpace(type0);
+
+        VALUE_TYPE val0Type = getValueType(type0); // Set Correctly
+
+        // Pass the data up
+        valueSpace = val0Space; // Set the value space
+        valueType = val0Type;   // Set the value type
     }
     else if (whichProduction == P3)
     { // ⚡️ Advance Feature ⚡️
@@ -242,9 +313,11 @@ void primary_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
         {
             // Add to .rodata
             std::string label = newLabel();
-            CODE_BASE.addTAC(label, LABEL, strValue, NO_ARG);
+
+            CODE_BASE.addTAC(node, label, LABEL, strValue, NO_ARG);
             std::string address = newTemp();
-            CODE_BASE.addTAC(address, AMPERSEND, label, NO_ARG);
+
+            CODE_BASE.addTAC(node, address, AMPERSEND, label, NO_ARG);
             varName = label;
         }
         else
@@ -260,6 +333,7 @@ void primary_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
         VALUE_TYPE valueType1;
         SPACE valueSpace1;
         expression_H(node->children[1], inh_whereToSendString, varName1, type1, valueType1, valueSpace1);
+        PASS_THE_ERROR(varName1);
 
         // Pass the data up
         varName = varName1;
@@ -270,21 +344,25 @@ void primary_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
     }
     else
     {
-        // Wrong Production
-        CERR << "Wrong Production in primary_expression_H" << std::endl;
+        ERROR_EXIT_H;
+        // SetUp Dummy Data
+        varName = PASS_ERROR;
+        return;
     }
 
-    A_PTree node->addAttribute("varName = " + varName + " ⬆️");         // 🌴 Adding syn_attr
-    A_PTree node->addAttribute(toString(type) + " ⬆️");                 // 🌴 Adding syn_attr
-    A_PTree node->addAttribute(toString(valueType)+" ⬆️");   // 🌴 Adding syn_attr
-    A_PTree node->addAttribute(toString(valueSpace) + " ⬆️"); // 🌴 Adding syn_attr
+    A_PTree node->addAttribute("varName = " + varName + " ⬆️"); 
+    A_PTree node->addAttribute(toString(type) + " ⬆️");         
+    A_PTree node->addAttribute(toString(valueType) + " ⬆️");    
+    A_PTree node->addAttribute(toString(valueSpace) + " ⬆️");   
+
+    EXIT_H;
 }
 
 //--- Postfix Expression Handler
 void postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace)
 {
-    ENTRY_MSG << "postfix_expression_H" << std::endl;
-    lastFuncCalled = "postfix_expression_H";
+
+    ENTRY_H;
     std::string whichProduction = getProduction(node);
     std::string P1 = "primary_expression";
     std::string P2 = "postfix_expression LSQUARE expression RSQUARE";
@@ -295,21 +373,20 @@ void postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
     std::string P7 = "postfix_expression INC_OP";
     std::string P8 = "postfix_expression DEC_OP";
 
-    // A_PTree node->addAttribute("⏬  whereToSendString = " + inh_whereToSendString); // 🌳 Adding inh_attr
-    // A_PTree node->addAttribute("⏬ varName = " + varName);                         // 🌳 Adding inh_attr
-    // A_PTree node->addAttribute("⏬ " + toString(type));                     // 🌳 Adding inh_attr
-    // A_PTree node->addAttribute("⏬ "+ toString(valueType));           // 🌳 Adding inh_attr
-    // A_PTree node->addAttribute("⏬  " + toString(valueSpace));         // 🌳 Adding inh_attr        // 🌳 Adding inh_attr
+    // A_PTree node->addAttribute("⏬  whereToSendString = " + inh_whereToSendString); 
+    // A_PTree node->addAttribute("⏬ varName = " + varName);                         
+    // A_PTree node->addAttribute("⏬ " + toString(type));                     
+    // A_PTree node->addAttribute("⏬ "+ toString(valueType));           
+    // A_PTree node->addAttribute("⏬  " + toString(valueSpace));                 
 
     if (whichProduction == P1)
     {
-        CERR << "postfix_expression_H - Primary Expression" << std::endl;
         // Call the primary_expression handler
         primary_expression_H(node->children[0], inh_whereToSendString, varName, type, valueType, valueSpace);
+        PASS_THE_ERROR(varName);
     }
     else if (whichProduction == P2)
     {
-        CERR << "postfix_expression_H - Array Subscript" << std::endl;
         // This is Array Subscripting
 
         // Prepare data to be fetched ⬆️
@@ -318,39 +395,32 @@ void postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
         TypeExpression type1;
         VALUE_TYPE valueType1;
         SPACE valueSpace1;
+
         postfix_expression_H(node->children[0], inh_whereToSendString, varName1, type1, valueType1, valueSpace1);
+        PASS_THE_ERROR(varName1);
 
         // From expression
         std::string varName2;
         TypeExpression type2;
         VALUE_TYPE valueType2;
         SPACE valueSpace2;
+
         expression_H(node->children[2], inh_whereToSendString, varName2, type2, valueType2, valueSpace2);
+        PASS_THE_ERROR(varName2);
 
         // 🅰️ TypeChecking for Array Subscript - expresesioon
 
-        if(!isIntegral(type2)){
+        if (!isIntegral(type2))
+        {
             semanticLOG.push_back("Error: Array Subscript expression \"" + varName2 + "\" is not an integral type");
+            ERROR_EXIT_H;
+            // SetUp Dummy Data
+            varName = PASS_ERROR;
+            return;
         }
 
-        // Okay
-        std::string index;
-//------------------------------ Space 🚀Change 🔖IR Code of index
-        SPACE reqSpace = getSpace(type2);
-        if(valueSpace2 != reqSpace)
-        {
-            CERR << "Change Space 🚀 of " << varName2 << std::endl;
-            // Most likely we will be moving from address space to value space due to some past array access
-            std::string valNew = newTemp();
-            CODE_BASE.addTAC(valNew, RIGHT_STAR, varName2, NO_ARG);
-            index = valNew; // Change the name to the address
-            valueSpace2 = SPACE::ADDRESS_SPACE; // Array Subscript is in address space
-        }
-        else
-        {
-            index = varName2;
-        }
-//----------------------------------------
+        // 🚀 SPACE CHANGE 🚀
+        USAGE_SPACE_CHANGE(varName2, type2, valueSpace2, node);
 
         // 🅱️ TypeChecking for Array Itself - postfix_expression
         Type whichType1 = whatIsType(type1);
@@ -358,39 +428,27 @@ void postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
         if (whichType1 != Type::ARRAY && whichType1 != Type::POINTER)
         {
             semanticLOG.push_back("Error: Array Subscript expression \"" + varName1 + "\" is not an array or pointer type");
+            ERROR_EXIT_H;
+            // SetUp Dummy Data
+            varName = PASS_ERROR;
+            return;
         }
 
-//------------------------------ Space 🚀Change 🔖IR Code of varName1
-        SPACE reqSpace1 = getSpace(type1);
-        if(valueSpace1 != reqSpace1)
-        {
-            CERR << "Change Space 🚀 of " << varName1 << std::endl;
-            // Most likely we will be moving from address space to value space due to some past array access
-            std::string valNew = newTemp();
-            CODE_BASE.addTAC(valNew, RIGHT_STAR, varName1, NO_ARG);
-            varName1 = valNew; // Change the name to the address
-            valueSpace1 = SPACE::ADDRESS_SPACE; // Array Subscript is in address space
-        }
-        else
-        {
-            varName1 = varName1;
-        }
-//----------------------------------------
+        // We need SPACE CHANGE for postfix_expression [array - Address , pointer-Value]
 
         // Pop the top level
         TypeExpression elementType = type1;
         int check = popALevel(elementType);
         if (check != POP_SUCCESS)
         {
-            // SEMANTIC ERROR 🚨 : Error in popALevel
-            CERR << "Error in popALevel" << std::endl;
+            ERROR_EXIT_H;
+            // SetUp Dummy Data
+            varName = PASS_ERROR;
+            return;
         }
 
         // We have resulting type
         type = elementType;
-
-        // 
-
 
         // 🟡varName + 🔖IRCode + 🟡valueSpace
 
@@ -400,10 +458,12 @@ void postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
         std::string baseAddress = varName1;
 
         std::string jump_amount = newTemp();
-        CODE_BASE.addTAC(jump_amount, "*", index, element_width_str);
+
+        CODE_BASE.addTAC(node, jump_amount, "*", varName2, element_width_str);
 
         std::string finalAddress = newTemp();
-        CODE_BASE.addTAC(finalAddress, "+", baseAddress, jump_amount);
+
+        CODE_BASE.addTAC(node, finalAddress, "+", baseAddress, jump_amount);
         varName = finalAddress; // Change the name to the address
 
         valueSpace = SPACE::ADDRESS_SPACE; // Array Subscript is in address space
@@ -413,11 +473,9 @@ void postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
         valueType = getValueType(type); // Set Correctly
 
         // inh_attribute already sent down
-
     }
     else if (whichProduction == P3 || whichProduction == P4)
     {
-        CERR << "postfix_expression_H - Function Call" << std::endl;
         // This is Function Call
 
         // Prepare data to be fetched ⬆️
@@ -427,11 +485,13 @@ void postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
         VALUE_TYPE valueType1;
         SPACE valueSpace1;
         postfix_expression_H(node->children[0], inh_whereToSendString, varName1, type1, valueType1, valueSpace1);
+        PASS_THE_ERROR(varName1);
 
         // From argument_expression_list
         std::vector<std::string> argName;
         std::vector<TypeExpression> argType;
         parameter_list_H(node->children[2], argType, argName);
+        // Won't Faile
 
         // 🅰️ TypeChecking for Function Call
 
@@ -440,47 +500,70 @@ void postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
         std::vector<TypeExpression> paramTypes;
         TypeExpression returnType = type1;
 
-        if(whichType1 == Type::FUNCTION){
+        if (whichType1 == Type::FUNCTION)
+        {
 
             // Find ParameterInfo
             paramTypes = ((ParameterInfo *)type1.levelStack.top())->paramsType;
 
             // Find Return Type
-            if(popALevel(returnType) != POP_SUCCESS){
+            if (popALevel(returnType) != POP_SUCCESS)
+            {
                 // SEMANTIC ERROR 🚨 : Error in popALevel
-                CERR << "Error in popALevel" << std::endl;
-            }
-            
-            // Will check function sign later
-        }else if(whichType1 == Type::POINTER){
-            
-            // First we remove the top level with is 
-            TypeExpression funcType = type1;// pop
-            if(popALevel(funcType) != POP_SUCCESS){
-                // SEMANTIC ERROR 🚨 : Error in popALevel
-                CERR << "Error in popALevel" << std::endl;
-            }
-
-            Type whichType = whatIsType(funcType);
-            if(whichType != Type::FUNCTION){
-                // SEMANTIC ERROR 🚨 : Function Call expression \"" + varName1 + "\" is not a function or function pointer type
-                semanticLOG.push_back("Error: Function Call expression \"" + varName1 + "\" is not a function pointer type");
-            }
-
-            // Find ParameterInfo
-            paramTypes = ((ParameterInfo *)funcType.levelStack.top())->paramsType;
-            
-            // Find Return Type
-            returnType = funcType;
-            if(popALevel(returnType) != POP_SUCCESS){
-                // SEMANTIC ERROR 🚨 : Error in popALevel
-                CERR << "Error in popALevel" << std::endl;
+                ERROR_EXIT_H;
+                // SetUp Dummy Data
+                varName = PASS_ERROR;
+                return;
             }
 
             // Will check function sign later
         }
-        else{
+        else if (whichType1 == Type::POINTER)
+        {
+
+            // First we remove the top level with is
+            TypeExpression funcType = type1; // pop
+            if (popALevel(funcType) != POP_SUCCESS)
+            {
+                ERROR_EXIT_H;
+                // SetUp Dummy Data
+                varName = PASS_ERROR;
+                return;
+            }
+
+            Type whichType = whatIsType(funcType);
+            if (whichType != Type::FUNCTION)
+            {
+                // SEMANTIC ERROR 🚨 : Function Call expression \"" + varName1 + "\" is not a function or function pointer type
+                semanticLOG.push_back("Error: Function Call expression \"" + varName1 + "\" is not a function pointer type");
+                ERROR_EXIT_H;
+                // SetUp Dummy Data
+                varName = PASS_ERROR;
+                return;
+            }
+
+            // Find ParameterInfo
+            paramTypes = ((ParameterInfo *)funcType.levelStack.top())->paramsType;
+
+            // Find Return Type
+            returnType = funcType;
+            if (popALevel(returnType) != POP_SUCCESS)
+            {
+                // SEMANTIC ERROR 🚨 : Error in popALevel
+                ERROR_EXIT_H;
+                // SetUp Dummy Data
+                varName = PASS_ERROR;
+                return;
+            }
+
+            // Will check function sign later
+        }
+        else
+        {
             semanticLOG.push_back("Error: Function Call expression \"" + varName1 + "\" is not a function or function pointer type");
+            ERROR_EXIT_H;
+            // SetUp Dummy Data
+            varName = PASS_ERROR;
             return;
         }
 
@@ -492,6 +575,10 @@ void postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
         {
             // SEMANTIC ERROR 🚨 : Function Call expression \"" + varName1 + "\" does not match the signature
             semanticLOG.push_back("Error: Function Call expression \"" + varName1 + "\" does not match the signature");
+            ERROR_EXIT_H;
+            // SetUp Dummy Data
+            varName = PASS_ERROR;
+            return;
         }
         else
         {
@@ -503,34 +590,38 @@ void postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
                 {
                     // SEMANTIC ERROR 🚨 : Function Call expression \"" + varName1 + "\" does not match the signature
                     semanticLOG.push_back("Error: Function Call expression \"" + varName1 + "\" does not match the signature");
+                    ERROR_EXIT_H;
+                    // SetUp Dummy Data
+                    varName = PASS_ERROR;
+                    return;
                 }
             }
         }
 
         // 🟡varName + 🔖IRCode + 🟡valueSpace
 
-            // Write all Parameters to TAC
-            for(int i = 0; i < argName.size(); i++)
-            {
-                CODE_BASE.addTAC(NO_ARG,PARAM,argName[i], NO_ARG);
-            }
+        // Write all Parameters to TAC
+        for (int i = 0; i < argName.size(); i++)
+        {
+            CODE_BASE.addTAC(node, NO_ARG, PARAM, argName[i], NO_ARG);
+        }
 
-            std::string returnVal = newTemp();
-            int no_args = argName.size();
-            CODE_BASE.addTAC(returnVal, CALL, varName1, std::to_string(no_args));
+        std::string returnVal = newTemp();
+        int no_args = argName.size();
 
-            varName = returnVal; // Change the name to the address
-            valueSpace = getSpace(returnType); // Function Call is in address space
+        CODE_BASE.addTAC(node, returnVal, CALL, varName1, std::to_string(no_args));
 
-            // 🟡 valueType
-            valueType = getValueType(returnType); // Set Correctly
-            type = returnType; // Set Correctly
+        varName = returnVal;               // Change the name to the address
+        valueSpace = getSpace(returnType); // Function Call is in address space
 
-            // All syn_attribute already sent up & inh_attribute already sent down
+        // 🟡 valueType
+        valueType = getValueType(returnType); // Set Correctly
+        type = returnType;                    // Set Correctly
+
+        // All syn_attribute already sent up & inh_attribute already sent down
     }
     else if (whichProduction == P5 || whichProduction == P6)
     {
-        CERR << "postfix_expression_H - Member Selection" << std::endl;
         // This is Member Selection
         // Prepare data to be fetched ⬆️
         // From postfix_expression
@@ -540,6 +631,7 @@ void postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
         SPACE valueSpace1;
 
         postfix_expression_H(node->children[0], inh_whereToSendString, varName1, type1, valueType1, valueSpace1);
+        PASS_THE_ERROR(varName1);
 
         // From IDENTIFIER
         std::string varName2 = node->children[2]->value;
@@ -551,7 +643,6 @@ void postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
         VALUE_TYPE valueType0;
         SPACE valueSpace0;
 
-
         // 🅰️ TypeChecking for Member Selection
         Type whichType1 = whatIsType(type1);
         // must be struct or union
@@ -559,25 +650,14 @@ void postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
         {
             // SEMANTIC ERROR 🚨 : Member Selection expression \"" + varName1 + "\" is not a struct or union type
             semanticLOG.push_back("Error: Member Selection expression \"" + varName1 + "\" is not a struct or union type");
+            ERROR_EXIT_H;
+            // SetUp Dummy Data
+            varName = PASS_ERROR;
+            return;
         }
-        
-//------------------------------ Space 🚀Change 🔖IR Code of varName1
-        SPACE reqSpace = getSpace(type1);
-        if(valueSpace1 != reqSpace)
-        {
-            CERR << "Change Space 🚀 of " << varName1 << std::endl;
-            // Most likely we will be moving from address space to value space due to some past array access
-            std::string valNew = newTemp();
-            CODE_BASE.addTAC(valNew, RIGHT_STAR, varName1, NO_ARG);
-            varName1 = valNew; // Change the name to the address
-            valueSpace1 = SPACE::ADDRESS_SPACE; // Member Selection is in address space
-        }
-        else
-        {
-            varName1 = varName1;
-        }
-//----------------------------------------
 
+        // 🚀 USAGE 🤫 SPACE CHANGE 🚀
+        USAGE_SPACE_CHANGE(varName1, type1, valueSpace1, node);
 
         // Find postfix's varName in symbolTable
         GenericSymbol *symbol = nullptr;
@@ -586,19 +666,34 @@ void postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
         {
             // SEMANTIC ERROR 🚨 : Member Selection expression \"" + varName1 + "\" not found in symbol table
             semanticLOG.push_back("Error: Member Selection expression \"" + varName1 + "\" not found in symbol table");
+            ERROR_EXIT_H;
+            // SetUp Dummy Data
+            varName = PASS_ERROR;
+            return;
         }
-        else{
+        else
+        {
             bool isVar = isVariable(*symbol);
-            if(!isVar){
+            if (!isVar)
+            {
                 // SEMANTIC ERROR 🚨 : Member Selection expression \"" + varName1 + "\" is not a variable
                 semanticLOG.push_back("Error: Member Selection expression \"" + varName1 + "\" is not a variable");
+                ERROR_EXIT_H;
+                // SetUp Dummy Data
+                varName = PASS_ERROR;
+                return;
             }
 
             TypeExpression varType = ((Variable *)symbol)->type;
             Type whichType = whatIsType(varType);
-            if(whichType != Type::STRUCT_UNION){
+            if (whichType != Type::STRUCT_UNION)
+            {
                 // SEMANTIC ERROR 🚨 : Member Selection expression \"" + varName1 + "\" is not a struct or union type
                 semanticLOG.push_back("Error: Member Selection expression \"" + varName1 + "\" is not a struct or union variable");
+                ERROR_EXIT_H;
+                // SetUp Dummy Data
+                varName = PASS_ERROR;
+                return;
             }
 
             // Find the member in the struct or union
@@ -608,40 +703,49 @@ void postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
             std::string recordType = baseName.substr(0, baseName.find(" "));
             std::string recordName = baseName.substr(baseName.find(" ") + 1, baseName.length());
             std::string lastPart = baseName.substr(baseName.find_last_of(" ") + 1, baseName.length());
-            std::string scopeNoStr = lastPart.substr(1, lastPart.length()-1);
-            CERR << "ScopeNo: " << scopeNoStr << std::endl;
+            std::string scopeNoStr = lastPart.substr(1, lastPart.length() - 1);
             int scopeNo = std::stoi(scopeNoStr);
 
             // Find the record in the symbol table
             GenericSymbol *recordSymbol = nullptr;
             int recordCheck = SYM_TABLE.lookupRecord(recordName, recordSymbol, scopeNo);
-            if(recordCheck == LOOKUP_FAILURE)
+            if (recordCheck == LOOKUP_FAILURE)
             {
                 // SEMANTIC ERROR 🚨 : Record not found
                 semanticLOG.push_back("Error: Record \"" + recordName + "\" not found in symbol table");
+                ERROR_EXIT_H;
+                // SetUp Dummy Data
+                varName = PASS_ERROR;
+                return;
             }
-            else{
+            else
+            {
                 // Find the member in the record
                 std::map<std::string, TypeExpression> members = ((UserDType *)recordSymbol)->members;
                 auto it = members.find(varName2);
-                if(it == members.end()){
+                if (it == members.end())
+                {
                     // SEMANTIC ERROR 🚨 : Member \"" + varName2 + "\" not found in record \"" + recordName + "\"
                     semanticLOG.push_back("Error: Member \"" + varName2 + "\" not found in record \"" + recordName + "\"");
                 }
-                else{
+                else
+                {
                     // We have found the member
                     type0 = it->second;
-                    // memberOffset = it->offset //[ToDo]🅾️🅾️🅾️🅾️
+                    // memberOffset = it->offset //[ToDo] 🅾️🅾️🅾️🅾️
                     memberOffset = 10;
                 }
             }
         }
-        
+
         // 🔖 IRCode Gen
-        
+
         // valueSpace must be address space
-        if(valueSpace1 != SPACE::ADDRESS_SPACE){
-            CERR << "Not in Address Space" << std::endl;
+        if (valueSpace1 != SPACE::ADDRESS_SPACE)
+        {
+            ERROR_EXIT_H;
+            // SetUp Dummy Data
+            varName = PASS_ERROR;
             return;
         }
 
@@ -649,17 +753,17 @@ void postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
         std::string offset = std::to_string(memberOffset);
         std::string baseAddress = varName1;
         std::string memberAddress = newTemp();
-        CODE_BASE.addTAC(memberAddress, "+", baseAddress, offset);
-        varName = memberAddress; // Change the name to the address 🟡
+
+        CODE_BASE.addTAC(node, memberAddress, "+", baseAddress, offset);
+        varName = memberAddress;           // Change the name to the address 🟡
         valueSpace = SPACE::ADDRESS_SPACE; // Member Selection is in address space 🟡
         // 🟡 valueType
         valueType = getValueType(type0); // Set Correctly 🟡
-        type = type0; // Set Correctly
+        type = type0;                    // Set Correctly
         // All syn_attribute already sent up & inh_attribute already sent down 🟡
     }
     else if (whichProduction == P7 || whichProduction == P8)
     {
-        CERR << "postfix_expression_H - INC/DEC" << std::endl;
         // This is Inc or Dec
 
         // Prepare data to be fetched ⬆️
@@ -669,8 +773,7 @@ void postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
         SPACE valueSpace1, valueSpace0;
 
         postfix_expression_H(node->children[0], inh_whereToSendString, varName1, type1, valueType1, valueSpace1);
-
-
+        PASS_THE_ERROR(varName1);
 
         // 🅰️ TypeChecking for Inc or Dec
         Type whichType1 = whatIsType(type1);
@@ -679,75 +782,247 @@ void postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
         {
             // SEMANTIC ERsROR 🚨 : Inc or Dec expression \"" + varName1 + "\" is not a pointer or variable type
             semanticLOG.push_back("Error: Inc or Dec expression \"" + varName1 + "\" is not a pointer or variable type");
+            ERROR_EXIT_H;
+            // SetUp Dummy Data
+            varName = PASS_ERROR;
+            return;
         }
 
         SPACE reqSpace = getSpace(type1); // most likey is VALUE_SPACE
 
         std::string op = node->children[1]->value;
-        if(op == "++"){
+        if (op == "++")
+        {
             op = "+";
-        }else if(op == "--"){
+        }
+        else if (op == "--")
+        {
             op = "-";
-        }else{
+        }
+        else
+        {
             // SEMANTIC ERROR 🚨 : Inc or Dec expression \"" + varName1 + "\" is not a pointer or variable type
             semanticLOG.push_back("Error: Inc or Dec expression \"" + varName1 + "\" is not a pointer or variable type");
+            ERROR_EXIT_H;
+            // SetUp Dummy Data
+            varName = PASS_ERROR;
+            return;
         }
 
         std::string inc_decBY = "1";
-        if(whichType1 == Type::POINTER){
+        if (whichType1 == Type::POINTER)
+        {
             // Get the size of the pointer
             TypeExpression belowLevel = type1;
             int check = popALevel(belowLevel);
-            if(check != POP_SUCCESS){
+            if (check != POP_SUCCESS)
+            {
                 // SEMANTIC ERROR 🚨 : Error in popALevel
-                CERR << "Error in popALevel" << std::endl;
             }
             int size = width(belowLevel);
             inc_decBY = std::to_string(size);
         }
 
-        if(valueSpace1 != reqSpace){
+        if (valueSpace1 == SPACE::ADDRESS_SPACE && reqSpace == SPACE::VALUE_SPACE)
+        {
             // 🔖 IR Code
-            CERR << "Change Space 🚀 of " << varName1 << std::endl;
             std::string valNew = newTemp();
-            CODE_BASE.addTAC(valNew, RIGHT_STAR, varName1, NO_ARG); // Load it
-            std::string valNew2 = newTemp();
-            CODE_BASE.addTAC(valNew2, op, valNew, inc_decBY); // Increment it
 
-            CODE_BASE.addTAC(varName1,LEFT_STAR, valNew2, NO_ARG); //Store it
+            CODE_BASE.addTAC(node, valNew, RIGHT_STAR, varName1, NO_ARG); // Load it
+            std::string valNew2 = newTemp();
+
+            CODE_BASE.addTAC(node, valNew2, op, valNew, inc_decBY); // Increment it
+
+            CODE_BASE.addTAC(node, varName1, LEFT_STAR, valNew2, NO_ARG); // Store it
 
             varName0 = valNew; // Old varName before inc/dec
         }
-        else{
+        else if(valueSpace1 == SPACE::VALUE_SPACE)
+        {
             // 🔖 IR Code
             std::string valNew = newTemp();
-            CODE_BASE.addTAC(valNew,"=", varName1, inc_decBY); // Store it
 
-            CODE_BASE.addTAC(varName1, op, varName1, inc_decBY); // Increment it
-            varName0 = valNew; // Old varName before inc/dec
+            CODE_BASE.addTAC(node, valNew, "=", varName1, inc_decBY); // Store it
+
+            CODE_BASE.addTAC(node, varName1, op, varName1, inc_decBY); // Increment it
+            varName0 = valNew;                                         // Old varName before inc/dec
+        }
+        else{
+            // Something Wrong
+            ERROR_EXIT_H;
+            A_PTree node->attributes.push_back("🌋 Something Wrong in Space 💥 Change Code [" + LOC + "]");
+            // SetUp Dummy Data
+            varName = PASS_ERROR;
+            return;
         }
 
         // valueSpace, valueType, type
-        valueSpace0 = getSpace(type1); // most likey is VALUE_SPACE
+        valueSpace0 = getSpace(type1);    // most likey is VALUE_SPACE
         valueType0 = getValueType(type1); // Set Correctly
-        type0 = type1; // Set Correctly // NO change in type
+        type0 = type1;                    // Set Correctly // NO change in type
     }
-    else{
-        // Wrong Production
-        CERR << "Wrong Production in postfix_expression_H" << std::endl;
+    else
+    {
+        ERROR_EXIT_H;
+        // SetUp Dummy Data
+        varName = PASS_ERROR;
+        return;
     }
-    A_PTree node->addAttribute("varName = " + varName+ " ⬆️");                 // 🌴 Adding syn_attr
-    A_PTree node->addAttribute(toString(type) + " ⬆️");                 // 🌴 Adding syn_attr
-    A_PTree node->addAttribute(toString(valueType)+" ⬆️");   // 🌴 Adding syn_attr
-    A_PTree node->addAttribute(toString(valueSpace) + " ⬆️"); // 🌴 Adding syn_attr
+    
+    A_PTree node->addAttribute("varName = " + varName + " ⬆️"); 
+    A_PTree node->addAttribute(toString(type) + " ⬆️");         
+    A_PTree node->addAttribute(toString(valueType) + " ⬆️");    
+    A_PTree node->addAttribute(toString(valueSpace) + " ⬆️");   
 
+    EXIT_H;
+}
+
+void assignment_expression_H(ASTNode *node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace)
+{
+
+    ENTRY_H;
+    std::string whichProduction = getProduction(node);
+    std::string P1 = "conditional_expression";
+    std::string P2 = "unary_expression assignment_operator assignment_expression";
+
+    // A_PTree node->addAttribute("⏬  whereToSendString = " + inh_whereToSendString);
+    // A_PTree node->addAttribute("⏬ varName = " + varName);
+    // A_PTree node->addAttribute("⏬ " + toString(type)); 
+    // A_PTree node->addAttribute("⏬ "+ toString(valueType));
+    // A_PTree node->addAttribute("⏬  " + toString(valueSpace));        
+
+    if (whichProduction == P1)
+    {
+        conditional_expression_H(node->children[0], inh_whereToSendString, varName, type, valueType, valueSpace);
+        PASS_THE_ERROR(varName);
+    }
+    else if (whichProduction == P2)
+    {
+        ;
+        //-------------- Value Fetching 📥 -----------------------
+        std::string varName1 = "", varName2 = "", varName0 = "";
+        TypeExpression type1, type2, type0;
+        VALUE_TYPE valueType1, valueType2, valueType0;
+        SPACE valueSpace1, valueSpace2, valueSpace0;
+
+        unary_expression_H(node->children[0], inh_whereToSendString, varName1, type1, valueType1, valueSpace1);
+        PASS_THE_ERROR(varName1);
+
+        assignment_expression_H(node->children[2], inh_whereToSendString, varName2, type2, valueType2, valueSpace2);
+        PASS_THE_ERROR(varName2);
+        
+        //---------------------- Space 🚀Change 🔖IR Code for varName2 [🤫 General Space Before USAGE]
+        USAGE_SPACE_CHANGE(varName2,type2,valueSpace2,node);
+
+        // 🅰️ TypeChecking for varName2
+        // Rule - valueType - {M_LVALUE, NM_LVALUE, RVALUE} Allowed
+        // Rule - type ❓
+        ;
+
+        // 🅱️ TypeChecking for varName1
+        // Rule - valueType - {M_LVALUE} Allowed
+        // Rule - type ❓
+
+        // 🎉 SIDE EFFECTS 🎉
+        int width1 = elementWidth(type1);
+        if(width1 < 0){
+            // SEMANTIC ERROR 🚨 : Error in elementWidth
+            ERROR_EXIT_H;
+            // SetUp Dummy Data
+            varName = PASS_ERROR;
+            return;
+        }
+
+        ;
+        // Find which operation to perform
+        std::string assignOp = node->children[1]->value;
+        std::string op = (assignOp == "=") ? ("=") : assignOp.substr(0, assignOp.length() - 1);
+
+        //---------------------- Space 🚀Change 🔖IR Code for varName1 [🤬 Custom - During ASSIGNMENT 🥶]
+        SPACE reqSpace1 = getSpace(type1);
+        if (reqSpace1 == SPACE::VALUE_SPACE && valueSpace1 == SPACE::ADDRESS_SPACE)
+        {
+            A_PTree node->addAttribute("🤬 ASSIGN Space🚀 Change for -" + varName1 + " Address->Value");
+
+            if (op != "=")
+            {
+                std::string resName = newTemp();
+
+                CODE_BASE.addTAC(node, resName, op, varName2, std::to_string(width1)); // resName = varName2 op width1
+
+                CODE_BASE.addTAC(node, varName1, LEFT_STAR, resName, NO_ARG); // *varName1 = resName
+
+                varName0 = resName;
+            }
+            else
+            {
+                // Simple Assignment
+
+                CODE_BASE.addTAC(node, varName1, LEFT_STAR, varName2, NO_ARG); // *varName1 = varName2
+                varName0 = varName2;                                           //
+            }
+        }
+        else if(reqSpace1 == valueSpace1)
+        {
+            // No space change Code
+            if (op != "=")
+            {
+
+                CODE_BASE.addTAC(node, varName1, op, varName2, std::to_string(width1)); // resName = varName2 op width1
+
+                varName0 = varName1;
+            }
+            else
+            {
+                // Simple Assignment
+
+                CODE_BASE.addTAC(node, varName1, ASSIGN_OP, varName2, NO_ARG); // *varName1 = varName2
+                varName0 = varName1;                                           //
+            }
+        }
+        else{
+            // Something Wrong
+            ERROR_EXIT_H;
+            A_PTree node->attributes.push_back("🌋 Something Wrong in Space 💥 Change Code [" + LOC + "]");
+            // SetUp Dummy Data
+            varName = PASS_ERROR;
+            return;
+        }
+        //-------------------------------------------------------------------
+    
+
+        // 🤮 Return Value 🤮
+        type0 = type1; // return type is of varName1
+        valueType0 = VALUE_TYPE::RVALUE;
+        valueSpace0 = reqSpace1; // return space is of varName1
+
+        // Pass the Variables Up
+        varName = varName0;
+        type = type0;
+        valueType = valueType0;
+        valueSpace = valueSpace0;
+    }
+    else
+    {
+        ERROR_EXIT_H;
+        // SetUp Dummy Data
+        varName = PASS_ERROR;
+        return;
+    }
+
+    A_PTree node->addAttribute("varName = " + varName + " ⬆️"); 
+    A_PTree node->addAttribute(toString(type) + " ⬆️");         
+    A_PTree node->addAttribute(toString(valueType) + " ⬆️");    
+    A_PTree node->addAttribute(toString(valueSpace) + " ⬆️");   
+
+    EXIT_H;
 }
 
 //--- Unary Expression Handler
 void unary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace)
 {
-    ENTRY_MSG << "unary_expression_H" << std::endl;
-    lastFuncCalled = "unary_expression_H";
+
+    ENTRY_H;
     std::string whichProduction = getProduction(node);
     std::string P1 = "postfix_expression";
     std::string P2 = "INC_OP unary_expression";
@@ -756,39 +1031,58 @@ void unary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::s
     std::string P5 = "SIZEOF unary_expression";
     std::string P6 = "SIZEOF LPAREN type_name RPAREN";
 
-    // A_PTree node->addAttribute("⏬  whereToSendString = " + inh_whereToSendString); // 🌳 Adding inh_attr
-    // A_PTree node->addAttribute("⏬ varName = " + varName);                          // 🌳 Adding inh_attr
-    // A_PTree node->addAttribute("⏬ " + toString(type));                     // 🌳 Adding inh_attr
-    // A_PTree node->addAttribute("⏬ "+ toString(valueType));           // 🌳 Adding inh_attr
-    // A_PTree node->addAttribute("⏬ " + toString(valueSpace));         // 🌳 Adding inh_attr        // 🌳 Adding inh_attr
+    // A_PTree node->addAttribute("⏬  whereToSendString = " + inh_whereToSendString); 
+    // A_PTree node->addAttribute("⏬ varName = " + varName);                          
+    // A_PTree node->addAttribute("⏬ " + toString(type));                     
+    // A_PTree node->addAttribute("⏬ "+ toString(valueType));           
+    // A_PTree node->addAttribute("⏬ " + toString(valueSpace));                 
 
-
-    if(whichProduction == P1){
+    if (whichProduction == P1)
+    {
         // Call the postfix_expression handler
         postfix_expression_H(node->children[0], inh_whereToSendString, varName, type, valueType, valueSpace);
+        PASS_THE_ERROR(varName);
+    }
+    else if(whichProduction == P2 || whichProduction == P3){
+        
+    }
+    else if(whichProduction == P4){
+        
+    }
+    else if(whichProduction == P5){
+
+    }
+    else if(whichProduction == P6){
+
+    }
+    else{
+        ERROR_EXIT_H;
+        // SetUp Dummy Data
+        varName = PASS_ERROR;
+        return;
     }
 
-    A_PTree node->addAttribute("varName = " + varName  + " ⬆️");                 // 🌴 Adding syn_attr
-    A_PTree node->addAttribute(toString(type) + " ⬆️");             // 🌴 Adding syn_attr
-    A_PTree node->addAttribute(toString(valueType)+" ⬆️");   // 🌴 Adding syn_attr
-    A_PTree node->addAttribute(toString(valueSpace) + " ⬆️"); // 🌴 Adding syn_attr
+    A_PTree node->addAttribute("varName = " + varName + " ⬆️"); 
+    A_PTree node->addAttribute(toString(type) + " ⬆️");         
+    A_PTree node->addAttribute(toString(valueType) + " ⬆️");    
+    A_PTree node->addAttribute(toString(valueSpace) + " ⬆️");   
 
-    return;
+    EXIT_H;
 }
+
+//===================== By RAMAN ===========
 
 //--- Cast Expression Handler
 
 void cast_expression_H(ASTNode *node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace)
 {
-    ENTRY_MSG << "cast_expression_H" << std::endl;
-    lastFuncCalled = "cast_expression_H";
 
-    // A_PTree node->addAttribute("⏬  whereToSendString = " + inh_whereToSendString); // 🌳 Adding inh_attr
-    // A_PTree node->addAttribute("⏬ varName = " + varName);                          // 🌳 Adding inh_attr
-    // A_PTree node->addAttribute("⏬ " + toString(type));                     // 🌳 Adding inh_attr
-    // A_PTree node->addAttribute("⏬ "+ toString(valueType));           // 🌳 Adding inh_attr
-    // A_PTree node->addAttribute("⏬  " + toString(valueSpace));         // 🌳 Adding inh_attr        // 🌳 Adding inh_attr
+    ENTRY_H;
 
+    //    A_PTree node->addAttribute("🔻 whereToSendString = " + inh_whereToSendString); 
+    //    A_PTree node->addAttribute("🔻 type = " + toString(type));                     
+    //    A_PTree node->addAttribute("🔻 valueType = " + toString(valueType));           
+    //    A_PTree node->addAttribute("🔻 valueSpace = " + toString(valueSpace));         
 
     std::string whichProduction = getProduction(node);
     std::string P1 = "unary_expression";
@@ -796,8 +1090,8 @@ void cast_expression_H(ASTNode *node, std::string inh_whereToSendString, std::st
 
     if (whichProduction == P1)
     {
-
         unary_expression_H(node->children[0], inh_whereToSendString, varName, type, valueType, valueSpace);
+        PASS_THE_ERROR(varName);
     }
     else if (whichProduction == P2)
     {
@@ -811,33 +1105,36 @@ void cast_expression_H(ASTNode *node, std::string inh_whereToSendString, std::st
         SPACE valueSpace2;
 
         cast_expression_H(node->children[3], inh_whereToSendString, varName2, type2, valueType2, valueSpace2);
+        PASS_THE_ERROR(varName2);
 
         // TODO: logic for possible casting and change in scope etc
     }
     else
     {
-        // Wrong Production
-        CERR << "Wrong Production in cast_expression_H" << std::endl;
+        ERROR_EXIT_H;
+        // SetUp Dummy Data
+        varName = PASS_ERROR;
+        return;
     }
 
-    A_PTree node->addAttribute("varName = " + varName  + " ⬆️");                 // 🌴 Adding syn_attr
-    A_PTree node->addAttribute(toString(type) + " ⬆️");             // 🌴 Adding syn_attr
-    A_PTree node->addAttribute(toString(valueType)+" ⬆️");   // 🌴 Adding syn_attr
-    A_PTree node->addAttribute(toString(valueSpace) + " ⬆️"); // 🌴 Adding syn_attr
+    A_PTree node->addAttribute("⏫ varName = " + varName);                 
+    A_PTree node->addAttribute("⏫ type = " + toString(type));             
+    A_PTree node->addAttribute("⏫ valueType = " + toString(valueType));   
+    A_PTree node->addAttribute("⏫ valueSpace = " + toString(valueSpace)); 
+
+    EXIT_H;
 }
 
-// DONE
+
 void multiplicative_expression_H(ASTNode *node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace)
 {
-    ENTRY_MSG << "multiplicative_expression_H" << std::endl;
-    lastFuncCalled = "multiplicative_expression_H";
 
-    // A_PTree node->addAttribute("⏬  whereToSendString = " + inh_whereToSendString); // 🌳 Adding inh_attr
-    // A_PTree node->addAttribute("⏬ varName = " + varName);                          // 🌳 Adding inh_attr
+    ENTRY_H;
 
-    // A_PTree node->addAttribute("⏬ " + toString(type));                     // 🌳 Adding inh_attr
-    // A_PTree node->addAttribute("⏬ "+ toString(valueType));           // 🌳 Adding inh_attr
-        // A_PTree node->addAttribute("⏬  " + toString(valueSpace));         // 🌳 Adding inh_attr        // 🌳 Adding inh_attr
+    // A_PTree node->addAttribute("🔻 whereToSendString = " + inh_whereToSendString); 
+    // A_PTree node->addAttribute("🔻 type = " + toString(type));                     
+    // A_PTree node->addAttribute("🔻 valueType = " + toString(valueType));           
+    // A_PTree node->addAttribute("🔻 valueSpace = " + toString(valueSpace));         
 
     std::string whichProduction = getProduction(node);
     std::string P1 = "cast_expression";
@@ -848,6 +1145,7 @@ void multiplicative_expression_H(ASTNode *node, std::string inh_whereToSendStrin
     if (whichProduction == P1)
     {
         cast_expression_H(node->children[0], inh_whereToSendString, varName, type, valueType, valueSpace);
+        PASS_THE_ERROR(varName);
     }
     else if (whichProduction == P2 || whichProduction == P3 || whichProduction == P4)
     {
@@ -858,30 +1156,18 @@ void multiplicative_expression_H(ASTNode *node, std::string inh_whereToSendStrin
         SPACE valueSpace1, valueSpace2;
 
         multiplicative_expression_H(node->children[0], inh_whereToSendString, varName1, type1, valueType1, valueSpace1);
+        PASS_THE_ERROR(varName1);
+        
         cast_expression_H(node->children[2], inh_whereToSendString, varName2, type2, valueType2, valueSpace2);
+        PASS_THE_ERROR(varName2);
 
         // check all possible types that can come in type1 and type2
 
-        //--------------------
-        // Space 🚀Change 🔖IR Code
-        SPACE reqSpace1 = getSpace(type1);
-        SPACE reqSpace2 = getSpace(type2);
+        //----------------------- Space 🚀Change 🔖IR Code ----------------------------
 
-        if (reqSpace1 != valueSpace1)
-        {
-            // Most likely we will be moving from address space to value space due to some past array access
-            std::string valNew1 = newTemp();
-            CODE_BASE.addTAC(valNew1, RIGHT_STAR, varName1, NO_ARG);
-            varName1 = valNew1; // Change the name to the address
-        }
-
-        if (reqSpace2 != valueSpace2)
-        {
-            std::string valNew2 = newTemp();
-            CODE_BASE.addTAC(valNew2, RIGHT_STAR, varName2, NO_ARG);
-            varName2 = valNew2; // Change the name to the address
-        }
-        //--------------------
+        // 🚀 USAGE 🤫 SPACE CHANGE 🚀
+        USAGE_SPACE_CHANGE(varName1, type1, valueSpace1, node);
+        USAGE_SPACE_CHANGE(varName2, type2, valueSpace2, node);
 
         Type whichType1 = whatIsType(type1);
         Type whichType2 = whatIsType(type2);
@@ -895,8 +1181,11 @@ void multiplicative_expression_H(ASTNode *node, std::string inh_whereToSendStrin
         {
             // SEMANTIC ERROR 🚨 : Invalid operator for given type
             semanticLOG.push_back("Error: Operand " + node->children[0]->value + "cannot work on types \"" + toString(type1) + "\" and \"" + toString(type2) + "\"");
+            ERROR_EXIT_H;
+            // SetUp Dummy Data
+            varName = PASS_ERROR;
+            return;
         }
-        
         else
         {
             std::string primType1 = isPrimitive(type1);
@@ -906,18 +1195,21 @@ void multiplicative_expression_H(ASTNode *node, std::string inh_whereToSendStrin
 
             if (primType1 != widenType)
             {
-                CODE_BASE.addTAC(varName1, CAST, widenType, varName1);
+
+                CODE_BASE.addTAC(node, varName1, CAST, widenType, varName1);
             }
 
             if (primType2 != widenType)
             {
-                CODE_BASE.addTAC(varName2, CAST, widenType, varName2);
+
+                CODE_BASE.addTAC(node, varName2, CAST, widenType, varName2);
             }
 
             // Now we have both the operands in same type
             // Now we can perform the operation
             std::string result = newTemp();
-            CODE_BASE.addTAC(result, node->children[1]->value, varName1, varName2);
+
+            CODE_BASE.addTAC(node, result, node->children[1]->value, varName1, varName2);
 
             // Sending syn_attr up
             varName = result; // Change the name to the result
@@ -936,28 +1228,30 @@ void multiplicative_expression_H(ASTNode *node, std::string inh_whereToSendStrin
     }
     else
     {
-        // Wrong Production
-        CERR << "Wrong Production in multiplicative_expression_H" << std::endl;
+        ERROR_EXIT_H;
+        // SetUp Dummy Data
+        varName = PASS_ERROR;
+        return;
     }
 
-    A_PTree node->addAttribute("varName = " + varName  + " ⬆️");                 // 🌴 Adding syn_attr
-    // A_PTree node->addAttribute("⏬ varName = " + varName);                       // 🌳 Adding inh_attr
+    A_PTree node->addAttribute("⏫ varName = " + varName);                 
+    A_PTree node->addAttribute("⏫ type = " + toString(type));             
+    A_PTree node->addAttribute("⏫ valueType = " + toString(valueType));   
+    A_PTree node->addAttribute("⏫ valueSpace = " + toString(valueSpace)); 
 
-    A_PTree node->addAttribute(toString(type) + " ⬆️");             // 🌴 Adding syn_attr
-    A_PTree node->addAttribute(toString(valueType)+" ⬆️");   // 🌴 Adding syn_attr
-    A_PTree node->addAttribute(toString(valueSpace) + " ⬆️"); // 🌴 Adding syn_attr
+    EXIT_H;
 }
+
 
 void additive_expression_H(ASTNode *node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace)
 {
-    ENTRY_MSG << "additive_expression_H" << std::endl;
-    lastFuncCalled = "additive_expression_H";
 
-    // A_PTree node->addAttribute("⏬  whereToSendString = " + inh_whereToSendString); // 🌳 Adding inh_attr
-    // A_PTree node->addAttribute("⏬ varName = " + varName);                          // 🌳 Adding inh_attr
-    // A_PTree node->addAttribute("⏬ " + toString(type));                     // 🌳 Adding inh_attr
-    // A_PTree node->addAttribute("⏬ "+ toString(valueType));           // 🌳 Adding inh_attr
-    // A_PTree node->addAttribute("⏬  " + toString(valueSpace));         // 🌳 Adding inh_attr        // 🌳 Adding inh_attr
+    ENTRY_H;
+
+    //    A_PTree node->addAttribute("🔻 whereToSendString = " + inh_whereToSendString); 
+    //    A_PTree node->addAttribute("🔻 type = " + toString(type));                     
+    //    A_PTree node->addAttribute("🔻 valueType = " + toString(valueType));           
+    //    A_PTree node->addAttribute("🔻 valueSpace = " + toString(valueSpace));         
 
     std::string whichProduction = getProduction(node);
     std::string P1 = "multiplicative_expression";
@@ -967,6 +1261,7 @@ void additive_expression_H(ASTNode *node, std::string inh_whereToSendString, std
     if (whichProduction == P1)
     {
         multiplicative_expression_H(node->children[0], inh_whereToSendString, varName, type, valueType, valueSpace);
+        PASS_THE_ERROR(varName);
     }
     else if (whichProduction == P2 || whichProduction == P3)
     {
@@ -996,26 +1291,9 @@ void additive_expression_H(ASTNode *node, std::string inh_whereToSendString, std
         // if in left pointer, function, array then in right integral type (use width and multiply with integral value and subtract)return tyype is pointer
         // now do same as mutiplication // return type depends on maxwidth
 
-        //--------------------
-        // Space 🚀Change 🔖IR Code
-        SPACE reqSpace1 = getSpace(type1);
-        SPACE reqSpace2 = getSpace(type2);
-
-        if (reqSpace1 != valueSpace1)
-        {
-            // Most likely we will be moving from address space to value space due to some past array access
-            std::string valNew1 = newTemp();
-            CODE_BASE.addTAC(valNew1, RIGHT_STAR, varName1, NO_ARG);
-            varName1 = valNew1; // Change the name to the address
-        }
-
-        if (reqSpace2 != valueSpace2)
-        {
-            std::string valNew2 = newTemp();
-            CODE_BASE.addTAC(valNew2, RIGHT_STAR, varName2, NO_ARG);
-            varName2 = valNew2; // Change the name to the address
-        }
-        //--------------------
+        // 🚀 USAGE 🤫 SPACE CHANGE 🚀
+        USAGE_SPACE_CHANGE(varName1, type1, valueSpace1, node);
+        USAGE_SPACE_CHANGE(varName2, type2, valueSpace2, node);
 
         Type whichType1 = whatIsType(type1);
         Type whichType2 = whatIsType(type2);
@@ -1025,8 +1303,8 @@ void additive_expression_H(ASTNode *node, std::string inh_whereToSendString, std
             (whichType2 == Type::POINTER || whichType2 == Type::FUNCTION || whichType2 == Type::ARRAY || whichType2 == Type::STRUCT_UNION))
         {
             semanticLOG.push_back("Error: Invalid operation " + node->children[1]->value + " between incompatible types \"" + toString(type1) + "\" and \"" + toString(type2) + "\"");
+            
         }
-
         // Step 2: if one is of integral type, the other cannot be struct_object or union_object
         else if ((isIntegral(type1) && (whichType2 == Type::STRUCT_UNION)) ||
                  (isIntegral(type2) && (whichType1 == Type::STRUCT_UNION)))
@@ -1060,10 +1338,12 @@ void additive_expression_H(ASTNode *node, std::string inh_whereToSendString, std
                 std::string elementWidthStr = std::to_string(elementWidth);
 
                 std::string scaledIntegral = newTemp();
-                CODE_BASE.addTAC(scaledIntegral, "*", integralVar, elementWidthStr);
+
+                CODE_BASE.addTAC(node, scaledIntegral, "*", integralVar, elementWidthStr);
 
                 std::string result = newTemp();
-                CODE_BASE.addTAC(result, node->children[1]->value, pointerVar, scaledIntegral);
+
+                CODE_BASE.addTAC(node, result, node->children[1]->value, pointerVar, scaledIntegral);
 
                 varName = result;
                 type = pointerType;
@@ -1081,18 +1361,21 @@ void additive_expression_H(ASTNode *node, std::string inh_whereToSendString, std
 
                 if (primType1 != widenType)
                 {
-                    CODE_BASE.addTAC(varName1, CAST, widenType, varName1);
+
+                    CODE_BASE.addTAC(node, varName1, CAST, widenType, varName1);
                 }
 
                 if (primType2 != widenType)
                 {
-                    CODE_BASE.addTAC(varName2, CAST, widenType, varName2);
+
+                    CODE_BASE.addTAC(node, varName2, CAST, widenType, varName2);
                 }
 
                 // Now we have both the operands in same type
                 // Now we can perform the operation
                 std::string result = newTemp();
-                CODE_BASE.addTAC(result, node->children[1]->value, varName1, varName2);
+
+                CODE_BASE.addTAC(node, result, node->children[1]->value, varName1, varName2);
 
                 // Sending syn_attr up
                 varName = result; // Change the name to the result
@@ -1118,27 +1401,26 @@ void additive_expression_H(ASTNode *node, std::string inh_whereToSendString, std
         else if (whichProduction == P3)
         {
 
-            // Step 4: if in left integral then in right we cannot have pointer, function, array
+            // if in left integral then in right we cannot have pointer, function, array
             if (isIntegral(type1) && (whichType2 == Type::POINTER || whichType2 == Type::FUNCTION || whichType2 == Type::ARRAY))
             {
                 semanticLOG.push_back("Error: Invalid operation " + node->children[1]->value + " between integral type and pointer/function/array type");
             }
 
-            // Step 5: if in left pointer, function, array then in right integral type (use width and multiply with integral value and subtract)return type is pointer
+            // if in left pointer, function, array then in right integral type (use width and multiply with integral value and subtract)return type is pointer
             else if ((whichType1 == Type::POINTER || whichType1 == Type::FUNCTION || whichType1 == Type::ARRAY) && isIntegral(type2))
             {
                 // Handle pointer arithmetic
-                int elementWidth = width(type1);
-                std::string elementWidthStr = std::to_string(elementWidth);
-                //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                // VINEET HANDLE width and check space too
-                //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+                int elementWid = elementWidth(type1);
+                std::string elementWidthStr = std::to_string(elementWid);
+                
                 std::string scaledIntegral = newTemp();
-                CODE_BASE.addTAC(scaledIntegral, "*", varName2, elementWidthStr);
+
+                CODE_BASE.addTAC(node, scaledIntegral, "*", varName2, elementWidthStr);
 
                 std::string result = newTemp();
-                CODE_BASE.addTAC(result, node->children[1]->value, varName1, scaledIntegral);
+
+                CODE_BASE.addTAC(node, result, node->children[1]->value, varName1, scaledIntegral);
 
                 varName = result;
                 type = type1;
@@ -1146,7 +1428,7 @@ void additive_expression_H(ASTNode *node, std::string inh_whereToSendString, std
                 valueSpace = getSpace(type1);
             }
 
-            // Step 6: Perform normal arithmetic for numeric types, i.e. do same as multiplication // return type depends on maxwidth
+            // Perform normal arithmetic for numeric types, i.e. do same as multiplication // return type depends on maxwidth
             else if (isNumeric(type1) && isNumeric(type2))
             {
                 std::string primType1 = isPrimitive(type1);
@@ -1156,18 +1438,21 @@ void additive_expression_H(ASTNode *node, std::string inh_whereToSendString, std
 
                 if (primType1 != widenType)
                 {
-                    CODE_BASE.addTAC(varName1, CAST, widenType, varName1);
+
+                    CODE_BASE.addTAC(node, varName1, CAST, widenType, varName1);
                 }
 
                 if (primType2 != widenType)
                 {
-                    CODE_BASE.addTAC(varName2, CAST, widenType, varName2);
+
+                    CODE_BASE.addTAC(node, varName2, CAST, widenType, varName2);
                 }
 
                 // Now we have both the operands in same type
                 // Now we can perform the operation
                 std::string result = newTemp();
-                CODE_BASE.addTAC(result, node->children[1]->value, varName1, varName2);
+
+                CODE_BASE.addTAC(node, result, node->children[1]->value, varName1, varName2);
 
                 // Sending syn_attr up
                 varName = result; // Change the name to the result
@@ -1183,39 +1468,40 @@ void additive_expression_H(ASTNode *node, std::string inh_whereToSendString, std
                 valueSpace = getSpace(type0);
             }
 
-            // Step 7:If none of the above cases match, it's an invalid operation
+            // If none of the above cases match, it's an invalid operation
             else
             {
                 semanticLOG.push_back("Error: Invalid operation between types \"" + toString(type1) + "\" and \"" + toString(type2) + "\"");
+                
             }
-            
         }
     }
     else
     {
-        // Wrong Production
         CERR << "Wrong Production in additive_expression_H" << std::endl;
+        ERROR_EXIT_H;
+        // SetUp Dummy Data
+        varName = PASS_ERROR;
+        return;
     }
 
-    A_PTree node->addAttribute("varName = " + varName  + " ⬆️");                 // 🌴 Adding syn_attr
-    A_PTree node->addAttribute(toString(type) + " ⬆️");             // 🌴 Adding syn_attr
-    A_PTree node->addAttribute(toString(valueType)+" ⬆️");   // 🌴 Adding syn_attr
-    A_PTree node->addAttribute(toString(valueSpace) + " ⬆️"); // 🌴 Adding syn_attr
+    A_PTree node->addAttribute("⏫ varName = " + varName);                 
+    A_PTree node->addAttribute("⏫ type = " + toString(type));             
+    A_PTree node->addAttribute("⏫ valueType = " + toString(valueType));   
+    A_PTree node->addAttribute("⏫ valueSpace = " + toString(valueSpace)); 
 
-    return;
+    EXIT_H;
 }
-
+// DONE
 void shift_expression_H(ASTNode *node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace)
 {
-    ENTRY_MSG << "shift_expression_H" << std::endl;
-    lastFuncCalled = "shift_expression_H";
 
-    // A_PTree node->addAttribute("⏬  whereToSendString = " + inh_whereToSendString); // 🌳 Adding inh_attr
-    // A_PTree node->addAttribute("⏬ varName = " + varName);                          // 🌳 Adding inh_attr
+    ENTRY_H;
 
-    // A_PTree node->addAttribute("⏬ " + toString(type));                     // 🌳 Adding inh_attr
-    // A_PTree node->addAttribute("⏬ "+ toString(valueType));           // 🌳 Adding inh_attr
-        // A_PTree node->addAttribute("⏬  " + toString(valueSpace));         // 🌳 Adding inh_attr        // 🌳 Adding inh_attr
+    //    A_PTree node->addAttribute("🔻 whereToSendString = " + inh_whereToSendString); 
+    //    A_PTree node->addAttribute("🔻 type = " + toString(type));                     
+    //    A_PTree node->addAttribute("🔻 valueType = " + toString(valueType));           
+    //    A_PTree node->addAttribute("🔻 valueSpace = " + toString(valueSpace));         
 
     std::string whichProduction = getProduction(node);
     std::string P1 = "additive_expression";
@@ -1225,6 +1511,7 @@ void shift_expression_H(ASTNode *node, std::string inh_whereToSendString, std::s
     if (whichProduction == P1)
     {
         additive_expression_H(node->children[0], inh_whereToSendString, varName, type, valueType, valueSpace);
+        PASS_THE_ERROR(varName);
     }
     else if (whichProduction == P2 || whichProduction == P3)
     {
@@ -1235,41 +1522,24 @@ void shift_expression_H(ASTNode *node, std::string inh_whereToSendString, std::s
         SPACE valueSpace1, valueSpace2;
 
         shift_expression_H(node->children[0], inh_whereToSendString, varName1, type1, valueType1, valueSpace1);
+        PASS_THE_ERROR(varName1);
         additive_expression_H(node->children[2], inh_whereToSendString, varName2, type2, valueType2, valueSpace2);
-
+        PASS_THE_ERROR(varName2);
         // check all possible types that can come in type1 and type2
 
-        //--------------------
-        // Space 🚀Change 🔖IR Code
-        SPACE reqSpace1 = getSpace(type1);
-        SPACE reqSpace2 = getSpace(type2);
-
-        if (reqSpace1 != valueSpace1)
-        {
-            // Most likely we will be moving from address space to value space due to some past array access
-            std::string valNew1 = newTemp();
-            CODE_BASE.addTAC(valNew1, RIGHT_STAR, varName1, NO_ARG);
-            varName1 = valNew1; // Change the name to the address
-        }
-
-        if (reqSpace2 != valueSpace2)
-        {
-            std::string valNew2 = newTemp();
-            CODE_BASE.addTAC(valNew2, RIGHT_STAR, varName2, NO_ARG);
-            varName2 = valNew2; // Change the name to the address
-        }
-        //--------------------
+        // 🚀 USAGE 🤫 SPACE CHANGE 🚀
+        USAGE_SPACE_CHANGE(varName1, type1, valueSpace1, node);
+        USAGE_SPACE_CHANGE(varName2, type2, valueSpace2, node);
 
         Type whichType1 = whatIsType(type1);
         Type whichType2 = whatIsType(type2);
 
-        //logic:
-        // both types must be integral else semantic error
-        // if left one is char short enum_const enum_object then it will be of type casted to int else in it's type
-        // same do for right one
-        // do left shift/ right shift depending on production
-        // return type will current type of left type
-        
+        // logic:
+        //  both types must be integral else semantic error
+        //  if left one is char short enum_const enum_object then it will be of type casted to int else in it's type
+        //  same do for right one
+        //  do left shift/ right shift depending on production
+        //  return type will current type of left type
 
         if (!isIntegral(type1) || !isIntegral(type2))
         {
@@ -1281,25 +1551,31 @@ void shift_expression_H(ASTNode *node, std::string inh_whereToSendString, std::s
             std::string primType1 = isPrimitive(type1);
             if (primType1 == TYPE_CHAR || primType1 == TYPE_SHORT || primType1 == ENUM_CONSTANT || primType1 == TYPE_ENUM)
             {
-            CODE_BASE.addTAC(varName1, CAST, TYPE_INT, varName1);
-            primType1 = TYPE_INT;
+
+                CODE_BASE.addTAC(node, varName1, CAST, TYPE_INT, varName1);
+                primType1 = TYPE_INT;
             }
 
             // same logic for right one
             std::string primType2 = isPrimitive(type2);
             if (primType2 == TYPE_CHAR || primType2 == TYPE_SHORT || primType2 == ENUM_CONSTANT || primType2 == TYPE_ENUM)
             {
-            CODE_BASE.addTAC(varName2, CAST, TYPE_INT, varName2);
-            primType2 = TYPE_INT;
+
+                CODE_BASE.addTAC(node, varName2, CAST, TYPE_INT, varName2);
+                primType2 = TYPE_INT;
             }
 
             // do left shift
             std::string result = newTemp();
-            if(whichProduction == P2){
-                CODE_BASE.addTAC(result, "<<", varName1, varName2);
+            if (whichProduction == P2)
+            {
+
+                CODE_BASE.addTAC(node, result, "<<", varName1, varName2);
             }
-            else {
-                CODE_BASE.addTAC(result, ">>", varName1, varName2);
+            else
+            {
+
+                CODE_BASE.addTAC(node, result, ">>", varName1, varName2);
             }
             // return type will be the current type of the left operand
             varName = result;
@@ -1307,8 +1583,6 @@ void shift_expression_H(ASTNode *node, std::string inh_whereToSendString, std::s
             valueType = getValueType(type1);
             valueSpace = getSpace(type1);
         }
-
-        
     }
     // else if (whichProduction == P3)//already incorporated in above case
     // {
@@ -1318,363 +1592,878 @@ void shift_expression_H(ASTNode *node, std::string inh_whereToSendString, std::s
     // }
     else
     {
-        // Wrong Production
-        CERR << "Wrong Production in additive_expression_H" << std::endl;
+        ERROR_EXIT_H;
+        // SetUp Dummy Data
+        varName = PASS_ERROR;
+        return;
     }
 
-    A_PTree node->addAttribute("varName = " + varName  + " ⬆️");                 // 🌴 Adding syn_attr
-    A_PTree node->addAttribute(toString(type) + " ⬆️");             // 🌴 Adding syn_attr
-    A_PTree node->addAttribute(toString(valueType)+" ⬆️");   // 🌴 Adding syn_attr
-    A_PTree node->addAttribute(toString(valueSpace) + " ⬆️"); // 🌴 Adding syn_attr
+    A_PTree node->addAttribute("⏫ varName = " + varName);                 
+    A_PTree node->addAttribute("⏫ type = " + toString(type));             
+    A_PTree node->addAttribute("⏫ valueType = " + toString(valueType));   
+    A_PTree node->addAttribute("⏫ valueSpace = " + toString(valueSpace)); 
+
+    EXIT_H;
 }
 
-//-new
-void relational_expression_H(ASTNode *node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace){
-    ENTRY_MSG << "relational_expression_H" << std::endl;
-    lastFuncCalled = "relational_expression_H";
+//- NEW
+void relational_expression_H(ASTNode *node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace)
+{
 
-    // A_PTree node->addAttribute("⏬  whereToSendString = " + inh_whereToSendString); // 🌳 Adding inh_attr
-    // A_PTree node->addAttribute("⏬ varName = " + varName);                          // 🌳 Adding inh_attr
+    ENTRY_H;
 
-    // A_PTree node->addAttribute("⏬ " + toString(type));                     // 🌳 Adding inh_attr
-    // A_PTree node->addAttribute("⏬ "+ toString(valueType));           // 🌳 Adding inh_attr
-        // A_PTree node->addAttribute("⏬  " + toString(valueSpace));         // 🌳 Adding inh_attr        // 🌳 Adding inh_attr
+    //    A_PTree node->addAttribute("🔻 whereToSendString = " + inh_whereToSendString); 
+    //    A_PTree node->addAttribute("🔻 type = " + toString(type));                     
+    //    A_PTree node->addAttribute("🔻 valueType = " + toString(valueType));           
+    //    A_PTree node->addAttribute("🔻 valueSpace = " + toString(valueSpace));         
 
     std::string whichProduction = getProduction(node);
+    CERR << "#432423 Which Production: " << whichProduction << std::endl;
     std::string P1 = "shift_expression";
+    std::string P2 = "relational_expression LESSER_OP shift_expression";
+    std::string P3 = "relational_expression GREATER_OP shift_expression";
+    std::string P4 = "relational_expression LE_OP shift_expression";
+    std::string P5 = "relational_expression GE_OP shift_expression";
 
-    if(whichProduction == P1){
+    if (whichProduction == P1)
+    {
         shift_expression_H(node->children[0], inh_whereToSendString, varName, type, valueType, valueSpace);
+        PASS_THE_ERROR(varName);
+    }
+    else if (whichProduction == P2 || whichProduction == P3 || whichProduction == P4 || whichProduction == P5)
+    {
+        std::string varName1, varName2;
+        TypeExpression type1, type2;
+        VALUE_TYPE valueType1, valueType2;
+        SPACE valueSpace1, valueSpace2;
+
+        relational_expression_H(node->children[0], inh_whereToSendString, varName1, type1, valueType1, valueSpace1);
+        PASS_THE_ERROR(varName1);
+        shift_expression_H(node->children[2], inh_whereToSendString, varName2, type2, valueType2, valueSpace2);
+        PASS_THE_ERROR(varName2);
+
+        // 🚀 USAGE 🤫 SPACE CHANGE 🚀
+        USAGE_SPACE_CHANGE(varName1, type1, valueSpace1, node);
+        USAGE_SPACE_CHANGE(varName2, type2, valueSpace2, node);
+
+        Type whichType1 = whatIsType(type1);
+        Type whichType2 = whatIsType(type2);
+
+        // both type must be either numeric or either pointer, function, array
+        // for numeric widen both type to max width then do relational operation
+        // for pointer, function, array, simply apply operator
+        // final type of result will be INTEGER always
+
+        // both type must be either numeric or either pointer, function, array
+        if ((isNumeric(type1) && isNumeric(type2)) ||
+            ((whichType1 == Type::POINTER || whichType1 == Type::FUNCTION || whichType1 == Type::ARRAY) &&
+             (whichType2 == Type::POINTER || whichType2 == Type::FUNCTION || whichType2 == Type::ARRAY)))
+        {
+
+            // for numeric widen both type to max width then do relational operation
+            if (isNumeric(type1) && isNumeric(type2))
+            {
+                // Widen both types to max width
+                std::string primType1 = isPrimitive(type1);
+                std::string primType2 = isPrimitive(type2);
+
+                std::string widenType = maxWidth(primType1, primType2);
+
+                if (primType1 != widenType)
+                {
+
+                    CODE_BASE.addTAC(node, varName1, CAST, widenType, varName1);
+                }
+
+                if (primType2 != widenType)
+                {
+
+                    CODE_BASE.addTAC(node, varName2, CAST, widenType, varName2);
+                }
+            }
+
+            // Perform relational operation
+            std::string result = newTemp();
+
+            CODE_BASE.addTAC(node, result, node->children[1]->value, varName1, varName2);
+
+            // Final type of result will be INTEGER
+            varName = result;
+            BaseInfo *base = new BaseInfo();
+            base->baseType = TYPE_INT;
+            TypeExpression type0;
+            type0.levelStack.push(base);
+
+            type = type0;
+            valueType = VALUE_TYPE::RVALUE;
+            valueSpace = SPACE::VALUE_SPACE;
+        }
+        else
+        {
+            // SEMANTIC ERROR 🚨 : Invalid operation between incompatible types
+            semanticLOG.push_back("Error: Relational operation requires numeric or pointer types, but found \"" + toString(type1) + "\" and \"" + toString(type2) + "\"");
+        }
+    }
+    else
+    {
+        ERROR_EXIT_H;
+        // SetUp Dummy Data
+        varName = PASS_ERROR;
+        return;
     }
 
+    A_PTree node->addAttribute("⏫ varName = " + varName);                 
+    A_PTree node->addAttribute("⏫ type = " + toString(type));             
+    A_PTree node->addAttribute("⏫ valueType = " + toString(valueType));   
+    A_PTree node->addAttribute("⏫ valueSpace = " + toString(valueSpace)); 
     
-    A_PTree node->addAttribute("varName = " + varName  + " ⬆️");                 // 🌴 Adding syn_attr
-    A_PTree node->addAttribute(toString(type) + " ⬆️");             // 🌴 Adding syn_attr
-    A_PTree node->addAttribute(toString(valueType)+" ⬆️");   // 🌴 Adding syn_attr
-    A_PTree node->addAttribute(toString(valueSpace) + " ⬆️"); // 🌴 Adding syn_attr
-    return;
+    EXIT_H;
 }
 
-void equality_expression_H(ASTNode *node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace){
-    ENTRY_MSG << "equality_expression_H" << std::endl;
-    lastFuncCalled = "equality_expression_H";
+void equality_expression_H(ASTNode *node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace)
+{
 
-    // A_PTree node->addAttribute("⏬  whereToSendString = " + inh_whereToSendString); // 🌳 Adding inh_attr
-    // A_PTree node->addAttribute("⏬ varName = " + varName);                          // 🌳 Adding inh_attr
+    ENTRY_H;
 
-    // A_PTree node->addAttribute("⏬ " + toString(type));                     // 🌳 Adding inh_attr
-    // A_PTree node->addAttribute("⏬ "+ toString(valueType));           // 🌳 Adding inh_attr
-        // A_PTree node->addAttribute("⏬  " + toString(valueSpace));         // 🌳 Adding inh_attr        // 🌳 Adding inh_attr
+    //    A_PTree node->addAttribute("🔻 whereToSendString = " + inh_whereToSendString); 
+    //    A_PTree node->addAttribute("🔻 type = " + toString(type));                     
+    //    A_PTree node->addAttribute("🔻 valueType = " + toString(valueType));           
+    //    A_PTree node->addAttribute("🔻 valueSpace = " + toString(valueSpace));         
 
     std::string whichProduction = getProduction(node);
     std::string P1 = "relational_expression";
+    std::string P2 = "equality_expression EQ_OP relational_expression";
+    std::string P3 = "equality_expression NE_OP relational_expression";
 
-    if(whichProduction == P1){
+    if (whichProduction == P1)
+    {
         relational_expression_H(node->children[0], inh_whereToSendString, varName, type, valueType, valueSpace);
+        PASS_THE_ERROR(varName);
+    }
+    else if (whichProduction == P2 || whichProduction == P3)
+    {
+        std::string varName1, varName2;
+        TypeExpression type1, type2;
+        VALUE_TYPE valueType1, valueType2;
+        SPACE valueSpace1, valueSpace2;
+
+        equality_expression_H(node->children[0], inh_whereToSendString, varName1, type1, valueType1, valueSpace1);
+        PASS_THE_ERROR(varName1);
+        relational_expression_H(node->children[2], inh_whereToSendString, varName2, type2, valueType2, valueSpace2);
+        PASS_THE_ERROR(varName2);
+
+        
+        // 🚀 USAGE 🤫 SPACE CHANGE 🚀
+        USAGE_SPACE_CHANGE(varName1, type1, valueSpace1, node);
+        USAGE_SPACE_CHANGE(varName2, type2, valueSpace2, node);
+
+        Type whichType1 = whatIsType(type1);
+        Type whichType2 = whatIsType(type2);
+
+        // logic:
+        // same logic as relational_expression_H
+
+        // Both types must be either numeric or pointer, function, array
+        if ((isNumeric(type1) && isNumeric(type2)) ||
+            ((whichType1 == Type::POINTER || whichType1 == Type::FUNCTION || whichType1 == Type::ARRAY) &&
+             (whichType2 == Type::POINTER || whichType2 == Type::FUNCTION || whichType2 == Type::ARRAY)))
+        {
+            // For numeric types, widen both to max width
+            if (isNumeric(type1) && isNumeric(type2))
+            {
+                std::string primType1 = isPrimitive(type1);
+                std::string primType2 = isPrimitive(type2);
+
+                std::string widenType = maxWidth(primType1, primType2);
+
+                if (primType1 != widenType)
+                {
+
+                    CODE_BASE.addTAC(node, varName1, CAST, widenType, varName1);
+                }
+
+                if (primType2 != widenType)
+                {
+
+                    CODE_BASE.addTAC(node, varName2, CAST, widenType, varName2);
+                }
+            }
+
+            // Perform equality operation
+            std::string result = newTemp();
+
+            CODE_BASE.addTAC(node, result, node->children[1]->value, varName1, varName2);
+
+            // Final type of result will be INTEGER
+            varName = result;
+            BaseInfo *base = new BaseInfo();
+            base->baseType = TYPE_INT;
+            TypeExpression type0;
+            type0.levelStack.push(base);
+
+            type = type0;
+            valueType = VALUE_TYPE::RVALUE;
+            valueSpace = SPACE::VALUE_SPACE;
+        }
+        else
+        {
+            // SEMANTIC ERROR 🚨 : Invalid operation between incompatible types
+            semanticLOG.push_back("Error: Equality operation requires numeric or pointer types, but found \"" + toString(type1) + "\" and \"" + toString(type2) + "\"");
+        }
+    }
+    else
+    {
+        ERROR_EXIT_H;
+        // SetUp Dummy Data
+        varName = PASS_ERROR;
+        return;
     }
 
-    A_PTree node->addAttribute("varName = " + varName  + " ⬆️");                 // 🌴 Adding syn_attr
-    A_PTree node->addAttribute(toString(type) + " ⬆️");             // 🌴 Adding syn_attr
-    A_PTree node->addAttribute(toString(valueType)+" ⬆️");   // 🌴 Adding syn_attr
-    A_PTree node->addAttribute(toString(valueSpace) + " ⬆️"); // 🌴 Adding syn_attr
+    A_PTree node->addAttribute("⏫ varName = " + varName);                 
+    A_PTree node->addAttribute("⏫ type = " + toString(type));             
+    A_PTree node->addAttribute("⏫ valueType = " + toString(valueType));   
+    A_PTree node->addAttribute("⏫ valueSpace = " + toString(valueSpace)); 
 
-    return;
+    EXIT_H;
 }
 
-void and_expression_H(ASTNode *node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace){
-    ENTRY_MSG << "and_expression_H" << std::endl;
-    lastFuncCalled = "and_expression_H";
+void and_expression_H(ASTNode *node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace)
+{
 
-    // A_PTree node->addAttribute("⏬  whereToSendString = " + inh_whereToSendString); // 🌳 Adding inh_attr
-    // A_PTree node->addAttribute("⏬ varName = " + varName);                          // 🌳 Adding inh_attr
+    ENTRY_H;
 
-    // A_PTree node->addAttribute("⏬ " + toString(type));                     // 🌳 Adding inh_attr
-    // A_PTree node->addAttribute("⏬ "+ toString(valueType));           // 🌳 Adding inh_attr
-        // A_PTree node->addAttribute("⏬  " + toString(valueSpace));         // 🌳 Adding inh_attr        // 🌳 Adding inh_attr
+    //    A_PTree node->addAttribute("🔻 whereToSendString = " + inh_whereToSendString);
+    //    A_PTree node->addAttribute("🔻 type = " + toString(type));
+    //    A_PTree node->addAttribute("🔻 valueType = " + toString(valueType));
+    //    A_PTree node->addAttribute("🔻 valueSpace = " + toString(valueSpace));
 
     std::string whichProduction = getProduction(node);
     std::string P1 = "equality_expression";
+    std::string P2 = "and_expression BIT_AND equality_expression";
 
-    if(whichProduction == P1){
+    if (whichProduction == P1)
+    {
         equality_expression_H(node->children[0], inh_whereToSendString, varName, type, valueType, valueSpace);
+        PASS_THE_ERROR(varName);
+    }
+    else if (whichProduction == P2)
+    {
+        std::string varName1, varName2;
+        TypeExpression type1, type2;
+        VALUE_TYPE valueType1, valueType2;
+        SPACE valueSpace1, valueSpace2;
+
+        and_expression_H(node->children[0], inh_whereToSendString, varName1, type1, valueType1, valueSpace1);
+        PASS_THE_ERROR(varName1);
+        equality_expression_H(node->children[2], inh_whereToSendString, varName2, type2, valueType2, valueSpace2);
+        PASS_THE_ERROR(varName2);
+        
+        // 🚀 USAGE 🤫 SPACE CHANGE 🚀
+        USAGE_SPACE_CHANGE(varName1, type1, valueSpace1, node);
+        USAGE_SPACE_CHANGE(varName2, type2, valueSpace2, node);
+
+        Type whichType1 = whatIsType(type1);
+        Type whichType2 = whatIsType(type2);
+
+        // logic:
+        // both operands must be integral
+        //  if both are either of char , short, enum_object, enum_const then cast to integer
+        //  else cast both to then maxwidth
+        //  Ensure both operands are integral
+        if (!isIntegral(type1) || !isIntegral(type2))
+        {
+            semanticLOG.push_back("Error: BIT_AND operation requires integral types, but found \"" + toString(type1) + "\" and \"" + toString(type2) + "\"");
+        }
+        else
+        {
+            std::string primType1 = isPrimitive(type1);
+            std::string primType2 = isPrimitive(type2);
+
+            // Cast to integer if both are char, short, enum_object, or enum_const
+            if (primType1 == TYPE_CHAR || primType1 == TYPE_SHORT || primType1 == ENUM_CONSTANT || primType1 == TYPE_ENUM)
+            {
+
+                CODE_BASE.addTAC(node, varName1, CAST, TYPE_INT, varName1);
+                primType1 = TYPE_INT;
+            }
+
+            if (primType2 == TYPE_CHAR || primType2 == TYPE_SHORT || primType2 == ENUM_CONSTANT || primType2 == TYPE_ENUM)
+            {
+
+                CODE_BASE.addTAC(node, varName2, CAST, TYPE_INT, varName2);
+                primType2 = TYPE_INT;
+            }
+
+            // Cast both to max width type
+            std::string widenType = maxWidth(primType1, primType2);
+
+            if (primType1 != widenType)
+            {
+
+                CODE_BASE.addTAC(node, varName1, CAST, widenType, varName1);
+            }
+
+            if (primType2 != widenType)
+            {
+
+                CODE_BASE.addTAC(node, varName2, CAST, widenType, varName2);
+            }
+
+            // Perform BIT_AND operation
+            std::string result = newTemp();
+
+            CODE_BASE.addTAC(node, result, "&", varName1, varName2);
+
+            // Set the result attributes
+            varName = result;
+            BaseInfo *base = new BaseInfo();
+            base->baseType = widenType;
+            TypeExpression type0;
+            type0.levelStack.push(base);
+
+            type = type0;
+            valueType = VALUE_TYPE::RVALUE;
+            valueSpace = SPACE::VALUE_SPACE;
+        }
+    }
+    else
+    {
+        ERROR_EXIT_H;
+        // SetUp Dummy Data
+        varName = PASS_ERROR;
+        return;
     }
 
-    A_PTree node->addAttribute("varName = " + varName  + " ⬆️");                 // 🌴 Adding syn_attr
-    A_PTree node->addAttribute(toString(type) + " ⬆️");             // 🌴 Adding syn_attr
-    A_PTree node->addAttribute(toString(valueType)+" ⬆️");   // 🌴 Adding syn_attr
-    A_PTree node->addAttribute(toString(valueSpace) + " ⬆️"); // 🌴 Adding syn_attr
+    A_PTree node->addAttribute("⏫ varName = " + varName);
+    A_PTree node->addAttribute("⏫ type = " + toString(type));
+    A_PTree node->addAttribute("⏫ valueType = " + toString(valueType));
+    A_PTree node->addAttribute("⏫ valueSpace = " + toString(valueSpace));
 
-    return;
+    EXIT_H;
 }
 
-void exclusive_or_expression_H(ASTNode *node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace){
-    ENTRY_MSG << "exclusive_or_expression_H" << std::endl;
-    lastFuncCalled = "exclusive_or_expression_H";
+void exclusive_or_expression_H(ASTNode *node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace)
+{
 
-    // A_PTree node->addAttribute("⏬  whereToSendString = " + inh_whereToSendString); // 🌳 Adding inh_attr
-    // A_PTree node->addAttribute("⏬ varName = " + varName);                          // 🌳 Adding inh_attr
+    ENTRY_H;
 
-    // A_PTree node->addAttribute("⏬ " + toString(type));                     // 🌳 Adding inh_attr
-    // A_PTree node->addAttribute("⏬ "+ toString(valueType));           // 🌳 Adding inh_attr
-        // A_PTree node->addAttribute("⏬  " + toString(valueSpace));         // 🌳 Adding inh_attr        // 🌳 Adding inh_attr
+    //    A_PTree node->addAttribute("🔻 whereToSendString = " + inh_whereToSendString);
+    //    A_PTree node->addAttribute("🔻 type = " + toString(type));
+    //    A_PTree node->addAttribute("🔻 valueType = " + toString(valueType));
+    //    A_PTree node->addAttribute("🔻 valueSpace = " + toString(valueSpace));
 
     std::string whichProduction = getProduction(node);
     std::string P1 = "and_expression";
+    std::string P2 = "exclusive_or_expression XOR and_expression";
 
-    if(whichProduction == P1){
+    if (whichProduction == P1)
+    {
         and_expression_H(node->children[0], inh_whereToSendString, varName, type, valueType, valueSpace);
+        PASS_THE_ERROR(varName);
+    }
+    else if (whichProduction == P2)
+    {
+        std::string varName1, varName2;
+        TypeExpression type1, type2;
+        VALUE_TYPE valueType1, valueType2;
+        SPACE valueSpace1, valueSpace2;
+
+        exclusive_or_expression_H(node->children[0], inh_whereToSendString, varName1, type1, valueType1, valueSpace1);
+        PASS_THE_ERROR(varName1);
+        and_expression_H(node->children[2], inh_whereToSendString, varName2, type2, valueType2, valueSpace2);
+        PASS_THE_ERROR(varName2);
+
+        // 🚀 USAGE 🤫 SPACE CHANGE 🚀
+        USAGE_SPACE_CHANGE(varName1, type1, valueSpace1, node);
+        USAGE_SPACE_CHANGE(varName2, type2, valueSpace2, node);
+
+
+        Type whichType1 = whatIsType(type1);
+        Type whichType2 = whatIsType(type2);
+
+        // logic:
+        // both operands must be integral
+        //  if both are either of char , short, enum_object, enum_const then cast to integer
+        //  else cast both to then maxwidth
+        //  Ensure both operands are integral
+        if (!isIntegral(type1) || !isIntegral(type2))
+        {
+            semanticLOG.push_back("Error: BIT_XOR operation requires integral types, but found \"" + toString(type1) + "\" and \"" + toString(type2) + "\"");
+        }
+        else
+        {
+            std::string primType1 = isPrimitive(type1);
+            std::string primType2 = isPrimitive(type2);
+
+            // Cast to integer if both are char, short, enum_object, or enum_const
+            if (primType1 == TYPE_CHAR || primType1 == TYPE_SHORT || primType1 == ENUM_CONSTANT || primType1 == TYPE_ENUM)
+            {
+
+                CODE_BASE.addTAC(node, varName1, CAST, TYPE_INT, varName1);
+                primType1 = TYPE_INT;
+            }
+
+            if (primType2 == TYPE_CHAR || primType2 == TYPE_SHORT || primType2 == ENUM_CONSTANT || primType2 == TYPE_ENUM)
+            {
+
+                CODE_BASE.addTAC(node, varName2, CAST, TYPE_INT, varName2);
+                primType2 = TYPE_INT;
+            }
+
+            // Cast both to max width type
+            std::string widenType = maxWidth(primType1, primType2);
+
+            if (primType1 != widenType)
+            {
+
+                CODE_BASE.addTAC(node, varName1, CAST, widenType, varName1);
+            }
+
+            if (primType2 != widenType)
+            {
+
+                CODE_BASE.addTAC(node, varName2, CAST, widenType, varName2);
+            }
+
+            // Perform BIT_AND operation
+            std::string result = newTemp();
+
+            CODE_BASE.addTAC(node, result, "^", varName1, varName2);
+
+            // Set the result attributes
+            varName = result;
+            BaseInfo *base = new BaseInfo();
+            base->baseType = widenType;
+            TypeExpression type0;
+            type0.levelStack.push(base);
+
+            type = type0;
+            valueType = VALUE_TYPE::RVALUE;
+            valueSpace = SPACE::VALUE_SPACE;
+        }
+    }
+    else
+    {
+        ERROR_EXIT_H;
+        // SetUp Dummy Data
+        varName = PASS_ERROR;
+        return;
     }
 
-    A_PTree node->addAttribute("varName = " + varName  + " ⬆️");                 // 🌴 Adding syn_attr
-    A_PTree node->addAttribute(toString(type) + " ⬆️");             // 🌴 Adding syn_attr
-    A_PTree node->addAttribute(toString(valueType)+" ⬆️");   // 🌴 Adding syn_attr
-    A_PTree node->addAttribute(toString(valueSpace) + " ⬆️"); // 🌴 Adding syn_attr
+    A_PTree node->addAttribute("⏫ varName = " + varName);
+    A_PTree node->addAttribute("⏫ type = " + toString(type));
+    A_PTree node->addAttribute("⏫ valueType = " + toString(valueType));
+    A_PTree node->addAttribute("⏫ valueSpace = " + toString(valueSpace));
 
-    return;
+    EXIT_H;
 }
 
-void inclusive_or_expression_H(ASTNode *node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace){
-    ENTRY_MSG << "inclusive_or_expression_H" << std::endl;
-    lastFuncCalled = "inclusive_or_expression_H";
+void inclusive_or_expression_H(ASTNode *node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace)
+{
 
-    // A_PTree node->addAttribute("⏬  whereToSendString = " + inh_whereToSendString); // 🌳 Adding inh_attr
-    // A_PTree node->addAttribute("⏬ varName = " + varName);                          // 🌳 Adding inh_attr
+    ENTRY_H;
 
-    // A_PTree node->addAttribute("⏬ " + toString(type));                     // 🌳 Adding inh_attr
-    // A_PTree node->addAttribute("⏬ "+ toString(valueType));           // 🌳 Adding inh_attr
-        // A_PTree node->addAttribute("⏬  " + toString(valueSpace));         // 🌳 Adding inh_attr        // 🌳 Adding inh_attr
+    //    A_PTree node->addAttribute("🔻 whereToSendString = " + inh_whereToSendString);
+    //    A_PTree node->addAttribute("🔻 type = " + toString(type));
+    //    A_PTree node->addAttribute("🔻 valueType = " + toString(valueType));
+    //    A_PTree node->addAttribute("🔻 valueSpace = " + toString(valueSpace));
 
     std::string whichProduction = getProduction(node);
     std::string P1 = "exclusive_or_expression";
+    std::string P2 = "inclusive_or_expression BIT_OR exclusive_or_expression";
 
-    if(whichProduction == P1){
+    if (whichProduction == P1)
+    {
         exclusive_or_expression_H(node->children[0], inh_whereToSendString, varName, type, valueType, valueSpace);
+        PASS_THE_ERROR(varName);
+    }
+    else if (whichProduction == P2)
+    {
+        std::string varName1, varName2;
+        TypeExpression type1, type2;
+        VALUE_TYPE valueType1, valueType2;
+        SPACE valueSpace1, valueSpace2;
+
+        inclusive_or_expression_H(node->children[0], inh_whereToSendString, varName1, type1, valueType1, valueSpace1);
+        PASS_THE_ERROR(varName1);
+        exclusive_or_expression_H(node->children[2], inh_whereToSendString, varName2, type2, valueType2, valueSpace2);
+        PASS_THE_ERROR(varName2);
+
+        // 🚀 USAGE 🤫 SPACE CHANGE 🚀
+        USAGE_SPACE_CHANGE(varName1, type1, valueSpace1, node);
+        USAGE_SPACE_CHANGE(varName2, type2, valueSpace2, node);
+
+        Type whichType1 = whatIsType(type1);
+        Type whichType2 = whatIsType(type2);
+
+        // logic:
+        // both operands must be integral
+        //  if both are either of char , short, enum_object, enum_const then cast to integer
+        //  else cast both to then maxwidth
+        //  Ensure both operands are integral
+        if (!isIntegral(type1) || !isIntegral(type2))
+        {
+            semanticLOG.push_back("Error: BIT_OR operation requires integral types, but found \"" + toString(type1) + "\" and \"" + toString(type2) + "\"");
+        }
+        else
+        {
+            std::string primType1 = isPrimitive(type1);
+            std::string primType2 = isPrimitive(type2);
+
+            // Cast to integer if both are char, short, enum_object, or enum_const
+            if (primType1 == TYPE_CHAR || primType1 == TYPE_SHORT || primType1 == ENUM_CONSTANT || primType1 == TYPE_ENUM)
+            {
+
+                CODE_BASE.addTAC(node, varName1, CAST, TYPE_INT, varName1);
+                primType1 = TYPE_INT;
+            }
+
+            if (primType2 == TYPE_CHAR || primType2 == TYPE_SHORT || primType2 == ENUM_CONSTANT || primType2 == TYPE_ENUM)
+            {
+
+                CODE_BASE.addTAC(node, varName2, CAST, TYPE_INT, varName2);
+                primType2 = TYPE_INT;
+            }
+
+            // Cast both to max width type
+            std::string widenType = maxWidth(primType1, primType2);
+
+            if (primType1 != widenType)
+            {
+
+                CODE_BASE.addTAC(node, varName1, CAST, widenType, varName1);
+            }
+
+            if (primType2 != widenType)
+            {
+
+                CODE_BASE.addTAC(node, varName2, CAST, widenType, varName2);
+            }
+
+            // Perform BIT_AND operation
+            std::string result = newTemp();
+
+            CODE_BASE.addTAC(node, result, "|", varName1, varName2);
+
+            // Set the result attributes
+            varName = result;
+            BaseInfo *base = new BaseInfo();
+            base->baseType = widenType;
+            TypeExpression type0;
+            type0.levelStack.push(base);
+
+            type = type0;
+            valueType = VALUE_TYPE::RVALUE;
+            valueSpace = SPACE::VALUE_SPACE;
+        }
+    }
+    else
+    {
+        ERROR_EXIT_H;
+        // SetUp Dummy Data
+        varName = PASS_ERROR;
+        return;
     }
 
-    A_PTree node->addAttribute("varName = " + varName  + " ⬆️");                 // 🌴 Adding syn_attr
-    A_PTree node->addAttribute(toString(type) + " ⬆️");             // 🌴 Adding syn_attr
-    A_PTree node->addAttribute(toString(valueType)+" ⬆️");   // 🌴 Adding syn_attr
-    A_PTree node->addAttribute(toString(valueSpace) + " ⬆️"); // 🌴 Adding syn_attr
+    A_PTree node->addAttribute("⏫ varName = " + varName);
+    A_PTree node->addAttribute("⏫ type = " + toString(type));
+    A_PTree node->addAttribute("⏫ valueType = " + toString(valueType));
+    A_PTree node->addAttribute("⏫ valueSpace = " + toString(valueSpace));
 
-    return;
+    EXIT_H;
 }
 
-void logical_and_expression_H(ASTNode *node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace){
-    ENTRY_MSG << "logical_and_expression_H" << std::endl;
-    lastFuncCalled = "logical_and_expression_H";
+void logical_and_expression_H(ASTNode *node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace)
+{
 
-    // A_PTree node->addAttribute("⏬  whereToSendString = " + inh_whereToSendString); // 🌳 Adding inh_attr
-    // A_PTree node->addAttribute("⏬ varName = " + varName);                          // 🌳 Adding inh_attr
+    ENTRY_H;
 
-    // A_PTree node->addAttribute("⏬ " + toString(type));                     // 🌳 Adding inh_attr
-    // A_PTree node->addAttribute("⏬ "+ toString(valueType));           // 🌳 Adding inh_attr
-        // A_PTree node->addAttribute("⏬  " + toString(valueSpace));         // 🌳 Adding inh_attr        // 🌳 Adding inh_attr
+    //    A_PTree node->addAttribute("🔻 whereToSendString = " + inh_whereToSendString);
+    //    A_PTree node->addAttribute("🔻 type = " + toString(type));
+    //    A_PTree node->addAttribute("🔻 valueType = " + toString(valueType));
+    //    A_PTree node->addAttribute("🔻 valueSpace = " + toString(valueSpace));
 
     std::string whichProduction = getProduction(node);
     std::string P1 = "inclusive_or_expression";
+    std::string P2 = "logical_and_expression AND_OP inclusive_or_expression";
 
-    if(whichProduction == P1){
+    if (whichProduction == P1)
+    {
         inclusive_or_expression_H(node->children[0], inh_whereToSendString, varName, type, valueType, valueSpace);
+        PASS_THE_ERROR(varName);
+    }
+    else if (whichProduction == P2)
+    {
+        std::string varName1, varName2;
+        TypeExpression type1, type2;
+        VALUE_TYPE valueType1, valueType2;
+        SPACE valueSpace1, valueSpace2;
+
+        logical_and_expression_H(node->children[0], inh_whereToSendString, varName1, type1, valueType1, valueSpace1);
+        PASS_THE_ERROR(varName1);
+        inclusive_or_expression_H(node->children[2], inh_whereToSendString, varName2, type2, valueType2, valueSpace2);
+        PASS_THE_ERROR(varName2);
+
+        // 🚀 USAGE 🤫 SPACE CHANGE 🚀        
+        USAGE_SPACE_CHANGE(varName1, type1, valueSpace1, node);
+        USAGE_SPACE_CHANGE(varName2, type2, valueSpace2, node);
+
+        Type whichType1 = whatIsType(type1);
+        Type whichType2 = whatIsType(type2);
+
+        // logic:
+        // both operands must be either of numeric or pointer type(pointer, array, function_name) , not struct_obj or union_obj
+        // convert the pointer type to long long
+        // convert chart short enum_const enum_obj to int
+        // convert both to max type
+        // apply && operator
+        // result type in int
+
+        // Ensure both operands are either numeric or pointer type
+        if ((!isNumeric(type1) && !(whichType1 == Type::POINTER || whichType1 == Type::ARRAY || whichType1 == Type::FUNCTION)) ||
+            (!isNumeric(type2) && !(whichType2 == Type::POINTER || whichType2 == Type::ARRAY || whichType2 == Type::FUNCTION)))
+        {
+            semanticLOG.push_back("Error: Logical AND operation requires numeric or pointer types, but found \"" + toString(type1) + "\" and \"" + toString(type2) + "\"");
+        }
+        else
+        {
+            // Convert pointer types to long long
+            if (whichType1 == Type::POINTER || whichType1 == Type::ARRAY || whichType1 == Type::FUNCTION)
+            {
+
+                CODE_BASE.addTAC(node, varName1, CAST, TYPE_LONG_LONG, varName1);
+            }
+
+            if (whichType2 == Type::POINTER || whichType2 == Type::ARRAY || whichType2 == Type::FUNCTION)
+            {
+
+                CODE_BASE.addTAC(node, varName2, CAST, TYPE_LONG_LONG, varName2);
+            }
+
+            // Convert char, short, enum_const, enum_obj to int
+            std::string primType1 = isPrimitive(type1);
+            std::string primType2 = isPrimitive(type2);
+
+            if (primType1 == TYPE_CHAR || primType1 == TYPE_SHORT || primType1 == ENUM_CONSTANT || primType1 == TYPE_ENUM)
+            {
+
+                CODE_BASE.addTAC(node, varName1, CAST, TYPE_INT, varName1);
+                primType1 = TYPE_INT;
+            }
+
+            if (primType2 == TYPE_CHAR || primType2 == TYPE_SHORT || primType2 == ENUM_CONSTANT || primType2 == TYPE_ENUM)
+            {
+
+                CODE_BASE.addTAC(node, varName2, CAST, TYPE_INT, varName2);
+                primType2 = TYPE_INT;
+            }
+
+            // Convert both to max type
+            std::string widenType = maxWidth(primType1, primType2);
+
+            if (primType1 != widenType)
+            {
+
+                CODE_BASE.addTAC(node, varName1, CAST, widenType, varName1);
+            }
+
+            if (primType2 != widenType)
+            {
+
+                CODE_BASE.addTAC(node, varName2, CAST, widenType, varName2);
+            }
+
+            // Apply AND_OP operator
+            std::string result = newTemp();
+
+            CODE_BASE.addTAC(node, result, "&&", varName1, varName2);
+
+            // Result type is int
+            varName = result;
+            BaseInfo *base = new BaseInfo();
+            base->baseType = TYPE_INT;
+            TypeExpression type0;
+            type0.levelStack.push(base);
+
+            type = type0;
+            valueType = VALUE_TYPE::RVALUE;
+            valueSpace = SPACE::VALUE_SPACE;
+        }
+    }
+    else
+    {
+        ERROR_EXIT_H;
+        // SetUp Dummy Data
+        varName = PASS_ERROR;
+        return;
     }
 
-    A_PTree node->addAttribute("varName = " + varName  + " ⬆️");                 // 🌴 Adding syn_attr
-    A_PTree node->addAttribute(toString(type) + " ⬆️");             // 🌴 Adding syn_attr
-    A_PTree node->addAttribute(toString(valueType)+" ⬆️");   // 🌴 Adding syn_attr
-    A_PTree node->addAttribute(toString(valueSpace) + " ⬆️"); // 🌴 Adding syn_attr
+    A_PTree node->addAttribute("⏫ varName = " + varName);
+    A_PTree node->addAttribute("⏫ type = " + toString(type));
+    A_PTree node->addAttribute("⏫ valueType = " + toString(valueType));
+    A_PTree node->addAttribute("⏫ valueSpace = " + toString(valueSpace));
 
-    return;
+    EXIT_H;
 }
 
-void logical_or_expression_H(ASTNode *node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace){
-    ENTRY_MSG << "logical_or_expression_H" << std::endl;
-    lastFuncCalled = "logical_or_expression_H";
+void logical_or_expression_H(ASTNode *node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace)
+{
 
-    // A_PTree node->addAttribute("⏬  whereToSendString = " + inh_whereToSendString); // 🌳 Adding inh_attr
-    // A_PTree node->addAttribute("⏬ varName = " + varName);                          // 🌳 Adding inh_attr
+    ENTRY_H;
 
-    // A_PTree node->addAttribute("⏬ " + toString(type));                     // 🌳 Adding inh_attr
-    // A_PTree node->addAttribute("⏬ "+ toString(valueType));           // 🌳 Adding inh_attr
-        // A_PTree node->addAttribute("⏬  " + toString(valueSpace));         // 🌳 Adding inh_attr        // 🌳 Adding inh_attr
+    //    A_PTree node->addAttribute("🔻 whereToSendString = " + inh_whereToSendString);
+    //    A_PTree node->addAttribute("🔻 type = " + toString(type));
+    //    A_PTree node->addAttribute("🔻 valueType = " + toString(valueType));
+    //    A_PTree node->addAttribute("🔻 valueSpace = " + toString(valueSpace));
 
     std::string whichProduction = getProduction(node);
     std::string P1 = "logical_and_expression";
+    std::string P2 = "logical_or_expression OR_OP logical_and_expression";
 
-    if(whichProduction == P1){
+    if (whichProduction == P1)
+    {
         logical_and_expression_H(node->children[0], inh_whereToSendString, varName, type, valueType, valueSpace);
+        PASS_THE_ERROR(varName);
+    }
+    else if (whichProduction == P2)
+    {
+        std::string varName1, varName2;
+        TypeExpression type1, type2;
+        VALUE_TYPE valueType1, valueType2;
+        SPACE valueSpace1, valueSpace2;
+
+        logical_or_expression_H(node->children[0], inh_whereToSendString, varName1, type1, valueType1, valueSpace1);
+        PASS_THE_ERROR(varName1);
+        logical_and_expression_H(node->children[2], inh_whereToSendString, varName2, type2, valueType2, valueSpace2);
+        PASS_THE_ERROR(varName2);
+
+        // 🚀 USAGE 🤫 SPACE CHANGE 🚀
+        USAGE_SPACE_CHANGE(varName1, type1, valueSpace1, node);
+        USAGE_SPACE_CHANGE(varName2, type2, valueSpace2, node);
+
+
+        Type whichType1 = whatIsType(type1);
+        Type whichType2 = whatIsType(type2);
+
+        // logic:
+        // both operands must be either of numeric or pointer type(pointer, array, function_name) , not struct_obj or union_obj
+        // convert the pointer type to long long
+        // convert char, short, enum_const, enum_obj to int
+        // convert both to max type
+        // apply || operator
+        // result type in int
+
+        if ((!isNumeric(type1) && !(whichType1 == Type::POINTER || whichType1 == Type::ARRAY || whichType1 == Type::FUNCTION)) ||
+            (!isNumeric(type2) && !(whichType2 == Type::POINTER || whichType2 == Type::ARRAY || whichType2 == Type::FUNCTION)))
+        {
+            semanticLOG.push_back("Error: Logical OR operation requires numeric or pointer types, but found \"" + toString(type1) + "\" and \"" + toString(type2) + "\"");
+        }
+        else
+        {
+            if (whichType1 == Type::POINTER || whichType1 == Type::ARRAY || whichType1 == Type::FUNCTION)
+            {
+
+                CODE_BASE.addTAC(node, varName1, CAST, TYPE_LONG_LONG, varName1);
+            }
+
+            if (whichType2 == Type::POINTER || whichType2 == Type::ARRAY || whichType2 == Type::FUNCTION)
+            {
+
+                CODE_BASE.addTAC(node, varName2, CAST, TYPE_LONG_LONG, varName2);
+            }
+
+            std::string primType1 = isPrimitive(type1);
+            std::string primType2 = isPrimitive(type2);
+
+            if (primType1 == TYPE_CHAR || primType1 == TYPE_SHORT || primType1 == ENUM_CONSTANT || primType1 == TYPE_ENUM)
+            {
+
+                CODE_BASE.addTAC(node, varName1, CAST, TYPE_INT, varName1);
+                primType1 = TYPE_INT;
+            }
+
+            if (primType2 == TYPE_CHAR || primType2 == TYPE_SHORT || primType2 == ENUM_CONSTANT || primType2 == TYPE_ENUM)
+            {
+
+                CODE_BASE.addTAC(node, varName2, CAST, TYPE_INT, varName2);
+                primType2 = TYPE_INT;
+            }
+
+            std::string widenType = maxWidth(primType1, primType2);
+
+            if (primType1 != widenType)
+            {
+
+                CODE_BASE.addTAC(node, varName1, CAST, widenType, varName1);
+            }
+
+            if (primType2 != widenType)
+            {
+
+                CODE_BASE.addTAC(node, varName2, CAST, widenType, varName2);
+            }
+
+            std::string result = newTemp();
+
+            CODE_BASE.addTAC(node, result, "||", varName1, varName2);
+
+            varName = result;
+            BaseInfo *base = new BaseInfo();
+            base->baseType = TYPE_INT;
+            TypeExpression type0;
+            type0.levelStack.push(base);
+
+            type = type0;
+            valueType = VALUE_TYPE::RVALUE;
+            valueSpace = SPACE::VALUE_SPACE;
+        }
+    }
+    else
+    {
+        ERROR_EXIT_H;
+        // SetUp Dummy Data
+        varName = PASS_ERROR;
+        return;
     }
 
-    A_PTree node->addAttribute("varName = " + varName  + " ⬆️");                 // 🌴 Adding syn_attr
-    A_PTree node->addAttribute(toString(type) + " ⬆️");             // 🌴 Adding syn_attr
-    A_PTree node->addAttribute(toString(valueType)+" ⬆️");   // 🌴 Adding syn_attr
-    A_PTree node->addAttribute(toString(valueSpace) + " ⬆️"); // 🌴 Adding syn_attr
+    A_PTree node->addAttribute("⏫ varName = " + varName);
+    A_PTree node->addAttribute("⏫ type = " + toString(type));
+    A_PTree node->addAttribute("⏫ valueType = " + toString(valueType));
+    A_PTree node->addAttribute("⏫ valueSpace = " + toString(valueSpace));
 
-    return;
+    EXIT_H;
 }
 
-void conditional_expression_H(ASTNode *node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace){
-    ENTRY_MSG << "conditional_expression_H" << std::endl;
-    lastFuncCalled = "conditional_expression_H";
+void conditional_expression_H(ASTNode *node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace)
+{
 
-    // A_PTree node->addAttribute("⏬  whereToSendString = " + inh_whereToSendString); // 🌳 Adding inh_attr
-    // A_PTree node->addAttribute("⏬ varName = " + varName);                          // 🌳 Adding inh_attr
+    ENTRY_H;
 
-    // A_PTree node->addAttribute("⏬ " + toString(type));                     // 🌳 Adding inh_attr
-    // A_PTree node->addAttribute("⏬ "+ toString(valueType));           // 🌳 Adding inh_attr
-        // A_PTree node->addAttribute("⏬  " + toString(valueSpace));         // 🌳 Adding inh_attr        // 🌳 Adding inh_attr
+    //    A_PTree node->addAttribute("🔻 whereToSendString = " + inh_whereToSendString); 
+    //    A_PTree node->addAttribute("🔻 type = " + toString(type));                     
+    //    A_PTree node->addAttribute("🔻 valueType = " + toString(valueType));           
+    //    A_PTree node->addAttribute("🔻 valueSpace = " + toString(valueSpace));         
 
     std::string whichProduction = getProduction(node);
     std::string P1 = "logical_or_expression";
+    std::string P2 = "logical_or_expression QUESTION expression COLON conditional_expression";
 
-    if(whichProduction == P1){
-        logical_or_expression_H(node->children[0], inh_whereToSendString, varName, type, valueType, valueSpace);
-    }
-
-    A_PTree node->addAttribute("varName = " + varName  + " ⬆️");                 // 🌴 Adding syn_attr
-    A_PTree node->addAttribute(toString(type) + " ⬆️");             // 🌴 Adding syn_attr
-    A_PTree node->addAttribute(toString(valueType)+" ⬆️");   // 🌴 Adding syn_attr
-    A_PTree node->addAttribute(toString(valueSpace) + " ⬆️"); // 🌴 Adding syn_attr
-
-    return;
-}
-
-void assignment_expression_H(ASTNode *node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace){
-    ENTRY_MSG << "assignment_expression_H" << std::endl;
-    lastFuncCalled = "assignment_expression_H";
-    std::string whichProduction = getProduction(node);
-    std::string P1 = "conditional_expression";
-    std::string P2 = "unary_expression assignment_operator assignment_expression";
-
-    CERR << "assignment_expression_H : " + whichProduction << std::endl;
-    // HERE;
-    // A_PTree node->addAttribute("⏬  whereToSendString = " + inh_whereToSendString); // 🌳 Adding inh_attr
-    // HERE;
-    // A_PTree node->addAttribute("⏬ varName = " + varName); // 🌳 Adding inh_attr
-    // A_PTree node->addAttribute("⏬ " + toString(type));                     // 🌳 Adding inh_attr
-    // A_PTree node->addAttribute("⏬ "+ toString(valueType));           // 🌳 Adding inh_attr
-    // HERE;
-    // A_PTree node->addAttribute("⏬  " + toString(valueSpace));         // 🌳 Adding inh_attr// 🌳 Adding inh_attr
-
-    // HERE;
     if (whichProduction == P1)
     {
-        conditional_expression_H(node->children[0], inh_whereToSendString, varName, type, valueType, valueSpace);
-    }
-
-    if(whichProduction == P2){
-        HERE;
-        //-------------- Value Fetching 📥 -----------------------
-        std::string varName1="", varName2="", varName0="";
-        TypeExpression type1, type2, type0;
-        VALUE_TYPE valueType1, valueType2, valueType0;
-        SPACE valueSpace1, valueSpace2, valueSpace0;
-
-        unary_expression_H(node->children[0], inh_whereToSendString, varName1, type1, valueType1, valueSpace1);
-
-        assignment_expression_H(node->children[2], inh_whereToSendString, varName2, type2, valueType2, valueSpace2);
-        HERE;
-//---------------------- Space 🚀Change 🔖IR Code for varName2 [🤫 General Space Before USAGE]
-        SPACE reqSpace2 = getSpace(type2);
-        if (reqSpace2 != valueSpace2)
-        {
-            // Most likely we will be moving from address space to value space due to some past array access
-            std::string valNew2 = newTemp();
-            CODE_BASE.addTAC(valNew2, RIGHT_STAR, varName2, NO_ARG);
-            varName2 = valNew2; // Change the name to the address
-        }
-        // else No Change
-//-------------------------------------------------------------------
-
-        // 🅰️ TypeChecking for varName2
-        // Rule - valueType - {M_LVALUE, NM_LVALUE, RVALUE} Allowed
-        // Rule - type ❓
-
-        HERE;
-
-        // 🅱️ TypeChecking for varName1
-        // Rule - valueType - {M_LVALUE} Allowed
-        // Rule - type ❓
-
-        // 🎉 SIDE EFFECTS 🎉 
-
-        int width1 = 1; // For now
-        Type whichType1 = whatIsType(type1);
-        if(whichType1 == Type::POINTER || whichType1 == Type::FUNCTION || whichType1 == Type::ARRAY)
-        {
-            TypeExpression belowType1 = type1;
-            if(popALevel(belowType1))
-            {
-                width1 = width(belowType1);
-            }
-            else
-            {
-                // Should not happen
-                CERR << "BUG 🐛 : Something wrong with popALevel for " + toString(type1);
-            }
-        }
-
-        HERE;
-        // Find which operation to perform
-        std::string assignOp = node->children[1]->value;
-        std::string op = (assignOp=="=") ? ("="):assignOp.substr(0, assignOp.length()-1);
-
-//---------------------- Space 🚀Change 🔖IR Code for varName1 [🤬 Custom - During ASSIGNMENT 🥶]
-        SPACE reqSpace1 = getSpace(type1);
-        if(reqSpace1 != valueSpace1){
-            REPORT << "🤬 ASSIGN Space Change : " + toString(valueSpace1) + " ➾ " + toString(reqSpace1);
-
-            if(op!="="){
-                std::string resName = newTemp();
-                CODE_BASE.addTAC(resName, op , varName2, std::to_string(width1)); // resName = varName2 op width1
-
-                CODE_BASE.addTAC(varName1, LEFT_STAR, resName, NO_ARG); // *varName1 = resName
-
-                varName0 = resName;
-            }
-            else{
-                // Simple Assignment
-                CODE_BASE.addTAC(varName1, LEFT_STAR, varName2, NO_ARG); // *varName1 = varName2
-                varName0 = varName2; //
-            }
-        }
-        else{
-            // No space change Code
-            if(op!="="){
-                CODE_BASE.addTAC(varName1, op , varName2, std::to_string(width1)); // resName = varName2 op width1
-
-                varName0 = varName1;
-            }
-            else{
-                // Simple Assignment
-                CODE_BASE.addTAC(varName1,ASSIGN_OP, varName2, NO_ARG); // *varName1 = varName2
-                varName0 = varName1; //
-            }
-        }
-//-------------------------------------------------------------------
-        HERE;
-
-        // 🤮 Return Value 🤮 
-        type0 = type1; // return type is of varName1
-        valueType0 = VALUE_TYPE::RVALUE;
-        valueSpace0 = reqSpace1; // return space is of varName1
-        
-
-        // Pass the Variables Up
-        varName = varName0;
-        type = type0;
-        valueType = valueType0;
-        valueSpace = valueSpace0;
+        logical_or_expression_H(node->children[0], inh_whereToSendString, varName, type, valueType, valueSpace);
+        PASS_THE_ERROR(varName);
     }
     else{
-        // Wrong Production
-        CERR << "Wrong Production in assignment_expression_H" << std::endl;
+        ERROR_EXIT_H;
+        // SetUp Dummy Data
+        varName = PASS_ERROR;
+        return;
     }
 
-    A_PTree node->addAttribute("varName = " + varName  + " ⬆️");                 // 🌴 Adding syn_attr
-    A_PTree node->addAttribute(toString(type) + " ⬆️");             // 🌴 Adding syn_attr
-    A_PTree node->addAttribute(toString(valueType)+" ⬆️");   // 🌴 Adding syn_attr
-    A_PTree node->addAttribute(toString(valueSpace) + " ⬆️"); // 🌴 Adding syn_attr
+    A_PTree node->addAttribute("⏫ varName = " + varName);                 
+    A_PTree node->addAttribute("⏫ type = " + toString(type));             
+    A_PTree node->addAttribute("⏫ valueType = " + toString(valueType));   
+    A_PTree node->addAttribute("⏫ valueSpace = " + toString(valueSpace));
 
-
-
-    return;
+    EXIT_H;
 }

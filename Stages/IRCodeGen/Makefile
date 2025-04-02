@@ -14,6 +14,17 @@ CXX = g++ -std=c++17 # Added Latest Version [Some error due to old compiler]
 CC = gcc
 CXXFLAGS = -w -lm -I $(INCLUDE_DIR)
 
+# Directories
+REQUIRED_DIRS = build bin object output
+
+$(REQUIRED_DIRS):
+	@if [ ! -d $@ ]; then mkdir -p $@; fi
+
+.PHONY: all $(REQUIRED_DIRS) 
+
+.INIT: $(REQUIRED_DIRS)
+
+
 
 # Input and output files
 INPUT = $(INPUT_DIR)/input.c
@@ -43,7 +54,6 @@ TAC_CPP = $(SRC_DIR)/tac.cpp
 TYPE_CPP = $(SRC_DIR)/type.cpp
 UTILITY_CPP = $(SRC_DIR)/utility.cpp
 
-
 # Parser\Bison Files
 PARSER_C = $(BUILD_DIR)/parser.tab.c
 
@@ -56,15 +66,12 @@ EXECUTABLE = $(BIN_DIR)/parser
 SRC_FILES = $(wildcard $(SRC_DIR)/*.cpp)
 OBJ_FILES = $(patsubst $(SRC_DIR)/%.cpp,$(OBJ_DIR)/%.o,$(SRC_FILES))
 
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp $(OBJ_DIR) 
-	@$(CXX) $(CXXFLAGS) -c $< -o $@ 
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
+	@$(CXX) $(CXXFLAGS) -MMD -MP -c $< -o $@
+
+-include $(OBJ_FILES:.o=.d)
 
 
-# Result dot (graphviz) tool
-DOT = dot
-DOTFile = $(BUILD_DIR)/ast_graph.dot
-# DOTImage = ast_graph.png [Not used]
-DOTPDF = $(OUTPUT_DIR)/PTree.pdf
 
 #More Result FIle
 S_EXPR = $(OUTPUT_DIR)/s_expr.txt
@@ -73,84 +80,86 @@ Recursive = $(OUTPUT_DIR)/recursive_output.txt
 
 
 # Default target
-all: $(EXECUTABLE)
+all: $(REQUIRED_DIRS) $(OUTPUT) $(INPUT) $(CERR)
 
 # Step 1: Generate parser files from Bison
-$(PARSER_C) $(PARSER_H): $(PARSER) $(BUILD_DIR)
-	@$(BISON) -d $(PARSER) --output=$(PARSER_C) --header=$(PARSER_H)
+$(PARSER_C) $(PARSER_H): $(PARSER) 
+	@echo "~~~~~~~~~~~~~~~~~~~~~ Making Parser ~~~~~~~~~~~~~~~~~"
+	@$(BISON) -d $(PARSER) --output=$(PARSER_C) --header=$(PARSER_H) 
 
 # Step 2: Generate lexer file from Flex
-$(LEXER_C): $(LEXER) $(BUILD_DIR) 
+$(LEXER_C): $(LEXER) 
+	@echo "~~~~~~~~~~~~~~~~~~~~~ Making Lexer ~~~~~~~~~~~~~~~~~"
 	@$(FLEX) -o $(LEXER_C) $(LEXER)
 
 # Step 3: Compile everything together into an executable
-$(EXECUTABLE): $(LEXER_C) $(PARSER_C) $(PARSER_H) $(OBJ_FILES) $(BIN_DIR) $(BUILD_DIR)
-	$(CXX) $(CXXFLAGS) $(LEXER_C) $(PARSER_C) $(OBJ_FILES) -o $(EXECUTABLE)
+$(EXECUTABLE): $(LEXER_C) $(PARSER_C) $(PARSER_H) $(OBJ_FILES) 
+	@echo "=================== 🔨 Making C2RISC Engine 🔨 ==================="
+	@$(CXX) $(CXXFLAGS) $(LEXER_C) $(PARSER_C) $(OBJ_FILES) -o $(EXECUTABLE)
 
-$(CERR): $(OUTPUT_DIR)
+$(CERR): | $(OUTPUT_DIR)
 	@touch $(CERR)
 
-$(OUTPUT): $(OUTPUT_DIR)
+$(OUTPUT): | $(OUTPUT_DIR)
 	@touch $(OUTPUT)
 
-run: $(EXECUTABLE) $(INPUT) $(OUTPUT) $(CERR) $(OUTPUT_DIR) $(BUILD_DIR) $(OBJ_DIR) 
+run: all $(EXECUTABLE) $(INPUT) $(OUTPUT) $(CERR)  
 	@./$(EXECUTABLE) $(INPUT) $(OUTPUT) 2> $(CERR) 
 
 # This will only run the parser and generate the output file [NO RESULT]
 
 
-$(DOTFile): $(EXECUTABLE)
-	@./$(EXECUTABLE) $(INPUT) 
+# Result dot (graphviz) tool
+DOT = dot
 
-# Auto Create Required Directories
-$(BUILD_DIR):
-	@mkdir -p $(BUILD_DIR)
-
-$(BIN_DIR):
-	@mkdir -p $(BIN_DIR)
-
-$(OUTPUT_DIR):
-	@mkdir -p $(OUTPUT_DIR)
-
-$(OBJ_DIR):
-	@mkdir -p $(OBJ_DIR)
-
-
-
+ASTFile = $(OUTPUT_DIR)/ast_graph.dot
+ASTOUT = $(OUTPUT_DIR)/AST.pdf
 
 ## For Visualizing the AST
-ast: $(INPUT) $(OUTPUT) $(EXECUTABLE) $(OUTPUT_DIR) $(BUILD_DIR) 
-	@./$(EXECUTABLE) $(INPUT) $(OUTPUT) -ast $(DOTFile) 2> $(CERR)
-	@$(DOT) -Tpdf $(DOTFile) -o $(DOTPDF)
+ast: all $(INPUT) $(OUTPUT) $(EXECUTABLE) $(CERR)
+	@echo "🚥 Starting C2RISC Engine 🟢 "
+	@./$(EXECUTABLE) $(INPUT) $(OUTPUT) -ast $(ASTFile) 2> $(CERR)
+	@echo "🌴 ------- Visualizing AST ------- 🌴"
+	@$(DOT) -Tpdf $(ASTFile) -o $(ASTOUT)
+	open $(ASTOUT)
 
-ptree: $(INPUT) $(OUTPUT) $(EXECUTABLE) $(OUTPUT_DIR) $(BUILD_DIR) 
-	@./$(EXECUTABLE) $(INPUT) $(OUTPUT) -ptree $(DOTFile) 2> $(CERR)
-	@$(DOT) -Tpdf $(DOTFile) -o $(DOTPDF)
 
-DOTFile2 = $(BUILD_DIR)/annotated_ast_graph.dot
-DOTPDF2 = $(OUTPUT_DIR)/A_PTree.svg
+PTreeFile = $(BUILD_DIR)/ptree_graph.dot
+PTreeSVG = $(OUTPUT_DIR)/PTree.svg
 
-$(DOTFile2):
-	@touch $(DOTFile2)
+ptree: all $(INPUT) $(OUTPUT) $(EXECUTABLE)  $(CERR)
+	@echo "🚥 Starting C2RISC Engine 🟢 "
+	@./$(EXECUTABLE) $(INPUT) $(OUTPUT) -ptree $(PTreeFile) 2> $(CERR)
+	@echo "🌲 ------- Visualizing PTree ------- 🌲"
+	@$(DOT) -Tsvg $(PTreeFile) -o $(PTreeSVG)
+	open $(PTreeSVG)
 
-$(DOTPDF2):
-	@touch $(DOTPDF2)
+APTreeFile = $(BUILD_DIR)/annotated_ast_graph.dot
+APTreeSVG = $(OUTPUT_DIR)/A_PTree.svg
 
-Aptree: $(INPUT) $(OUTPUT) $(EXECUTABLE) $(OUTPUT_DIR) $(BUILD_DIR) $(DOTFile2) $(DOTPDF2) $(OBJ_DIR)
-	@./$(EXECUTABLE) $(INPUT) $(OUTPUT) -APTree $(DOTFile2) 2> $(CERR)
-	$(DOT) -Tsvg $(DOTFile2) -o $(DOTPDF2)
+$(APTreeFile):
+	@touch $(APTreeFile)
 
-r: $(EXECUTABLE) $(INPUT) $(OUTPUT)
-	./$(EXECUTABLE) $(INPUT) $(OUTPUT) -r 2> $(CERR)
+$(APTreeSVG):
+	@touch $(APTreeSVG)
 
-s: $(EXECUTABLE) $(INPUT)
-	./$(EXECUTABLE) $(INPUT) $(OUTPUT) -s 2> $(CERR)
+Aptree: all $(INPUT) $(OUTPUT) $(EXECUTABLE) $(APTreeFile) $(APTreeSVG)  $(CERR)
+	@echo "🚥 Starting C2RISC Engine 🟢 "
+	@./$(EXECUTABLE) $(INPUT) $(OUTPUT) -APTree $(APTreeFile) 2> $(CERR)
+	@echo "🎄 ------- Visualizing Annotated PTree -------🎄"
+	$(DOT) -Tsvg $(APTreeFile) -o $(APTreeSVG)
+
+r: all $(EXECUTABLE) $(INPUT) $(OUTPUT)  $(CERR)
+	@./$(EXECUTABLE) $(INPUT) $(OUTPUT) -r 2> $(CERR)
+
+s: all $(EXECUTABLE) $(INPUT)  $(CERR)
+	@./$(EXECUTABLE) $(INPUT) $(OUTPUT) -s 2> $(CERR)
 
 
 # Clean generated files
 clean:
 	@rm -f $(LEXER_C) $(PARSER_C) $(PARSER_H) $(EXECUTABLE) $(OUTPUT) \
-	$(CERR) $(DOTFile) $(DOTPDF) $(S_EXPR) $(Recursive) $(ASSEMBLY) \
+	$(CERR) $(PTreeFile) $(PTreeSVG) $(S_EXPR) $(Recursive) $(ASSEMBLY) \
 	$(OBJ_FILES)
 
 again:
@@ -160,42 +169,42 @@ again:
 	make all
 
 
-semantic: $(EXECUTABLE) $(INPUT) $(OUTPUT)
+semantic: all $(EXECUTABLE) $(INPUT) $(OUTPUT)
 	@echo "---------------------------------------------GCC Compilation---------------------------------------------"
-	@$(CC) -fsyntax-only $(INPUT) && echo "✅ Successfully Compiled by GCC"
+	$(CC) -fsyntax-only $(INPUT) && echo "✅ Successfully Compiled by GCC"
 	@echo "-------------------------------------------Our Syntax Analysis-------------------------------------------"
 	@./$(EXECUTABLE) $(INPUT) $(OUTPUT) 2> $(CERR)
 	
 
-execute: $(INPUT)
-	@$(CC) $(INPUT) -o $(BIN_DIR)/input_exec
+execute: all $(INPUT)
+	$(CC) $(INPUT) -o $(BIN_DIR)/input_exec
 	@./$(BIN_DIR)/input_exec
 
-sem_ast: $(EXECUTABLE) $(INPUT) $(OUTPUT)
+sem_ast: all $(EXECUTABLE) $(INPUT) $(OUTPUT)  $(CERR)
 	@echo "---------------------------------------GCC Compilation---------------------------------------"
 	@-$(CC) -fsyntax-only $(INPUT) && echo "✅ Successfully Compiled by GCC"
 	@echo "-------------------------------------------Our Syntax Analysis-------------------------------------------"
-	@./$(EXECUTABLE) $(INPUT) $(OUTPUT) -ast $(DOTFile) 2> $(CERR)
-	@$(DOT) -Tpdf $(DOTFile) -o $(DOTPDF)
-	@open $(DOTPDF)
+	@./$(EXECUTABLE) $(INPUT) $(OUTPUT) -ast $(PTreeFile) 2> $(CERR)
+	$(DOT) -Tpdf $(PTreeFile) -o $(PTreeSVG)
+	@open $(PTreeSVG)
 
-sem_ptree: $(EXECUTABLE) $(INPUT) $(OUTPUT)
+sem_ptree: all $(EXECUTABLE) $(INPUT) $(OUTPUT)  $(CERR)
 	@echo "---------------------------------------GCC Compilation---------------------------------------"
 	@-$(CC) -fsyntax-only $(INPUT) && echo "✅ Successfully Compiled by GCC"
 	@echo "-------------------------------------------Our Syntax Analysis-------------------------------------------"
-	@./$(EXECUTABLE) $(INPUT) $(OUTPUT) -ptree $(DOTFile) 2> $(CERR)
-	@$(DOT) -Tpdf $(DOTFile) -o $(DOTPDF)
+	@./$(EXECUTABLE) $(INPUT) $(OUTPUT) -ptree $(PTreeFile) 2> $(CERR)
+	$(DOT) -Tpdf $(PTreeFile) -o $(PTreeSVG)
 
 ASSEMBLY = $(OUTPUT_DIR)/assembly.s
 LLVMIR = $(OUTPUT_DIR)/llvm_ir.ll
 
-assembly: $(INPUT)
+assembly: all $(INPUT) 
 	@clang -S -target riscv32-unknown-elf -march=rv32i $(INPUT) -o $(ASSEMBLY)
 
-llvm: $(INPUT)
+llvm: all $(INPUT) 
 	@clang -S -emit-llvm $(INPUT) -o $(LLVMIR)
 
-astdump: $(INPUT)
+astdump: all $(INPUT) 
 	@clang -Xclang -ast-dump -fsyntax-only $(INPUT)
 
 SYM_H = $(INCLUDE_DIR)/sym.h
@@ -204,8 +213,8 @@ SYM_TEST = $(SRC_DIR)/test_sym.cpp
 
 SYM_TABLEFile = $(OUTPUT_DIR)/sym_table.txt
 
-sym: $(SYM_H) $(SYM_CPP) $(SYM_TEST)
-	@$(CXX) $(UTILITY_CPP) $(SYM_CPP) $(SYM_TEST) -o $(BIN_DIR)/symTest $(CXXFLAGS) -I $(INCLUDE_DIR)
+sym: all $(SYM_H) $(SYM_CPP) $(SYM_TEST) 
+	$(CXX) $(UTILITY_CPP) $(SYM_CPP) $(SYM_TEST) -o $(BIN_DIR)/symTest $(CXXFLAGS) -I $(INCLUDE_DIR)
 	@./$(BIN_DIR)/symTest $(SYM_TABLEFile)
 
 
@@ -215,7 +224,7 @@ sym: $(SYM_H) $(SYM_CPP) $(SYM_TEST)
 # IRSemantic_EXECUTABLE = $(BIN_DIR)/IRCodeGen
 
 # $(IRSemantic_H): $(IRSemantic)
-# 	@$(BISON) -d $(IRSemantic) --output=$(IRSemantic_CPP) --header=$(IRSemantic_H)
+# 	$(BISON) -d $(IRSemantic) --output=$(IRSemantic_CPP) --header=$(IRSemantic_H)
 
 
 # IRCode: $(IRSemantic)  $(IRSemantic_H) $(IRSemantic_CPP) $(SYM_CPP) $(SEMANTIC_CPP) $(TAC_CPP) $(UTILITY_CPP)
@@ -226,8 +235,12 @@ UNIT_TEST = unit_testing.cpp
 
 UNIT_TEST_EXECUTABLE = $(BIN_DIR)/unit_test
 
-unitTest: $(UNIT_TEST) $(OBJ_FILES) 
+$(UNIT_TEST_EXECUTABLE): $(UNIT_TEST) $(OBJ_FILES)
+	@echo "------- Making Unit Test -------"
 	$(CXX) $(CXXFLAGS) $(UNIT_TEST) $(OBJ_FILES) -o $(UNIT_TEST_EXECUTABLE)
+
+unitTest: all $(UNIT_TEST_EXECUTABLE) $(OBJ_FILES)
+	@echo "------- Running Unit Test -------"
 	./$(UNIT_TEST_EXECUTABLE)
 
 
@@ -236,6 +249,8 @@ IRCodeFile = $(OUTPUT_DIR)/IRCode.txt
 $(IRCodeFile):
 	@touch $(IRCodeFile)
 
-irCode: $(EXECUTABLE) $(INPUT) $(OUTPUT) $(CERR) $(OUTPUT_DIR) $(BUILD_DIR) $(OBJ_DIR) $(IRCodeFile)
-	@./$(EXECUTABLE) $(INPUT) $(OUTPUT) -tac $(IRCodeFile) -APTree $(DOTFile2) 2> $(CERR)
-	@$(DOT) -Tsvg $(DOTFile2) -o $(DOTPDF2)
+irCode: all $(EXECUTABLE) $(INPUT) $(OUTPUT) $(CERR) $(IRCodeFile)
+	@echo "🚥 Starting C2RISC Engine 🟢 "
+	@./$(EXECUTABLE) $(INPUT) $(OUTPUT) -tac $(IRCodeFile) -APTree $(APTreeFile) 2> $(CERR)
+	@echo "🎄 ------- Visualizing Annotated PTree ------- 🎄"
+	@$(DOT) -Tsvg $(APTreeFile) -o $(APTreeSVG)

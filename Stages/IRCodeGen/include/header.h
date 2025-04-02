@@ -187,8 +187,10 @@ int width(std::string primType); // This will return the width of the primitive 
 
 int width(const TypeExpression &typeExpr);
 
+int ourEquivalent(const TypeExpression &type1, const TypeExpression &type2);
+
 int checkEquivalance(const TypeExpression &typeExpr1, const TypeExpression &typeExpr2);
-    // Return Values
+// Return Values
 extern const int OKAY;
 extern int const EQUIVALENT;
 extern int const WARNING;
@@ -220,7 +222,6 @@ enum class VALUE_TYPE
 
 VALUE_TYPE getValueType(const TypeExpression &typeExpr); // Only Valid for Identifiers [not any general type expression]
 
-TypeExpression TypeExpressionForConstants(std::string constant); // This will create a type expression for constants
 
     //================[ SubLevel Type's Utilities ]=========================================================================================
     int checkEquivalance(const LevelInfo &info1, const LevelInfo &info2);
@@ -356,6 +357,9 @@ public:
         this->nextScopeNo = 0;
         this->NodeCount = 0;
         this->globalScope = -100;
+        this->earlyEntry = false;
+        this->currnetScope = "NONE"; // This will be used to find the name of the function we are in- to check return type match the signature
+        this->lastScopeNo.push(-1); // This will keep the last scope number
         MEM("SymbolTable Constructor");
     }
 
@@ -498,6 +502,9 @@ int width(const UserDType &dtype); // This will return the width of the user def
         extern std::string PARAM;
         extern std::string CALL ;
         extern std::string ASSIGN_OP;
+        extern std::string IF_FALSE;
+        extern std::string IF_TRUE;
+        extern std::string GOTO_LABEL;
 
         class TAC_Quadruple
         {
@@ -506,12 +513,13 @@ int width(const UserDType &dtype); // This will return the width of the user def
             std::string arg1;
             std::string arg2;
             std::string result;
+            // ASTNode *addedAt;
 
             CON_DES(TAC_Quadruple)
 
             TAC_Quadruple(std::string op, std::string arg1, std::string arg2, std::string result);
 
-            std::string toString() const;
+            std::string toString();
 };
 
 
@@ -525,7 +533,7 @@ class TAC{
         CON_DES(TAC)
         
         // void addTAC(std::string op, std::string arg1, std::string arg2, std::string result);
-        void addTAC(std::string result, std::string op, std::string arg1, std::string arg2); // More readable
+        void addTAC(ASTNode* addedAt,std::string result, std::string op, std::string arg1, std::string arg2); // More readable
         void addTAC(TAC_Quadruple q);
 
         void printTAC(std::ofstream &file);
@@ -558,6 +566,9 @@ bool isA_FloatingType(std::string baseType); // Check if base type is floating
 std::string combineType(std::vector<std::string> typeSpecifierVector); // Combine the types
 // Return value
 extern std::string INVALID_COMBINATION; // This will be used for invalid combination of types
+int ProcessConstants(std::string constant, TypeExpression &typeExpr, std::string &finalValue); // This will process the constants
+
+int elementWidth(const TypeExpression &typeExpr); // This will return the width of the element or say below level
 
 //======================[ TypeCasting Utilities 🆎 ]=========================================================================================
 
@@ -604,18 +615,54 @@ extern int ANNOTATE; // 0 - OFF | 1 - ON [extern declared in header.h]
 
 extern std::ofstream* handlerLog; // This will be used to log the errors
 
+#define ENTRY_H   \
+    if (ANNOTATE) \
+    node->addAttribute("🤞 Entry")
+
+#define EXIT_H    \
+    if (ANNOTATE) \
+        node->addAttribute("Exit ✌️");
+
+#define LOC std::to_string(__LINE__) + ":" + __FILE__
+
+#define ERROR_EXIT_H \                                                                                        
+    if (ANNOTATE) node->addAttribute("🚨 ERROR Exit [" + std::to_string(__LINE__) + ":" + __FILE__ + "] ✋")
+
+#define PASS_THE_ERROR(x) \
+    if(PASS_ERROR == x) { \
+        std::cerr << "Passing ERROR Exit [" << __LINE__ << ":" << __FILE__ << "] 👆" << std::endl; \
+        return; \
+    }
+
+
 #define ENTRY_MSG *handlerLog << "[" << __LINE__ << "] " 
 // #define ENTRY_MSG /**/ //
 
-#define HERE *handlerLog << "AT line " << __LINE__ << " in " << __FILE__ << std::endl
-#define HEREFUNC *handlerLog << "AT line " << __LINE__ << " in " << __FILE__ << " in function: " << lastFuncCalled << std::endl
+#define HERE std::cerr << "[" << __LINE__ << " in " << __FILE__ << "] " << std::endl
 
-#define CERR *handlerLog << "[" << __FILE__ << " : " << __LINE__ <<  "] "
+#define H_HERE *handlerLog << "[" << __FILE__ << " : " << __LINE__ << "] ";
+#define CERR std::cerr << "[ 🐛 " << __FILE__ << " : " << __LINE__ << "]"
 
-#define REPORT *handlerLog << "[" << __FILE__ << " : " << __LINE__ <<  "] "
+#define REPORT std::cerr << "[" << __FILE__ << " : " << __LINE__ <<  "] "
 
-// #define LINE1 std::cerr << "At line " << __LINE__ << " in " << __FILE__ << std::endl;
 #define LINE1 /**/
+
+//---------------------- Space 🚀Change 🔖IR Code for varName2 [🤫 General Space Before USAGE]
+#define USAGE_SPACE_CHANGE(value,type,space,node) \
+    if (space == SPACE::ADDRESS_SPACE) { \
+        if( getSpace(type) != SPACE::VALUE_SPACE) { \
+            std::string tempName = newTemp(); \
+            CODE_BASE.addTAC(node, tempName, RIGHT_STAR, value, NO_ARG); \
+            value = tempName; \
+        } \
+    } else if(space != SPACE::VALUE_SPACE){ \
+        ERROR_EXIT_H; \
+        A_PTree node->attributes.push_back("🌋 Something Wrong in Space 💥 Change Code [" + LOC + "]"); \
+        value = PASS_ERROR; \
+        return; \
+    }
+
+extern std::string PASS_ERROR;
 
 void openHandlerLog(const std::string &filename);
 void closeHandlerLog();
@@ -623,6 +670,8 @@ void closeHandlerLog();
 extern std::vector<std::string> semanticLOG; // [declared in handler.cpp]
 
 extern std::string IN_SYNTAX_PHASE;
+
+std::string getCurrentTime();
 
 //=====================[ Main Semantic Pass Handler ]=========================================================================================
 
@@ -638,6 +687,11 @@ void external_declaration_H(ASTNode *node);
 //=====================[ Function Definition Handlers ]=========================================================================================
 
 void function_definition_H(ASTNode *node);
+
+//=====================[ Control Flow Labels ]=========================================================================================
+extern std::stack<std::string> CONTINUE_LABELS; // Jumps to the next iteration
+extern std::stack<std::string> BREAK_LABELS; // Exits the loop or switch's end
+extern std::set<std::string> USER_DEFINED_LABELS; // used by goto statement
 
 //=====================[ Statements Handlers ]=========================================================================================
 
@@ -706,10 +760,9 @@ void abstract_declarator_H(ASTNode *node, TypeExpression inh_type, TypeExpressio
 void direct_abstract_declarator_H(ASTNode *node, TypeExpression inh_type, TypeExpression &type);
 extern std::string NO_ARG_NAME;
 
-
 //----- Initializer -----
-void initializer_H(ASTNode *node);
-void initializer_list_H(ASTNode *node);
+void initializer_H(ASTNode *node, TypeExpression inh_type, std::string inh_varName);
+// void initializer_list_H(ASTNode *node); // Not Needed
 
 //======================[ Expression Handlers ]=========================================================================================
 

@@ -2394,6 +2394,8 @@ int main(int argc, char **argv) {
 
         /* LINE */
 
+        LINE1;
+
         // Parse command line arguments
         for (int i = 3; i < argc; i++) {
             if(std::string(argv[i]) == "-APTree") {
@@ -2548,6 +2550,9 @@ int main(int argc, char **argv) {
     if(!syntaxError){
         *output << "\U0001F44D Input Program passed Syntax Analysis Phase \U0001F44D\n" << std::endl;
         terminalMsg = "Lexical Analysis 👍 | Syntax Analysis 👍\n";
+        if(TERMINAL_MESSAGE){
+            std::cout << terminalMsg << std::endl;
+        }
     }
     // ------------------------- Printing Various Outputs ------------------------
 
@@ -2587,6 +2592,9 @@ int main(int argc, char **argv) {
     if(!APTree && !tac){ // We don't want to run semantic pass if we are NOT generating APTree
         if(yyin) fclose(yyin);  // Close the input file if opened
         closeOutputFile();  // Close the output file
+        if(TERMINAL_MESSAGE){
+            std::cout << "😊 Thanku for Using Our C2RSIC Engine (🔤 Syntax Phase) 😊 \n" << std::endl;
+        }
         return 0;
     }
 
@@ -2599,6 +2607,7 @@ int main(int argc, char **argv) {
     // Adding a Extra Node on the top of the Ptree
     ASTNode *topNode = new ASTNode("Program");
     topNode->addChild(root);
+    topNode->attributes.push_back(getCurrentTime());
 
 
     LINE1
@@ -2632,27 +2641,27 @@ int main(int argc, char **argv) {
     if(APTree){
         generateDOT_A(topNode, dot_file_2);
         *output << "\U0001F53A Annotated Parse Tree generated as DOT file: " << dot_file_2 << " can be visualized using Graphviz\n";
-        if(TERMINAL_MESSAGE){
+        /* if(TERMINAL_MESSAGE){
             std::cout << "\U0001F53A Annotated Parse Tree generated" << std::endl;
-        }
+        } */
     }
-
 
     // IR Code Generation
     
     if(tac){
         std::ofstream tacOut(tac_file);
         CODE_BASE.printTAC(tacOut);
-        if(TERMINAL_MESSAGE){
-            std::cout << "\U0001F53A Three Address Code generated in: " << tac_file << "\n";
-        }
+        *output << "\U0001F53A TAC Code generated as: " << tac_file << "\n";
+        HERE;
         tacOut.close();
     }    
-
-
+    HERE;
 
     if (yyin) fclose(yyin);  // Close the input file if opened
     closeOutputFile();  // Close the output file
+    if(TERMINAL_MESSAGE){
+        std::cout << "😊  Thanku for Using Our C2RSIC Engine (🆎Semantic + 🔖IRCode Gen) 😊 \n" << std::endl;
+    }
     return 0;
 }
 
