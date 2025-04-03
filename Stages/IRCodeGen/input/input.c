@@ -1,25 +1,6 @@
-// int main(){
-//     int a = 5;
-//     int b;
-//     if (b == 5)
-//     {
-//         a++;
-//     }
-//     else{
-//         a--;
-//     }
-// }
-
 int main(){
-    int i = 0, a;
-    if (i == 0)
-    {
-        i++;
-        a--;
-    }
-    else{
+    int d, i = 1, a = 1;
+    for(int i = 0; i == 10; a++){
         a++;
     }
-
-    return 0;
 }

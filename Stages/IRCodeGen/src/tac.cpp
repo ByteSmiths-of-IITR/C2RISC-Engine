@@ -179,7 +179,7 @@ int TAC::backpatch(ASTNode* currNode,const std::vector<int> &list, std::string l
     for (int i = 0; i < list.size(); i++)
     {
         // Check if it's a valid backpatch TAC
-        std::cerr << "🩹 BackPatching TAC Code - [" << list[i] << "] with " << label << std::endl;
+        // std::cerr << "🩹 BackPatching TAC Code - [" << list[i] << "] with " << label << std::endl;
         std::string opCode = code[list[i]].op;
         bool isOkay = (opCode == IF_FALSE || opCode == IF_TRUE || opCode == GOTO_LABEL);
         if (!isOkay)
@@ -190,8 +190,9 @@ int TAC::backpatch(ASTNode* currNode,const std::vector<int> &list, std::string l
         code[list[i]].result = label;
     }
 
+    // if(list.size()>0){
     A_PTree currNode->addAttribute("Backpatching List : " + toString(list) + " with " + label); // 🌴 Adding syn_attr
-
+    // }
     return 0;
 }
 
@@ -216,7 +217,7 @@ void TAC::printTAC(std::ofstream &file)
         }
         else if(code[i].op == FUNCTION_LABEL)
         {
-            file << std::setw(w) << code[i].result << " : " << std::endl;
+            file << std::setw(w) << i << " : " << std::setw(wcode) << std::left << code[i].result << std::endl;
             continue;
         }
 

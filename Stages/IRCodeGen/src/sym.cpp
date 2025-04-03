@@ -66,16 +66,19 @@ int SymbolTable::earlyEntry(){
     
     // it's false // So we can set it to true
     CERR << "Info: earlyEntry is set to true\n";
-    this->wasEarlyEntered = true;
     // call the enterScope
-    return this->enterScope();
+    int k = this->enterScope();
+    this->wasEarlyEntered = true;
+    return k;
 }
+
+int NO_EXIT = -10;
 
 int SymbolTable::earlyExit(){
     // This will handle the exit needed for earlyEntry
-    if(this->wasEarlyEntered){
+    if(!this->wasEarlyEntered){
         // If it's false - Normal Exit handled it
-        return this->scopeNo; //
+        return NO_EXIT; //
     }
     // If it's true - So we need to exit
     CERR << "Info: earlyExit is set to true\n";

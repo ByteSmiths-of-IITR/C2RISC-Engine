@@ -335,6 +335,7 @@ extern int const LOOKUP_FAILURE; // Not Found
 
 extern std::string GLOBAL_SCOPE;
 extern std::string LOCAL_SCOPE;
+extern int NO_EXIT;
 
 class SymbolTable
 {

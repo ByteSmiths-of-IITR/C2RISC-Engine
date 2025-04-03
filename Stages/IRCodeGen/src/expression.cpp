@@ -116,10 +116,10 @@ void expression_H(ASTNode *node, std::string inh_whereToSendString, std::string 
         return;
     }
 
-    A_PTree node->addAttribute("😵‍💫 varName    = " + varName);
-    A_PTree node->addAttribute("😵‍💫 type       = " + toString(type));
-    A_PTree node->addAttribute("😵‍💫 valueType  = " + toString(valueType));
-    A_PTree node->addAttribute("😵‍💫 valueSpace = " + toString(valueSpace));
+    A_PTree node->addAttribute("😵‍💫 varName : " + varName);
+    A_PTree node->addAttribute("😵‍💫 type :" + toString(type));
+    A_PTree node->addAttribute("😵‍💫 valueType :" + toString(valueType));
+    A_PTree node->addAttribute("😵‍💫 valueSpace : " + toString(valueSpace));
     // A_PTree node->addAttribute("😵‍💫 inh_whereToSendString = " + inh_whereToSendString);
 
     EXIT_H;

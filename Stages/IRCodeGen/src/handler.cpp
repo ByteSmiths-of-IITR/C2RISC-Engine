@@ -733,7 +733,12 @@ void function_definition_H(ASTNode *node)
 
         // Early Entry's Exit
         int exitedScope = SYM_TABLE.earlyExit();                                                       //  [☀️ EarlyScope Entry] [IT's POSSIBLE that the early scope entry was never used in here]
-        A_PTree node->addAttribute("Exit due to EarlyEntry : S" + std::to_string(exitedScope) + " ☀️"); // 🌴 Adding syn_attr
+        if(exitedScope==NO_EXIT){
+            int currScope = SYM_TABLE.scopeNo;
+            A_PTree node->addAttribute("Already 😅 Exited | Now in S" + std::to_string(currScope) + " ☀️"); // 🌴 Adding syn_attr
+        }else{
+            A_PTree node->addAttribute("Exit due to EarlyEntry : S" + std::to_string(exitedScope) + " ☀️"); // 🌴 Adding syn_attr
+        }
     }
     else
     {

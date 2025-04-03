@@ -163,8 +163,39 @@ void iteration_statement_H(ASTNode *node)
         // generate IR code to check expression value == 1 and create goto with unfilled jump label
         //  line b : if value==1 goto __
         //  line a : goto __
-        //  E.truelist = merge(E.truelist, a) and E.falselist = merge(E.falselist ,b)
+        //  imp: E.truelist = merge(E.truelist, a) and E.falselist = merge(E.falselist ,b)
         
+        //  generate a S1.start label and backpatch(E.falselist, S1.start)
+
+        // create S1.nextlist
+        //  call statement pass S1.nextlist
+        // backpatch(S1.nextlist, M1)
+        // generate IR code
+        // line c : goto _M1_
+        //  S.nextlist = merge(E.truelist, S.nextlist)
+    }
+    else if(whichProduction == P3)
+    {
+        // S -> do S1 while ( E ) ;
+        // logic:first jump over expression and then use as normal while loop
+        //  we need to get the backpatching list of iteration_statement_H
+        // line e:generate a goto______
+
+
+        //  we need to get the backpatching list of iteration_statement_H
+        // find the next address in IR code, store in a variable (M1)
+
+        // create a backpatch list for E (truelist, falselist)
+        // We need to call the expression pass its list but here we only call expression not pass list as we do not use short-circuiting
+
+        // check possible types of expression allowed
+        // generate IR code to check expression value == 1 and create goto with unfilled jump label
+        //  line a : if value==1 goto __
+        //  line b : goto __
+        //  E.truelist = merge(E.truelist, a) and E.falselist = merge(E.falselist ,b)
+
+
+        // in E.truelist add address e as in first iteration no checking , after than normal while loop working
         //  generate a S1.start label and backpatch(E.truelist, S1.start)
 
         // create S1.nextlist
@@ -173,27 +204,6 @@ void iteration_statement_H(ASTNode *node)
         // generate IR code
         // line c : goto _M1_
         //  S.nextlist = merge(E.falselist, S.nextlist)
-    }
-    else if(whichProduction == P3)
-    {
-        // S -> do S1 while ( E ) ;
-        //  we need to get the backpatching list of iteration_statement_H
-
-        // find the next address in IR code, store in a variable (M1)
-
-        // create S1.nextlist, call S1 and pass S1.nextlist
-        // get next address in IR code, store in a variable (M2)
-        // backpatch(S1.nextlist, M2)
-
-        // create a backpatch list for E (truelist, falselist)
-        // We need to call the expression pass its list but here we only call expression not pass list as we do not use short-circuiting
-        // check possible types of expression allowed
-        // generate IR code to check expression value == 1 and create goto with unfilled jump label
-        //  line a : if value==1 goto __
-        //  line b : goto __
-        //  E.truelist = merge(E.truelist, a) and E.falselist = merge(E.falselist ,b)
-        //  backpatch(E.truelist, M1)
-        // S.nextlist = merge(E.falselist, S.nextlist)
 
     }
     // ES2->checking condition
@@ -205,13 +215,6 @@ void iteration_statement_H(ASTNode *node)
 
         // get the next address in IR code, store in a variable (M1)
 
-
-        // create S1.nextlist
-        // call statement pass S1.nextlist
-        
-        // get the next address in IR code, store in a variable (M2)
-        // backpatch(S1.nextlist, M2)
-
         // create a backpatch list for ES2 (truelist, falselist)
         // We need to call the expression pass its list but here we only call expression not pass list as we do not use short-circuiting
         // check possible types of expression allowed
@@ -219,30 +222,27 @@ void iteration_statement_H(ASTNode *node)
         //  line a : if value==1 goto __
         //  line b : goto __
         //  ES2.truelist = merge(ES2.truelist, a) and ES2.falselist = merge(ES2.falselist ,b)
+        //  get next IR address M2
+        // backpatch(ES2.truelist,M2)
 
-        //  backpatch(ES2.truelist, M1)
+        // create S1.nextlist
+        // call statement pass S1.nextlist
+        
+        // backpatch(S1.nextlist, M1)
+
+        // generate IR code
+        // line c : goto _M1_
+        
         // S.nextlist = merge(ES2.falselist, S.nextlist)
 
     }
     else if(whichProduction == P5)
     {
-        // S -> for ( ES1 ; ES2 ; E ) S1
-
+        // S -> for ( ES1 ; ES2 ;E) S1
         //  we need to get the backpatching list of iteration_statement_H
-        // call ES1 and generate its IR code(ES1.truelist, ES1.falselist will exists if short-circuiting is used)
+        // call ES1 and generate its IR code (ES1.truelist, ES1.falselist will exists if short-circuiting is used)
 
         // get the next address in IR code, store in a variable (M1)
-
-
-        // create S1.nextlist
-        // call statement pass S1.nextlist
-        
-        // get the next address in IR code, store in a variable (M2)
-        // backpatch(S1.nextlist, M2)
-
-        // create a backpatch list for E (truelist, falselist)
-        // We need to call the expression pass its list but here we only call expression not pass list as we do not use short-circuiting
-        // we will not use  E (truelist, falselist)
 
         // create a backpatch list for ES2 (truelist, falselist)
         // We need to call the expression pass its list but here we only call expression not pass list as we do not use short-circuiting
@@ -251,28 +251,28 @@ void iteration_statement_H(ASTNode *node)
         //  line a : if value==1 goto __
         //  line b : goto __
         //  ES2.truelist = merge(ES2.truelist, a) and ES2.falselist = merge(ES2.falselist ,b)
+        //  get next IR address M2
+        // backpatch(ES2.truelist,M2)
 
-        //  backpatch(ES2.truelist, M1)
+        // create S1.nextlist
+        // call statement pass S1.nextlist
+        
+        // backpatch(S1.nextlist, M1)
+
+        // call E and generate its IR code (E.truelist, E.falselist will exists if short-circuiting is used)
+
+        // generate IR code
+        // line c : goto _M1_
+        
         // S.nextlist = merge(ES2.falselist, S.nextlist) 
     }
     else if(whichProduction == P6)
     {
         // S -> for ( D ; ES2 ; E ) S1
         //  we need to get the backpatching list of iteration_statement_H
-        // call D and generate its IR code
+        // call D and generate it's IR code
 
         // get the next address in IR code, store in a variable (M1)
-
-
-        // create S1.nextlist
-        // call statement pass S1.nextlist
-        
-        // get the next address in IR code, store in a variable (M2)
-        // backpatch(S1.nextlist, M2)
-
-        // create a backpatch list for E (truelist, falselist)
-        // We need to call the expression pass its list but here we only call expression not pass list as we do not use short-circuiting
-        // we will not use  E (truelist, falselist)
 
         // create a backpatch list for ES2 (truelist, falselist)
         // We need to call the expression pass its list but here we only call expression not pass list as we do not use short-circuiting
@@ -281,8 +281,19 @@ void iteration_statement_H(ASTNode *node)
         //  line a : if value==1 goto __
         //  line b : goto __
         //  ES2.truelist = merge(ES2.truelist, a) and ES2.falselist = merge(ES2.falselist ,b)
+        //  get next IR address M2
+        // backpatch(ES2.truelist,M2)
 
-        //  backpatch(ES2.truelist, M1)
+        // create S1.nextlist
+        // call statement pass S1.nextlist
+        
+        // backpatch(S1.nextlist, M1)
+
+        // call E and generate its IR code (E.truelist, E.falselist will exists if short-circuiting is used)
+
+        // generate IR code
+        // line c : goto _M1_
+        
         // S.nextlist = merge(ES2.falselist, S.nextlist)
     }
     
