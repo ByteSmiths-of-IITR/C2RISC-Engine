@@ -22,8 +22,7 @@
 // backpatching list attribute for non-terminal A is created when it is in right side of production
 // and then passed to the children
 // e.g: S -> AB //here we will create list associated to A and B and do backpatching
-// 1. makelist(i) creates a new list containing only i, an index into the arrayof
-//  instructions; makelist returns a pointer to the newly created list.
+// 1. makelist(i) creates a new empty list and returns a pointer to the newly created list.
 
 // 2. merge(p1;p2) concatenates the lists pointed to by p1 and p2, and returns
 //  a pointer to the concatenated list.
@@ -126,6 +125,167 @@ void iteration_statement_H(ASTNode *node)
     std::string P4 = "FOR LPAREN expression_statement expression_statement RPAREN statement";
     std::string P5 = "FOR LPAREN expression_statement expression_statement expression RPAREN statement";
     std::string P6 = "FOR LPAREN declaration expression_statement expression RPAREN statement";
+
+    if(whichProduction == P1)
+    {
+        // S -> while ( E ) S1
+        //  we need to get the backpatching list of iteration_statement_H
+        // find the next address in IR code, store in a variable (M1) 
+
+        // create a backpatch list for E (truelist, falselist)
+        // We need to call the expression pass its list but here we only call expression not pass list as we do not use short-circuiting
+
+        // check possible types of expression allowed
+        // generate IR code to check expression value == 1 and create goto with unfilled jump label
+        //  line a : if value==1 goto __
+        //  line b : goto __
+        //  E.truelist = merge(E.truelist, a) and E.falselist = merge(E.falselist ,b)
+        
+        //  generate a S1.start label and backpatch(E.truelist, S1.start)
+
+        // create S1.nextlist
+        //  call statement pass S1.nextlist
+        // backpatch(S1.nextlist, M1)
+        // generate IR code
+        // line c : goto _M1_
+        //  S.nextlist = merge(E.falselist, S.nextlist)
+    }
+    else if(whichProduction == P2)
+    {
+        // S -> until ( E ) S1 %%%%%%%%%%%%%%%just opposite of while%%%%%%%%%%%%%%%%%%%%%
+        //  we need to get the backpatching list of iteration_statement_H
+        // find the next address in IR code, store in a variable (M1) 
+
+        // create a backpatch list for E (truelist, falselist)
+        // We need to call the expression pass its list but here we only call expression not pass list as we do not use short-circuiting
+
+        // check possible types of expression allowed
+        // generate IR code to check expression value == 1 and create goto with unfilled jump label
+        //  line b : if value==1 goto __
+        //  line a : goto __
+        //  E.truelist = merge(E.truelist, a) and E.falselist = merge(E.falselist ,b)
+        
+        //  generate a S1.start label and backpatch(E.truelist, S1.start)
+
+        // create S1.nextlist
+        //  call statement pass S1.nextlist
+        // backpatch(S1.nextlist, M1)
+        // generate IR code
+        // line c : goto _M1_
+        //  S.nextlist = merge(E.falselist, S.nextlist)
+    }
+    else if(whichProduction == P3)
+    {
+        // S -> do S1 while ( E ) ;
+        //  we need to get the backpatching list of iteration_statement_H
+
+        // find the next address in IR code, store in a variable (M1)
+
+        // create S1.nextlist, call S1 and pass S1.nextlist
+        // get next address in IR code, store in a variable (M2)
+        // backpatch(S1.nextlist, M2)
+
+        // create a backpatch list for E (truelist, falselist)
+        // We need to call the expression pass its list but here we only call expression not pass list as we do not use short-circuiting
+        // check possible types of expression allowed
+        // generate IR code to check expression value == 1 and create goto with unfilled jump label
+        //  line a : if value==1 goto __
+        //  line b : goto __
+        //  E.truelist = merge(E.truelist, a) and E.falselist = merge(E.falselist ,b)
+        //  backpatch(E.truelist, M1)
+        // S.nextlist = merge(E.falselist, S.nextlist)
+
+    }
+    // ES2->checking condition
+    else if(whichProduction == P4)
+    {
+        // S -> for ( ES1 ; ES2 ;) S1
+        //  we need to get the backpatching list of iteration_statement_H
+        // call ES1 and generate its IR code (ES1.truelist, ES1.falselist will exists if short-circuiting is used)
+
+        // get the next address in IR code, store in a variable (M1)
+
+
+        // create S1.nextlist
+        // call statement pass S1.nextlist
+        
+        // get the next address in IR code, store in a variable (M2)
+        // backpatch(S1.nextlist, M2)
+
+        // create a backpatch list for ES2 (truelist, falselist)
+        // We need to call the expression pass its list but here we only call expression not pass list as we do not use short-circuiting
+        // check possible types of expression allowed
+        // generate IR code to check expression value == 1 and create goto with unfilled jump label
+        //  line a : if value==1 goto __
+        //  line b : goto __
+        //  ES2.truelist = merge(ES2.truelist, a) and ES2.falselist = merge(ES2.falselist ,b)
+
+        //  backpatch(ES2.truelist, M1)
+        // S.nextlist = merge(ES2.falselist, S.nextlist)
+
+    }
+    else if(whichProduction == P5)
+    {
+        // S -> for ( ES1 ; ES2 ; E ) S1
+
+        //  we need to get the backpatching list of iteration_statement_H
+        // call ES1 and generate its IR code(ES1.truelist, ES1.falselist will exists if short-circuiting is used)
+
+        // get the next address in IR code, store in a variable (M1)
+
+
+        // create S1.nextlist
+        // call statement pass S1.nextlist
+        
+        // get the next address in IR code, store in a variable (M2)
+        // backpatch(S1.nextlist, M2)
+
+        // create a backpatch list for E (truelist, falselist)
+        // We need to call the expression pass its list but here we only call expression not pass list as we do not use short-circuiting
+        // we will not use  E (truelist, falselist)
+
+        // create a backpatch list for ES2 (truelist, falselist)
+        // We need to call the expression pass its list but here we only call expression not pass list as we do not use short-circuiting
+        // check possible types of expression allowed
+        // generate IR code to check expression value == 1 and create goto with unfilled jump label
+        //  line a : if value==1 goto __
+        //  line b : goto __
+        //  ES2.truelist = merge(ES2.truelist, a) and ES2.falselist = merge(ES2.falselist ,b)
+
+        //  backpatch(ES2.truelist, M1)
+        // S.nextlist = merge(ES2.falselist, S.nextlist) 
+    }
+    else if(whichProduction == P6)
+    {
+        // S -> for ( D ; ES2 ; E ) S1
+        //  we need to get the backpatching list of iteration_statement_H
+        // call D and generate its IR code
+
+        // get the next address in IR code, store in a variable (M1)
+
+
+        // create S1.nextlist
+        // call statement pass S1.nextlist
+        
+        // get the next address in IR code, store in a variable (M2)
+        // backpatch(S1.nextlist, M2)
+
+        // create a backpatch list for E (truelist, falselist)
+        // We need to call the expression pass its list but here we only call expression not pass list as we do not use short-circuiting
+        // we will not use  E (truelist, falselist)
+
+        // create a backpatch list for ES2 (truelist, falselist)
+        // We need to call the expression pass its list but here we only call expression not pass list as we do not use short-circuiting
+        // check possible types of expression allowed
+        // generate IR code to check expression value == 1 and create goto with unfilled jump label
+        //  line a : if value==1 goto __
+        //  line b : goto __
+        //  ES2.truelist = merge(ES2.truelist, a) and ES2.falselist = merge(ES2.falselist ,b)
+
+        //  backpatch(ES2.truelist, M1)
+        // S.nextlist = merge(ES2.falselist, S.nextlist)
+    }
+    
 }
 
 void jump_statement_H(ASTNode *node)

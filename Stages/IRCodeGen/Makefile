@@ -112,7 +112,7 @@ run: all $(EXECUTABLE) $(INPUT) $(OUTPUT) $(CERR)
 # Result dot (graphviz) tool
 DOT = dot
 
-ASTFile = $(OUTPUT_DIR)/ast_graph.dot
+ASTFile = $(BUILD_DIR)/ast_graph.dot
 ASTOUT = $(OUTPUT_DIR)/AST.pdf
 
 ## For Visualizing the AST

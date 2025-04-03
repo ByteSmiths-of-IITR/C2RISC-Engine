@@ -4,7 +4,7 @@ std::string NO_ARG = "#####";
 std::string RIGHT_STAR = "right_star";
 std::string LEFT_STAR = "left_star";
 std::string FUNCTION_LABEL = "function_label";
-std::string BLANK = "blank";
+// std::string BLANK = "blank";
 std::string CAST = "cast";
 std::string LABEL = "label";
 std::string AMPERSEND = "&";
@@ -17,10 +17,9 @@ std::string ASSIGN_OP = "=";
 std::string IF_FALSE = "if_false";
 std::string IF_TRUE = "if";
 std::string GOTO_LABEL = "goto";
+std::string TO_BACKPATCH = "to_backpatch";
 
 #include <iomanip>
-
-extern ASTNode *currentNode;
 
 TAC_Quadruple::TAC_Quadruple(std::string op, std::string arg1, std::string arg2, std::string result)
 {
@@ -103,10 +102,10 @@ std::string TAC_Quadruple::toString()
         str = result + " = (" + arg1 + ")" + arg2; // result = (arg1)arg2
     }
 
-    else if (op == BLANK)
-    {
-        str = "-------------------------------";
-    }
+    // else if (op == BLANK)
+    // {
+    //     str = "-------------------------------";
+    // }
 
     else if (op == ASSIGN_OP)
     {
@@ -137,26 +136,70 @@ std::string TAC_Quadruple::toString()
 std::string newTemp()
 {
     static int tempCount = 0; // This will keep the count of the temporary variables
-    return "$" + std::to_string(tempCount++);
+    return ("$" + std::to_string(tempCount++)/* + "$"*/);
 }
 
-std::string newLabel()
-{
-    static int labelCount = 0; // This will keep the count of the labels
-    return "L" + std::to_string(labelCount++);
-}
-
-void TAC::addTAC(ASTNode *addedAt, std::string result, std::string op, std::string arg1, std::string arg2)
+int TAC::addTAC(ASTNode *addedAt, std::string result, std::string op, std::string arg1, std::string arg2)
 {
     this->code.push_back(TAC_Quadruple(op, arg1, arg2, result));
 
     std::string details = this->code.back().toString();
-    A_PTree addedAt->addAttribute("TAC: " + details); // 🌴 Adding syn_attr
+    details = "[" + std::to_string(code.size() - 1) + "] " + details;
+    A_PTree addedAt->addAttribute(details);
+    return (code.size() - 1); // this will give 0-based index
 }
 
-void TAC::addTAC(TAC_Quadruple q)
+int TAC::addTAC(TAC_Quadruple q)
 {
     this->code.push_back(q);
+    int index = code.size() - 1;
+    return index;
+}
+
+int TAC::getLastInserted()
+{
+    return (CODE_BASE.code.size() - 1); // this will give 0-based index
+}
+
+int mergeList(std::vector<int> &target, int addition){
+    target.push_back(addition);
+    return 0;
+}
+
+int mergeList(std::vector<int> &target, const std::vector<int> &addition)
+{
+    std::cerr << "Merging " << toString(addition) << " into " << toString(target) << std::endl;
+    target.insert(target.end(), addition.begin(), addition.end());
+    std::cerr << "Merged List " << toString(target) << std::endl;
+    return 0;
+}
+
+int TAC::backpatch(ASTNode* currNode,const std::vector<int> &list, std::string label)
+{
+    for (int i = 0; i < list.size(); i++)
+    {
+        // Check if it's a valid backpatch TAC
+        std::cerr << "🩹 BackPatching TAC Code - [" << list[i] << "] with " << label << std::endl;
+        std::string opCode = code[list[i]].op;
+        bool isOkay = (opCode == IF_FALSE || opCode == IF_TRUE || opCode == GOTO_LABEL);
+        if (!isOkay)
+        {
+            std::cerr << "🤕 Invalid backpatch TAC" << std::endl;
+            return -1;
+        }
+        code[list[i]].result = label;
+    }
+
+    A_PTree currNode->addAttribute("Backpatching List : " + toString(list) + " with " + label); // 🌴 Adding syn_attr
+
+    return 0;
+}
+
+int TAC::backpatch(ASTNode* currNode,const std::vector<int> &list,int labelIndex){
+    // std::cerr << "Calling backpath with -Label=" << labelIndex << std::endl;
+
+    std::string labelStr = "L(" + std::to_string(labelIndex) + ")";
+    return backpatch(currNode, list, labelStr);
 }
 
 void TAC::printTAC(std::ofstream &file)
@@ -175,9 +218,6 @@ void TAC::printTAC(std::ofstream &file)
         {
             file << std::setw(w) << code[i].result << " : " << std::endl;
             continue;
-        } else if(code[i].op == BLANK)
-        {
-            file << std::endl;
         }
 
         file << std::setw(w) << i << " : " << std::setw(wcode) << std::left << code[i].toString() << std::endl;
@@ -186,9 +226,14 @@ void TAC::printTAC(std::ofstream &file)
 
 std::string TAC::newLabel()
 {
-    int lastInserted = code.size();
-    std::string label = "L" + std::to_string(lastInserted);
+    int x = code.size();
+    std::string label = "L(" + std::to_string(x) + ")";
     return label;
+}
+
+int TAC::nextIndex(){
+    int k = code.size();
+    return k;
 }
 
 void TAC::printTAC()
@@ -197,11 +242,11 @@ void TAC::printTAC()
     for (int i = 0; i < code.size(); i++)
     {
         // Special Priting for labels
-        if (code[i].op == LABEL )
-        {
-            std::cout << std::setw(w) << code[i].result << " : " << std::setw(wcode) << std::left << code[i++].toString() << std::endl;
-            continue;
-        }
+        // if (code[i].op == LABEL)
+        // {
+        //     std::cout << std::setw(w) << code[i].result << " : " << std::setw(wcode) << std::left << code[i++].toString() << std::endl;
+        //     continue;
+        // }
         if (code[i].op == FUNCTION_LABEL)
         {
             std::cout << std::setw(w) << code[i].result << " : " << std::endl;

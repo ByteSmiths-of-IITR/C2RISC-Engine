@@ -3,7 +3,7 @@
 
 //=====================[ Statements ]=========================================================================================
 
-void statement_H(ASTNode *node)
+void statement_H(ASTNode *node, std::vector<int> &S_nextList)
 {
     ENTRY_H;
 
@@ -16,17 +16,27 @@ void statement_H(ASTNode *node)
     std::string P6 = "jump_statement";
     std::string P7 = "declaration";
 
-    A_PTree node->addAttribute("🥺 No Attributes"); // 🌴 Adding syn_attr
+    A_PTree node->addAttribute("⬇️ S_nextList = " + toString(S_nextList)); // 🌴 Adding syn_attr
 
     if (whichProduction == P1)
     {
         // Call the labeled statement handler
-        labeled_statement_H(node->children[0]);
+        // Data to be fetched
+        std::vector<int> S1_nextList;
+        labeled_statement_H(node->children[0], S_nextList);
+
+        // Pass the data up
+        S_nextList = S1_nextList;
     }
     else if (whichProduction == P2)
     {
         // Call the compound statement handler
-        compound_statement_H(node->children[0]);
+        // Data to be fetched
+        std::vector<int> S1_nextList;
+        compound_statement_H(node->children[0], S1_nextList);
+
+        // Pass the data up
+        S_nextList = S1_nextList;
     }
     else if (whichProduction == P3)
     {
@@ -37,21 +47,38 @@ void statement_H(ASTNode *node)
         VALUE_TYPE valueType = VALUE_TYPE::UNKNOWN;
         SPACE valueSpace = SPACE::UNKNOWN_SPACE;
         expression_statement_H(node->children[0], "NONE", varName, type, valueType, valueSpace);
+
+        // Pass the data up
+        S_nextList = std::vector<int>(); // No Next List
     }
     else if (whichProduction == P4)
     {
         // Call the selection statement handler
-        selection_statement_H(node->children[0]);
+        std::vector<int> S1_nextList;
+        selection_statement_H(node->children[0], S1_nextList);
+
+        // Pass the data up
+        S_nextList = S1_nextList;
     }
     else if (whichProduction == P5)
     {
         // Call the iteration statement handler
-        iteration_statement_H(node->children[0]);
+        // Data to be fetched
+        std::vector<int> S1_nextList;
+        iteration_statement_H(node->children[0], S1_nextList);
+
+        // Pass the data up
+        S_nextList = S1_nextList;
     }
     else if (whichProduction == P6)
     {
         // Call the jump statement handler
-        jump_statement_H(node->children[0]);
+        // Data to be fetched
+        std::vector<int> S1_nextList;
+        jump_statement_H(node->children[0], S1_nextList);
+
+        // Pass the data up
+        S_nextList = S1_nextList;
     }
     else if (whichProduction == P7)
     {
@@ -64,10 +91,12 @@ void statement_H(ASTNode *node)
         return;
     }
 
+    A_PTree node->addAttribute("⬆️ S_nextList = " + toString(S_nextList)); // 🌴 Adding syn_attr
+
     EXIT_H;
 }
 
-void statement_list_H(ASTNode *node)
+void statement_list_H(ASTNode *node, std::vector<int> &S_nextList)
 {
     ENTRY_H;
 
@@ -75,30 +104,48 @@ void statement_list_H(ASTNode *node)
     std::string P1 = "statement";
     std::string P2 = "statement_list statement";
 
-    A_PTree node->addAttribute("🥺 No Attributes"); // 🌴 Adding syn_attr
+    A_PTree node->addAttribute("⬇️ S_nextList = " + toString(S_nextList)); // 🌴 Adding syn_attr
 
     if (whichProduction == P1)
     {
         // Call the statement handler
-        statement_H(node->children[0]);
+        std::vector<int> S1_nextList;
+        statement_H(node->children[0], S1_nextList);
+
+        // Pass the data up
+        S_nextList = S1_nextList;
     }
     else if (whichProduction == P2)
     {
         // Call the statement list handler
-        statement_list_H(node->children[0]);
+        std::vector<int> S1_nextList;
+        statement_list_H(node->children[0], S1_nextList);
+
+        // BackPatch the next list
+        int aLabel = CODE_BASE.nextIndex();
+        CODE_BASE.backpatch(node, S1_nextList, aLabel);
+
         // Call the statement handler
-        statement_H(node->children[1]);
+        std::vector<int> S2_nextList;
+        statement_H(node->children[1], S2_nextList);
+
+        // Pass the data up
+        S_nextList = S2_nextList;
     }
     else
     {
         ERROR_EXIT_H;
+        // Setup Dummy Data
+        S_nextList = std::vector<int>(); // No Next List
         return;
     }
+
+    A_PTree node->addAttribute("⬆️ S_nextList = " + toString(S_nextList)); // 🌴 Adding syn_attr
 
     EXIT_H;
 }
 
-void compound_statement_H(ASTNode *node)
+void compound_statement_H(ASTNode *node, std::vector<int> &S_nextList)
 {
     ENTRY_H;
 
@@ -108,11 +155,12 @@ void compound_statement_H(ASTNode *node)
     std::string P3 = "LCURLY declaration_list RCURLY";
     std::string P4 = "LCURLY declaration_list statement_list RCURLY";
 
-    // NO ATTRIBUTES
+    A_PTree node->addAttribute("⬇️ S_nextList = " + toString(S_nextList)); // 🌴 Adding syn_attr
 
     if (whichProduction != P1 && whichProduction != P2 && whichProduction != P3 && whichProduction != P4)
     {
         ERROR_EXIT_H;
+        S_nextList = std::vector<int>();
         return;
     }
 
@@ -121,22 +169,33 @@ void compound_statement_H(ASTNode *node)
 
     if (whichProduction == P1)
     {
-        // Nothing to do
+        S_nextList = std::vector<int>();
     }
     else if (whichProduction == P2)
     {
         // For Now Just Call Statement List
-        statement_list_H(node->children[1]);
+        std::vector<int> S1_nextList;
+        statement_list_H(node->children[1], S1_nextList);
+
+        S_nextList = S1_nextList;
     }
     else if (whichProduction == P3)
     {
         // For Now Just Call Declaration List
         declaration_list_H(node->children[1]);
+
+        S_nextList = std::vector<int>(); // No Next List
     }
     else if (whichProduction == P4)
     {
         // For Now Just Call Declaration List
         declaration_list_H(node->children[1]);
+
+        // For Now Just Call Statement List
+        std::vector<int> S1_nextList;
+        statement_list_H(node->children[2], S1_nextList);
+
+        S_nextList = S1_nextList; // This was last statement - can't backpatch here send UP
     }
     else
     {
@@ -144,6 +203,9 @@ void compound_statement_H(ASTNode *node)
         return;
     }
 
+    // Backpatch the next list
+    A_PTree node->addAttribute("⬆️ S_nextList = " + toString(S_nextList)); // 🌴 Adding syn_attr
+    
     // SCOPE EXIT // [👌 Default Scope Handling]
     int exitedScope = SYM_TABLE.exitScope();
     A_PTree node->addAttribute("Scope S" + std::to_string(exitedScope) + " Exited ↙️");
@@ -175,31 +237,33 @@ void expression_statement_H(ASTNode *node, std::string inh_whereToSendString, st
         valueType = valueType1;
         valueSpace = valueSpace1;
 
-        A_PTree node->addAttribute("❣️ varName    : " + varName1);              // 🌴 Adding syn_attr
-        A_PTree node->addAttribute("❣️ type       : " + toString(type1));       // 🌴 Adding syn_attr
-        A_PTree node->addAttribute("❣️ valueType  : " + toString(valueType1));  // 🌴 Adding syn_attr
-        A_PTree node->addAttribute("❣️ valueSpace : " + toString(valueSpace1)); // 🌴 Adding syn_attr
     }
     else if (whichProduction == P2)
     {
         // Nothing to do
         varName = NO_ARG;
-        type = TypeExpression();
+        type = TypeExpression(); // Can be empty
         valueType = VALUE_TYPE::UNKNOWN;
         valueSpace = SPACE::UNKNOWN_SPACE;
     }
     else
     {
         ERROR_EXIT_H;
+        varName = PASS_ERROR;
         return;
     }
+
+    A_PTree node->addAttribute("❣️ varName : " + varName);                 
+    A_PTree node->addAttribute("❣️ type : " + toString(type));             
+    A_PTree node->addAttribute("❣️ valueType : " + toString(valueType));   
+    A_PTree node->addAttribute("❣️ valueSpace : " + toString(valueSpace)); 
 
     EXIT_H;
 }
 
 //==================== [Control Flow Statements] =========================================================================================
 
-void selection_statement_H(ASTNode *node)
+void selection_statement_H(ASTNode *node, std::vector<int> &S_nextList)
 {
     ENTRY_H;
 
@@ -208,8 +272,13 @@ void selection_statement_H(ASTNode *node)
     std::string P2 = "IF LPAREN expression RPAREN statement ELSE statement";
     std::string P3 = "SWITCH LPAREN expression RPAREN statement";
 
+    A_PTree node->addAttribute("⬇️ S_nextList = " + toString(S_nextList)); // 🌴 Adding syn_attr
+
     if (whichProduction == P1)
     {
+        // Backpatching list for expression
+        std::vector<int> E_truelist, E_falselist;
+
         // Get Ready to call expression
         // Data to be fetched
         std::string varName1 = "Just a Dummy";
@@ -218,26 +287,43 @@ void selection_statement_H(ASTNode *node)
         SPACE valueSpace1;
 
         expression_H(node->children[2], "NONE", varName1, type1, valueType1, valueSpace1);
-        aptLOG("e1 okay");
-
         PASS_THE_ERROR(varName1);
 
         // 🚀 USAGE 🤫 SPACE CHANGE 🚀
         USAGE_SPACE_CHANGE(varName1, type1, valueSpace1, node);
 
-        // Now we can use the expression
-        std::string trueEnd = CODE_BASE.newLabel();
-        CODE_BASE.addTAC(node, trueEnd, IF_FALSE, varName1, NO_ARG);
+        // 🅱️ TypeChecking of Expression
+        //  Type NOT allowed - STRUCT_UNION
+        Type whichType = whatIsType(type1);
+        if (whichType == Type::STRUCT_UNION)
+        {
+            ERROR_EXIT_H;
+            semanticLOG.push_back("🚨 Type Error: Expression inside if statement cannot be of type STRUCT_UNION");
+            return;
+        }
 
+        int aLabel = CODE_BASE.addTAC(node, TO_BACKPATCH, IF_TRUE, varName1, NO_ARG);  // if (varName != 0) goto aLabel
+        int bLabel = CODE_BASE.addTAC(node, TO_BACKPATCH, GOTO_LABEL, NO_ARG, NO_ARG); // goto bLabel
+
+        mergeList(E_truelist,aLabel);
+        mergeList(E_falselist, bLabel);
+        
+        int nextLabel = CODE_BASE.nextIndex();
+
+        int check = CODE_BASE.backpatch(node, E_truelist, nextLabel);
+
+        std::vector<int> S1_nextList; // This value will be fetchec
         // Next we evaluate the statement
-        statement_H(node->children[4]);
-        aptLOG("e2 okay");
+        statement_H(node->children[4], S1_nextList);
 
-        // Now we put the label
-        CODE_BASE.addTAC(node, trueEnd, LABEL, NO_ARG, NO_ARG);
+        mergeList(S_nextList,E_falselist);
+        mergeList(S_nextList,S1_nextList);
     }
     else if (whichProduction == P2)
     {
+        // Backpatching list for expression
+        std::vector<int> E_truelist, E_falselist;
+
         // Get Ready to call expression
         // Data to be fetched
         std::string varName1 = "Just a Dummy";
@@ -247,35 +333,50 @@ void selection_statement_H(ASTNode *node)
 
         expression_H(node->children[2], "NONE", varName1, type1, valueType1, valueSpace1);
         PASS_THE_ERROR(varName1);
-        aptLOG("e1 okay");
 
         // 🚀 USAGE 🤫 SPACE CHANGE 🚀
         USAGE_SPACE_CHANGE(varName1, type1, valueSpace1, node);
-        aptLOG("SPACE okay");
 
-        // Now we can use the expression
-        std::string trueEnd = CODE_BASE.newLabel();
-        aptLOG("trueEnd okay");
-        CODE_BASE.addTAC(node, trueEnd, IF_FALSE, varName1, NO_ARG);
-        aptLOG("IR Code+ okay");
+        // 🅱️ TypeChecking of Expression
+        //  Type NOT allowed - STRUCT_UNION
+        Type whichType = whatIsType(type1);
+        if (whichType == Type::STRUCT_UNION)
+        {
+            ERROR_EXIT_H;
+            semanticLOG.push_back("🚨 Type Error: Expression inside if statement cannot be of type STRUCT_UNION");
+            return;
+        }
 
+        int aLabel = CODE_BASE.addTAC(node, TO_BACKPATCH, IF_TRUE, varName1, NO_ARG);  // if (varName != 0) goto aLabel
+        int bLabel = CODE_BASE.addTAC(node, TO_BACKPATCH, GOTO_LABEL, NO_ARG, NO_ARG); // goto bLabel
+
+        mergeList(E_truelist,aLabel);
+        mergeList(E_falselist, bLabel);
+
+        int nextLabel = CODE_BASE.nextIndex();
+
+        int check = CODE_BASE.backpatch(node, E_truelist, nextLabel);
+
+        std::vector<int> S1_nextList; // This value will be fetchec
         // Next we evaluate the statement
-        statement_H(node->children[4]);
-        aptLOG("s1 okay");
+        statement_H(node->children[4], S1_nextList);
 
-        // Now we put the label
-        CODE_BASE.addTAC(node, trueEnd, LABEL, NO_ARG, NO_ARG);
+        int cLabel = CODE_BASE.addTAC(node, TO_BACKPATCH, GOTO_LABEL, NO_ARG, NO_ARG); // goto cLabel
 
-        // Now we can evaluate the else statement
-        std::string elseEnd = CODE_BASE.newLabel();
-        CODE_BASE.addTAC(node, elseEnd, GOTO_LABEL, NO_ARG, NO_ARG);
+        mergeList(S_nextList, cLabel);
 
-        // Evaluate the else statement
-        statement_H(node->children[6]);
-        aptLOG("s2 okay");
+        int d_index = CODE_BASE.nextIndex();
 
-        // Now we put the label
-        CODE_BASE.addTAC(node, elseEnd, LABEL, NO_ARG, NO_ARG);
+        int check2 = CODE_BASE.backpatch(node, E_falselist, d_index);
+
+        std::vector<int> S2_nextList; // This value will be fetchec
+        // Next we evaluate the statement
+        statement_H(node->children[6], S2_nextList);
+        // aptLOG("s2 okay");
+
+        mergeList(S_nextList, S1_nextList);
+        mergeList(S_nextList, S2_nextList);
+        // S_nextList = mergeList(S1_nextList, S2_nextList);
     }
     else if (whichProduction == P3)
     {
@@ -300,17 +401,20 @@ void selection_statement_H(ASTNode *node)
     {
         // Wrong Production
         ERROR_EXIT_H;
+        S_nextList = std::vector<int>();
         return;
     }
-    return;
+
+    A_PTree node->addAttribute("⬆️ S_nextList = " + toString(S_nextList)); // 🌴 Adding syn_attr
+
+    EXIT_H;
 }
 
 std::stack<std::string> CONTINUE_LABELS;   // Jumps to the next iteration
-std::stack<std::string> BREAK_LABELS;      // Exits the loop or switch's end
 std::set<std::string> USER_DEFINED_LABELS; // used by goto statement
 std::stack<std::string> SWITCH_ARG;        // used by switch statement to make comparison
 
-void iteration_statement_H(ASTNode *node)
+void iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList)
 {
     ENTRY_H;
 
@@ -321,6 +425,8 @@ void iteration_statement_H(ASTNode *node)
     std::string P4 = "FOR LPAREN expression_statement expression_statement RPAREN statement";
     std::string P5 = "FOR LPAREN expression_statement expression_statement expression RPAREN statement";
     std::string P6 = "FOR LPAREN declaration expression_statement expression RPAREN statement";
+
+    A_PTree node->addAttribute("⬇️ S_nextList = " + toString(S_nextList)); // 🌴 Adding syn_attr
 
     if (whichProduction == P1)
     {
@@ -345,7 +451,8 @@ void iteration_statement_H(ASTNode *node)
         CODE_BASE.addTAC(node, loopEnd, IF_FALSE, varName1, NO_ARG);
 
         // Now we can evaluate the statement
-        statement_H(node->children[4]);
+        std::vector<int> S1_nextList;
+        statement_H(node->children[4], S1_nextList);
 
         // We go back to the start of the loop
         CODE_BASE.addTAC(node, loopStart, GOTO_LABEL, NO_ARG, NO_ARG);
@@ -367,7 +474,8 @@ void iteration_statement_H(ASTNode *node)
         CODE_BASE.addTAC(node, loopStart, LABEL, NO_ARG, NO_ARG);
 
         // Now we can evaluate the statement
-        statement_H(node->children[1]);
+        std::vector<int> S1_nextList;
+        statement_H(node->children[1], S1_nextList);
 
         // Get Ready to call expression
         // Data to be fetched
@@ -396,8 +504,7 @@ void iteration_statement_H(ASTNode *node)
         // Also need to think about Early Scope Entry
         int scopeNo = SYM_TABLE.earlyEntry(); //  [☀️ EarlyScope Entry] [IT's POSSIBLE that the early scope entry was never used in here]
         A_PTree node->addAttribute("Early Scope Entry : S" + std::to_string(scopeNo) + " ☀️");
-    
-    
+
         // Handle EarlyEnter's Exit
         int exitedScope = SYM_TABLE.earlyExit(); //  [☀️ EarlyScope Entry] [IT's POSSIBLE that the early scope entry was never used in here]
         A_PTree node->addAttribute("Exit due to EarlyEntry : S" + std::to_string(exitedScope) + " ☀️");
@@ -429,7 +536,8 @@ void iteration_statement_H(ASTNode *node)
         CODE_BASE.addTAC(node, loopEnd, IF_FALSE, varName1, NO_ARG); // ifFlase(E1.value) goto loopEnd
 
         // Now we can evaluate the statement
-        statement_H(node->children[4]); // [IRCode of statement will be generated]
+        std::vector<int> S1_nextList;
+        statement_H(node->children[4], S1_nextList); // [IRCode of statement will be generated]
 
         // Then we put code of expression3 - which is updation code
 
@@ -450,10 +558,8 @@ void iteration_statement_H(ASTNode *node)
         CODE_BASE.addTAC(node, loopEnd, LABEL, NO_ARG, NO_ARG);
 
         // Handle EarlyEnter's Exit
-        int exitedScope = SYM_TABLE.earlyExit(); //  [☀️ EarlyScope Entry] [IT's POSSIBLE that the early scope entry was never used in here]
+        int exitedScope = SYM_TABLE.earlyExit();                                                       //  [☀️ EarlyScope Entry] [IT's POSSIBLE that the early scope entry was never used in here]
         A_PTree node->addAttribute("Exit due to EarlyEntry : S" + std::to_string(exitedScope) + " ☀️"); // 🌴 Adding syn_attr
-
-
     }
     else if (whichProduction == P6)
     {
@@ -464,10 +570,13 @@ void iteration_statement_H(ASTNode *node)
         ERROR_EXIT_H;
         return;
     }
-    return;
+
+    A_PTree node->addAttribute("⬆️ S_nextList = " + toString(S_nextList)); // 🌴 Adding syn_attr
+
+    EXIT_H;
 }
 
-void jump_statement_H(ASTNode *node)
+void jump_statement_H(ASTNode *node, std::vector<int> &S_nextList)
 {
     ENTRY_H;
     std::string whichProduction = getProduction(node);
@@ -496,17 +605,24 @@ void jump_statement_H(ASTNode *node)
     {
         // Wrong Production
         ERROR_EXIT_H;
+        S_nextList = std::vector<int>();
         return;
     }
+
+    A_PTree node->addAttribute("S_nextList = " + toString(S_nextList)); // 🌴 Adding syn_attr
+
+    EXIT_H;
 }
 
-void labeled_statement_H(ASTNode *node)
+void labeled_statement_H(ASTNode *node, std::vector<int> &S_nextList)
 {
     ENTRY_H;
     std::string whichProduction = getProduction(node);
     std::string P1 = "IDENTIFIER COLON statement";
     std::string P2 = "CASE constant_expression COLON statement";
     std::string P3 = "DEFAULT COLON statement";
+
+    A_PTree node->addAttribute("⬇️ S_nextList = " + toString(S_nextList)); 
 
     if (whichProduction == P1)
     {
@@ -522,7 +638,11 @@ void labeled_statement_H(ASTNode *node)
     {
         // Wrong Production
         ERROR_EXIT_H;
+        S_nextList = std::vector<int>();
         return;
     }
-    return;
+
+    A_PTree node->addAttribute("⬆️ S_nextList = " + toString(S_nextList)); 
+
+    EXIT_H;
 }

@@ -1,11 +1,25 @@
+// int main(){
+//     int a = 5;
+//     int b;
+//     if (b == 5)
+//     {
+//         a++;
+//     }
+//     else{
+//         a--;
+//     }
+// }
+
 int main(){
-    int a = 5;
-    int b;
-    if (b == 5)
+    int i = 0, a;
+    if (i == 0)
     {
-        a++;
-    }
-    else{
+        i++;
         a--;
     }
+    else{
+        a++;
+    }
+
+    return 0;
 }

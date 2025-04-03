@@ -181,6 +181,21 @@ std::string toString(SPACE space)
     }
 }
 
+std::string toString(std::vector<int> vecList)
+{
+    std::string str = "[ ";
+    for (size_t i = 0; i < vecList.size(); ++i)
+    {
+        str += std::to_string(vecList[i]);
+        if (i != vecList.size() - 1)
+        {
+            str += ", ";
+        }
+    }
+    str += " ]";
+    return str;
+}
+
 std::string toString(VALUE_TYPE valueType)
 {
     if (valueType == VALUE_TYPE::NM_LVALUE)
@@ -701,17 +716,23 @@ void function_definition_H(ASTNode *node)
         CODE_BASE.addTAC(node, varName, FUNCTION_LABEL, NO_ARG, NO_ARG);
 
         // Call the compound_statement handler
-        compound_statement_H(node->children[2]);
+        // Data to be fetched
+        std::vector<int> S1_nextList;
+        compound_statement_H(node->children[2], S1_nextList);
+
+        // Backpatch the next list
+        int aLabel = CODE_BASE.nextIndex();
+        CODE_BASE.backpatch(node, S1_nextList, aLabel);
 
         // [ToDecide - HOW TO CHECK RETURN TYPE OF FUNCTION]
 
         // SYM_TABLE.exitScope(); // [☀️ EarlyScope Entry's EXIT]
         // [Will be Handled by Compound Statments this is due to - ☀️ EarlyScope Entry]
 
-        CODE_BASE.addTAC(node, NO_ARG, BLANK, NO_ARG, NO_ARG); // To be added
+        // CODE_BASE.addTAC(node, NO_ARG, BLANK, NO_ARG, NO_ARG); // To be added
 
         // Early Entry's Exit
-        int exitedScope = SYM_TABLE.earlyExit(); //  [☀️ EarlyScope Entry] [IT's POSSIBLE that the early scope entry was never used in here]
+        int exitedScope = SYM_TABLE.earlyExit();                                                       //  [☀️ EarlyScope Entry] [IT's POSSIBLE that the early scope entry was never used in here]
         A_PTree node->addAttribute("Exit due to EarlyEntry : S" + std::to_string(exitedScope) + " ☀️"); // 🌴 Adding syn_attr
     }
     else

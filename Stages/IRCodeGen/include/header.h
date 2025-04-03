@@ -28,11 +28,11 @@
 extern int ANNOTATE; // 0 - OFF | 1 - ON [value set by header.cpp]
 
 //================== [Architecture Variables]=========================================================================================
-#define WORD_SIZE 4 // int, float
-#define WORD_SIZEx2 8 // double, long
-#define WORD_SIZEx4 16 // long double or long long
-#define BYTE_SIZEx2 2 // short
-#define BYTE_SIZE 1 // 8 bits, char
+#define WORD_SIZE 4     // int, float
+#define WORD_SIZEx2 8   // double, long
+#define WORD_SIZEx4 16  // long double or long long
+#define BYTE_SIZEx2 2   // short
+#define BYTE_SIZE 1     // 8 bits, char
 #define ADDRESS_SIZE 16 // 64 bit address
 
 //===================[ Memory Monitoring + Debugging ]============================================================================================
@@ -40,7 +40,9 @@ extern int MEMORY_MONITORING; // 0 - OFF | 1 - ON [value set by header.cpp]
 
 #define MEM(x) (MEMORY_MONITORING ? std::cerr << x << std::endl : std::cerr)
 
-#define CON_DES(clasName) clasName(){MEM(#clasName " Constructor");} ~clasName(){MEM(#clasName " Destructor");}
+#define CON_DES(clasName)                         \
+    clasName() { MEM(#clasName " Constructor"); } \
+    ~clasName() { MEM(#clasName " Destructor"); }
 
 extern std::string lastFuncCalled;
 
@@ -54,110 +56,111 @@ class GenericSymbol;
 
 //=================== [ TypeExpressions Classes ] ============================================================================================
 
+class TypeExpression
+{
+public:
+    std::stack<LevelInfo *> levelStack;
 
-class TypeExpression{
-        public:
-            std::stack<LevelInfo*> levelStack;
+    CON_DES(TypeExpression)
+};
 
-            CON_DES(TypeExpression)
-    };
+//~~~~~~~~~~~~~~~~[ TypeQualifiers & StorageClassSpecifiers Enum Classes ]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+enum class TypeQualifier
+{
+    CONST,
+    VOLATILE,
+    RESTRICT,
+    UNKNOWN,
+    NONE
+};
 
-        //~~~~~~~~~~~~~~~~[ TypeQualifiers & StorageClassSpecifiers Enum Classes ]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    enum class TypeQualifier
+enum class StorageClass
+{
+    AUTO,
+    STATIC,
+    EXTERN,
+    NONE,
+    UNKNOWN,
+    TYPEDEF // This will be used for typedef
+};
+
+//~~~~~~~~~~~~~~~~[ SubLevel TypeExpressions Classes ]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+class LevelInfo
+{
+public:
+    LevelInfo()
     {
-        CONST,
-        VOLATILE,
-        RESTRICT,
-        UNKNOWN,
-        NONE
-    };
+        MEM("LevelInfo Constructor");
+    }
+    virtual ~LevelInfo()
+    { // Virtual Destructor
+        MEM("LevelInfo Destructor");
+    }
+};
 
-    enum class StorageClass
-    {
-        AUTO,
-        STATIC,
-        EXTERN,
-        NONE,
-        UNKNOWN,
-        TYPEDEF // This will be used for typedef
-    };
+class ParenthesisInfo : public LevelInfo
+{
+public:
+    // NO data - just a separator
 
-    //~~~~~~~~~~~~~~~~[ SubLevel TypeExpressions Classes ]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    class LevelInfo
-    {
-    public:
-        LevelInfo()
-        {
-            MEM("LevelInfo Constructor");
-        }
-        virtual ~LevelInfo()
-        { // Virtual Destructor
-            MEM("LevelInfo Destructor");
-        }
-        };
+    CON_DES(ParenthesisInfo)
+};
 
-        class ParenthesisInfo : public LevelInfo {
-        public:
-            // NO data - just a separator
+class ArrayInfo : public LevelInfo
+{
+public:
+    int dimSize; // size of the array
 
-            CON_DES(ParenthesisInfo)
-        };
+    CON_DES(ArrayInfo)
+};
 
-        class ArrayInfo : public LevelInfo {
-        public:
-            int dimSize; // size of the array
+class PointerInfo : public LevelInfo
+{
+public:
+    std::vector<TypeQualifier> typeQualifiers;
 
-            CON_DES(ArrayInfo)
-        };
+    CON_DES(PointerInfo)
+};
 
-        class PointerInfo : public LevelInfo {
-        public:
-            std::vector<TypeQualifier> typeQualifiers;
+class ParameterInfo : public LevelInfo
+{
+public:
+    bool isAbstract;
+    std::vector<std::string> paramsName;
+    std::vector<TypeExpression> paramsType; // This will have the type of the parameters
 
-            CON_DES(PointerInfo)
-        };
-        
-        class ParameterInfo : public LevelInfo {
-        public:
+    CON_DES(ParameterInfo)
+};
 
+//=====================[ BaseInfo ]=========================================================================================
+extern std::string TYPE_STRUCT;
+extern std::string TYPE_UNION;
+extern std::string TYPE_ENUM;
+extern std::string ENUM_CONSTANT;
 
-            bool isAbstract;
-            std::vector<std::string> paramsName;
-            std::vector<TypeExpression> paramsType; // This will have the type of the parameters
+extern std::string TYPE_VOID;
 
-            CON_DES(ParameterInfo)
+extern std::string TYPE_FLOAT;
+extern std::string TYPE_DOUBLE;
+extern std::string TYPE_LONG_DOUBLE;
 
-        };
-        
-        //=====================[ BaseInfo ]=========================================================================================
-            extern std::string TYPE_STRUCT;
-            extern std::string TYPE_UNION;
-            extern std::string TYPE_ENUM;
-            extern std::string ENUM_CONSTANT;
+extern std::string TYPE_CHAR;
+extern std::string TYPE_SHORT;
+extern std::string TYPE_INT;
+extern std::string TYPE_LONG;
+extern std::string TYPE_LONG_LONG;
 
-            extern std::string TYPE_VOID;
+extern std::string TYPE_UNSIGNED; // will be used like - UNSIGNED + PRIMITIVE
+extern std::string TYPE_SIGNED;   // this will be used - PRIMITIVE [Default Signed]
 
-            extern std::string TYPE_FLOAT;
-            extern std::string TYPE_DOUBLE;
-            extern std::string TYPE_LONG_DOUBLE;
+class BaseInfo : public LevelInfo
+{
+public:
+    std::string baseType;                      // base type name
+    std::vector<TypeQualifier> typeQualifiers; // type qualifiers
 
-            extern std::string TYPE_CHAR;
-            extern std::string TYPE_SHORT;
-            extern std::string TYPE_INT;
-            extern std::string TYPE_LONG;
-            extern std::string TYPE_LONG_LONG;
-
-            extern std::string TYPE_UNSIGNED; // will be used like - UNSIGNED + PRIMITIVE
-            extern std::string TYPE_SIGNED; // this will be used - PRIMITIVE [Default Signed]
-
-        class BaseInfo : public LevelInfo {
-        public:
-            std::string baseType; // base type name
-            std::vector<TypeQualifier> typeQualifiers; // type qualifiers
-
-            CON_DES(BaseInfo)
-        };
-
+    CON_DES(BaseInfo)
+};
 
 //=====================[ TypeExpression Utilities ]=========================================================================================
 
@@ -171,7 +174,7 @@ enum class Type
     ENUM_CONSTANT, // Top is BaseInfo - enumConstant
     FUNCTION,      // Top is ParameterInfo
     STRUCT_UNION,  // Top is BaseInfo - Record - struct or union
-    ENUM,          // Top is BaseInfo - Record - enum 
+    ENUM,          // Top is BaseInfo - Record - enum
     EMPTY,
     UNKNOWN
 };
@@ -183,9 +186,9 @@ std::string toString(const TypeExpression &typeExpr);
 // There is no isPopable function - you can check 'whatIsType' to check if it is popable or not
 
 int popALevel(TypeExpression &typeExpr); // Clear's ParenthesisInfo
-    //Return Values
-    extern int const POP_SUCCESS;
-    extern int const POP_FAILURE; // if empty
+// Return Values
+extern int const POP_SUCCESS;
+extern int const POP_FAILURE; // if empty
 
 int width(std::string primType); // This will return the width of the primitive type
 
@@ -214,7 +217,7 @@ SPACE getSpace(const TypeExpression &typeExpr); // Tell's in what space should t
 
 bool isEmpty(const TypeExpression &typeExpr); // Ignores parenthesis
 
-bool isModifiableLvalue(const TypeExpression &typeExpr); 
+bool isModifiableLvalue(const TypeExpression &typeExpr);
 
 enum class VALUE_TYPE
 {
@@ -226,9 +229,8 @@ enum class VALUE_TYPE
 
 VALUE_TYPE getValueType(const TypeExpression &typeExpr); // Only Valid for Identifiers [not any general type expression]
 
-
-    //================[ SubLevel Type's Utilities ]=========================================================================================
-    int checkEquivalance(const LevelInfo &info1, const LevelInfo &info2);
+//================[ SubLevel Type's Utilities ]=========================================================================================
+int checkEquivalance(const LevelInfo &info1, const LevelInfo &info2);
 
 int checkEquivalance(const BaseInfo &info1, const BaseInfo &info2);
 int checkEquivalance(const PointerInfo &info1, const PointerInfo &info2);
@@ -253,7 +255,6 @@ bool isPointerInfo(const LevelInfo &info);
 bool isBaseInfo(const LevelInfo &info);
 bool isParameterInfo(const LevelInfo &info);
 
-
 /*
 
 
@@ -263,7 +264,6 @@ bool isParameterInfo(const LevelInfo &info);
 
 
 */
-
 
 //=====================[ Symbols (VarSymbol & UserDType) | SymbolTable ]=========================================================================================
 
@@ -351,7 +351,7 @@ public:
     bool wasEarlyEntered; // This will be used to ignore the next entry in the symbol table
 
     std::stack<int> lastScopeNo; // A ancestor scope tracker
-    int scopeNo; // This will keep the current scope number [unique to each scope] [not like level]
+    int scopeNo;                 // This will keep the current scope number [unique to each scope] [not like level]
     int nextScopeNo;
     int NodeCount; // This will keep the count of the symbols in the SymbolTable
 
@@ -363,14 +363,14 @@ public:
         this->globalScope = -100;
         this->wasEarlyEntered = false;
         this->currnetScope = "NONE"; // This will be used to find the name of the function we are in- to check return type match the signature
-        this->lastScopeNo.push(-1); // This will keep the last scope number
+        this->lastScopeNo.push(-1);  // This will keep the last scope number
         MEM("SymbolTable Constructor");
     }
 
     ~SymbolTable();
 
     int enterScope(); // This will create a new scope and return the scope number
-    int exitScope(); // Will return the ScopeNo that has been exited.
+    int exitScope();  // Will return the ScopeNo that has been exited.
 
     // Early Scope Entry - This will be used to enter the scope before the compound statement
 
@@ -380,97 +380,99 @@ public:
     // Concept of ScopeName name will be needed for function signature checking
     void setScopeName(const std::string &scopeName);
     std::string getScopeName(); // Will be used to find name of function we are in- to check retrun type match the signature
-    
+
     int getGlobaScopeNo();
 
     // There are time when we need to have early scopeEntry - This will make sure One-such call get's ignored
-    // void ignoreNextEntry(); 
-
+    // void ignoreNextEntry();
 
     int insertRecord(const std::string &key, GenericSymbol *symbol);
-    int insert(SYMBOL_TYPE symbolType,const std::string &key, GenericSymbol *symbol);
-        
+    int insert(SYMBOL_TYPE symbolType, const std::string &key, GenericSymbol *symbol);
+
     int lookupRecord(const std::string &key, GenericSymbol *&sym);
     int lookup(const std::string &key, GenericSymbol *&sym);
-        
 
     int lookupRecord(const std::string &key, GenericSymbol *&sym, int lookInScopeNo);
     int lookup(const std::string &key, GenericSymbol *&sym, int lookInScopeNo); // This will lookinto the specific scope
-        // Return values - same as above
+                                                                                // Return values - same as above
 
     int lookupRecordNode(const std::string &key, SymbolNode *&node);
     int lookupNode(const std::string &key, SymbolNode *&node);
-        // Return values - same as above
+    // Return values - same as above
 
     void printTable(std::ofstream &file);
 };
 
-    //=====================[ VarSymbols ]=========================================================================================
-        // Class VarSymbols NotNeeded
+//=====================[ VarSymbols ]=========================================================================================
+// Class VarSymbols NotNeeded
 
-        class Variable : public GenericSymbol {
-        public:
-            TypeExpression type; 
-            
-            StorageClass storageClass; 
+class Variable : public GenericSymbol
+{
+public:
+    TypeExpression type;
 
-            // Think about Initialized values ? [ToThink 🧠]
-            int offset;
+    StorageClass storageClass;
 
-            long compileTimeConstant; // This will be used for constant variables
+    // Think about Initialized values ? [ToThink 🧠]
+    int offset;
 
-            CON_DES(Variable)
-        };
+    long compileTimeConstant; // This will be used for constant variables
 
-        class EnumConstant : public GenericSymbol {
-        public:
-            int value; // This will be loaded directly [a compile time constant]
+    CON_DES(Variable)
+};
 
-            CON_DES(EnumConstant)
-        };
+class EnumConstant : public GenericSymbol
+{
+public:
+    int value; // This will be loaded directly [a compile time constant]
 
-        class Function : public GenericSymbol {
-        public:
-            TypeExpression type; // This will also hold the parameter(top) + (all below)returnType
+    CON_DES(EnumConstant)
+};
 
-            bool isDefined; // To deal with forward declaration
+class Function : public GenericSymbol
+{
+public:
+    TypeExpression type; // This will also hold the parameter(top) + (all below)returnType
 
-            CON_DES(Function)
-        };
+    bool isDefined; // To deal with forward declaration
 
-    // =====================[ User Defined Data Type ]=========================================================================================
+    CON_DES(Function)
+};
 
-        enum class RecordType
-        {
-            STRUCT,
-            UNION,
-            ENUM,
-            NONE
-        };
+// =====================[ User Defined Data Type ]=========================================================================================
 
-        class UserDType : public GenericSymbol {
-        public:
-            RecordType recordType; // This will be used for struct, union, enum
+enum class RecordType
+{
+    STRUCT,
+    UNION,
+    ENUM,
+    NONE
+};
 
-            // Members of the record
-            std::map<std::string, TypeExpression> members; // Enum won't use this
+class UserDType : public GenericSymbol
+{
+public:
+    RecordType recordType; // This will be used for struct, union, enum
 
-            std::map<std::string, int> membersOffset; // This will be used for struct, union
+    // Members of the record
+    std::map<std::string, TypeExpression> members; // Enum won't use this
 
-            int totalSize; // This will be used for struct, union
+    std::map<std::string, int> membersOffset; // This will be used for struct, union
 
-            CON_DES(UserDType)
-        };
+    int totalSize; // This will be used for struct, union
 
-        class TypeDefs : public GenericSymbol {
-        public:
-            TypeExpression type; // This will be used for typedef
+    CON_DES(UserDType)
+};
 
-            CON_DES(TypeDefs)
-        };
+class TypeDefs : public GenericSymbol
+{
+public:
+    TypeExpression type; // This will be used for typedef
+
+    CON_DES(TypeDefs)
+};
 
 //=====================[ Symbol Utilities ]=========================================================================================
-
 
 bool isVariable(const GenericSymbol &sym);
 bool isEnumConstant(const GenericSymbol &sym);
@@ -484,7 +486,6 @@ std::string const RECORD_PREFIX = "RECORD_"; // Prefix for Record Names
 
 int width(const UserDType &dtype); // This will return the width of the user defined data type
 
-
 /*
 
 
@@ -495,63 +496,69 @@ int width(const UserDType &dtype); // This will return the width of the user def
 
 //=====================[ Three Address Code ]=========================================================================================
 
-    //==================[ Custom TAC Arguments ]=========================================================================================
-        extern std::string NO_ARG;
-        extern std::string RIGHT_STAR;
-        extern std::string LEFT_STAR;
-        extern std::string FUNCTION_LABEL;
-        extern std::string BLANK;
-        extern std::string CAST;
-        extern std::string LABEL;
-        extern std::string AMPERSEND;
-        extern std::string RO_DATA;
-        extern std::string DATA;
-        extern std::string BSS;
-        extern std::string PARAM;
-        extern std::string CALL ;
-        extern std::string ASSIGN_OP;
-        extern std::string IF_FALSE;
-        extern std::string IF_TRUE;
-        extern std::string GOTO_LABEL;
+//==================[ Custom TAC Arguments ]=========================================================================================
+extern std::string NO_ARG;
+extern std::string RIGHT_STAR;
+extern std::string LEFT_STAR;
+extern std::string FUNCTION_LABEL;
+// extern std::string BLANK;
+extern std::string CAST;
+extern std::string LABEL;
+extern std::string AMPERSEND;
+extern std::string RO_DATA;
+extern std::string DATA;
+extern std::string BSS;
+extern std::string PARAM;
+extern std::string CALL;
+extern std::string ASSIGN_OP;
+extern std::string IF_FALSE;
+extern std::string IF_TRUE;
+extern std::string GOTO_LABEL;
+extern std::string TO_BACKPATCH;
 
-        class TAC_Quadruple
-        {
-        public:
-            std::string op;
-            std::string arg1;
-            std::string arg2;
-            std::string result;
-            // ASTNode *addedAt;
+class TAC_Quadruple
+{
+public:
+    std::string op;
+    std::string arg1;
+    std::string arg2;
+    std::string result;
+    // ASTNode *addedAt;
 
-            CON_DES(TAC_Quadruple)
+    CON_DES(TAC_Quadruple)
 
-            TAC_Quadruple(std::string op, std::string arg1, std::string arg2, std::string result);
+    TAC_Quadruple(std::string op, std::string arg1, std::string arg2, std::string result);
 
-            std::string toString();
+    std::string toString();
 };
 
-
+int mergeList(std::vector<int> &list1, const std::vector<int> &addition); // This will merge the two lists
+int mergeList(std::vector<int> &target, int addition);
 
 std::string newTemp(); // Generates a new temporary variable [compiler generated]
 
-class TAC{
-    public:
-        std::vector<TAC_Quadruple> code;
-        const int w = 10;
-        const int wcode = 30;
+class TAC
+{
+public:
+    std::vector<TAC_Quadruple> code;
+    const int w = 10;
+    const int wcode = 30;
 
-        CON_DES(TAC)
-        
+    CON_DES(TAC)
 
+    // void addTAC(std::string op, std::string arg1, std::string arg2, std::string result);
+    int addTAC(ASTNode *addedAt, std::string result, std::string op, std::string arg1, std::string arg2); // More readable
+    int addTAC(TAC_Quadruple q);
 
-        // void addTAC(std::string op, std::string arg1, std::string arg2, std::string result);
-        void addTAC(ASTNode* addedAt,std::string result, std::string op, std::string arg1, std::string arg2); // More readable
-        void addTAC(TAC_Quadruple q);
+    void printTAC(std::ofstream &file);
+    void printTAC(); // prints to stdout
 
-        void printTAC(std::ofstream &file);
-        void printTAC(); // prints to stdout
+    std::string newLabel();
+    int nextIndex();
+    int getLastInserted(); // This will return the last inserted index
 
-        std::string newLabel();
+    int backpatch(ASTNode *currNode, const std::vector<int> &list, std::string lable);
+    int backpatch(ASTNode *currNode, const std::vector<int> &list, int labelIndex); // This will be used to backpatch the list with the label index
 };
 
 /*
@@ -562,7 +569,6 @@ class TAC{
 
 */
 
-
 //=====================[ TypeChecking Utilities 🅰️ ]=========================================================================================
 
 bool isIntegral(const TypeExpression &typeExpr);
@@ -571,12 +577,12 @@ bool isNumeric(const TypeExpression &typeExpr);
 bool isFloatingPoint(const TypeExpression &typeExpr);
 std::string isPrimitive(const TypeExpression &typeExpr);
 // Return values will be Primitive Types
-bool isA_InbuiltType(std::string baseType); // Check if base type is primitive
-bool isA_IntegralType(std::string baseType); // Check if base type is integral
-bool isA_FloatingType(std::string baseType); // Check if base type is floating
+bool isA_InbuiltType(std::string baseType);                            // Check if base type is primitive
+bool isA_IntegralType(std::string baseType);                           // Check if base type is integral
+bool isA_FloatingType(std::string baseType);                           // Check if base type is floating
 std::string combineType(std::vector<std::string> typeSpecifierVector); // Combine the types
 // Return value
-extern std::string INVALID_COMBINATION; // This will be used for invalid combination of types
+extern std::string INVALID_COMBINATION;                                                        // This will be used for invalid combination of types
 int ProcessConstants(std::string constant, TypeExpression &typeExpr, std::string &finalValue); // This will process the constants
 
 int elementWidth(const TypeExpression &typeExpr); // This will return the width of the element or say below level
@@ -598,6 +604,7 @@ std::string maxWidth(std::string primTyp1, std::string primType2);
 std::string toString(int value);
 std::string toString(bool flag);
 std::string toString(std::vector<std::string> valueVector);
+std::string toString(std::vector<int> valueVector);
 std::string toString(StorageClass storageClass);
 std::string toString(TypeQualifier typeQualifier);
 std::string toString(std::vector<TypeQualifier> typeQualifiers);
@@ -606,7 +613,6 @@ std::string toString(std::vector<PointerInfo> ptrInfo);
 std::string toString(std::vector<TypeExpression> &paramVector);
 std::string toString(SPACE space);
 std::string toString(VALUE_TYPE valueType);
-
 
 //====================[ Helper Functions ]=========================================================================================
 std::string getProduction(ASTNode *node);
@@ -624,11 +630,11 @@ extern int ANNOTATE; // 0 - OFF | 1 - ON [extern declared in header.h]
 
 //=====================[ Handler Error Handling ]=========================================================================================
 
-extern std::ofstream* handlerLog; // This will be used to log the errors
+extern std::ofstream *handlerLog; // This will be used to log the errors
 
 #define aptLOG(x) \
     if (ANNOTATE) \
-        node->addAttribute(x)
+    node->addAttribute(x)
 
 #define ENTRY_H   \
     if (ANNOTATE) \
@@ -643,14 +649,14 @@ extern std::ofstream* handlerLog; // This will be used to log the errors
 #define ERROR_EXIT_H \                                                                                        
     if (ANNOTATE) node->addAttribute("🚨 ERROR Exit [" + std::to_string(__LINE__) + ":" + __FILE__ + "] ✋")
 
-#define PASS_THE_ERROR(x) \
-    if(PASS_ERROR == x) { \
+#define PASS_THE_ERROR(x)                                                                          \
+    if (PASS_ERROR == x)                                                                           \
+    {                                                                                              \
         std::cerr << "Passing ERROR Exit [" << __LINE__ << ":" << __FILE__ << "] 👆" << std::endl; \
-        return; \
+        return;                                                                                    \
     }
 
-
-#define ENTRY_MSG *handlerLog << "[" << __LINE__ << "] " 
+#define ENTRY_MSG *handlerLog << "[" << __LINE__ << "] "
 // #define ENTRY_MSG /**/ //
 
 #define HERE std::cerr << "[" << __LINE__ << " in " << __FILE__ << "] " << std::endl
@@ -658,23 +664,27 @@ extern std::ofstream* handlerLog; // This will be used to log the errors
 #define H_HERE *handlerLog << "[" << __FILE__ << " : " << __LINE__ << "] ";
 #define CERR std::cerr << "[ 🐛 " << __FILE__ << " : " << __LINE__ << "]"
 
-#define REPORT std::cerr << "[" << __FILE__ << " : " << __LINE__ <<  "] "
+#define REPORT std::cerr << "[" << __FILE__ << " : " << __LINE__ << "] "
 
 #define LINE1 /**/
 
 //---------------------- Space 🚀Change 🔖IR Code for varName2 [🤫 General Space Before USAGE]
-#define USAGE_SPACE_CHANGE(value,type,space,node) \
-    if (space == SPACE::ADDRESS_SPACE) { \
-        if( getSpace(type) != SPACE::VALUE_SPACE) { \
-            std::string tempName = newTemp(); \
-            CODE_BASE.addTAC(node, tempName, RIGHT_STAR, value, NO_ARG); \
-            value = tempName; \
-        } \
-    } else if(space != SPACE::VALUE_SPACE){ \
-        ERROR_EXIT_H; \
+#define USAGE_SPACE_CHANGE(value, type, space, node)                                                    \
+    if (space == SPACE::ADDRESS_SPACE)                                                                  \
+    {                                                                                                   \
+        if (getSpace(type) != SPACE::VALUE_SPACE)                                                       \
+        {                                                                                               \
+            std::string tempName = newTemp();                                                           \
+            CODE_BASE.addTAC(node, tempName, RIGHT_STAR, value, NO_ARG);                                \
+            value = tempName;                                                                           \
+        }                                                                                               \
+    }                                                                                                   \
+    else if (space != SPACE::VALUE_SPACE)                                                               \
+    {                                                                                                   \
+        ERROR_EXIT_H;                                                                                   \
         A_PTree node->attributes.push_back("🌋 Something Wrong in Space 💥 Change Code [" + LOC + "]"); \
-        value = PASS_ERROR; \
-        return; \
+        value = PASS_ERROR;                                                                             \
+        return;                                                                                         \
     }
 
 extern std::string PASS_ERROR;
@@ -703,22 +713,17 @@ void external_declaration_H(ASTNode *node);
 
 void function_definition_H(ASTNode *node);
 
-//=====================[ Control Flow Labels ]=========================================================================================
-extern std::stack<std::string> CONTINUE_LABELS; // Jumps to the next iteration
-extern std::stack<std::string> BREAK_LABELS; // Exits the loop or switch's end
-extern std::set<std::string> USER_DEFINED_LABELS; // used by goto statement
-
 //=====================[ Statements Handlers ]=========================================================================================
 
-void statement_H(ASTNode *node);
-void statement_list_H(ASTNode *node);
+void statement_H(ASTNode *node, std::vector<int> &S_nextList);
+void statement_list_H(ASTNode *node, std::vector<int> &S_nextList);
 
-void labeled_statement_H(ASTNode* node); // 1
-void compound_statement_H(ASTNode* node); // 2
-void expression_statement_H(ASTNode* node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace); // 3
-void selection_statement_H(ASTNode* node); // 4
-void iteration_statement_H(ASTNode* node); // 5
-void jump_statement_H(ASTNode* node); // 6
+void labeled_statement_H(ASTNode *node, std::vector<int> &S_nextList);                                                                                               // 1
+void compound_statement_H(ASTNode *node, std::vector<int> &S_nextList);                                                                                              // 2
+void expression_statement_H(ASTNode *node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace); // 3
+void selection_statement_H(ASTNode *node, std::vector<int> &S_nextList);                                                                                             // 4
+void iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList);                                                                                             // 5
+void jump_statement_H(ASTNode *node, std::vector<int> &S_nextList);                                                                                                  // 6
 // void declaration(ASTNode* node); // 7 [In Declaration Handler Section]
 
 //=====================[ Declaration Handlers ]=========================================================================================
@@ -727,42 +732,41 @@ void jump_statement_H(ASTNode* node); // 6
 void declaration_H(ASTNode *node);
 void declaration_list_H(ASTNode *node);
 
-
 //----- Init Declarator Handler
-void init_declarator_list_H(ASTNode* node, TypeExpression inh_type, StorageClass inh_storageClass);
-void init_declarator_H(ASTNode* node, TypeExpression inh_type, StorageClass inh_storageClass);
+void init_declarator_list_H(ASTNode *node, TypeExpression inh_type, StorageClass inh_storageClass);
+void init_declarator_H(ASTNode *node, TypeExpression inh_type, StorageClass inh_storageClass);
 
 // ----- TypeSpecifier + TypeQualifier + StorageClass -----
 void declaration_specifiers_H(ASTNode *node, std::vector<std::string> &valueVector);
-void storage_class_specifier_H(ASTNode* node, std::string &value);
-void type_specifier_H(ASTNode* node, std::string &value);
-void type_qualifier_H(ASTNode* node, std::string &value);
-void specifier_qualifier_list_H(ASTNode* node, std::vector<std::string> &valueVector);
-void type_qualifier_list_H(ASTNode* node, std::vector<TypeQualifier> &typeQualifiers);
+void storage_class_specifier_H(ASTNode *node, std::string &value);
+void type_specifier_H(ASTNode *node, std::string &value);
+void type_qualifier_H(ASTNode *node, std::string &value);
+void specifier_qualifier_list_H(ASTNode *node, std::vector<std::string> &valueVector);
+void type_qualifier_list_H(ASTNode *node, std::vector<TypeQualifier> &typeQualifiers);
 
 //----- Struct/Union -----
-void struct_or_union_specifier_H(ASTNode* node, std::string &value);
+void struct_or_union_specifier_H(ASTNode *node, std::string &value);
 // struct_or_union_H not needed
-void struct_declaration_list_H(ASTNode* node, std::map<std::string, TypeExpression> &members);
-void struct_declaration_H(ASTNode* node, std::map<std::string, TypeExpression> &members);
-void struct_declarator_list_H(ASTNode* node, TypeExpression inh_type, std::map<std::string, TypeExpression> &members);
-void struct_declarator_H(ASTNode* node, TypeExpression inh_type, std::string &varName, TypeExpression &type);
+void struct_declaration_list_H(ASTNode *node, std::map<std::string, TypeExpression> &members);
+void struct_declaration_H(ASTNode *node, std::map<std::string, TypeExpression> &members);
+void struct_declarator_list_H(ASTNode *node, TypeExpression inh_type, std::map<std::string, TypeExpression> &members);
+void struct_declarator_H(ASTNode *node, TypeExpression inh_type, std::string &varName, TypeExpression &type);
 // -- Enum -----
-void enum_specifier_H(ASTNode* node, std::string &value);
-void enumerator_list_H(ASTNode* node, std::string recordID, int &lastInitValue);
-void enumerator_H(ASTNode* node, std::string &varName, int &explicitInitValue, bool &isExplicityInit);
+void enum_specifier_H(ASTNode *node, std::string &value);
+void enumerator_list_H(ASTNode *node, std::string recordID, int &lastInitValue);
+void enumerator_H(ASTNode *node, std::string &varName, int &explicitInitValue, bool &isExplicityInit);
 
 //----- Declarator -----
-void declarator_H(ASTNode* node, TypeExpression inh_type, std::string &varName, TypeExpression &type);
-void direct_declarator_H(ASTNode* node, TypeExpression inh_type, std::string &varName, TypeExpression &type);
+void declarator_H(ASTNode *node, TypeExpression inh_type, std::string &varName, TypeExpression &type);
+void direct_declarator_H(ASTNode *node, TypeExpression inh_type, std::string &varName, TypeExpression &type);
 
 //----- Pointer -----
-void pointer_H(ASTNode* node, std::vector<PointerInfo> inh_ptrInfo, std::vector<PointerInfo> &ptrInfo);
+void pointer_H(ASTNode *node, std::vector<PointerInfo> inh_ptrInfo, std::vector<PointerInfo> &ptrInfo);
 
 //----- Parameters -----
-void parameter_type_list_H(ASTNode* node, std::vector<TypeExpression> &paramVector, std::vector<std::string> &varName_list);
-void parameter_list_H(ASTNode* node, std::vector<TypeExpression> &paramVector, std::vector<std::string> &varName_list);
-void parameter_declaration_H(ASTNode* node, TypeExpression &type, std::string varName);
+void parameter_type_list_H(ASTNode *node, std::vector<TypeExpression> &paramVector, std::vector<std::string> &varName_list);
+void parameter_list_H(ASTNode *node, std::vector<TypeExpression> &paramVector, std::vector<std::string> &varName_list);
+void parameter_declaration_H(ASTNode *node, TypeExpression &type, std::string varName);
 
 //----- Identifier List -----
 void identifier_list_H(ASTNode *node, std::vector<std::string> &idList);
@@ -782,21 +786,21 @@ void initializer_H(ASTNode *node, TypeExpression inh_type, std::string inh_varNa
 //======================[ Expression Handlers ]=========================================================================================
 
 void expression_H(ASTNode *node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace);
-void primary_expression_H(ASTNode* node,std::string inh_whereToSendString, std::string &varName, TypeExpression &type,VALUE_TYPE &valueType, SPACE &valueSpace);
-void postfix_expression_H(ASTNode* node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace);
-void unary_expression_H(ASTNode* node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace);
-void multiplicative_expression_H(ASTNode* node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace);
-void additive_expression_H(ASTNode* node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace);
-void shift_expression_H(ASTNode* node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace);
-void relational_expression_H(ASTNode* node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace);
-void equality_expression_H(ASTNode* node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace);
-void and_expression_H(ASTNode* node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace);
-void exclusive_or_expression_H(ASTNode* node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace);
-void inclusive_or_expression_H(ASTNode* node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace);
-void logical_and_expression_H(ASTNode* node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace);
-void logical_or_expression_H(ASTNode* node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace);
-void conditional_expression_H(ASTNode* node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace);
-void assignment_expression_H(ASTNode* node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace);
+void primary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace);
+void postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace);
+void unary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace);
+void multiplicative_expression_H(ASTNode *node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace);
+void additive_expression_H(ASTNode *node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace);
+void shift_expression_H(ASTNode *node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace);
+void relational_expression_H(ASTNode *node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace);
+void equality_expression_H(ASTNode *node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace);
+void and_expression_H(ASTNode *node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace);
+void exclusive_or_expression_H(ASTNode *node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace);
+void inclusive_or_expression_H(ASTNode *node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace);
+void logical_and_expression_H(ASTNode *node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace);
+void logical_or_expression_H(ASTNode *node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace);
+void conditional_expression_H(ASTNode *node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace);
+void assignment_expression_H(ASTNode *node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace);
 
 void constant_expression_H(ASTNode *node, std::string &value);
 
