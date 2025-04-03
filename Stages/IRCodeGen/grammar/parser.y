@@ -107,13 +107,62 @@ void closeOutputFile() {
     }
 }
 
+ASTNode* topNode;
+std::string dot_file_2 = "annotated_ast_graph.dot";
+bool APTree = false;
+bool tac = false;
+std::string tac_file = "ThreeAC.txt";
+
 
 void signalHandler(int signum) {
 
     // Don't Think will be needed anymore [since we removed the handlerFunctions, which were cause of segFaults]
 
-    *output << "\U0001F6A8 SignalHandler: " << signum << " received \U0001F6A8" << std::endl;
+    std::string signalName = "Unknown Signal";
+    switch (signum) {
+        case SIGINT:
+            signalName = "SIGINT";
+            break;
+        case SIGTERM:
+            signalName = "SIGTERM";
+            break;
+        case SIGSEGV:
+            signalName = "SIGSEGV";
+            break;
+        case SIGABRT:
+            signalName = "SIGABRT";
+            break;
+        default:
+            signalName = "Unknown Signal";
+    }
+    std::string signalMessage = "🚨 SignalHandler " + signalName + " received. Exiting gracefully.";
+    *output << signalMessage << std::endl;
     *output << "Where was I Last: " << lastFuncCalled << std::endl;
+    
+    std::cout << signalMessage << std::endl;
+
+    // We still print the APTree
+    // Print the Annotated Parse Tree
+    if(APTree){
+        generateDOT_A(topNode, dot_file_2);
+        *output << "💔💔 Annotated Parse Tree generated as DOT file: " << dot_file_2 << " can be visualized using Graphviz\n";
+        /* if(TERMINAL_MESSAGE){
+            std::cout << "\U0001F53A Annotated Parse Tree generated" << std::endl;
+        } */
+    }
+
+    // IR Code Generation
+    
+    if(tac){
+        std::ofstream tacOut(tac_file);
+        CODE_BASE.printTAC(tacOut);
+        *output << "💔💔 TAC Code generated as: " << tac_file << "\n";
+        HERE;
+        tacOut.close();
+    }    
+
+    
+    *output << "💔💔 Exiting gracefully" << std::endl;
     closeOutputFile();
     exit(0); // Clean Exit
     return;
@@ -145,7 +194,6 @@ bool compressed = false; // Default is PTree, if AST is needed, change it to fal
 //========================= SEMANTIC + IRCode Gen Phase =========================
 // SymbolTable SYM_TABLE;
 // TAC CODE_BASE; [Are declared in handler.cpp]
-
 
 ASTNode *root;
 %}
@@ -2346,7 +2394,7 @@ int main(int argc, char **argv) {
     whereWasILast = "main";
 
     signal(SIGSEGV, signalHandler); // Catch segmentation fault
-
+    signal(SIGTRAP, signalHandler);
     signal(SIGABRT, signalHandler); // Catch abort signal
 
     //------------------------ cmd line arguments handling ------------------------
@@ -2369,19 +2417,19 @@ int main(int argc, char **argv) {
         std::string input_file = argv[1];
         std::string output_file = argv[2];
         std::string dot_file = "ast_graph.dot";
-        std::string dot_file_2 = "annotated_ast_graph.dot";
+        dot_file_2 = "annotated_ast_graph.dot";
         std::string recursive_output_file = "recursive_output.txt";
         std::string SExp_file = "SExp.txt";
         std::string LaTeXParserTable = "parser_table.tex";    
-        std::string tac_file = "ThreeAC.txt";
+        tac_file = "ThreeAC.txt";
 
         bool ast_flag = false;
-        bool APTree = false;
+        APTree = false;
         bool parser_tree_flag = false;
         bool recursive_flag = false;
         bool parser_table_flag = false;
         bool SExp_flag = false;
-        bool tac = false;
+        tac = false;
 
         // Open default output file
         yyin = fopen(input_file.c_str(), "r");
@@ -2605,16 +2653,17 @@ int main(int argc, char **argv) {
     /* std::cout << "\n\U0001F170\U0000FE0F ---- Starting Semantic Analysis Phase ---- \U0001F170\U0000FE0F\n"; */
 
     // Adding a Extra Node on the top of the Ptree
-    ASTNode *topNode = new ASTNode("Program");
+    ASTNode* temp = new ASTNode("Program");
+    HERE;
+    topNode = temp;
     topNode->addChild(root);
     topNode->attributes.push_back(getCurrentTime());
+    HERE;
 
-
-    LINE1
+    HERE;
     semanticPass(topNode, handlerLogFile); // Call the semantic pass 
-    LINE1
+    HERE;
     
-
     // We print the semantic log in the output file
     bool semanticError = (semanticLOG.size() > 0);
     if(semanticError){

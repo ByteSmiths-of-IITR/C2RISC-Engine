@@ -16,7 +16,11 @@
 #include <map>
 #include <utility>
 #include <map>
-
+#include <iomanip>
+#include <memory>
+#include <sstream>
+#include <iomanip>
+#include <cassert>
 //====================[ Globaly Accessible SymbolTable & TAC-CodeBase ]=========================================================================================
 
 //====================[ Annotated PTree Utilities ]=========================================================================================
@@ -344,7 +348,7 @@ public:
     int globalScope;
 
     std::string currnetScope;
-    bool earlyEntry; // This will be used to ignore the next entry in the symbol table
+    bool wasEarlyEntered; // This will be used to ignore the next entry in the symbol table
 
     std::stack<int> lastScopeNo; // A ancestor scope tracker
     int scopeNo; // This will keep the current scope number [unique to each scope] [not like level]
@@ -357,7 +361,7 @@ public:
         this->nextScopeNo = 0;
         this->NodeCount = 0;
         this->globalScope = -100;
-        this->earlyEntry = false;
+        this->wasEarlyEntered = false;
         this->currnetScope = "NONE"; // This will be used to find the name of the function we are in- to check return type match the signature
         this->lastScopeNo.push(-1); // This will keep the last scope number
         MEM("SymbolTable Constructor");
@@ -368,6 +372,10 @@ public:
     int enterScope(); // This will create a new scope and return the scope number
     int exitScope(); // Will return the ScopeNo that has been exited.
 
+    // Early Scope Entry - This will be used to enter the scope before the compound statement
+
+    int earlyEntry(); // This will make sure One-such call get's ignored
+    int earlyExit();  // This will make sure One-such call get's ignored
 
     // Concept of ScopeName name will be needed for function signature checking
     void setScopeName(const std::string &scopeName);
@@ -376,7 +384,7 @@ public:
     int getGlobaScopeNo();
 
     // There are time when we need to have early scopeEntry - This will make sure One-such call get's ignored
-    void ignoreNextEntry(); 
+    // void ignoreNextEntry(); 
 
 
     int insertRecord(const std::string &key, GenericSymbol *symbol);
@@ -525,23 +533,26 @@ int width(const UserDType &dtype); // This will return the width of the user def
 
 
 std::string newTemp(); // Generates a new temporary variable [compiler generated]
-std::string newLabel(); // Generates a new label [compiler generated]
 
 class TAC{
     public:
         std::vector<TAC_Quadruple> code;
+        const int w = 10;
+        const int wcode = 30;
+
         CON_DES(TAC)
         
+
+
         // void addTAC(std::string op, std::string arg1, std::string arg2, std::string result);
         void addTAC(ASTNode* addedAt,std::string result, std::string op, std::string arg1, std::string arg2); // More readable
         void addTAC(TAC_Quadruple q);
 
         void printTAC(std::ofstream &file);
         void printTAC(); // prints to stdout
+
+        std::string newLabel();
 };
-
-
-
 
 /*
 
@@ -614,6 +625,10 @@ extern int ANNOTATE; // 0 - OFF | 1 - ON [extern declared in header.h]
 //=====================[ Handler Error Handling ]=========================================================================================
 
 extern std::ofstream* handlerLog; // This will be used to log the errors
+
+#define aptLOG(x) \
+    if (ANNOTATE) \
+        node->addAttribute(x)
 
 #define ENTRY_H   \
     if (ANNOTATE) \
@@ -700,7 +715,7 @@ void statement_list_H(ASTNode *node);
 
 void labeled_statement_H(ASTNode* node); // 1
 void compound_statement_H(ASTNode* node); // 2
-void expression_statement_H(ASTNode* node); // 3
+void expression_statement_H(ASTNode* node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace); // 3
 void selection_statement_H(ASTNode* node); // 4
 void iteration_statement_H(ASTNode* node); // 5
 void jump_statement_H(ASTNode* node); // 6

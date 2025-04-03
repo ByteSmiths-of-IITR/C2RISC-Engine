@@ -57,12 +57,37 @@ int SymbolTable::getGlobaScopeNo()
     return this->globalScope;
 }
 
+int SymbolTable::earlyEntry(){
+    if(this->wasEarlyEntered){
+        // it's true // So why called again
+        CERR << "Error: Twice EarlyEntry is already true\n";
+        return -1;
+    }
+    
+    // it's false // So we can set it to true
+    CERR << "Info: earlyEntry is set to true\n";
+    this->wasEarlyEntered = true;
+    // call the enterScope
+    return this->enterScope();
+}
+
+int SymbolTable::earlyExit(){
+    // This will handle the exit needed for earlyEntry
+    if(this->wasEarlyEntered){
+        // If it's false - Normal Exit handled it
+        return this->scopeNo; //
+    }
+    // If it's true - So we need to exit
+    CERR << "Info: earlyExit is set to true\n";
+    this->wasEarlyEntered = false; // set it to false
+    return (this->exitScope());
+}
+
 int SymbolTable::enterScope()
 {
-
-    if(this->earlyEntry)
-    {
-        this->earlyEntry = false;
+    if(wasEarlyEntered){
+        // Ignore this enter
+        wasEarlyEntered = false; // set it to false
         return this->scopeNo;
     }
 
@@ -430,10 +455,6 @@ void SymbolTable::setScopeName(const std::string &scopeName)
 std::string GLOBAL_SCOPE = "Global";
 std::string LOCAL_SCOPE = "Local";
 
-void SymbolTable::ignoreNextEntry()
-{
-    this->earlyEntry = true;
-}
 
 std::string SymbolTable::getScopeName()
 {

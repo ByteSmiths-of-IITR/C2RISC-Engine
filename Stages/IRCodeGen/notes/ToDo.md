@@ -19,21 +19,26 @@ Was it a error in the input code OR is our Compiler bug
 
 # Write Member Access Logic in postfix_expression
 
-- Think about SPACE::ADDRESS_SPACE logic
+- Think about SPACE::ADDRESS_SPACE logic ✅
 
 
-# No parameter Function Signature & Function call can't be distinguished
+# No parameter Function Signature & Function call can't be distinguished ✅
+No they can be distinguished 
+
+Function Signature are in Declaration
+
+Function call is in Expression (postfix_expression)
+
+# Where to Open SCOPE ✅
 
 
-# Where to Open SCOPE
+# Checking return type matching to function signature 
+For this when a function's scope is opening we are sending it's name to SYM_TABLE for checking
 
 
-# Checking return type matching to function signature
-
-
-# For Initialization logic - we won't use INITIALIZER LIST
+# For Initialization logic - we won't use INITIALIZER LIST ✅
 
 # TODO for unsigned types
 
 # In expressions change operator depending on type
-# write CONST handler
+# write CONST handler 📍

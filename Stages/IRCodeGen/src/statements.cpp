@@ -31,7 +31,12 @@ void statement_H(ASTNode *node)
     else if (whichProduction == P3)
     {
         // Call the expression statement handler
-        expression_statement_H(node->children[0]);
+        // Data to be fetched
+        std::string varName = "Just a Dummy";
+        TypeExpression type;
+        VALUE_TYPE valueType = VALUE_TYPE::UNKNOWN;
+        SPACE valueSpace = SPACE::UNKNOWN_SPACE;
+        expression_statement_H(node->children[0], "NONE", varName, type, valueType, valueSpace);
     }
     else if (whichProduction == P4)
     {
@@ -89,7 +94,7 @@ void statement_list_H(ASTNode *node)
         ERROR_EXIT_H;
         return;
     }
-    
+
     EXIT_H;
 }
 
@@ -111,7 +116,7 @@ void compound_statement_H(ASTNode *node)
         return;
     }
 
-    int enteredScope = SYM_TABLE.enterScope(); // [👌 Default Scope Handling]
+    int enteredScope = SYM_TABLE.enterScope();                                             // [👌 Default Scope Handling]
     A_PTree node->addAttribute("Scope Entered : S" + std::to_string(enteredScope) + " ⤵️"); // 🌴 Adding syn_attr
 
     if (whichProduction == P1)
@@ -140,13 +145,13 @@ void compound_statement_H(ASTNode *node)
     }
 
     // SCOPE EXIT // [👌 Default Scope Handling]
-    int exitedScope = SYM_TABLE.exitScope();  
+    int exitedScope = SYM_TABLE.exitScope();
     A_PTree node->addAttribute("Scope S" + std::to_string(exitedScope) + " Exited ↙️");
 
     EXIT_H;
 }
 
-void expression_statement_H(ASTNode *node)
+void expression_statement_H(ASTNode *node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace)
 {
     ENTRY_H;
     std::string whichProduction = getProduction(node);
@@ -164,14 +169,24 @@ void expression_statement_H(ASTNode *node)
         expression_H(node->children[0], "NONE", varName1, type1, valueType1, valueSpace1);
         PASS_THE_ERROR(varName1);
 
-        A_PTree node->addAttribute("❣️ varName    : " + varName1);                 // 🌴 Adding syn_attr
-        A_PTree node->addAttribute("❣️ type       : " + toString(type1));             // 🌴 Adding syn_attr
-        A_PTree node->addAttribute("❣️ valueType  : " + toString(valueType1));   // 🌴 Adding syn_attr
+        // Pass the data up
+        varName = varName1;
+        type = type1;
+        valueType = valueType1;
+        valueSpace = valueSpace1;
+
+        A_PTree node->addAttribute("❣️ varName    : " + varName1);              // 🌴 Adding syn_attr
+        A_PTree node->addAttribute("❣️ type       : " + toString(type1));       // 🌴 Adding syn_attr
+        A_PTree node->addAttribute("❣️ valueType  : " + toString(valueType1));  // 🌴 Adding syn_attr
         A_PTree node->addAttribute("❣️ valueSpace : " + toString(valueSpace1)); // 🌴 Adding syn_attr
     }
     else if (whichProduction == P2)
     {
         // Nothing to do
+        varName = NO_ARG;
+        type = TypeExpression();
+        valueType = VALUE_TYPE::UNKNOWN;
+        valueSpace = SPACE::UNKNOWN_SPACE;
     }
     else
     {
@@ -203,22 +218,23 @@ void selection_statement_H(ASTNode *node)
         SPACE valueSpace1;
 
         expression_H(node->children[2], "NONE", varName1, type1, valueType1, valueSpace1);
+        aptLOG("e1 okay");
+
         PASS_THE_ERROR(varName1);
 
         // 🚀 USAGE 🤫 SPACE CHANGE 🚀
         USAGE_SPACE_CHANGE(varName1, type1, valueSpace1, node);
 
         // Now we can use the expression
-        std::string trueEnd = newLabel();
+        std::string trueEnd = CODE_BASE.newLabel();
         CODE_BASE.addTAC(node, trueEnd, IF_FALSE, varName1, NO_ARG);
 
         // Next we evaluate the statement
         statement_H(node->children[4]);
+        aptLOG("e2 okay");
 
         // Now we put the label
         CODE_BASE.addTAC(node, trueEnd, LABEL, NO_ARG, NO_ARG);
-
-
     }
     else if (whichProduction == P2)
     {
@@ -231,26 +247,32 @@ void selection_statement_H(ASTNode *node)
 
         expression_H(node->children[2], "NONE", varName1, type1, valueType1, valueSpace1);
         PASS_THE_ERROR(varName1);
+        aptLOG("e1 okay");
 
         // 🚀 USAGE 🤫 SPACE CHANGE 🚀
         USAGE_SPACE_CHANGE(varName1, type1, valueSpace1, node);
+        aptLOG("SPACE okay");
 
         // Now we can use the expression
-        std::string trueEnd = newLabel();
+        std::string trueEnd = CODE_BASE.newLabel();
+        aptLOG("trueEnd okay");
         CODE_BASE.addTAC(node, trueEnd, IF_FALSE, varName1, NO_ARG);
+        aptLOG("IR Code+ okay");
 
         // Next we evaluate the statement
         statement_H(node->children[4]);
+        aptLOG("s1 okay");
 
         // Now we put the label
         CODE_BASE.addTAC(node, trueEnd, LABEL, NO_ARG, NO_ARG);
 
         // Now we can evaluate the else statement
-        std::string elseEnd = newLabel();
+        std::string elseEnd = CODE_BASE.newLabel();
         CODE_BASE.addTAC(node, elseEnd, GOTO_LABEL, NO_ARG, NO_ARG);
 
         // Evaluate the else statement
         statement_H(node->children[6]);
+        aptLOG("s2 okay");
 
         // Now we put the label
         CODE_BASE.addTAC(node, elseEnd, LABEL, NO_ARG, NO_ARG);
@@ -286,7 +308,7 @@ void selection_statement_H(ASTNode *node)
 std::stack<std::string> CONTINUE_LABELS;   // Jumps to the next iteration
 std::stack<std::string> BREAK_LABELS;      // Exits the loop or switch's end
 std::set<std::string> USER_DEFINED_LABELS; // used by goto statement
-std::stack<std::string> SWITCH_ARG; // used by switch statement to make comparison
+std::stack<std::string> SWITCH_ARG;        // used by switch statement to make comparison
 
 void iteration_statement_H(ASTNode *node)
 {
@@ -301,9 +323,9 @@ void iteration_statement_H(ASTNode *node)
     std::string P6 = "FOR LPAREN declaration expression_statement expression RPAREN statement";
 
     if (whichProduction == P1)
-    {   
+    {
         // put the loopStart label
-        std::string loopStart = newLabel();
+        std::string loopStart = CODE_BASE.newLabel();
         CODE_BASE.addTAC(node, loopStart, LABEL, NO_ARG, NO_ARG);
 
         // Get Ready to call expression
@@ -319,7 +341,7 @@ void iteration_statement_H(ASTNode *node)
         USAGE_SPACE_CHANGE(varName1, type1, valueSpace1, node);
 
         // Compare then jump to loopEnd
-        std::string loopEnd = newLabel();
+        std::string loopEnd = CODE_BASE.newLabel();
         CODE_BASE.addTAC(node, loopEnd, IF_FALSE, varName1, NO_ARG);
 
         // Now we can evaluate the statement
@@ -341,7 +363,7 @@ void iteration_statement_H(ASTNode *node)
     {
         // Do while statement
         // put the loopStart label
-        std::string loopStart = newLabel();
+        std::string loopStart = CODE_BASE.newLabel();
         CODE_BASE.addTAC(node, loopStart, LABEL, NO_ARG, NO_ARG);
 
         // Now we can evaluate the statement
@@ -360,7 +382,7 @@ void iteration_statement_H(ASTNode *node)
         USAGE_SPACE_CHANGE(varName1, type1, valueSpace1, node);
 
         // Compare then jump to loopEnd
-        std::string loopEnd = newLabel();
+        std::string loopEnd = CODE_BASE.newLabel();
         CODE_BASE.addTAC(node, loopEnd, IF_FALSE, varName1, NO_ARG);
 
         // We go back to the start of the loop
@@ -372,14 +394,66 @@ void iteration_statement_H(ASTNode *node)
     else if (whichProduction == P4)
     {
         // Also need to think about Early Scope Entry
-        int scopeNo = SYM_TABLE.enterScope(); //  [☀️ EarlyScope Entry]
-        SYM_TABLE.ignoreNextEntry();          // This will tell the symbol table to ignore the next entry by compound_statement
-        A_PTree node->addAttribute("Early Scope Entry : S" + std::to_string(scopeNo) + " ☀️"); 
-
-        
+        int scopeNo = SYM_TABLE.earlyEntry(); //  [☀️ EarlyScope Entry] [IT's POSSIBLE that the early scope entry was never used in here]
+        A_PTree node->addAttribute("Early Scope Entry : S" + std::to_string(scopeNo) + " ☀️");
+    
+    
+        // Handle EarlyEnter's Exit
+        int exitedScope = SYM_TABLE.earlyExit(); //  [☀️ EarlyScope Entry] [IT's POSSIBLE that the early scope entry was never used in here]
+        A_PTree node->addAttribute("Exit due to EarlyEntry : S" + std::to_string(exitedScope) + " ☀️");
     }
     else if (whichProduction == P5)
     {
+        // Early Scope Entry
+        int scopeNo = SYM_TABLE.earlyEntry();                                                 //  [☀️ EarlyScope Entry]                                                         // This will tell the symbol table to ignore the next entry by compound_statement
+        A_PTree node->addAttribute("Early Scope Entry : S" + std::to_string(scopeNo) + " ☀️"); // 🌴 Adding syn_att
+
+        // Get Ready to call expression
+        // Data to be fetched
+        std::string varName1 = "Just a Dummy";
+        TypeExpression type1;
+        VALUE_TYPE valueType1;
+        SPACE valueSpace1;
+        expression_H(node->children[2], "NONE", varName1, type1, valueType1, valueSpace1); // [It's IRCode]
+        PASS_THE_ERROR(varName1);
+
+        // 🚀 USAGE 🤫 SPACE CHANGE 🚀
+        USAGE_SPACE_CHANGE(varName1, type1, valueSpace1, node);
+
+        // Create LoopStart Label
+        std::string loopStart = CODE_BASE.newLabel();
+        CODE_BASE.addTAC(node, loopStart, LABEL, NO_ARG, NO_ARG);
+
+        // Put a Condition to jump to loopEnd
+        std::string loopEnd = CODE_BASE.newLabel();
+        CODE_BASE.addTAC(node, loopEnd, IF_FALSE, varName1, NO_ARG); // ifFlase(E1.value) goto loopEnd
+
+        // Now we can evaluate the statement
+        statement_H(node->children[4]); // [IRCode of statement will be generated]
+
+        // Then we put code of expression3 - which is updation code
+
+        // Data to be fetched
+        std::string varName2 = "Just a Dummy";
+        TypeExpression type2;
+        VALUE_TYPE valueType2;
+        SPACE valueSpace2;
+        expression_H(node->children[2], "NONE", varName2, type2, valueType2, valueSpace2); // [It's IRCode]
+        PASS_THE_ERROR(varName2);
+
+        // We won't be using the value of expression3 [just it's SIDE EFFECTS]
+
+        // Then we go back to the start of the loop [Unconditional Jump]
+        CODE_BASE.addTAC(node, loopStart, GOTO_LABEL, NO_ARG, NO_ARG);
+
+        // Put loopEnd label
+        CODE_BASE.addTAC(node, loopEnd, LABEL, NO_ARG, NO_ARG);
+
+        // Handle EarlyEnter's Exit
+        int exitedScope = SYM_TABLE.earlyExit(); //  [☀️ EarlyScope Entry] [IT's POSSIBLE that the early scope entry was never used in here]
+        A_PTree node->addAttribute("Exit due to EarlyEntry : S" + std::to_string(exitedScope) + " ☀️"); // 🌴 Adding syn_attr
+
+
     }
     else if (whichProduction == P6)
     {

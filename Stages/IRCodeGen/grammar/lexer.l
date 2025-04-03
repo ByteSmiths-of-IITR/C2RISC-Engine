@@ -207,10 +207,10 @@ COMMENT2   "/*"([^*]|\*+[^*/])*\*+"/"
 
 {ID}                            { 
                                     if (checkForTypeDef(yytext)) {
-                                        std::cerr << "TypeDef ID: " << yytext << std::endl;
+                                        std::cerr << "By Lexer - TypeDef ID: " << yytext << std::endl;
                                         TOKEN(TYPE_NAME);
                                     } else {
-                                        std::cerr << "ID: " << yytext << std::endl;
+                                        // std::cerr << "By Lexer - ID: " << yytext << std::endl;
                                         TOKEN(IDENTIFIER);
                                     }
                                 }

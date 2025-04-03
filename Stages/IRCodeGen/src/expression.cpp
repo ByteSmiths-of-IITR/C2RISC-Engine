@@ -14,7 +14,7 @@ void constant_expression_H(ASTNode *node, std::string &value)
     std::string whichProduction = getProduction(node);
     std::string P1 = "conditional_expression";
 
-    A_PTree node->addAttribute("inh_value = " + value); 
+    A_PTree node->addAttribute("inh_value = " + value);
     if (whichProduction == P1)
     {
         // 0. syn_data to fetch ⬆️
@@ -59,11 +59,11 @@ void expression_H(ASTNode *node, std::string inh_whereToSendString, std::string 
         return;
     }
 
-    A_PTree node->addAttribute("😵‍💫 whereToSendString = " + inh_whereToSendString); 
-    A_PTree node->addAttribute("⏬ " + toString(type));                  
-    A_PTree node->addAttribute("⏬ "+ toString(valueType));           
-    A_PTree node->addAttribute("⏬  " + toString(valueSpace));         
-    A_PTree node->addAttribute("⏬  varName = " + varName); 
+    A_PTree node->addAttribute("😵‍💫 whereToSendString = " + inh_whereToSendString);
+    // A_PTree node->addAttribute("⏬ " + toString(type));
+    // A_PTree node->addAttribute("⏬ " + toString(valueType));
+    // A_PTree node->addAttribute("⏬  " + toString(valueSpace));
+    // A_PTree node->addAttribute("⏬  varName = " + varName);
 
     if (whichProduction == P1)
     {
@@ -102,19 +102,25 @@ void expression_H(ASTNode *node, std::string inh_whereToSendString, std::string 
         PASS_THE_ERROR(varName2);
 
         // Pass the data from expression1 up
-        varName = varName1;
-        type = type1;
-        valueType = valueType1;
-        valueSpace = valueSpace1;
+        varName = varName2;
+        type = type2;
+        valueType = valueType2;
+        valueSpace = valueSpace2;
 
         // Semantic Warning
-        semanticLOG.push_back("Warning: Expression \"" + varName2 + "\"'s result is not used");
+        semanticLOG.push_back("Warning: Expression \"" + varName1 + "\"'s result is not used");
     }
     else
     {
         ERROR_EXIT_H;
         return;
     }
+
+    A_PTree node->addAttribute("😵‍💫 varName    = " + varName);
+    A_PTree node->addAttribute("😵‍💫 type       = " + toString(type));
+    A_PTree node->addAttribute("😵‍💫 valueType  = " + toString(valueType));
+    A_PTree node->addAttribute("😵‍💫 valueSpace = " + toString(valueSpace));
+    // A_PTree node->addAttribute("😵‍💫 inh_whereToSendString = " + inh_whereToSendString);
 
     EXIT_H;
 }
@@ -130,11 +136,11 @@ void primary_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
     std::string P3 = "STRING_LITERAL";
     std::string P4 = "LPAREN expression RPAREN";
 
-    // A_PTree node->addAttribute("⏬  whereToSendString = " + inh_whereToSendString); 
-    // A_PTree node->addAttribute("⏬  varName = " + varName);                          
-    // A_PTree node->addAttribute("⏬ " + toString(type));                      
-    // A_PTree node->addAttribute("⏬ "+ toString(valueType));            
-    // A_PTree node->addAttribute("⏬  " + toString(valueSpace));                  
+    // A_PTree node->addAttribute("⏬  whereToSendString = " + inh_whereToSendString);
+    // A_PTree node->addAttribute("⏬  varName = " + varName);
+    // A_PTree node->addAttribute("⏬ " + toString(type));
+    // A_PTree node->addAttribute("⏬ "+ toString(valueType));
+    // A_PTree node->addAttribute("⏬  " + toString(valueSpace));
 
     if (whichProduction == P1)
     {
@@ -312,7 +318,7 @@ void primary_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
         if (inh_whereToSendString == RO_DATA)
         {
             // Add to .rodata
-            std::string label = newLabel();
+            std::string label = CODE_BASE.newLabel();
 
             CODE_BASE.addTAC(node, label, LABEL, strValue, NO_ARG);
             std::string address = newTemp();
@@ -350,10 +356,10 @@ void primary_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
         return;
     }
 
-    A_PTree node->addAttribute("varName = " + varName + " ⬆️"); 
-    A_PTree node->addAttribute(toString(type) + " ⬆️");         
-    A_PTree node->addAttribute(toString(valueType) + " ⬆️");    
-    A_PTree node->addAttribute(toString(valueSpace) + " ⬆️");   
+    A_PTree node->addAttribute("varName = " + varName + " ⬆️");
+    A_PTree node->addAttribute(toString(type) + " ⬆️");
+    A_PTree node->addAttribute(toString(valueType) + " ⬆️");
+    A_PTree node->addAttribute(toString(valueSpace) + " ⬆️");
 
     EXIT_H;
 }
@@ -373,11 +379,11 @@ void postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
     std::string P7 = "postfix_expression INC_OP";
     std::string P8 = "postfix_expression DEC_OP";
 
-    // A_PTree node->addAttribute("⏬  whereToSendString = " + inh_whereToSendString); 
-    // A_PTree node->addAttribute("⏬ varName = " + varName);                         
-    // A_PTree node->addAttribute("⏬ " + toString(type));                     
-    // A_PTree node->addAttribute("⏬ "+ toString(valueType));           
-    // A_PTree node->addAttribute("⏬  " + toString(valueSpace));                 
+    // A_PTree node->addAttribute("⏬  whereToSendString = " + inh_whereToSendString);
+    // A_PTree node->addAttribute("⏬ varName = " + varName);
+    // A_PTree node->addAttribute("⏬ " + toString(type));
+    // A_PTree node->addAttribute("⏬ "+ toString(valueType));
+    // A_PTree node->addAttribute("⏬  " + toString(valueSpace));
 
     if (whichProduction == P1)
     {
@@ -774,6 +780,7 @@ void postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
 
         postfix_expression_H(node->children[0], inh_whereToSendString, varName1, type1, valueType1, valueSpace1);
         PASS_THE_ERROR(varName1);
+        // aptLOG("p1 okay");
 
         // 🅰️ TypeChecking for Inc or Dec
         Type whichType1 = whatIsType(type1);
@@ -790,6 +797,8 @@ void postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
 
         SPACE reqSpace = getSpace(type1); // most likey is VALUE_SPACE
 
+        // aptLOG("Semantic Check Okay");
+
         std::string op = node->children[1]->value;
         if (op == "++")
         {
@@ -801,6 +810,7 @@ void postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
         }
         else
         {
+            aptLOG("OPERATOR NOT FOUND");
             // SEMANTIC ERROR 🚨 : Inc or Dec expression \"" + varName1 + "\" is not a pointer or variable type
             semanticLOG.push_back("Error: Inc or Dec expression \"" + varName1 + "\" is not a pointer or variable type");
             ERROR_EXIT_H;
@@ -818,6 +828,7 @@ void postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
             if (check != POP_SUCCESS)
             {
                 // SEMANTIC ERROR 🚨 : Error in popALevel
+                aptLOG("Error in popALevel");
             }
             int size = width(belowLevel);
             inc_decBY = std::to_string(size);
@@ -837,7 +848,7 @@ void postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
 
             varName0 = valNew; // Old varName before inc/dec
         }
-        else if(valueSpace1 == SPACE::VALUE_SPACE)
+        else if (valueSpace1 == SPACE::VALUE_SPACE)
         {
             // 🔖 IR Code
             std::string valNew = newTemp();
@@ -847,8 +858,10 @@ void postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
             CODE_BASE.addTAC(node, varName1, op, varName1, inc_decBY); // Increment it
             varName0 = valNew;                                         // Old varName before inc/dec
         }
-        else{
+        else
+        {
             // Something Wrong
+            aptLOG("Something Wrong in Space");
             ERROR_EXIT_H;
             A_PTree node->attributes.push_back("🌋 Something Wrong in Space 💥 Change Code [" + LOC + "]");
             // SetUp Dummy Data
@@ -860,6 +873,13 @@ void postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
         valueSpace0 = getSpace(type1);    // most likey is VALUE_SPACE
         valueType0 = getValueType(type1); // Set Correctly
         type0 = type1;                    // Set Correctly // NO change in type
+        aptLOG("Type Okay");
+
+        // Pass the data up
+        varName = varName0; // Change the name to the address
+        valueSpace = valueSpace0; // Inc or Dec is in address space
+        valueType = valueType0;   // Set Correctly
+        type = type0;             // Set Correctly
     }
     else
     {
@@ -868,11 +888,11 @@ void postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
         varName = PASS_ERROR;
         return;
     }
-    
-    A_PTree node->addAttribute("varName = " + varName + " ⬆️"); 
-    A_PTree node->addAttribute(toString(type) + " ⬆️");         
-    A_PTree node->addAttribute(toString(valueType) + " ⬆️");    
-    A_PTree node->addAttribute(toString(valueSpace) + " ⬆️");   
+
+    A_PTree node->addAttribute("varName = " + varName + " ⬆️");
+    A_PTree node->addAttribute(toString(type) + " ⬆️");
+    A_PTree node->addAttribute(toString(valueType) + " ⬆️");
+    A_PTree node->addAttribute(toString(valueSpace) + " ⬆️");
 
     EXIT_H;
 }
@@ -887,9 +907,9 @@ void assignment_expression_H(ASTNode *node, std::string inh_whereToSendString, s
 
     // A_PTree node->addAttribute("⏬  whereToSendString = " + inh_whereToSendString);
     // A_PTree node->addAttribute("⏬ varName = " + varName);
-    // A_PTree node->addAttribute("⏬ " + toString(type)); 
+    // A_PTree node->addAttribute("⏬ " + toString(type));
     // A_PTree node->addAttribute("⏬ "+ toString(valueType));
-    // A_PTree node->addAttribute("⏬  " + toString(valueSpace));        
+    // A_PTree node->addAttribute("⏬  " + toString(valueSpace));
 
     if (whichProduction == P1)
     {
@@ -910,9 +930,9 @@ void assignment_expression_H(ASTNode *node, std::string inh_whereToSendString, s
 
         assignment_expression_H(node->children[2], inh_whereToSendString, varName2, type2, valueType2, valueSpace2);
         PASS_THE_ERROR(varName2);
-        
+
         //---------------------- Space 🚀Change 🔖IR Code for varName2 [🤫 General Space Before USAGE]
-        USAGE_SPACE_CHANGE(varName2,type2,valueSpace2,node);
+        USAGE_SPACE_CHANGE(varName2, type2, valueSpace2, node);
 
         // 🅰️ TypeChecking for varName2
         // Rule - valueType - {M_LVALUE, NM_LVALUE, RVALUE} Allowed
@@ -925,7 +945,8 @@ void assignment_expression_H(ASTNode *node, std::string inh_whereToSendString, s
 
         // 🎉 SIDE EFFECTS 🎉
         int width1 = elementWidth(type1);
-        if(width1 < 0){
+        if (width1 < 0)
+        {
             // SEMANTIC ERROR 🚨 : Error in elementWidth
             ERROR_EXIT_H;
             // SetUp Dummy Data
@@ -962,7 +983,7 @@ void assignment_expression_H(ASTNode *node, std::string inh_whereToSendString, s
                 varName0 = varName2;                                           //
             }
         }
-        else if(reqSpace1 == valueSpace1)
+        else if (reqSpace1 == valueSpace1)
         {
             // No space change Code
             if (op != "=")
@@ -980,7 +1001,8 @@ void assignment_expression_H(ASTNode *node, std::string inh_whereToSendString, s
                 varName0 = varName1;                                           //
             }
         }
-        else{
+        else
+        {
             // Something Wrong
             ERROR_EXIT_H;
             A_PTree node->attributes.push_back("🌋 Something Wrong in Space 💥 Change Code [" + LOC + "]");
@@ -989,7 +1011,6 @@ void assignment_expression_H(ASTNode *node, std::string inh_whereToSendString, s
             return;
         }
         //-------------------------------------------------------------------
-    
 
         // 🤮 Return Value 🤮
         type0 = type1; // return type is of varName1
@@ -1010,10 +1031,10 @@ void assignment_expression_H(ASTNode *node, std::string inh_whereToSendString, s
         return;
     }
 
-    A_PTree node->addAttribute("varName = " + varName + " ⬆️"); 
-    A_PTree node->addAttribute(toString(type) + " ⬆️");         
-    A_PTree node->addAttribute(toString(valueType) + " ⬆️");    
-    A_PTree node->addAttribute(toString(valueSpace) + " ⬆️");   
+    A_PTree node->addAttribute("varName = " + varName + " ⬆️");
+    A_PTree node->addAttribute(toString(type) + " ⬆️");
+    A_PTree node->addAttribute(toString(valueType) + " ⬆️");
+    A_PTree node->addAttribute(toString(valueSpace) + " ⬆️");
 
     EXIT_H;
 }
@@ -1031,11 +1052,11 @@ void unary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::s
     std::string P5 = "SIZEOF unary_expression";
     std::string P6 = "SIZEOF LPAREN type_name RPAREN";
 
-    // A_PTree node->addAttribute("⏬  whereToSendString = " + inh_whereToSendString); 
-    // A_PTree node->addAttribute("⏬ varName = " + varName);                          
-    // A_PTree node->addAttribute("⏬ " + toString(type));                     
-    // A_PTree node->addAttribute("⏬ "+ toString(valueType));           
-    // A_PTree node->addAttribute("⏬ " + toString(valueSpace));                 
+    // A_PTree node->addAttribute("⏬  whereToSendString = " + inh_whereToSendString);
+    // A_PTree node->addAttribute("⏬ varName = " + varName);
+    // A_PTree node->addAttribute("⏬ " + toString(type));
+    // A_PTree node->addAttribute("⏬ "+ toString(valueType));
+    // A_PTree node->addAttribute("⏬ " + toString(valueSpace));
 
     if (whichProduction == P1)
     {
@@ -1043,29 +1064,30 @@ void unary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::s
         postfix_expression_H(node->children[0], inh_whereToSendString, varName, type, valueType, valueSpace);
         PASS_THE_ERROR(varName);
     }
-    else if(whichProduction == P2 || whichProduction == P3){
-        
+    else if (whichProduction == P2 || whichProduction == P3)
+    {
     }
-    else if(whichProduction == P4){
-        
+    else if (whichProduction == P4)
+    {
     }
-    else if(whichProduction == P5){
-
+    else if (whichProduction == P5)
+    {
     }
-    else if(whichProduction == P6){
-
+    else if (whichProduction == P6)
+    {
     }
-    else{
+    else
+    {
         ERROR_EXIT_H;
         // SetUp Dummy Data
         varName = PASS_ERROR;
         return;
     }
 
-    A_PTree node->addAttribute("varName = " + varName + " ⬆️"); 
-    A_PTree node->addAttribute(toString(type) + " ⬆️");         
-    A_PTree node->addAttribute(toString(valueType) + " ⬆️");    
-    A_PTree node->addAttribute(toString(valueSpace) + " ⬆️");   
+    A_PTree node->addAttribute("varName = " + varName + " ⬆️");
+    A_PTree node->addAttribute(toString(type) + " ⬆️");
+    A_PTree node->addAttribute(toString(valueType) + " ⬆️");
+    A_PTree node->addAttribute(toString(valueSpace) + " ⬆️");
 
     EXIT_H;
 }
@@ -1079,10 +1101,10 @@ void cast_expression_H(ASTNode *node, std::string inh_whereToSendString, std::st
 
     ENTRY_H;
 
-    //    A_PTree node->addAttribute("🔻 whereToSendString = " + inh_whereToSendString); 
-    //    A_PTree node->addAttribute("🔻 type = " + toString(type));                     
-    //    A_PTree node->addAttribute("🔻 valueType = " + toString(valueType));           
-    //    A_PTree node->addAttribute("🔻 valueSpace = " + toString(valueSpace));         
+    //    A_PTree node->addAttribute("🔻 whereToSendString = " + inh_whereToSendString);
+    //    A_PTree node->addAttribute("🔻 type = " + toString(type));
+    //    A_PTree node->addAttribute("🔻 valueType = " + toString(valueType));
+    //    A_PTree node->addAttribute("🔻 valueSpace = " + toString(valueSpace));
 
     std::string whichProduction = getProduction(node);
     std::string P1 = "unary_expression";
@@ -1117,24 +1139,23 @@ void cast_expression_H(ASTNode *node, std::string inh_whereToSendString, std::st
         return;
     }
 
-    A_PTree node->addAttribute("⏫ varName = " + varName);                 
-    A_PTree node->addAttribute("⏫ type = " + toString(type));             
-    A_PTree node->addAttribute("⏫ valueType = " + toString(valueType));   
-    A_PTree node->addAttribute("⏫ valueSpace = " + toString(valueSpace)); 
+    A_PTree node->addAttribute("⏫ varName = " + varName);
+    A_PTree node->addAttribute("⏫ type = " + toString(type));
+    A_PTree node->addAttribute("⏫ valueType = " + toString(valueType));
+    A_PTree node->addAttribute("⏫ valueSpace = " + toString(valueSpace));
 
     EXIT_H;
 }
-
 
 void multiplicative_expression_H(ASTNode *node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace)
 {
 
     ENTRY_H;
 
-    // A_PTree node->addAttribute("🔻 whereToSendString = " + inh_whereToSendString); 
-    // A_PTree node->addAttribute("🔻 type = " + toString(type));                     
-    // A_PTree node->addAttribute("🔻 valueType = " + toString(valueType));           
-    // A_PTree node->addAttribute("🔻 valueSpace = " + toString(valueSpace));         
+    // A_PTree node->addAttribute("🔻 whereToSendString = " + inh_whereToSendString);
+    // A_PTree node->addAttribute("🔻 type = " + toString(type));
+    // A_PTree node->addAttribute("🔻 valueType = " + toString(valueType));
+    // A_PTree node->addAttribute("🔻 valueSpace = " + toString(valueSpace));
 
     std::string whichProduction = getProduction(node);
     std::string P1 = "cast_expression";
@@ -1157,7 +1178,7 @@ void multiplicative_expression_H(ASTNode *node, std::string inh_whereToSendStrin
 
         multiplicative_expression_H(node->children[0], inh_whereToSendString, varName1, type1, valueType1, valueSpace1);
         PASS_THE_ERROR(varName1);
-        
+
         cast_expression_H(node->children[2], inh_whereToSendString, varName2, type2, valueType2, valueSpace2);
         PASS_THE_ERROR(varName2);
 
@@ -1234,24 +1255,23 @@ void multiplicative_expression_H(ASTNode *node, std::string inh_whereToSendStrin
         return;
     }
 
-    A_PTree node->addAttribute("⏫ varName = " + varName);                 
-    A_PTree node->addAttribute("⏫ type = " + toString(type));             
-    A_PTree node->addAttribute("⏫ valueType = " + toString(valueType));   
-    A_PTree node->addAttribute("⏫ valueSpace = " + toString(valueSpace)); 
+    A_PTree node->addAttribute("⏫ varName = " + varName);
+    A_PTree node->addAttribute("⏫ type = " + toString(type));
+    A_PTree node->addAttribute("⏫ valueType = " + toString(valueType));
+    A_PTree node->addAttribute("⏫ valueSpace = " + toString(valueSpace));
 
     EXIT_H;
 }
-
 
 void additive_expression_H(ASTNode *node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace)
 {
 
     ENTRY_H;
 
-    //    A_PTree node->addAttribute("🔻 whereToSendString = " + inh_whereToSendString); 
-    //    A_PTree node->addAttribute("🔻 type = " + toString(type));                     
-    //    A_PTree node->addAttribute("🔻 valueType = " + toString(valueType));           
-    //    A_PTree node->addAttribute("🔻 valueSpace = " + toString(valueSpace));         
+    //    A_PTree node->addAttribute("🔻 whereToSendString = " + inh_whereToSendString);
+    //    A_PTree node->addAttribute("🔻 type = " + toString(type));
+    //    A_PTree node->addAttribute("🔻 valueType = " + toString(valueType));
+    //    A_PTree node->addAttribute("🔻 valueSpace = " + toString(valueSpace));
 
     std::string whichProduction = getProduction(node);
     std::string P1 = "multiplicative_expression";
@@ -1303,7 +1323,6 @@ void additive_expression_H(ASTNode *node, std::string inh_whereToSendString, std
             (whichType2 == Type::POINTER || whichType2 == Type::FUNCTION || whichType2 == Type::ARRAY || whichType2 == Type::STRUCT_UNION))
         {
             semanticLOG.push_back("Error: Invalid operation " + node->children[1]->value + " between incompatible types \"" + toString(type1) + "\" and \"" + toString(type2) + "\"");
-            
         }
         // Step 2: if one is of integral type, the other cannot be struct_object or union_object
         else if ((isIntegral(type1) && (whichType2 == Type::STRUCT_UNION)) ||
@@ -1413,7 +1432,7 @@ void additive_expression_H(ASTNode *node, std::string inh_whereToSendString, std
                 // Handle pointer arithmetic
                 int elementWid = elementWidth(type1);
                 std::string elementWidthStr = std::to_string(elementWid);
-                
+
                 std::string scaledIntegral = newTemp();
 
                 CODE_BASE.addTAC(node, scaledIntegral, "*", varName2, elementWidthStr);
@@ -1472,7 +1491,6 @@ void additive_expression_H(ASTNode *node, std::string inh_whereToSendString, std
             else
             {
                 semanticLOG.push_back("Error: Invalid operation between types \"" + toString(type1) + "\" and \"" + toString(type2) + "\"");
-                
             }
         }
     }
@@ -1485,10 +1503,10 @@ void additive_expression_H(ASTNode *node, std::string inh_whereToSendString, std
         return;
     }
 
-    A_PTree node->addAttribute("⏫ varName = " + varName);                 
-    A_PTree node->addAttribute("⏫ type = " + toString(type));             
-    A_PTree node->addAttribute("⏫ valueType = " + toString(valueType));   
-    A_PTree node->addAttribute("⏫ valueSpace = " + toString(valueSpace)); 
+    A_PTree node->addAttribute("⏫ varName = " + varName);
+    A_PTree node->addAttribute("⏫ type = " + toString(type));
+    A_PTree node->addAttribute("⏫ valueType = " + toString(valueType));
+    A_PTree node->addAttribute("⏫ valueSpace = " + toString(valueSpace));
 
     EXIT_H;
 }
@@ -1498,10 +1516,10 @@ void shift_expression_H(ASTNode *node, std::string inh_whereToSendString, std::s
 
     ENTRY_H;
 
-    //    A_PTree node->addAttribute("🔻 whereToSendString = " + inh_whereToSendString); 
-    //    A_PTree node->addAttribute("🔻 type = " + toString(type));                     
-    //    A_PTree node->addAttribute("🔻 valueType = " + toString(valueType));           
-    //    A_PTree node->addAttribute("🔻 valueSpace = " + toString(valueSpace));         
+    //    A_PTree node->addAttribute("🔻 whereToSendString = " + inh_whereToSendString);
+    //    A_PTree node->addAttribute("🔻 type = " + toString(type));
+    //    A_PTree node->addAttribute("🔻 valueType = " + toString(valueType));
+    //    A_PTree node->addAttribute("🔻 valueSpace = " + toString(valueSpace));
 
     std::string whichProduction = getProduction(node);
     std::string P1 = "additive_expression";
@@ -1598,10 +1616,10 @@ void shift_expression_H(ASTNode *node, std::string inh_whereToSendString, std::s
         return;
     }
 
-    A_PTree node->addAttribute("⏫ varName = " + varName);                 
-    A_PTree node->addAttribute("⏫ type = " + toString(type));             
-    A_PTree node->addAttribute("⏫ valueType = " + toString(valueType));   
-    A_PTree node->addAttribute("⏫ valueSpace = " + toString(valueSpace)); 
+    A_PTree node->addAttribute("⏫ varName = " + varName);
+    A_PTree node->addAttribute("⏫ type = " + toString(type));
+    A_PTree node->addAttribute("⏫ valueType = " + toString(valueType));
+    A_PTree node->addAttribute("⏫ valueSpace = " + toString(valueSpace));
 
     EXIT_H;
 }
@@ -1612,13 +1630,12 @@ void relational_expression_H(ASTNode *node, std::string inh_whereToSendString, s
 
     ENTRY_H;
 
-    //    A_PTree node->addAttribute("🔻 whereToSendString = " + inh_whereToSendString); 
-    //    A_PTree node->addAttribute("🔻 type = " + toString(type));                     
-    //    A_PTree node->addAttribute("🔻 valueType = " + toString(valueType));           
-    //    A_PTree node->addAttribute("🔻 valueSpace = " + toString(valueSpace));         
+    //    A_PTree node->addAttribute("🔻 whereToSendString = " + inh_whereToSendString);
+    //    A_PTree node->addAttribute("🔻 type = " + toString(type));
+    //    A_PTree node->addAttribute("🔻 valueType = " + toString(valueType));
+    //    A_PTree node->addAttribute("🔻 valueSpace = " + toString(valueSpace));
 
     std::string whichProduction = getProduction(node);
-    CERR << "#432423 Which Production: " << whichProduction << std::endl;
     std::string P1 = "shift_expression";
     std::string P2 = "relational_expression LESSER_OP shift_expression";
     std::string P3 = "relational_expression GREATER_OP shift_expression";
@@ -1712,11 +1729,11 @@ void relational_expression_H(ASTNode *node, std::string inh_whereToSendString, s
         return;
     }
 
-    A_PTree node->addAttribute("⏫ varName = " + varName);                 
-    A_PTree node->addAttribute("⏫ type = " + toString(type));             
-    A_PTree node->addAttribute("⏫ valueType = " + toString(valueType));   
-    A_PTree node->addAttribute("⏫ valueSpace = " + toString(valueSpace)); 
-    
+    A_PTree node->addAttribute("⏫ varName = " + varName);
+    A_PTree node->addAttribute("⏫ type = " + toString(type));
+    A_PTree node->addAttribute("⏫ valueType = " + toString(valueType));
+    A_PTree node->addAttribute("⏫ valueSpace = " + toString(valueSpace));
+
     EXIT_H;
 }
 
@@ -1725,10 +1742,10 @@ void equality_expression_H(ASTNode *node, std::string inh_whereToSendString, std
 
     ENTRY_H;
 
-    //    A_PTree node->addAttribute("🔻 whereToSendString = " + inh_whereToSendString); 
-    //    A_PTree node->addAttribute("🔻 type = " + toString(type));                     
-    //    A_PTree node->addAttribute("🔻 valueType = " + toString(valueType));           
-    //    A_PTree node->addAttribute("🔻 valueSpace = " + toString(valueSpace));         
+    //    A_PTree node->addAttribute("🔻 whereToSendString = " + inh_whereToSendString);
+    //    A_PTree node->addAttribute("🔻 type = " + toString(type));
+    //    A_PTree node->addAttribute("🔻 valueType = " + toString(valueType));
+    //    A_PTree node->addAttribute("🔻 valueSpace = " + toString(valueSpace));
 
     std::string whichProduction = getProduction(node);
     std::string P1 = "relational_expression";
@@ -1752,7 +1769,6 @@ void equality_expression_H(ASTNode *node, std::string inh_whereToSendString, std
         relational_expression_H(node->children[2], inh_whereToSendString, varName2, type2, valueType2, valueSpace2);
         PASS_THE_ERROR(varName2);
 
-        
         // 🚀 USAGE 🤫 SPACE CHANGE 🚀
         USAGE_SPACE_CHANGE(varName1, type1, valueSpace1, node);
         USAGE_SPACE_CHANGE(varName2, type2, valueSpace2, node);
@@ -1819,10 +1835,10 @@ void equality_expression_H(ASTNode *node, std::string inh_whereToSendString, std
         return;
     }
 
-    A_PTree node->addAttribute("⏫ varName = " + varName);                 
-    A_PTree node->addAttribute("⏫ type = " + toString(type));             
-    A_PTree node->addAttribute("⏫ valueType = " + toString(valueType));   
-    A_PTree node->addAttribute("⏫ valueSpace = " + toString(valueSpace)); 
+    A_PTree node->addAttribute("⏫ varName = " + varName);
+    A_PTree node->addAttribute("⏫ type = " + toString(type));
+    A_PTree node->addAttribute("⏫ valueType = " + toString(valueType));
+    A_PTree node->addAttribute("⏫ valueSpace = " + toString(valueSpace));
 
     EXIT_H;
 }
@@ -1857,7 +1873,7 @@ void and_expression_H(ASTNode *node, std::string inh_whereToSendString, std::str
         PASS_THE_ERROR(varName1);
         equality_expression_H(node->children[2], inh_whereToSendString, varName2, type2, valueType2, valueSpace2);
         PASS_THE_ERROR(varName2);
-        
+
         // 🚀 USAGE 🤫 SPACE CHANGE 🚀
         USAGE_SPACE_CHANGE(varName1, type1, valueSpace1, node);
         USAGE_SPACE_CHANGE(varName2, type2, valueSpace2, node);
@@ -1976,7 +1992,6 @@ void exclusive_or_expression_H(ASTNode *node, std::string inh_whereToSendString,
         // 🚀 USAGE 🤫 SPACE CHANGE 🚀
         USAGE_SPACE_CHANGE(varName1, type1, valueSpace1, node);
         USAGE_SPACE_CHANGE(varName2, type2, valueSpace2, node);
-
 
         Type whichType1 = whatIsType(type1);
         Type whichType2 = whatIsType(type2);
@@ -2204,7 +2219,7 @@ void logical_and_expression_H(ASTNode *node, std::string inh_whereToSendString, 
         inclusive_or_expression_H(node->children[2], inh_whereToSendString, varName2, type2, valueType2, valueSpace2);
         PASS_THE_ERROR(varName2);
 
-        // 🚀 USAGE 🤫 SPACE CHANGE 🚀        
+        // 🚀 USAGE 🤫 SPACE CHANGE 🚀
         USAGE_SPACE_CHANGE(varName1, type1, valueSpace1, node);
         USAGE_SPACE_CHANGE(varName2, type2, valueSpace2, node);
 
@@ -2341,7 +2356,6 @@ void logical_or_expression_H(ASTNode *node, std::string inh_whereToSendString, s
         USAGE_SPACE_CHANGE(varName1, type1, valueSpace1, node);
         USAGE_SPACE_CHANGE(varName2, type2, valueSpace2, node);
 
-
         Type whichType1 = whatIsType(type1);
         Type whichType2 = whatIsType(type2);
 
@@ -2439,10 +2453,10 @@ void conditional_expression_H(ASTNode *node, std::string inh_whereToSendString, 
 
     ENTRY_H;
 
-    //    A_PTree node->addAttribute("🔻 whereToSendString = " + inh_whereToSendString); 
-    //    A_PTree node->addAttribute("🔻 type = " + toString(type));                     
-    //    A_PTree node->addAttribute("🔻 valueType = " + toString(valueType));           
-    //    A_PTree node->addAttribute("🔻 valueSpace = " + toString(valueSpace));         
+    //    A_PTree node->addAttribute("🔻 whereToSendString = " + inh_whereToSendString);
+    //    A_PTree node->addAttribute("🔻 type = " + toString(type));
+    //    A_PTree node->addAttribute("🔻 valueType = " + toString(valueType));
+    //    A_PTree node->addAttribute("🔻 valueSpace = " + toString(valueSpace));
 
     std::string whichProduction = getProduction(node);
     std::string P1 = "logical_or_expression";
@@ -2453,16 +2467,17 @@ void conditional_expression_H(ASTNode *node, std::string inh_whereToSendString, 
         logical_or_expression_H(node->children[0], inh_whereToSendString, varName, type, valueType, valueSpace);
         PASS_THE_ERROR(varName);
     }
-    else{
+    else
+    {
         ERROR_EXIT_H;
         // SetUp Dummy Data
         varName = PASS_ERROR;
         return;
     }
 
-    A_PTree node->addAttribute("⏫ varName = " + varName);                 
-    A_PTree node->addAttribute("⏫ type = " + toString(type));             
-    A_PTree node->addAttribute("⏫ valueType = " + toString(valueType));   
+    A_PTree node->addAttribute("⏫ varName = " + varName);
+    A_PTree node->addAttribute("⏫ type = " + toString(type));
+    A_PTree node->addAttribute("⏫ valueType = " + toString(valueType));
     A_PTree node->addAttribute("⏫ valueSpace = " + toString(valueSpace));
 
     EXIT_H;

@@ -1,20 +1,11 @@
-#include <stdio.h>
 int main(){
-    
-    // for (int i = 0; i < 10; i++)
-    // {
-    //     int a;
-    // }
-
-    int k = 23;
-    int a = 9;
-    for (k = 0; k < 10, a < 5; k++)
+    int a = 5;
+    int b;
+    if (b == 5)
     {
-        int b;
+        a++;
     }
-
-    // for(int i = 0; i < 10;)
-    // {
-    //     int c;
-    // }
+    else{
+        a--;
+    }
 }

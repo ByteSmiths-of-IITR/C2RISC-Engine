@@ -469,7 +469,7 @@ void semanticPass(ASTNode *node, std::string filename)
 
     // We will openScope here
     int globalScope = SYM_TABLE.enterScope();                                              // GlobalScope
-    std::string scopeName = GLOBAL_SCOPE + " " + toString(globalScope);                    // Global Scope Name
+    std::string scopeName = GLOBAL_SCOPE;                                                  // Global Scope Name
     SYM_TABLE.setScopeName(scopeName);                                                     // Set the name of the scope
     A_PTree node->addAttribute("Scope (Global) : S" + std::to_string(globalScope) + " ⤵️"); // 🌴 Adding syn_attr
 
@@ -665,8 +665,7 @@ void function_definition_H(ASTNode *node)
             std::vector<std::string> paramNames = paramInfo->paramsName;
 
             // OPEN a NEW SCOPE
-            int scopeNo = SYM_TABLE.enterScope(); //  [☀️ EarlyScope Entry]
-            SYM_TABLE.ignoreNextEntry();          // This will tell the symbol table to ignore the next entry by compound_statement
+            int scopeNo = SYM_TABLE.earlyEntry(); //  [☀️ EarlyScope Entry]
 
             std::string scopeName = varName + " S" + std::to_string(scopeNo);      // Function Scope Name
             SYM_TABLE.setScopeName(scopeName);                                     // Set the name of the scope
@@ -699,18 +698,21 @@ void function_definition_H(ASTNode *node)
 
         // 🔖IR Cdoe
 
-        CODE_BASE.addTAC(node, NO_ARG, FUNCTION_LABEL, varName, NO_ARG);
+        CODE_BASE.addTAC(node, varName, FUNCTION_LABEL, NO_ARG, NO_ARG);
 
         // Call the compound_statement handler
-        SYM_TABLE.ignoreNextEntry(); // This will tell compound_statement to ignore the next entry
         compound_statement_H(node->children[2]);
 
         // [ToDecide - HOW TO CHECK RETURN TYPE OF FUNCTION]
 
-        // SYM_TABLE.exitScope();
+        // SYM_TABLE.exitScope(); // [☀️ EarlyScope Entry's EXIT]
         // [Will be Handled by Compound Statments this is due to - ☀️ EarlyScope Entry]
 
         CODE_BASE.addTAC(node, NO_ARG, BLANK, NO_ARG, NO_ARG); // To be added
+
+        // Early Entry's Exit
+        int exitedScope = SYM_TABLE.earlyExit(); //  [☀️ EarlyScope Entry] [IT's POSSIBLE that the early scope entry was never used in here]
+        A_PTree node->addAttribute("Exit due to EarlyEntry : S" + std::to_string(exitedScope) + " ☀️"); // 🌴 Adding syn_attr
     }
     else
     {
