@@ -26,7 +26,7 @@ int width(const UserDType &dtype)
 int width(const BaseInfo &info)
 {
     TypeExpression typeExpr;
-    typeExpr.levelStack.push((LevelInfo *)&info);
+    typeExpr.levelStack.push_back((LevelInfo *)&info);
     Type topType = whatIsType(typeExpr);
     if (topType == Type::VARIABLE)
     {
@@ -97,7 +97,7 @@ int width(const TypeExpression &typeExpr)
     int size = 0;
     if (isbase)
     {
-        BaseInfo *base = dynamic_cast<BaseInfo *>(temp.levelStack.top());
+        BaseInfo *base = dynamic_cast<BaseInfo *>(temp.levelStack.back());
         size = width(*base);
     }
     else if (topType == Type::POINTER)
@@ -106,7 +106,7 @@ int width(const TypeExpression &typeExpr)
     }
     else if (topType == Type::ARRAY)
     {
-        ArrayInfo *array = dynamic_cast<ArrayInfo *>(temp.levelStack.top());
+        ArrayInfo *array = dynamic_cast<ArrayInfo *>(temp.levelStack.back());
         TypeExpression element = temp;
         popALevel(element);
         size = array->dimSize * width(element);
@@ -167,10 +167,12 @@ bool topIsParenthesis(const TypeExpression &typeExpr)
     {
         return false;
     }
-    LevelInfo *info = typeExpr.levelStack.top();
+    LevelInfo *info = typeExpr.levelStack.back();
+    // HERE;
     if (!info)
     {
         std::cerr << "Error: LevelInfo is nullptr\n";
+        // HERE;
         return false;
     }
     return isParenthesisInfo(*info);
@@ -181,8 +183,9 @@ void removeTopParenthesis(TypeExpression &typeExpr)
     // This will remove only the top parenthesis
     while (topIsParenthesis(typeExpr))
     {
-        typeExpr.levelStack.pop(); // ignore top-parenthesis
+        typeExpr.levelStack.pop_back(); // ignore top-parenthesis
     }
+    return;
 }
 
 Type whatIsType(const TypeExpression &typeExpr)
@@ -195,7 +198,7 @@ Type whatIsType(const TypeExpression &typeExpr)
     {
         return Type::EMPTY;
     }
-    LevelInfo *info = temp.levelStack.top();
+    LevelInfo *info = temp.levelStack.back();
     if (!info)
     {
         std::cerr << "Error: LevelInfo is nullptr\n";
@@ -241,28 +244,58 @@ Type whatIsType(const TypeExpression &typeExpr)
     return Type::UNKNOWN;
 }
 
+std::string toString(Type whichType){
+    if (whichType == Type::VARIABLE)
+    {
+        return "VARIABLE";
+    }
+    else if (whichType == Type::POINTER)
+    {
+        return "POINTER";
+    }
+    else if (whichType == Type::ARRAY)
+    {
+        return "ARRAY";
+    }
+    else if (whichType == Type::FUNCTION)
+    {
+        return "FUNCTION";
+    }
+    else if (whichType == Type::ENUM_CONSTANT)
+    {
+        return "ENUM_CONSTANT";
+    }
+    else if (whichType == Type::STRUCT_UNION)
+    {
+        return "STRUCT_UNION";
+    }
+    else if (whichType == Type::ENUM)
+    {
+        return "ENUM";
+    }
+    else
+    {
+        return "UNKNOWN";
+    }
+}
+
 std::string toString(const TypeExpression &typeExpr)
 {
     // Clear topParenthesis
     TypeExpression temp = typeExpr;
     removeTopParenthesis(temp);
-
     std::string result = "";
-    std::stack<LevelInfo *> tempStack = temp.levelStack;
-    while (!tempStack.empty())
-    {
-        LevelInfo *info = tempStack.top();
-        tempStack.pop();
-        if (isParenthesisInfo(*info))
+    for(int i = typeExpr.levelStack.size() - 1; i >= 0; i--){
+        int k = typeExpr.levelStack[i]->levelType;
+        if (k==PARENTHESIS_LEVEL)
         {
             result = "(" + result + ")";
         }
-        else if (isBaseInfo(*info))
+        else if (k==BASE_LEVEL)
         {
-            BaseInfo *base = dynamic_cast<BaseInfo *>(info);
+            BaseInfo *base = dynamic_cast<BaseInfo *>(typeExpr.levelStack[i]);
             // Add qualifiers
             std::string baseadd = "";
-
             for (auto qualifier : base->typeQualifiers)
             {
                 if (qualifier == TypeQualifier::CONST)
@@ -277,9 +310,9 @@ std::string toString(const TypeExpression &typeExpr)
             baseadd = baseadd + base->baseType;
             result = baseadd + (result.empty() ? "" : " ") + result;
         }
-        else if (isPointerInfo(*info))
+        else if (k==POINTER_LEVEL)
         {
-            PointerInfo *ptr = dynamic_cast<PointerInfo *>(info);
+            PointerInfo *ptr = dynamic_cast<PointerInfo *>(typeExpr.levelStack[i]);
             // Add qualifiers
             for (auto qualifier : ptr->typeQualifiers)
             {
@@ -294,14 +327,14 @@ std::string toString(const TypeExpression &typeExpr)
             }
             result = "*" + result;
         }
-        else if (isArrayInfo(*info))
+        else if (k==ARRAY_LEVEL)
         {
-            ArrayInfo *arr = dynamic_cast<ArrayInfo *>(info);
+            ArrayInfo *arr = dynamic_cast<ArrayInfo *>(typeExpr.levelStack[i]);
             result = result + "[" + std::to_string(arr->dimSize) + "]";
         }
-        else if (isParameterInfo(*info))
+        else if (isParameterInfo(*typeExpr.levelStack[i]))
         {
-            ParameterInfo *param = dynamic_cast<ParameterInfo *>(info);
+            ParameterInfo *param = dynamic_cast<ParameterInfo *>(typeExpr.levelStack[i]);
             std::string paramStr = "(";
             for (int i = 0; i < param->paramsType.size(); i++)
             {
@@ -314,6 +347,11 @@ std::string toString(const TypeExpression &typeExpr)
             paramStr += ")";
             result = result + paramStr;
         }
+        else
+        {
+            std::cerr << "Error: Unknown LevelInfo type\n";
+            return "";
+        }
     }
     return result;
 }
@@ -325,10 +363,8 @@ int popALevel(TypeExpression &typeExpr)
     {
         return POP_FAILURE;
     }
-    LevelInfo *info = typeExpr.levelStack.top();
-    typeExpr.levelStack.pop();
-
-    delete info; // [ERROR PRONE ⚠️]
+    LevelInfo *info = typeExpr.levelStack.back();
+    typeExpr.levelStack.pop_back();
 
     return POP_SUCCESS;
 }
@@ -385,7 +421,7 @@ int ProcessConstants(std::string inputValue, TypeExpression &typeExpr, std::stri
                 char c = inputValue[1];
                 base->baseType = TYPE_CHAR;
                 finalValue = std::string(1, c);
-                typeExpr.levelStack.push(base);
+                typeExpr.levelStack.push_back(base);
                 return 0;
             }
             else
@@ -403,7 +439,7 @@ int ProcessConstants(std::string inputValue, TypeExpression &typeExpr, std::stri
             // (Could add an explicit range check using std::numeric_limits<float>::max())
             base->baseType = TYPE_FLOAT;
             finalValue = std::to_string(fval);
-            typeExpr.levelStack.push(base);
+            typeExpr.levelStack.push_back(base);
             return 0;
         }
 
@@ -413,7 +449,7 @@ int ProcessConstants(std::string inputValue, TypeExpression &typeExpr, std::stri
             double dval = std::stod(inputValue);
             base->baseType = TYPE_DOUBLE;
             finalValue = std::to_string(dval);
-            typeExpr.levelStack.push(base);
+            typeExpr.levelStack.push_back(base);
             return 0;
         }
 
@@ -447,7 +483,7 @@ int ProcessConstants(std::string inputValue, TypeExpression &typeExpr, std::stri
                 base->baseType = TYPE_DOUBLE;
                 finalValue = std::to_string(dval);
             }
-            typeExpr.levelStack.push(base);
+            typeExpr.levelStack.push_back(base);
             return 0;
         }
 
@@ -482,7 +518,7 @@ int ProcessConstants(std::string inputValue, TypeExpression &typeExpr, std::stri
                 base->baseType = TYPE_LONG;
             }
             finalValue = std::to_string(value);
-            typeExpr.levelStack.push(base);
+            typeExpr.levelStack.push_back(base);
             return 0;
         }
 
@@ -512,7 +548,7 @@ int ProcessConstants(std::string inputValue, TypeExpression &typeExpr, std::stri
                 base->baseType = TYPE_LONG;
             }
             finalValue = std::to_string(value);
-            typeExpr.levelStack.push(base);
+            typeExpr.levelStack.push_back(base);
             return 0;
         }
 
@@ -542,7 +578,7 @@ int ProcessConstants(std::string inputValue, TypeExpression &typeExpr, std::stri
                 base->baseType = TYPE_LONG;
             }
             finalValue = std::to_string(value);
-            typeExpr.levelStack.push(base);
+            typeExpr.levelStack.push_back(base);
             return 0;
         }
 
@@ -564,7 +600,7 @@ int ProcessConstants(std::string inputValue, TypeExpression &typeExpr, std::stri
                 base->baseType = TYPE_LONG;
             }
             finalValue = std::to_string(value);
-            typeExpr.levelStack.push(base);
+            typeExpr.levelStack.push_back(base);
             return 0;
         }
     }
@@ -615,14 +651,13 @@ VALUE_TYPE getValueType(const TypeExpression &typeExpr)
         // This is a constant
         return VALUE_TYPE::RVALUE;
     }
-
     int isModifiable = isModifiableLvalue(temp);
     if (!isModifiable)
     {
         // Non-modifiable Lvalue (array, function, const keyword)
         return VALUE_TYPE::NM_LVALUE;
     }
-
+    // Modifiable Lvalue (variable, pointer, struct/union)
     return VALUE_TYPE::M_LVALUE;
 }
 
@@ -633,6 +668,7 @@ bool isModifiableLvalue(const TypeExpression &type)
     removeTopParenthesis(temp);
 
     Type topType = whatIsType(temp);
+    std::cerr << "Top Type: " << toString(temp) << "\n";
 
     // Logic - Array or Function
     if (topType == Type::ARRAY || topType == Type::FUNCTION)
@@ -643,7 +679,7 @@ bool isModifiableLvalue(const TypeExpression &type)
     // Logic - Pointer with const qualifier
     if (topType == Type::POINTER)
     {
-        PointerInfo *ptr = dynamic_cast<PointerInfo *>(temp.levelStack.top());
+        PointerInfo *ptr = dynamic_cast<PointerInfo *>(temp.levelStack.back());
         for (auto qualifier : ptr->typeQualifiers)
         {
             if (qualifier == TypeQualifier::CONST)
@@ -651,12 +687,13 @@ bool isModifiableLvalue(const TypeExpression &type)
                 return false;
             }
         }
+        return true;
     }
 
     // Logic - Base with const qualifier
     if (topType == Type::VARIABLE || topType == Type::STRUCT_UNION || topType == Type::ENUM)
     {
-        BaseInfo *base = dynamic_cast<BaseInfo *>(temp.levelStack.top());
+        BaseInfo *base = dynamic_cast<BaseInfo *>(temp.levelStack.back());
 
         // Base with const qualifier
         for (auto qualifier : base->typeQualifiers)
@@ -666,17 +703,7 @@ bool isModifiableLvalue(const TypeExpression &type)
                 return false;
             }
         }
-
-        // Base with record type can be modified
-        //     std::string baseType = base->baseType;
-        //     // it can have 3parts seprated by space or just one
-        //     std::string recordType = baseType.substr(0, baseType.find(" "));
-        //     if(recordType == "struct" || recordType == "union"){
-        //         return true;
-        //     }
-        //     if(recordType == "enum"){
-        //         return true;
-        //     }
+        return true;
     }
 
     if (topType == Type::ENUM_CONSTANT)
@@ -713,8 +740,8 @@ int checkEquivalance(const TypeExpression &typeExpr1, const TypeExpression &type
     // Both are not empty
 
     // Check a level
-    LevelInfo *info1 = temp1.levelStack.top();
-    LevelInfo *info2 = temp2.levelStack.top();
+    LevelInfo *info1 = temp1.levelStack.back();
+    LevelInfo *info2 = temp2.levelStack.back();
     if (!info1 || !info2)
     {
         // Should not happen
@@ -763,7 +790,6 @@ int checkEquivalance(const TypeExpression &typeExpr1, const TypeExpression &type
 
 int ourEquivalent(const TypeExpression &type1, const TypeExpression &type2)
 {
-
     // REmove Parenthesis
     TypeExpression temp1 = type1;
     TypeExpression temp2 = type2;
@@ -773,9 +799,11 @@ int ourEquivalent(const TypeExpression &type1, const TypeExpression &type2)
     // Then ignore lower levels
     Type topType1 = whatIsType(temp1);
     Type topType2 = whatIsType(temp2);
-    if (topType1 == Type::POINTER || topType1 == Type::FUNCTION || topType1 == Type::ARRAY)
+
+    bool isPtr1 = (topType1 == Type::POINTER || topType1 == Type::FUNCTION || topType1 == Type::ARRAY);
+    bool isPtr2 = (topType2 == Type::POINTER || topType2 == Type::FUNCTION || topType2 == Type::ARRAY);
+    if(isPtr1 && isPtr2)
     {
-        // Check equivalance of top level
         return EQUIVALENT;
     }
 
@@ -784,7 +812,6 @@ int ourEquivalent(const TypeExpression &type1, const TypeExpression &type2)
     bool isNumeric2 = isNumeric(type2);
     if (isNumeric1 && isNumeric2)
     {
-        // Both are numeric
         return EQUIVALENT;
     }
 
@@ -793,13 +820,14 @@ int ourEquivalent(const TypeExpression &type1, const TypeExpression &type2)
     {
         // Both are struct/union
         // Check if they are same
-        BaseInfo *base1 = dynamic_cast<BaseInfo *>(temp1.levelStack.top());
-        BaseInfo *base2 = dynamic_cast<BaseInfo *>(temp2.levelStack.top());
+        BaseInfo *base1 = dynamic_cast<BaseInfo *>(temp1.levelStack.back());
+        BaseInfo *base2 = dynamic_cast<BaseInfo *>(temp2.levelStack.back());
         if (base1->baseType == base2->baseType)
         {
             return EQUIVALENT;
         }
     }
+    return LOW_ERROR;
 }
 
 /*
@@ -940,25 +968,25 @@ int whichLevelInfo(const LevelInfo &info)
 
 bool isParenthesisInfo(const LevelInfo &info)
 {
-    return dynamic_cast<const ParenthesisInfo *>(&info);
+    return (info.levelType == PARENTHESIS_LEVEL);
 }
 
 bool isArrayInfo(const LevelInfo &info)
 {
-    return dynamic_cast<const ArrayInfo *>(&info);
+    return (info.levelType == ARRAY_LEVEL);
 }
 
 bool isPointerInfo(const LevelInfo &info)
 {
-    return dynamic_cast<const PointerInfo *>(&info);
+    return (info.levelType == POINTER_LEVEL);
 }
 
 bool isBaseInfo(const LevelInfo &info)
 {
-    return dynamic_cast<const BaseInfo *>(&info);
+    return (dynamic_cast<const BaseInfo *>(&info));
 }
 
 bool isParameterInfo(const LevelInfo &info)
 {
-    return dynamic_cast<const ParameterInfo *>(&info);
+    return (info.levelType == PARAMETER_LEVEL);
 }

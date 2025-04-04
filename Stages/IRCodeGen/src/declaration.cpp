@@ -147,20 +147,21 @@ void init_declarator_H(ASTNode *node, TypeExpression inh_type, StorageClass inh_
             bool isValid = isValidTypeExpression(type);
             if (isValid == 0)
             {
-                semanticError("SEMANTIC ERROR ‼️ : 😑 Invalid type expression ");
+                semanticError("😑 Invalid type expression ");
             }
 
             if (whichProduction == P2)
             {
-                semanticError("SEMANTIC ERROR ‼️ : typedef cannot 🙂‍↔️ have initializer");
+                semanticError("typedef cannot 🙂‍↔️ have initializer");
             }
 
             // Add to symbol table
             GenericSymbol *sym = typedefDef;
-            int insertCheck = SYM_TABLE.insert(symbolInsertedType, varName, sym);
+            std::string typedefKey = TYPEDEF_PREFIX + varName;
+            int insertCheck = SYM_TABLE.insert(symbolInsertedType, typedefKey, sym);
             if (insertCheck == INSERT_FAILURE)
             {
-                semanticError("SEMANTIC ERROR ‼️ : Symbol \"" + varName + "\" already 🫠 present in the current scope");
+                semanticError("Symbol \"" + varName + "\" already 🫠 present in the current scope");
             }
             else
             {
@@ -181,7 +182,7 @@ void init_declarator_H(ASTNode *node, TypeExpression inh_type, StorageClass inh_
 
             if (inh_storageClass == StorageClass::AUTO)
             {
-                semanticError("SEMANTIC ERROR ‼️ : Function cannot 🙂‍↔️ be AUTO");
+                semanticError("Function cannot 🙂‍↔️ be AUTO");
             }
             else if (inh_storageClass == StorageClass::STATIC)
             {
@@ -209,7 +210,7 @@ void init_declarator_H(ASTNode *node, TypeExpression inh_type, StorageClass inh_
 
                     if (!sameSignature)
                     {
-                        semanticError("SEMANTIC ERROR ‼️ : Function declaration \"" + varName + "\" signature mismatch with previous declaration");
+                        semanticError("Function declaration \"" + varName + "\" signature mismatch with previous declaration");
                     }
 
                     aptLOG("Function \"" + varName + "\" already declared but with same signature");
@@ -241,7 +242,7 @@ void init_declarator_H(ASTNode *node, TypeExpression inh_type, StorageClass inh_
             int insertCheck = SYM_TABLE.insert(symbolInsertedType, varName, sym);
             if (insertCheck == INSERT_FAILURE)
             {
-                semanticError("SEMANTIC ERROR ‼️ : Symbol \"" + varName + "\" already 🫠 present in the current scope");
+                semanticError("Symbol \"" + varName + "\" already 🫠 present in the current scope");
             }
             else
             {
@@ -1057,7 +1058,7 @@ void declarator_H(ASTNode *node, TypeExpression inh_type, std::string &varName, 
         {
             PointerInfo *info = new PointerInfo(); // This will make a heap copy
             info->typeQualifiers = unit->typeQualifiers;
-            inh_type.levelStack.push(info);
+            inh_type.levelStack.push_back(info);
         }
 
         // 2. Call the function again to fetch the next value
@@ -1120,7 +1121,7 @@ void direct_declarator_H(ASTNode *node, TypeExpression inh_type, std::string &va
 
         // Update the inh_type
         ParenthesisInfo *info = new ParenthesisInfo();
-        inh_type.levelStack.push(info);
+        inh_type.levelStack.push_back(info);
 
         declarator_H(node->children[1], inh_type, varName1, type1);
 
@@ -1145,7 +1146,7 @@ void direct_declarator_H(ASTNode *node, TypeExpression inh_type, std::string &va
 
         ArrayInfo *info = new ArrayInfo();
         info->dimSize = size;
-        inh_type.levelStack.push(info);
+        inh_type.levelStack.push_back(info);
 
         // 2. Call the function again to fetch the next value
         direct_declarator_H(node->children[0], inh_type, varName1, type1);
@@ -1175,7 +1176,7 @@ void direct_declarator_H(ASTNode *node, TypeExpression inh_type, std::string &va
         info->paramsType = paramVector;
         info->paramsName = varName_list;
 
-        inh_type.levelStack.push(info);
+        inh_type.levelStack.push_back(info);
 
         // 2. Call the function again to fetch the next value
         std::string varName1; // to be fetched ⬆️
@@ -1581,7 +1582,7 @@ void abstract_declarator_H(ASTNode *node, TypeExpression inh_type, TypeExpressio
         for (int i = 0; i < ptrInfo.size(); i++)
         {
             PointerInfo *info = ptrInfo[i];
-            type1.levelStack.push(info);
+            type1.levelStack.push_back(info);
         }
 
         // Pass the data up
@@ -1608,7 +1609,7 @@ void abstract_declarator_H(ASTNode *node, TypeExpression inh_type, TypeExpressio
         {
             PointerInfo *info = ptrInfo[i];
             PointerInfo *infoPtr = info;
-            type1.levelStack.push(infoPtr);
+            type1.levelStack.push_back(infoPtr);
         }
         // 2. Call the function again to fetch the next value
         TypeExpression type2;
@@ -1657,7 +1658,7 @@ void direct_abstract_declarator_H(ASTNode *node, TypeExpression inh_type, TypeEx
         // 1. Call the function again to fetch the next value
         TypeExpression type1 = inh_type;
         ParenthesisInfo *info = new ParenthesisInfo();
-        inh_type.levelStack.push(info);
+        inh_type.levelStack.push_back(info);
         abstract_declarator_H(node->children[1], inh_type, type1);
 
         // Pass the data up
@@ -1679,7 +1680,7 @@ void direct_abstract_declarator_H(ASTNode *node, TypeExpression inh_type, TypeEx
         ArrayInfo *info = new ArrayInfo();
         info->dimSize = constValue1;
 
-        inh_type.levelStack.push(info); // Push the new info to inh_type
+        inh_type.levelStack.push_back(info); // Push the new info to inh_type
         TypeExpression type1 = inh_type;
         if (whichProduction == P4 || whichProduction == P5)
         {
@@ -1712,7 +1713,7 @@ void direct_abstract_declarator_H(ASTNode *node, TypeExpression inh_type, TypeEx
             info->isAbstract = true;
         }
 
-        inh_type.levelStack.push(info); // Push the new info to inh_type
+        inh_type.levelStack.push_back(info); // Push the new info to inh_type
         TypeExpression type1 = inh_type;
         if (whichProduction == P8 || whichProduction == P9)
         {
@@ -1760,12 +1761,11 @@ void initializer_H(ASTNode *node, TypeExpression inh_type, std::string inh_varNa
         // Logic - If Base -> If both are numeric(+enum/enumConstats) -> typecast arg to resultType and assign (IRCode Needed)
         // Logic - If Base -> If both are Record(union/struct) Object -> MUST be EXACT match else ERROR
         // Logic - If both (POINTER,FUNCTION,ARRAY) -> IGNORE BELOW LEVEL -> just assign varName and returnType = resultType
-        bool isValid = ourEquivalent(inh_type, type1);
-        if (isValid)
+        int isValid = ourEquivalent(inh_type, type1);
+        if (isValid != EQUIVALENT)
         {
-            // SEMANTIC ERROR 🚨 : Type Mismatch
-            semanticLOG.push_back("Initializer Type Mismatch ❌");
-            BUG_EXIT;
+            semanticError("Initialization Type Mismatch 😔 for \'" + inh_varName + "\' which is \'" + toString(inh_type) + "\' and initialized it with \'" + toString(type1) + "\'");
+            ERROR_EXIT;
             return;
         }
 
@@ -1774,6 +1774,7 @@ void initializer_H(ASTNode *node, TypeExpression inh_type, std::string inh_varNa
 
         // 🎉 SIDE EFFECTS 🎉
 
+        inh_varName += "$" + std::to_string(SYM_TABLE.scopeNo);
         CODE_BASE.addTAC(node, inh_varName, "=", varName1, NO_ARG); // Assign the value to the variable
 
         // 🤮 Return Value 🤮

@@ -99,5 +99,8 @@ void writeASTToSExpression(ASTNode *root, const std::string &outputFileName);
 void printASTRecursive(ASTNode *node, std::ofstream &outFile, const std::string &prefix, bool isLast);
 void printASTToFile(ASTNode *root, const std::string &outputFileName);
 
+//Semantic Phase Utilities
+extern std::string MARKER;
+void insertAfterMarker(const std::string &filename, const std::string &marker, const std::vector<std::string> &newContent);
 
 #endif // UTILITY_H

@@ -2410,6 +2410,7 @@ int main(int argc, char **argv) {
         inputInstructions += "[-s <SExp_file>] : Generate S-Expression\n";
         inputInstructions += "[-APTree <dot_file>] : Generate a Annotated PTree During Semantic Phase\n";
         inputInstructions += "[-tac <tac_file> ] : Write TAC Code to this File";
+        inputInstructions += "[ -t ] : Testing Mode\n";
 
         /* std::cout << "argc: " << argc << std::endl; */
         if (argc < 2) {
@@ -2431,6 +2432,7 @@ int main(int argc, char **argv) {
         bool parser_tree_flag = false;
         bool recursive_flag = false;
         bool parser_table_flag = false;
+        bool testingMode = false;
         bool SExp_flag = false;
         tac = false;
 
@@ -2457,6 +2459,22 @@ int main(int argc, char **argv) {
                     i++;
                 } else {
                     std::cerr << "Error: Missing argument for -APTree\n";
+                    std::cerr << inputInstructions;
+                    return 1;
+                }
+            }
+            else if(std::string(argv[i]) == "-t"){
+                testingMode = true;
+                compressed = false; // we want uncompressed AST
+            }
+            else if (std::string(argv[i]) == "-pt") {
+                parser_table_flag = true;
+                compressed = false; // we want uncompressed AST
+                if (i + 1 < argc) {
+                    LaTeXParserTable = argv[i + 1];
+                    i++;
+                } else {
+                    std::cerr << "Error: Missing argument for -pt\n";
                     std::cerr << inputInstructions;
                     return 1;
                 }
@@ -2598,10 +2616,10 @@ int main(int argc, char **argv) {
 
     // Success message
     
-    if(!syntaxError){
+    if(!syntaxError) {// Only 
         *output << "\U0001F44D Input Program passed Syntax Analysis Phase \U0001F44D\n" << std::endl;
         terminalMsg = "Lexical Analysis 👍 | Syntax Analysis 👍\n";
-        if(TERMINAL_MESSAGE){
+        if(TERMINAL_MESSAGE && !(tac||APTree)){
             std::cout << terminalMsg << std::endl;
         }
     }
@@ -2657,19 +2675,15 @@ int main(int argc, char **argv) {
 
     // Adding a Extra Node on the top of the Ptree
     ASTNode* temp = new ASTNode("Program");
-    HERE;
     topNode = temp;
     topNode->addChild(root);
     topNode->attributes.push_back(getCurrentTime());
-    HERE;
 
-    HERE;
     semanticPass(topNode, handlerLogFile); // Call the semantic pass 
-    HERE;
     
     // We print the semantic log in the output file
-    bool semanticError = (semanticLOG.size() > 0);
-    if(semanticError){
+    bool semanticFailed = (semanticLOG.size() > 0);
+    if(semanticFailed){
         terminalMsg = "Lexical Analysis 👍 | Syntax Analysis 👍 | Semantic Analysis ❌\n";
         *output << "\U0001F6A8 Input Program failed in Semantic Analysis Phase \U0001F6A8\n" << std::endl;
         *output << SEMANTICLOGHEADER << std::endl;
@@ -2689,17 +2703,36 @@ int main(int argc, char **argv) {
         }
     }
 
+
     // Print the Annotated Parse Tree
     if(APTree){
         generateDOT_A(topNode, dot_file_2);
         *output << "\U0001F53A Annotated Parse Tree generated as DOT file: " << dot_file_2 << " can be visualized using Graphviz\n";
-        /* if(TERMINAL_MESSAGE){
-            std::cout << "\U0001F53A Annotated Parse Tree generated" << std::endl;
-        } */
     }
 
     // IR Code Generation
     
+    if(testingMode){
+        std::vector<std::string> TestingOutput;
+        TestingOutput.push_back(terminalMsg);
+        /* TestingOutput.push_back("\n"); */
+        if(semanticFailed){
+            // Add Semantic Logs to the Testing Output
+            TestingOutput.push_back(SEMANTICLOGHEADER);
+            for(auto log : semanticLOG){
+                TestingOutput.push_back(log);
+            }
+            TestingOutput.push_back(LOGFOOTER);
+        }
+        TestingOutput.push_back(" ");
+
+        // NOW we add the IR Code to the Testing Output
+        CODE_BASE.printTAC(TestingOutput);
+        if(yyin) fclose(yyin);  // Close the input file if opened
+        // Now we use Our Printing to InputFile Itself after the last line
+        insertAfterMarker(input_file, MARKER, TestingOutput);
+    }
+
     if(tac){
         std::ofstream tacOut(tac_file);
         CODE_BASE.printTAC(tacOut);
@@ -2716,6 +2749,7 @@ int main(int argc, char **argv) {
     }
     return 0;
 }
+
 
 // Error handling function
 void yyerror(const char* s) {

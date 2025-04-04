@@ -29,7 +29,7 @@ void closeHandlerLog()
 
 std::vector<std::string> compilerLOG; // [extern declared in header.h]
 std::vector<std::string> semanticLOG; // [extern declared in header.h]
-std::string semanticMessage; // [extern declared in header.h]
+std::string semanticMessage;          // [extern declared in header.h]
 //====================[ Globally Accessible Variables ]=========================================================================================
 SymbolTable SYM_TABLE; // Global Symbol Table
 TAC CODE_BASE;         // Global TAC Code Base
@@ -409,15 +409,16 @@ int ProcessDecSpecifiers(std::vector<std::string> &valueVector, TypeExpression &
             {
                 // This is a struct or union or enum
                 base->baseType = typeSpecifierVector[0];
-                resultType.levelStack.push(base);
+                resultType.levelStack.push_back(base);
             }
             else
             {
                 // TypeSpecifier must be a TYPE_NAME
                 // Check in Symbol Table if present
                 std::string typeName = typeSpecifierVector[0];
+                std::string typeDefkey = TYPEDEF_PREFIX + typeName;
                 GenericSymbol *sym = nullptr;
-                int lookupCheck = SYM_TABLE.lookup(typeName, sym);
+                int lookupCheck = SYM_TABLE.lookup(typeDefkey, sym);
                 if (lookupCheck == LOOKUP_FAILURE)
                 {
                     semanticMessage = "TypeSpecifier \"" + typeName + "\" not found in symbol table";
@@ -453,7 +454,7 @@ int ProcessDecSpecifiers(std::vector<std::string> &valueVector, TypeExpression &
         else
         {
             base->baseType = finalBase;
-            resultType.levelStack.push(base);
+            resultType.levelStack.push_back(base);
         }
     }
 
@@ -611,7 +612,7 @@ void function_definition_H(ASTNode *node)
 
         TypeExpression funcType = type1;
 
-        LevelInfo *levelInfo = funcType.levelStack.top();
+        LevelInfo *levelInfo = funcType.levelStack[funcType.levelStack.size() - 1];
         ParameterInfo *paramInfo = dynamic_cast<ParameterInfo *>(levelInfo);
 
         // Check if funtion definition is not abstract
@@ -690,7 +691,7 @@ void function_definition_H(ASTNode *node)
         }
 
         // Now we have list of all the prameters & their names
-        if(!isAbstract)
+        if (!isAbstract)
         {
             // OKAY
             TypeExpression returnType = funcType;
@@ -754,11 +755,11 @@ void function_definition_H(ASTNode *node)
         CODE_BASE.backpatch(node, S1_nextList, aLabel);
 
         // TO BACKPATCH GOTO LABELS
-        for(auto &pair : labelList)
+        for (auto &pair : labelList)
         {
             std::string label = pair.first;
             std::vector<int> list = pair.second;
-            if(labelMap.find(label) != labelMap.end())
+            if (labelMap.find(label) != labelMap.end())
             {
                 int labelIndex = labelMap[label];
                 CODE_BASE.backpatch(node, list, labelIndex);
@@ -768,7 +769,7 @@ void function_definition_H(ASTNode *node)
                 semanticError("Use of undeclared label \"" + label + "\"");
             }
         }
-        
+
         // Early Entry's Exit
         int exitedScope = SYM_TABLE.earlyExit(); //  [☀️ EarlyScope Entry] [IT's POSSIBLE that the early scope entry was never used in here]
         if (exitedScope == NO_EXIT)

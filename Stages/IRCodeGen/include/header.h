@@ -56,10 +56,17 @@ class GenericSymbol;
 
 //=================== [ TypeExpressions Classes ] ============================================================================================
 
+int const BASE_LEVEL = 0;
+int const POINTER_LEVEL = 1;
+int const ARRAY_LEVEL = 2;
+int const PARAMETER_LEVEL = 3;
+int const PARENTHESIS_LEVEL = 4;
+int const UNKNOWN_LEVEL = -1;
+
 class TypeExpression
 {
 public:
-    std::stack<LevelInfo *> levelStack;
+    std::vector<LevelInfo *> levelStack;
 
     CON_DES(TypeExpression)
 };
@@ -88,6 +95,7 @@ enum class StorageClass
 class LevelInfo
 {
 public:
+    int levelType; // This will be used to keep track of the level number
     LevelInfo()
     {
         MEM("LevelInfo Constructor");
@@ -103,7 +111,15 @@ class ParenthesisInfo : public LevelInfo
 public:
     // NO data - just a separator
 
-    CON_DES(ParenthesisInfo)
+    ParenthesisInfo()
+    {
+        levelType = PARENTHESIS_LEVEL;
+        MEM("ParenthesisInfo Constructor");
+    }
+    ~ParenthesisInfo()
+    {
+        MEM("ParenthesisInfo Destructor");
+    }
 };
 
 class ArrayInfo : public LevelInfo
@@ -111,7 +127,16 @@ class ArrayInfo : public LevelInfo
 public:
     int dimSize; // size of the array
 
-    CON_DES(ArrayInfo)
+    ArrayInfo()
+    {
+        dimSize = -1; // Default value
+        levelType = ARRAY_LEVEL;
+        MEM("ArrayInfo Constructor");
+    }
+    ~ArrayInfo()
+    {
+        MEM("ArrayInfo Destructor");
+    }
 };
 
 class PointerInfo : public LevelInfo
@@ -119,7 +144,15 @@ class PointerInfo : public LevelInfo
 public:
     std::vector<TypeQualifier> typeQualifiers;
 
-    CON_DES(PointerInfo)
+    PointerInfo()
+    {
+        levelType = POINTER_LEVEL;
+        MEM("PointerInfo Constructor");
+    }
+    ~PointerInfo()
+    {
+        MEM("PointerInfo Destructor");
+    }
 };
 
 class ParameterInfo : public LevelInfo
@@ -129,7 +162,16 @@ public:
     std::vector<std::string> paramsName;
     std::vector<TypeExpression> paramsType; // This will have the type of the parameters
 
-    CON_DES(ParameterInfo)
+    ParameterInfo()
+    {
+        levelType = PARAMETER_LEVEL;
+        isAbstract = false;
+        MEM("ParameterInfo Constructor");
+    }
+    ~ParameterInfo()
+    {
+        MEM("ParameterInfo Destructor");
+    }
 };
 
 //=====================[ BaseInfo ]=========================================================================================
@@ -159,7 +201,15 @@ public:
     std::string baseType;                      // base type name
     std::vector<TypeQualifier> typeQualifiers; // type qualifiers
 
-    CON_DES(BaseInfo)
+    BaseInfo()
+    {
+        levelType = BASE_LEVEL;
+        MEM("BaseInfo Constructor");
+    }
+    ~BaseInfo()
+    {
+        MEM("BaseInfo Destructor");
+    }
 };
 
 //=====================[ TypeExpression Utilities ]=========================================================================================
@@ -182,7 +232,7 @@ enum class Type
 Type whatIsType(const TypeExpression &typeExpr);
 
 std::string toString(const TypeExpression &typeExpr);
-
+std::string toString(Type whichType);
 // There is no isPopable function - you can check 'whatIsType' to check if it is popable or not
 
 int popALevel(TypeExpression &typeExpr); // Clear's ParenthesisInfo
@@ -242,12 +292,12 @@ int width(const BaseInfo &info);
 
 int whichLevelInfo(const LevelInfo &info);
 // Return Values
-int const BASE_LEVEL = 0;
-int const POINTER_LEVEL = 1;
-int const ARRAY_LEVEL = 2;
-int const PARAMETER_LEVEL = 3;
-int const PARENTHESIS_LEVEL = 4;
-int const UNKNOWN_LEVEL = -1;
+// int const BASE_LEVEL = 0;
+// int const POINTER_LEVEL = 1;
+// int const ARRAY_LEVEL = 2;
+// int const PARAMETER_LEVEL = 3;
+// int const PARENTHESIS_LEVEL = 4;
+// int const UNKNOWN_LEVEL = -1;
 
 bool isParenthesisInfo(const LevelInfo &info);
 bool isArrayInfo(const LevelInfo &info);
@@ -295,267 +345,269 @@ public:
     {
         MEM("GenericSymbol Destructor");
     }
-};
+    };
 
-class SymbolNode
-{
-public:
-    GenericSymbol *symbol;
-    SymbolNode *next;
-    SymbolNode *prev;
-
-    // Constructor & Destructor
-    SymbolNode()
+    class SymbolNode
     {
-        this->next = nullptr;
-        this->prev = nullptr;
-        MEM("SymbolNode Constructor");
-    }
+    public:
+        GenericSymbol *symbol;
+        SymbolNode *next;
+        SymbolNode *prev;
 
-    ~SymbolNode()
+        // Constructor & Destructor
+        SymbolNode()
+        {
+            this->next = nullptr;
+            this->prev = nullptr;
+            MEM("SymbolNode Constructor");
+        }
+
+        ~SymbolNode()
+        {
+            MEM("SymbolNode Destructor");
+        }
+
+        void deleteCurrent();
+
+        void insertAfter(SymbolNode *node);
+
+        void insertBefore(SymbolNode *node);
+    };
+
+    // Return values of insert()
+    extern int const INSERT_SUCCESS;              // Inserted Successfully
+    extern int const INSERT_SUCCESS_WITH_WARNING; // Inserted but had a same key in ancestor scope
+    extern int const INSERT_FAILURE;              // Already present in the current scope
+
+    // Return values of lookup()
+    extern int const LOOKUP_SUCCESS; // Found
+    extern int const LOOKUP_FAILURE; // Not Found
+
+    extern std::string GLOBAL_SCOPE;
+    extern std::string LOCAL_SCOPE;
+    extern int NO_EXIT;
+    extern int IGNORED;
+    class SymbolTable
     {
-        MEM("SymbolNode Destructor");
-    }
+    public:
+        // Faster lookup
+        std::map<std::string, SymbolNode *> symTable;
 
-    void deleteCurrent();
+        std::stack<SymbolNode *> listStack; // Keep track of order of insertions
+        std::stack<int> scopeBottom;        // Track the bottom marker to above stack of symbols
 
-    void insertAfter(SymbolNode *node);
+        int globalScope;
 
-    void insertBefore(SymbolNode *node);
-};
+        std::string currnetScope;
+        bool wasEarlyEntered; // This will be used to ignore the next entry in the symbol table
 
-// Return values of insert()
-extern int const INSERT_SUCCESS;              // Inserted Successfully
-extern int const INSERT_SUCCESS_WITH_WARNING; // Inserted but had a same key in ancestor scope
-extern int const INSERT_FAILURE;              // Already present in the current scope
+        std::stack<int> lastScopeNo; // A ancestor scope tracker
+        int scopeNo;                 // This will keep the current scope number [unique to each scope] [not like level]
+        int nextScopeNo;
+        int NodeCount; // This will keep the count of the symbols in the SymbolTable
 
-// Return values of lookup()
-extern int const LOOKUP_SUCCESS; // Found
-extern int const LOOKUP_FAILURE; // Not Found
+        SymbolTable()
+        {
+            this->scopeNo = -1;
+            this->nextScopeNo = 0;
+            this->NodeCount = 0;
+            this->globalScope = -100;
+            this->wasEarlyEntered = false;
+            this->currnetScope = "NONE"; // This will be used to find the name of the function we are in- to check return type match the signature
+            this->lastScopeNo.push(-1);  // This will keep the last scope number
+            MEM("SymbolTable Constructor");
+        }
 
-extern std::string GLOBAL_SCOPE;
-extern std::string LOCAL_SCOPE;
-extern int NO_EXIT;
-extern int IGNORED;
-class SymbolTable
-{
-public:
-    // Faster lookup
-    std::map<std::string, SymbolNode *> symTable;
+        ~SymbolTable();
 
-    std::stack<SymbolNode *> listStack; // Keep track of order of insertions
-    std::stack<int> scopeBottom;        // Track the bottom marker to above stack of symbols
+        int enterScope(); // This will create a new scope and return the scope number
+        int exitScope();  // Will return the ScopeNo that has been exited.
 
-    int globalScope;
+        // Early Scope Entry - This will be used to enter the scope before the compound statement
 
-    std::string currnetScope;
-    bool wasEarlyEntered; // This will be used to ignore the next entry in the symbol table
+        int earlyEntry(); // This will make sure One-such call get's ignored
+        int earlyExit();  // This will make sure One-such call get's ignored
 
-    std::stack<int> lastScopeNo; // A ancestor scope tracker
-    int scopeNo;                 // This will keep the current scope number [unique to each scope] [not like level]
-    int nextScopeNo;
-    int NodeCount; // This will keep the count of the symbols in the SymbolTable
+        // Concept of ScopeName name will be needed for function signature checking
+        void setScopeName(const std::string &scopeName);
+        std::string getScopeName(); // Will be used to find name of function we are in- to check retrun type match the signature
 
-    SymbolTable()
+        int getGlobaScopeNo();
+
+        // There are time when we need to have early scopeEntry - This will make sure One-such call get's ignored
+        // void ignoreNextEntry();
+
+        int insertRecord(const std::string &key, GenericSymbol *symbol);
+        int insert(SYMBOL_TYPE symbolType, const std::string &key, GenericSymbol *symbol);
+
+        int lookupRecord(const std::string &key, GenericSymbol *&sym);
+        int lookup(const std::string &key, GenericSymbol *&sym);
+
+        int lookupRecord(const std::string &key, GenericSymbol *&sym, int lookInScopeNo);
+        int lookup(const std::string &key, GenericSymbol *&sym, int lookInScopeNo); // This will lookinto the specific scope
+                                                                                    // Return values - same as above
+
+        int lookupRecordNode(const std::string &key, SymbolNode *&node);
+        int lookupNode(const std::string &key, SymbolNode *&node);
+        // Return values - same as above
+
+        void printTable(std::ofstream &file);
+    };
+
+    //=====================[ VarSymbols ]=========================================================================================
+    // Class VarSymbols NotNeeded
+
+    class Variable : public GenericSymbol
     {
-        this->scopeNo = -1;
-        this->nextScopeNo = 0;
-        this->NodeCount = 0;
-        this->globalScope = -100;
-        this->wasEarlyEntered = false;
-        this->currnetScope = "NONE"; // This will be used to find the name of the function we are in- to check return type match the signature
-        this->lastScopeNo.push(-1);  // This will keep the last scope number
-        MEM("SymbolTable Constructor");
-    }
+    public:
+        TypeExpression type;
 
-    ~SymbolTable();
+        StorageClass storageClass;
 
-    int enterScope(); // This will create a new scope and return the scope number
-    int exitScope();  // Will return the ScopeNo that has been exited.
+        // Think about Initialized values ? [ToThink 🧠]
+        int offset;
 
-    // Early Scope Entry - This will be used to enter the scope before the compound statement
+        long compileTimeConstant; // This will be used for constant variables
 
-    int earlyEntry(); // This will make sure One-such call get's ignored
-    int earlyExit();  // This will make sure One-such call get's ignored
+        CON_DES(Variable)
+    };
 
-    // Concept of ScopeName name will be needed for function signature checking
-    void setScopeName(const std::string &scopeName);
-    std::string getScopeName(); // Will be used to find name of function we are in- to check retrun type match the signature
+    class EnumConstant : public GenericSymbol
+    {
+    public:
+        int value; // This will be loaded directly [a compile time constant]
 
-    int getGlobaScopeNo();
+        CON_DES(EnumConstant)
+    };
 
-    // There are time when we need to have early scopeEntry - This will make sure One-such call get's ignored
-    // void ignoreNextEntry();
+    class Function : public GenericSymbol
+    {
+    public:
+        TypeExpression type; // This will also hold the parameter(top) + (all below)returnType
 
-    int insertRecord(const std::string &key, GenericSymbol *symbol);
-    int insert(SYMBOL_TYPE symbolType, const std::string &key, GenericSymbol *symbol);
+        bool isDefined; // To deal with forward declaration
 
-    int lookupRecord(const std::string &key, GenericSymbol *&sym);
-    int lookup(const std::string &key, GenericSymbol *&sym);
+        CON_DES(Function)
+    };
 
-    int lookupRecord(const std::string &key, GenericSymbol *&sym, int lookInScopeNo);
-    int lookup(const std::string &key, GenericSymbol *&sym, int lookInScopeNo); // This will lookinto the specific scope
-                                                                                // Return values - same as above
+    // =====================[ User Defined Data Type ]=========================================================================================
 
-    int lookupRecordNode(const std::string &key, SymbolNode *&node);
-    int lookupNode(const std::string &key, SymbolNode *&node);
-    // Return values - same as above
+    enum class RecordType
+    {
+        STRUCT,
+        UNION,
+        ENUM,
+        NONE
+    };
 
-    void printTable(std::ofstream &file);
-};
+    class UserDType : public GenericSymbol
+    {
+    public:
+        RecordType recordType; // This will be used for struct, union, enum
 
-//=====================[ VarSymbols ]=========================================================================================
-// Class VarSymbols NotNeeded
+        // Members of the record
+        std::map<std::string, TypeExpression> members; // Enum won't use this
 
-class Variable : public GenericSymbol
-{
-public:
-    TypeExpression type;
+        std::map<std::string, int> membersOffset; // This will be used for struct, union
 
-    StorageClass storageClass;
+        int totalSize; // This will be used for struct, union
 
-    // Think about Initialized values ? [ToThink 🧠]
-    int offset;
+        CON_DES(UserDType)
+    };
 
-    long compileTimeConstant; // This will be used for constant variables
+    class TypeDefs : public GenericSymbol
+    {
+    public:
+        TypeExpression type; // This will be used for typedef
 
-    CON_DES(Variable)
-};
+        CON_DES(TypeDefs)
+    };
 
-class EnumConstant : public GenericSymbol
-{
-public:
-    int value; // This will be loaded directly [a compile time constant]
+    //=====================[ Symbol Utilities ]=========================================================================================
 
-    CON_DES(EnumConstant)
-};
+    bool isVariable(const GenericSymbol &sym);
+    bool isEnumConstant(const GenericSymbol &sym);
+    bool isFunction(const GenericSymbol &sym);
+    bool isUserDType(const GenericSymbol &sym);
+    bool isTypeDefs(const GenericSymbol &sym);
 
-class Function : public GenericSymbol
-{
-public:
-    TypeExpression type; // This will also hold the parameter(top) + (all below)returnType
+    std::string newRecordName(); // For Un-Named Struct/Union/Enum
 
-    bool isDefined; // To deal with forward declaration
+    std::string const RECORD_PREFIX = "RECORD_";   // Prefix for Record Names
+    std::string const TYPEDEF_PREFIX = "TYPEDEF_"; // Prefix for TypeDef Names
 
-    CON_DES(Function)
-};
+    int width(const UserDType &dtype); // This will return the width of the user defined data type
 
-// =====================[ User Defined Data Type ]=========================================================================================
-
-enum class RecordType
-{
-    STRUCT,
-    UNION,
-    ENUM,
-    NONE
-};
-
-class UserDType : public GenericSymbol
-{
-public:
-    RecordType recordType; // This will be used for struct, union, enum
-
-    // Members of the record
-    std::map<std::string, TypeExpression> members; // Enum won't use this
-
-    std::map<std::string, int> membersOffset; // This will be used for struct, union
-
-    int totalSize; // This will be used for struct, union
-
-    CON_DES(UserDType)
-};
-
-class TypeDefs : public GenericSymbol
-{
-public:
-    TypeExpression type; // This will be used for typedef
-
-    CON_DES(TypeDefs)
-};
-
-//=====================[ Symbol Utilities ]=========================================================================================
-
-bool isVariable(const GenericSymbol &sym);
-bool isEnumConstant(const GenericSymbol &sym);
-bool isFunction(const GenericSymbol &sym);
-bool isUserDType(const GenericSymbol &sym);
-bool isTypeDefs(const GenericSymbol &sym);
-
-std::string newRecordName(); // For Un-Named Struct/Union/Enum
-
-std::string const RECORD_PREFIX = "RECORD_"; // Prefix for Record Names
-
-int width(const UserDType &dtype); // This will return the width of the user defined data type
-
-/*
+    /*
 
 
-                            THREE ADDRESS CODE
+                                THREE ADDRESS CODE
 
 
-*/
+    */
 
-//=====================[ Three Address Code ]=========================================================================================
+    //=====================[ Three Address Code ]=========================================================================================
 
-//==================[ Custom TAC Arguments ]=========================================================================================
-extern std::string NO_ARG;
-extern std::string RIGHT_STAR;
-extern std::string LEFT_STAR;
-extern std::string FUNCTION_LABEL;
-// extern std::string BLANK;
-extern std::string CAST;
-extern std::string LABEL;
-extern std::string AMPERSEND;
-extern std::string RO_DATA;
-extern std::string DATA;
-extern std::string BSS;
-extern std::string PARAM;
-extern std::string CALL;
-extern std::string ASSIGN_OP;
-extern std::string IF_FALSE;
-extern std::string IF_TRUE;
-extern std::string GOTO_LABEL;
-extern std::string GOTO_EQUAL;
-extern std::string TO_BACKPATCH;
+    //==================[ Custom TAC Arguments ]=========================================================================================
+    extern std::string NO_ARG;
+    extern std::string RIGHT_STAR;
+    extern std::string LEFT_STAR;
+    extern std::string FUNCTION_LABEL;
+    // extern std::string BLANK;
+    extern std::string CAST;
+    extern std::string LABEL;
+    extern std::string AMPERSEND;
+    extern std::string RO_DATA;
+    extern std::string DATA;
+    extern std::string BSS;
+    extern std::string PARAM;
+    extern std::string CALL;
+    extern std::string ASSIGN_OP;
+    extern std::string IF_FALSE;
+    extern std::string IF_TRUE;
+    extern std::string GOTO_LABEL;
+    extern std::string GOTO_EQUAL;
+    extern std::string TO_BACKPATCH;
 
-class TAC_Quadruple
-{
-public:
-    std::string op;
-    std::string arg1;
-    std::string arg2;
-    std::string result;
-    // ASTNode *addedAt;
+    class TAC_Quadruple
+    {
+    public:
+        std::string op;
+        std::string arg1;
+        std::string arg2;
+        std::string result;
+        // ASTNode *addedAt;
 
-    CON_DES(TAC_Quadruple)
+        CON_DES(TAC_Quadruple)
 
-    TAC_Quadruple(std::string op, std::string arg1, std::string arg2, std::string result);
+        TAC_Quadruple(std::string op, std::string arg1, std::string arg2, std::string result);
 
-    std::string toString();
-};
+        std::string toString();
+    };
 
-int mergeList(std::vector<int> &list1, const std::vector<int> &addition); // This will merge the two lists
-int mergeList(std::vector<int> &target, int addition);
+    int mergeList(std::vector<int> & list1, const std::vector<int> &addition); // This will merge the two lists
+    int mergeList(std::vector<int> & target, int addition);
 
-std::string newTemp(); // Generates a new temporary variable [compiler generated]
+    std::string newTemp(); // Generates a new temporary variable [compiler generated]
 
-class TAC
-{
-public:
-    std::vector<TAC_Quadruple> code;
-    const int w = 10;
-    const int wcode = 30;
+    class TAC
+    {
+    public:
+        std::vector<TAC_Quadruple> code;
+        const int w = 10;
+        const int wcode = 30;
 
-    CON_DES(TAC)
+        CON_DES(TAC)
 
-    // void addTAC(std::string op, std::string arg1, std::string arg2, std::string result);
-    int addTAC(ASTNode *addedAt, std::string result, std::string op, std::string arg1, std::string arg2); // More readable
-    int addTAC(TAC_Quadruple q);
+        // void addTAC(std::string op, std::string arg1, std::string arg2, std::string result);
+        int addTAC(ASTNode *addedAt, std::string result, std::string op, std::string arg1, std::string arg2); // More readable
+        int addTAC(TAC_Quadruple q);
 
-    void printTAC(std::ofstream &file);
-    void printTAC(); // prints to stdout
+        void printTAC(std::ofstream &file);
+        void printTAC();                               // prints to stdout
+        void printTAC(std::vector<std::string> &list); // prints to stdout
 
-    std::string newLabel();
+        std::string newLabel();
     int nextIndex();
     int getLastInserted(); // This will return the last inserted index
 
@@ -650,12 +702,14 @@ extern std::ofstream *handlerLog; // This will be used to log the errors
     node->addAttribute("👌 " + std::to_string(__LINE__) + ":" + __FILE__ + " ")
 
 #define semanticWarning(x)                                     \
-    semanticLOG.push_back(LOC + " SEMANTIC Warning ❗️: " + x); \
-    aptLOG(x);
+    semanticLOG.push_back("SEMANTIC Warning ❗️: " + std::string(x)); \
+    aptLOG("❗️ "+ std::to_string(x));
+
+#define HERE std::cerr << "[" << __LINE__ << " in " << __FILE__ << "] " << std::endl
 
 #define semanticError(x)                                     \
-    semanticLOG.push_back(LOC + " SEMANTIC ERROR ‼️ : " + x); \
-    aptLOG(x);
+    semanticLOG.push_back("SEMANTIC ERROR ‼️ : " + std::string(x)); \
+    aptLOG("‼️ "+ std::string(x));
 
 extern std::string semanticMessage;
 
@@ -684,6 +738,7 @@ extern std::string semanticMessage;
     if (PASS_ERROR == x)                                                                           \
     {                                                                                              \
         std::cerr << "Passing ERROR Exit [" << __LINE__ << ":" << __FILE__ << "] 👆" << std::endl; \
+        ERROR_EXIT;                                                                                \
         return;                                                                                    \
     }
 
@@ -842,5 +897,10 @@ void conditional_expression_H(ASTNode *node, std::string inh_whereToSendString, 
 void assignment_expression_H(ASTNode *node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace);
 
 void constant_expression_H(ASTNode *node, std::string &value);
+
+
+
+
+
 
 #endif // !HEADER_H

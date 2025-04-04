@@ -151,27 +151,28 @@ void primary_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
         std::string varName1 = node->children[0]->value;
 
         TypeExpression type0; // Find Type of Identifier from Symbol Table
-        
+
         // Look into the SymbolTable and Find it's
         GenericSymbol *symbol = nullptr;
         int lookupCheck = SYM_TABLE.lookup(varName1, symbol);
         if (lookupCheck == LOOKUP_FAILURE)
         {
-            semanticError("SEMANTIC ERROR ‼️ : Identifier \"" + varName1 + "\" not 🫠 found in the current scope");
+            semanticError("Identifier \"" + varName1 + "\" not 🫠 found in the current scope");
+            ERROR_EXIT;
             varName = PASS_ERROR; // This Propogate the ERROR
             return;
         }
         else
         {
-            
             // To Check what all possible symbols are allowed
             // - Variable + EnumConstant + Function ✅ | ToCheck 🔍 for + TypeDef + RecordType
             SYMBOL_TYPE symbolType = symbol->symbolType;
-            
+
             if (symbolType == SYMBOL_TYPE::VARIABLE)
             {
                 // It's a variable Symbol
                 type0 = ((Variable *)symbol)->type;
+                varName1 += "$" + std::to_string(symbol->scopeNo); // Change the name to the variable
             }
             else if (symbolType == SYMBOL_TYPE::ENUM_CONSTANT)
             {
@@ -179,8 +180,9 @@ void primary_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
                 TypeExpression tempType;
                 BaseInfo *base = new BaseInfo();
                 base->baseType = ENUM_CONSTANT;
-                tempType.levelStack.push(base);
+                tempType.levelStack.push_back(base);
                 type0 = tempType;
+                varName1 += "$" + std::to_string(symbol->scopeNo); // Change the name to the value
             }
             else if (symbolType == SYMBOL_TYPE::FUNCTION)
             {
@@ -188,7 +190,8 @@ void primary_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
             }
             else
             {
-                semanticError("SEMANTIC ERROR ‼️ : Identifier \"" + varName1 + "\" is not 😑 a variable or function");
+                semanticError("Identifier \"" + varName1 + "\" is not 😑 a variable or function");
+                ERROR_EXIT;
                 varName = PASS_ERROR;
                 return;
             }
@@ -197,12 +200,16 @@ void primary_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
         // Now that we have type of symbol ready
 
         Type whichType = whatIsType(type0); // This tell me about TypeExpression
-        
+
         SPACE val0Space = getSpace(type0); // struct/union or array 🤯
 
         VALUE_TYPE val0Type = getValueType(type0); // Set Correctly
-        
+
         bool isConst = isConstant(type0);
+        if (isConst)
+        {
+            val0Type = VALUE_TYPE::NM_LVALUE; // Non Modifiable LValue
+        }
 
         if (val0Space == SPACE::ADDRESS_SPACE)
         {
@@ -236,14 +243,14 @@ void primary_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
                 }
                 else
                 {
-                    // Change the name to the variable
-                    varName1 = ((Variable *)symbol)->symbolName;
+                    // Correct Name is loaded
                 }
             }
         }
         else
         {
             compilerError("The Identifier \"" + varName1 + "\" is in Invalid Space");
+            ERROR_EXIT;
             varName = PASS_ERROR;
             return;
         }
@@ -266,7 +273,8 @@ void primary_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
         int check = ProcessConstants(varName, type0, finalValue);
         if (check != OKAY)
         {
-            semanticError("SEMANTIC ERROR ‼️ : Invalid Constant \"" + varName + "\"");
+            semanticError("Invalid Constant \"" + varName + "\"");
+            ERROR_EXIT;
             varName = PASS_ERROR;
             return;
         }
@@ -281,7 +289,7 @@ void primary_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
         // 🟡 valueSpace
         SPACE val0Space = getSpace(type0);
 
-        VALUE_TYPE val0Type = getValueType(type0); // Set Correctly
+        VALUE_TYPE val0Type = VALUE_TYPE::RVALUE;
 
         // Pass the data up
         valueSpace = val0Space; // Set the value space
@@ -300,9 +308,9 @@ void primary_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
         {
             base->typeQualifiers.push_back(TypeQualifier::CONST); // Char* are const
         }
-        type0.levelStack.push(base);
+        type0.levelStack.push_back(base);
         PointerInfo *ptr = new PointerInfo();
-        type0.levelStack.push(ptr);
+        type0.levelStack.push_back(ptr);
 
         type = type0;
 
@@ -419,8 +427,8 @@ void postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
 
         if (!isIntegral(type2))
         {
-            semanticLOG.push_back("Error: Array Subscript expression \"" + varName2 + "\" is not an integral type");
-            BUG_EXIT;
+            semanticError("Array Subscript expression \"" + varName2 + "\" is not 😱 an integral type");
+            ERROR_EXIT;
             // SetUp Dummy Data
             varName = PASS_ERROR;
             return;
@@ -434,9 +442,8 @@ void postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
         // must be array or pointer
         if (whichType1 != Type::ARRAY && whichType1 != Type::POINTER)
         {
-            semanticLOG.push_back("Error: Array Subscript expression \"" + varName1 + "\" is not an array or pointer type");
-            BUG_EXIT;
-            // SetUp Dummy Data
+            semanticError("Subscript expression \"" + varName1 + "\" is not an array or pointer type");
+            ERROR_EXIT;
             varName = PASS_ERROR;
             return;
         }
@@ -448,17 +455,14 @@ void postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
         int check = popALevel(elementType);
         if (check != POP_SUCCESS)
         {
-            BUG_EXIT;
-            // SetUp Dummy Data
+            compilerError("Error in popALevel");
             varName = PASS_ERROR;
+            // HERE;
             return;
         }
 
-        // We have resulting type
-        type = elementType;
-
         // 🟡varName + 🔖IRCode + 🟡valueSpace
-
+        // aptHERE;
         int element_width = width(elementType);
         std::string element_width_str = std::to_string(element_width);
 
@@ -471,15 +475,12 @@ void postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
         std::string finalAddress = newTemp();
 
         CODE_BASE.addTAC(node, finalAddress, "+", baseAddress, jump_amount);
-        varName = finalAddress; // Change the name to the address
-
+        varName = finalAddress;            // Change the name to the address
         valueSpace = SPACE::ADDRESS_SPACE; // Array Subscript is in address space
         // 🤔🤔🤔🤔🤔🤔 IMP LOGIC 🤔🤔🤔🤔🤔
-
-        // 🟡 valueType
         valueType = getValueType(type); // Set Correctly
-
-        // inh_attribute already sent down
+        std::cerr << "Type : " << toString(type) << std::endl;
+        type = elementType; // Set Correctly
     }
     else if (whichProduction == P3 || whichProduction == P4)
     {
@@ -511,7 +512,7 @@ void postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
         {
 
             // Find ParameterInfo
-            paramTypes = ((ParameterInfo *)type1.levelStack.top())->paramsType;
+            paramTypes = ((ParameterInfo *)type1.levelStack[type1.levelStack.size()-1])->paramsType;
 
             // Find Return Type
             if (popALevel(returnType) != POP_SUCCESS)
@@ -550,7 +551,7 @@ void postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
             }
 
             // Find ParameterInfo
-            paramTypes = ((ParameterInfo *)funcType.levelStack.top())->paramsType;
+            paramTypes = ((ParameterInfo *)funcType.levelStack[funcType.levelStack.size() - 1])->paramsType;
 
             // Find Return Type
             returnType = funcType;
@@ -704,7 +705,7 @@ void postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
             }
 
             // Find the member in the struct or union
-            BaseInfo *base = (BaseInfo *)varType.levelStack.top();
+            BaseInfo *base = (BaseInfo *)varType.levelStack[varType.levelStack.size() - 1];
             std::string baseName = base->baseType;
             // It has three parts
             std::string recordType = baseName.substr(0, baseName.find(" "));
@@ -884,8 +885,8 @@ void postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
     }
     else
     {
+        compilerError("The Postfix Expression Entered Wrong Production");
         BUG_EXIT;
-        // SetUp Dummy Data
         varName = PASS_ERROR;
         return;
     }
@@ -1240,7 +1241,7 @@ void multiplicative_expression_H(ASTNode *node, std::string inh_whereToSendStrin
             BaseInfo *base = new BaseInfo();
             base->baseType = widenType;
             TypeExpression type0;
-            type0.levelStack.push(base);
+            type0.levelStack.push_back(base);
 
             type = type0; // Change the type to the result type
 
@@ -1404,7 +1405,7 @@ void additive_expression_H(ASTNode *node, std::string inh_whereToSendString, std
                 BaseInfo *base = new BaseInfo();
                 base->baseType = widenType;
                 TypeExpression type0;
-                type0.levelStack.push(base);
+                type0.levelStack.push_back(base);
 
                 type = type0; // Change the type to the result type
                 valueType = getValueType(type0);
@@ -1481,7 +1482,7 @@ void additive_expression_H(ASTNode *node, std::string inh_whereToSendString, std
                 BaseInfo *base = new BaseInfo();
                 base->baseType = widenType;
                 TypeExpression type0;
-                type0.levelStack.push(base);
+                type0.levelStack.push_back(base);
 
                 type = type0; // Change the type to the result type
                 valueType = getValueType(type0);
@@ -1710,7 +1711,7 @@ void relational_expression_H(ASTNode *node, std::string inh_whereToSendString, s
             BaseInfo *base = new BaseInfo();
             base->baseType = TYPE_INT;
             TypeExpression type0;
-            type0.levelStack.push(base);
+            type0.levelStack.push_back(base);
 
             type = type0;
             valueType = VALUE_TYPE::RVALUE;
@@ -1816,7 +1817,7 @@ void equality_expression_H(ASTNode *node, std::string inh_whereToSendString, std
             BaseInfo *base = new BaseInfo();
             base->baseType = TYPE_INT;
             TypeExpression type0;
-            type0.levelStack.push(base);
+            type0.levelStack.push_back(base);
 
             type = type0;
             valueType = VALUE_TYPE::RVALUE;
@@ -1936,7 +1937,7 @@ void and_expression_H(ASTNode *node, std::string inh_whereToSendString, std::str
             BaseInfo *base = new BaseInfo();
             base->baseType = widenType;
             TypeExpression type0;
-            type0.levelStack.push(base);
+            type0.levelStack.push_back(base);
 
             type = type0;
             valueType = VALUE_TYPE::RVALUE;
@@ -2051,7 +2052,7 @@ void exclusive_or_expression_H(ASTNode *node, std::string inh_whereToSendString,
             BaseInfo *base = new BaseInfo();
             base->baseType = widenType;
             TypeExpression type0;
-            type0.levelStack.push(base);
+            type0.levelStack.push_back(base);
 
             type = type0;
             valueType = VALUE_TYPE::RVALUE;
@@ -2166,7 +2167,7 @@ void inclusive_or_expression_H(ASTNode *node, std::string inh_whereToSendString,
             BaseInfo *base = new BaseInfo();
             base->baseType = widenType;
             TypeExpression type0;
-            type0.levelStack.push(base);
+            type0.levelStack.push_back(base);
 
             type = type0;
             valueType = VALUE_TYPE::RVALUE;
@@ -2299,7 +2300,7 @@ void logical_and_expression_H(ASTNode *node, std::string inh_whereToSendString, 
             BaseInfo *base = new BaseInfo();
             base->baseType = TYPE_INT;
             TypeExpression type0;
-            type0.levelStack.push(base);
+            type0.levelStack.push_back(base);
 
             type = type0;
             valueType = VALUE_TYPE::RVALUE;
@@ -2426,7 +2427,7 @@ void logical_or_expression_H(ASTNode *node, std::string inh_whereToSendString, s
             BaseInfo *base = new BaseInfo();
             base->baseType = TYPE_INT;
             TypeExpression type0;
-            type0.levelStack.push(base);
+            type0.levelStack.push_back(base);
 
             type = type0;
             valueType = VALUE_TYPE::RVALUE;

@@ -194,7 +194,62 @@ std::string ASTStyle(ASTNode* node) {
 
 //--------------- Writes the AST to a DOT format file recursively
 
+void insertAfterMarker(const std::string &filename, const std::string &marker, const std::vector<std::string> &newContent)
+{
+    std::ifstream inFile(filename);
+    if (!inFile.is_open())
+    {
+        std::cerr << "❌ Could not open file: " << filename << "\n";
+        return;
+    }
 
+    std::ostringstream modifiedContent;
+    std::string line;
+    bool markerFound = false;
+
+    while (std::getline(inFile, line))
+    {
+        modifiedContent << line << "\n";
+        if (!markerFound && line.find(marker) != std::string::npos)
+        {
+            markerFound = true;
+            // Insert new content after the marker
+            for (const auto &content : newContent)
+            {
+                modifiedContent << "// " << content << "\n";
+            }
+            break; // Stop searching after inserting
+        }
+    }
+
+    inFile.close(); // Close the input file
+
+    // If marker wasn't found, append content at the end
+    if (!markerFound)
+    {
+        std::cerr << "⚠️ Marker not found in file: " << filename << "\n";
+        modifiedContent << marker << "\n"; // Add the marker at the end
+        for (const auto &content : newContent)
+        {
+            modifiedContent << "// " << content << "\n";
+        }
+    }
+
+    // Write back the modified content
+    std::ofstream outFile(filename);
+    if (!outFile.is_open())
+    {
+        std::cerr << "❌ Could not write to file: " << filename << "\n";
+        return;
+    }
+
+    outFile << modifiedContent.str();
+    // modifiedContent.clear(); // Clear the string stream
+    outFile.close();
+    // std::cout << "✅ Content inserted successfully.\n";
+}
+
+std::string MARKER = "//=========================== C2RISC-Engine ==========================================//";
 
 void writeNode(std::ofstream &out, ASTNode* node, int parentId, int &nodeCount) {
     if (!node) return;

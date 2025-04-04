@@ -256,3 +256,10 @@ irCode: all $(EXECUTABLE) $(INPUT) $(OUTPUT) $(CERR) $(IRCodeFile)
 	@echo "🎄 ------- Visualizing Annotated PTree ------- 🎄"
 	@-$(DOT) -Tsvg $(APTreeFile) -o $(APTreeSVG)
 	@open -a "Visual Studio Code" $(IRCodeFile)
+
+
+testing: all $(EXECUTABLE) $(INPUT) $(OUTPUT) $(CERR) $(IRCodeFile)
+	@echo "🚥 Starting C2RISC Engine 🟢 "
+	@-./$(EXECUTABLE) $(INPUT) $(OUTPUT) -t -tac $(IRCodeFile) -APTree $(APTreeFile) 2> $(CERR)
+	@echo "🎄 "
+	@-$(DOT) -Tsvg $(APTreeFile) -o $(APTreeSVG)

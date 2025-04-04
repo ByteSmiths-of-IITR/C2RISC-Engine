@@ -7,7 +7,7 @@ bool isIntegral(const TypeExpression &typeExpr) {
     Type topType = whatIsType(typeExpr);
     if(topType == Type::ENUM_CONSTANT || topType == Type::VARIABLE) {
         // Check if the base type is integral
-        BaseInfo *baseInfo = dynamic_cast<BaseInfo *>(typeExpr.levelStack.top());
+        BaseInfo *baseInfo = dynamic_cast<BaseInfo *>(typeExpr.levelStack[typeExpr.levelStack.size() - 1]);
         std::string baseType = baseInfo->baseType;
         if(baseType == TYPE_INT || baseType == TYPE_CHAR || baseType == TYPE_SHORT || baseType == TYPE_LONG || baseType == TYPE_LONG_LONG) {
             return true;
@@ -38,7 +38,7 @@ bool isConstant(const TypeExpression &typeExpr) {
         return true; // Enum constant is treated as constant
     }
     else if(topType == Type::VARIABLE) {
-        BaseInfo *baseInfo = dynamic_cast<BaseInfo *>(typeExpr.levelStack.top());
+        BaseInfo *baseInfo = dynamic_cast<BaseInfo *>(typeExpr.levelStack[typeExpr.levelStack.size() - 1]);
         // Check if "const" qualifier is present
         for(auto qualifier : baseInfo->typeQualifiers) {
             if(qualifier == TypeQualifier::CONST) {
@@ -52,7 +52,7 @@ bool isNumeric(const TypeExpression &typeExpr){
     // Must be base 
     Type topType = whatIsType(typeExpr);
     if(topType == Type::VARIABLE) {
-        BaseInfo *baseInfo = dynamic_cast<BaseInfo *>(typeExpr.levelStack.top());
+        BaseInfo *baseInfo = dynamic_cast<BaseInfo *>(typeExpr.levelStack[typeExpr.levelStack.size() - 1]);
         std::string baseType = baseInfo->baseType;
         if(baseType == TYPE_INT || baseType == TYPE_CHAR || baseType == TYPE_SHORT || baseType == TYPE_LONG || baseType == TYPE_LONG_LONG ||
             baseType == TYPE_FLOAT || baseType == TYPE_DOUBLE || baseType == TYPE_LONG_DOUBLE) {
@@ -65,6 +65,7 @@ bool isNumeric(const TypeExpression &typeExpr){
     else if(topType == Type::ENUM){
         return true; // Enum is treated as numeric
     }
+    return false;
 }
 
 std::string isPrimitive(const TypeExpression &typeExpr){
@@ -74,7 +75,7 @@ std::string isPrimitive(const TypeExpression &typeExpr){
 
     Type topType = whatIsType(typeExpr);
     if(topType == Type::VARIABLE) {
-        BaseInfo *baseInfo = dynamic_cast<BaseInfo *>(typeExpr.levelStack.top());
+        BaseInfo *baseInfo = dynamic_cast<BaseInfo *>(typeExpr.levelStack[typeExpr.levelStack.size() - 1]);
         std::string baseType = baseInfo->baseType;
         if(baseType == TYPE_INT || baseType == TYPE_CHAR || baseType == TYPE_SHORT || baseType == TYPE_LONG || baseType == TYPE_LONG_LONG ||
             baseType == TYPE_FLOAT || baseType == TYPE_DOUBLE || baseType == TYPE_LONG_DOUBLE) {
@@ -288,7 +289,7 @@ bool isFloatingPoint(const TypeExpression &typeExpr) {
     // Check if the type expression is a floating point type
     Type topType = whatIsType(typeExpr);
     if(topType == Type::VARIABLE) {
-        BaseInfo *baseInfo = dynamic_cast<BaseInfo *>(typeExpr.levelStack.top());
+        BaseInfo *baseInfo = dynamic_cast<BaseInfo *>(typeExpr.levelStack[typeExpr.levelStack.size() - 1]);
         std::string baseType = baseInfo->baseType;
         if(baseType == TYPE_FLOAT || baseType == TYPE_DOUBLE || baseType == TYPE_LONG_DOUBLE) {
             return true;

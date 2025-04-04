@@ -228,6 +228,38 @@ void TAC::printTAC(std::ofstream &file)
     }
 }
 
+void TAC::printTAC(std::vector<std::string> &list){
+    // send the output to vector line by line
+    std::ostringstream oss;
+    oss << std::setw(w) << "CodeLineNo" << " : " << std::setw(wcode) << std::left << "Three Address Code" << std::endl;
+    oss << std::setw(w) << "----------" << " : " << std::setw(wcode) << std::left << "-------------------------------" << std::endl;
+    for(int i = 0; i < code.size(); i++)
+    {
+        // Special Priting for labels
+        if(code[i].op == LABEL)
+        {
+            oss << std::setw(w) << code[i].result << " : " << std::setw(wcode) << std::left << code[++i].toString() << std::endl;
+            continue;
+        }
+        else if(code[i].op == FUNCTION_LABEL)
+        {
+            oss << std::setw(w) << i << " : " << std::setw(wcode) << std::left << code[i].result << std::endl;
+            continue;
+        }
+
+        oss << std::setw(w) << i << " : " << std::setw(wcode) << std::left << code[i].toString() << std::endl;
+    }
+    // Now push the output to the vector
+    std::string output = oss.str();
+    std::istringstream iss(output);
+    std::string line;
+    while (std::getline(iss, line))
+    {
+        list.push_back(line);
+    }
+    // std::cout << output;
+}
+
 std::string TAC::newLabel()
 {
     int x = code.size();

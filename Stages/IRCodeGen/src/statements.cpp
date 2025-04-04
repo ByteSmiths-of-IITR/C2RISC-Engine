@@ -443,9 +443,11 @@ void selection_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vec
         std::vector<int> S1_nextList;     // This value will be fetchec
         std::vector<int> S1_breakList;    // This value will be fetchec
         std::vector<int> S1_continueList; // This value will be fetchec
-        caseAllowed++; breakAllowed++;
+        caseAllowed++;
+        breakAllowed++;
         statement_H(node->children[4], S1_nextList, S1_breakList, S1_continueList, caseMap1);
-        caseAllowed--; breakAllowed--;
+        caseAllowed--;
+        breakAllowed--;
         int defaultExit = CODE_BASE.addTAC(node, TO_BACKPATCH, GOTO_LABEL, NO_ARG, NO_ARG); // goto defaultExit
 
         bool isDefault = false;
@@ -568,7 +570,7 @@ void iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vec
         breakAllowed++;
         continueAllowed++;
         // Next we evaluate the statement
-        statement_H(node->children[4], S1_nextList, breakList1, continueList1,caseMap);
+        statement_H(node->children[4], S1_nextList, breakList1, continueList1, caseMap);
 
         breakAllowed--;
         continueAllowed--;
@@ -628,7 +630,7 @@ void iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vec
         breakAllowed++;
         continueAllowed++;
         // Next we evaluate the statement
-        statement_H(node->children[4], S1_nextList, breakList1, continueList1,caseMap);
+        statement_H(node->children[4], S1_nextList, breakList1, continueList1, caseMap);
 
         breakAllowed--;
         continueAllowed--;
@@ -690,7 +692,7 @@ void iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vec
         // Next we evaluate the statement
         breakAllowed++;
         continueAllowed++;
-        statement_H(node->children[1], S1_nextList, breakList1, continueList1,caseMap);
+        statement_H(node->children[1], S1_nextList, breakList1, continueList1, caseMap);
         breakAllowed--;
         continueAllowed--;
 
@@ -752,7 +754,7 @@ void iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vec
         breakAllowed++;
         continueAllowed++;
         // Next we evaluate the statement
-        statement_H(node->children[5], S1_nextList, breakList1, continueList1,caseMap);
+        statement_H(node->children[5], S1_nextList, breakList1, continueList1, caseMap);
         breakAllowed--;
         continueAllowed--;
 
@@ -814,7 +816,7 @@ void iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vec
         breakAllowed++;
         continueAllowed++;
         // Next we evaluate the statement
-        statement_H(node->children[6], S1_nextList, breakList1, continueList1,caseMap);
+        statement_H(node->children[6], S1_nextList, breakList1, continueList1, caseMap);
         breakAllowed--;
         continueAllowed--;
 
@@ -880,7 +882,7 @@ void iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vec
         breakAllowed++;
         continueAllowed++;
         // Next we evaluate the statement
-        statement_H(node->children[6], S1_nextList, breakList1, continueList1,caseMap);
+        statement_H(node->children[6], S1_nextList, breakList1, continueList1, caseMap);
         breakAllowed--;
         continueAllowed--;
 
@@ -950,7 +952,7 @@ void jump_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<i
     {
         if (continueAllowed <= 0)
         {
-            semanticError("SEMANTIC ERROR ‼️ : \'continue\' statement not in loop statement");
+            semanticError("\'continue\' statement not in loop statement");
             return;
         }
         int aLabel = CODE_BASE.addTAC(node, TO_BACKPATCH, GOTO_LABEL, NO_ARG, NO_ARG); // goto aLabel
@@ -961,7 +963,7 @@ void jump_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<i
     {
         if (breakAllowed <= 0)
         {
-            semanticError("SEMANTIC ERROR ‼️ : \'break\' statement not in loop or switch statement");
+            semanticError("\'break\' statement not in loop or switch statement");
             return;
         }
         int aLabel = CODE_BASE.addTAC(node, TO_BACKPATCH, GOTO_LABEL, NO_ARG, NO_ARG); // goto aLabel
@@ -1003,7 +1005,7 @@ void labeled_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vecto
         std::string label = node->children[0]->value;
         if (labelMap.find(label) != labelMap.end())
         {
-            semanticError("SEMANTIC ERROR ‼️ : Label already defined");
+            semanticError("Label already defined");
             return;
         }
         labelMap[label] = labelIndex;
@@ -1023,7 +1025,7 @@ void labeled_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vecto
     {
         if (caseAllowed <= 0)
         {
-            semanticError("SEMANTIC ERROR ‼️ : \'case\' statement not in any switch statement");
+            semanticError("\'case\' statement not in any switch statement");
             return;
         }
 
@@ -1035,7 +1037,7 @@ void labeled_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vecto
 
         if (caseMap.find(constExpr) != caseMap.end())
         {
-            semanticError("SEMANTIC ERROR ‼️ : case - \'" + constExpr + "\' already exists");
+            semanticError("case - \'" + constExpr + "\' already exists");
             return;
         }
         int caseIndex = CODE_BASE.nextIndex();
@@ -1048,7 +1050,7 @@ void labeled_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vecto
     {
         if (caseAllowed <= 0)
         {
-            semanticError("SEMANTIC ERROR ‼️ : \'default\' statement not in any switch statement");
+            semanticError("\'default\' statement not in any switch statement");
             return;
         }
 
@@ -1058,7 +1060,7 @@ void labeled_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vecto
 
         if (caseMap.find(constExpr) != caseMap.end())
         {
-            semanticError("SEMANTIC ERROR ‼️ : default already exists");
+            semanticError("default already exists");
             return;
         }
         int defaultIndex = CODE_BASE.nextIndex();
