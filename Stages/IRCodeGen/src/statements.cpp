@@ -3,7 +3,7 @@
 
 //=====================[ Statements ]=========================================================================================
 
-void statement_H(ASTNode *node, std::vector<int> &S_nextList)
+void statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<int> &breakList, std::vector<int> &continueList, std::map<std::string, int> &caseMap)
 {
     ENTRY_H;
 
@@ -16,14 +16,14 @@ void statement_H(ASTNode *node, std::vector<int> &S_nextList)
     std::string P6 = "jump_statement";
     std::string P7 = "declaration";
 
-    aptLOG("⬇️ S_nextList = " + toString(S_nextList)); // 🌴 Adding syn_attr
+    aptLOG("⬇️ S_nextList = " + toString(S_nextList));
 
     if (whichProduction == P1)
     {
         // Call the labeled statement handler
         // Data to be fetched
         std::vector<int> S1_nextList;
-        labeled_statement_H(node->children[0], S_nextList);
+        labeled_statement_H(node->children[0], S1_nextList, breakList, continueList, caseMap);
 
         // Pass the data up
         S_nextList = S1_nextList;
@@ -33,7 +33,7 @@ void statement_H(ASTNode *node, std::vector<int> &S_nextList)
         // Call the compound statement handler
         // Data to be fetched
         std::vector<int> S1_nextList;
-        compound_statement_H(node->children[0], S1_nextList);
+        compound_statement_H(node->children[0], S1_nextList, breakList, continueList, caseMap);
 
         // Pass the data up
         S_nextList = S1_nextList;
@@ -55,7 +55,7 @@ void statement_H(ASTNode *node, std::vector<int> &S_nextList)
     {
         // Call the selection statement handler
         std::vector<int> S1_nextList;
-        selection_statement_H(node->children[0], S1_nextList);
+        selection_statement_H(node->children[0], S1_nextList, breakList, continueList, caseMap);
 
         // Pass the data up
         S_nextList = S1_nextList;
@@ -65,7 +65,7 @@ void statement_H(ASTNode *node, std::vector<int> &S_nextList)
         // Call the iteration statement handler
         // Data to be fetched
         std::vector<int> S1_nextList;
-        iteration_statement_H(node->children[0], S1_nextList);
+        iteration_statement_H(node->children[0], S1_nextList, breakList, continueList, caseMap);
 
         // Pass the data up
         S_nextList = S1_nextList;
@@ -75,7 +75,7 @@ void statement_H(ASTNode *node, std::vector<int> &S_nextList)
         // Call the jump statement handler
         // Data to be fetched
         std::vector<int> S1_nextList;
-        jump_statement_H(node->children[0], S1_nextList);
+        jump_statement_H(node->children[0], S1_nextList, breakList, continueList, caseMap);
 
         // Pass the data up
         S_nextList = S1_nextList;
@@ -91,12 +91,12 @@ void statement_H(ASTNode *node, std::vector<int> &S_nextList)
         return;
     }
 
-    aptLOG("⬆️ S_nextList = " + toString(S_nextList)); // 🌴 Adding syn_attr
+    aptLOG("⬆️ S_nextList = " + toString(S_nextList));
 
     EXIT_H;
 }
 
-void statement_list_H(ASTNode *node, std::vector<int> &S_nextList)
+void statement_list_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<int> &breakList, std::vector<int> &continueList, std::map<std::string, int> &caseMap)
 {
     ENTRY_H;
 
@@ -104,13 +104,13 @@ void statement_list_H(ASTNode *node, std::vector<int> &S_nextList)
     std::string P1 = "statement";
     std::string P2 = "statement_list statement";
 
-    aptLOG("⬇️ S_nextList = " + toString(S_nextList)); // 🌴 Adding syn_attr
+    aptLOG("⬇️ S_nextList = " + toString(S_nextList));
 
     if (whichProduction == P1)
     {
         // Call the statement handler
         std::vector<int> S1_nextList;
-        statement_H(node->children[0], S1_nextList);
+        statement_H(node->children[0], S1_nextList, breakList, continueList, caseMap);
 
         // Pass the data up
         S_nextList = S1_nextList;
@@ -119,7 +119,7 @@ void statement_list_H(ASTNode *node, std::vector<int> &S_nextList)
     {
         // Call the statement list handler
         std::vector<int> S1_nextList;
-        statement_list_H(node->children[0], S1_nextList);
+        statement_list_H(node->children[0], S1_nextList, breakList, continueList, caseMap);
 
         // BackPatch the next list
         int aLabel = CODE_BASE.nextIndex();
@@ -127,7 +127,7 @@ void statement_list_H(ASTNode *node, std::vector<int> &S_nextList)
 
         // Call the statement handler
         std::vector<int> S2_nextList;
-        statement_H(node->children[1], S2_nextList);
+        statement_H(node->children[1], S2_nextList, breakList, continueList, caseMap);
 
         // Pass the data up
         S_nextList = S2_nextList;
@@ -140,12 +140,12 @@ void statement_list_H(ASTNode *node, std::vector<int> &S_nextList)
         return;
     }
 
-    aptLOG("⬆️ S_nextList = " + toString(S_nextList)); // 🌴 Adding syn_attr
+    aptLOG("⬆️ S_nextList = " + toString(S_nextList));
 
     EXIT_H;
 }
 
-void compound_statement_H(ASTNode *node, std::vector<int> &S_nextList)
+void compound_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<int> &breakList, std::vector<int> &continueList, std::map<std::string, int> &caseMap)
 {
     ENTRY_H;
 
@@ -155,8 +155,6 @@ void compound_statement_H(ASTNode *node, std::vector<int> &S_nextList)
     std::string P3 = "LCURLY declaration_list RCURLY";
     std::string P4 = "LCURLY declaration_list statement_list RCURLY";
 
-    aptLOG("⬇️ S_nextList = " + toString(S_nextList)); // 🌴 Adding syn_attr
-
     if (whichProduction != P1 && whichProduction != P2 && whichProduction != P3 && whichProduction != P4)
     {
         BUG_EXIT;
@@ -164,25 +162,38 @@ void compound_statement_H(ASTNode *node, std::vector<int> &S_nextList)
         return;
     }
 
-    int enteredScope = SYM_TABLE.enterScope(); 
-    if(enteredScope != IGNORED){                        // [👌 Default Scope Handling]
-        aptLOG("Scope Entered : S" + std::to_string(enteredScope) + " ⤵️"); // 🌴 Adding syn_attr
+    int enteredScope = SYM_TABLE.enterScope();
+    if (enteredScope != IGNORED)
+    { // [👌 Default Scope Handling]
+        aptLOG("Scope Entered : S" + std::to_string(enteredScope) + " ⤵️");
     }
-    else{
+    else
+    {
         aptLOG("Scope Entry IGNORED 🫣, Current Scope - " + std::to_string(SYM_TABLE.scopeNo));
     }
+
+    aptLOG("⬇️ S_nextList = " + toString(S_nextList));
+    aptLOG("⬇️ breakList = " + toString(breakList));
+    aptLOG("⬇️ continueList = " + toString(continueList));
 
     if (whichProduction == P1)
     {
         S_nextList = std::vector<int>();
+        breakList = std::vector<int>();
+        continueList = std::vector<int>();
     }
     else if (whichProduction == P2)
     {
         // For Now Just Call Statement List
         std::vector<int> S1_nextList;
-        statement_list_H(node->children[1], S1_nextList);
+        std::vector<int> S1_breakList;
+        std::vector<int> S1_continueList;
+        statement_list_H(node->children[1], S1_nextList, S1_breakList, S1_continueList, caseMap);
 
+        // Pass the data up
         S_nextList = S1_nextList;
+        breakList = S1_breakList;
+        continueList = S1_continueList;
     }
     else if (whichProduction == P3)
     {
@@ -198,9 +209,13 @@ void compound_statement_H(ASTNode *node, std::vector<int> &S_nextList)
 
         // For Now Just Call Statement List
         std::vector<int> S1_nextList;
-        statement_list_H(node->children[2], S1_nextList);
+        std::vector<int> S1_breakList;
+        std::vector<int> S1_continueList;
+        statement_list_H(node->children[2], S1_nextList, S1_breakList, S1_continueList, caseMap);
 
         S_nextList = S1_nextList; // This was last statement - can't backpatch here send UP
+        breakList = S1_breakList;
+        continueList = S1_continueList;
     }
     else
     {
@@ -208,15 +223,18 @@ void compound_statement_H(ASTNode *node, std::vector<int> &S_nextList)
         return;
     }
 
-    // Backpatch the next list
-    aptLOG("⬆️ S_nextList = " + toString(S_nextList)); // 🌴 Adding syn_attr
+    aptLOG("⬆️ S_nextList = " + toString(S_nextList));
+    aptLOG("⬆️ breakList = " + toString(breakList));
+    aptLOG("⬆️ continueList = " + toString(continueList));
 
     // SCOPE EXIT // [👌 Default Scope Handling]
-    if(enteredScope != IGNORED){
+    if (enteredScope != IGNORED)
+    {
         int exitedScope = SYM_TABLE.exitScope();
         aptLOG("Scope S" + std::to_string(exitedScope) + " Exited ↙️");
     }
-    else{
+    else
+    {
         aptLOG("Scope Exit IGNORED 🫣, Current Scope - " + std::to_string(SYM_TABLE.scopeNo));
     }
 
@@ -272,7 +290,9 @@ void expression_statement_H(ASTNode *node, std::string inh_whereToSendString, st
 
 //==================== [Control Flow Statements] =========================================================================================
 
-void selection_statement_H(ASTNode *node, std::vector<int> &S_nextList)
+std::string DEFAULT_CASE = "DEFAULT_CASE";
+
+void selection_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<int> &breakList, std::vector<int> &continueList, std::map<std::string, int> &caseMap)
 {
     ENTRY_H;
 
@@ -281,7 +301,9 @@ void selection_statement_H(ASTNode *node, std::vector<int> &S_nextList)
     std::string P2 = "IF LPAREN expression RPAREN statement ELSE statement";
     std::string P3 = "SWITCH LPAREN expression RPAREN statement";
 
-    aptLOG("⬇️ S_nextList = " + toString(S_nextList)); // 🌴 Adding syn_attr
+    aptLOG("⬇️ S_nextList = " + toString(S_nextList));
+    aptLOG("⬇️ breakList = " + toString(breakList));
+    aptLOG("⬇️ continueList = " + toString(continueList));
 
     if (whichProduction == P1)
     {
@@ -323,7 +345,7 @@ void selection_statement_H(ASTNode *node, std::vector<int> &S_nextList)
 
         std::vector<int> S1_nextList; // This value will be fetchec
         // Next we evaluate the statement
-        statement_H(node->children[4], S1_nextList);
+        statement_H(node->children[4], S1_nextList, breakList, continueList, caseMap);
 
         mergeList(S_nextList, E_falselist);
         mergeList(S_nextList, S1_nextList);
@@ -368,7 +390,7 @@ void selection_statement_H(ASTNode *node, std::vector<int> &S_nextList)
 
         std::vector<int> S1_nextList; // This value will be fetchec
         // Next we evaluate the statement
-        statement_H(node->children[4], S1_nextList);
+        statement_H(node->children[4], S1_nextList, breakList, continueList, caseMap);
 
         int cLabel = CODE_BASE.addTAC(node, TO_BACKPATCH, GOTO_LABEL, NO_ARG, NO_ARG); // goto cLabel
 
@@ -380,7 +402,7 @@ void selection_statement_H(ASTNode *node, std::vector<int> &S_nextList)
 
         std::vector<int> S2_nextList; // This value will be fetchec
         // Next we evaluate the statement
-        statement_H(node->children[6], S2_nextList);
+        statement_H(node->children[6], S2_nextList, breakList, continueList, caseMap);
         // aptLOG("s2 okay");
 
         mergeList(S_nextList, S1_nextList);
@@ -402,9 +424,70 @@ void selection_statement_H(ASTNode *node, std::vector<int> &S_nextList)
         // 🚀 USAGE 🤫 SPACE CHANGE 🚀
         USAGE_SPACE_CHANGE(varName1, type1, valueSpace1, node);
 
-        // [🔴🔴🔴 TOTHINK 🔴🔴🔴]
+        // 🅱️ TypeChecking of Expression
+        // MAX size allowed is INT - TYPE_CHAR,TYPE_SHORT,TYPE_INT,TYPE_ENUM,ENUMCONST
 
-        BUG_EXIT;
+        std::string baseType = isPrimitive(type1); //[ ENUM & ENUM_CONSTANT are given as TYPE_INT]
+        if (!(baseType == TYPE_CHAR || baseType == TYPE_SHORT || baseType == TYPE_INT || baseType == "ENUM" || baseType == "ENUM_CONSTANT"))
+        {
+            semanticError("SEMANTIC ERROR ‼️: Expression inside switch statement cannot be of type " + baseType);
+        }
+
+        // 🔖 IRCode Gen
+
+        breakAllowed++;
+        int jumpToMAP = CODE_BASE.addTAC(node, TO_BACKPATCH, GOTO_LABEL, NO_ARG, NO_ARG); // goto jumpToMAP
+
+        std::map<std::string, int> caseMap1;
+
+        std::vector<int> S1_nextList;     // This value will be fetchec
+        std::vector<int> S1_breakList;    // This value will be fetchec
+        std::vector<int> S1_continueList; // This value will be fetchec
+        caseAllowed++; breakAllowed++;
+        statement_H(node->children[4], S1_nextList, S1_breakList, S1_continueList, caseMap1);
+        caseAllowed--; breakAllowed--;
+        int defaultExit = CODE_BASE.addTAC(node, TO_BACKPATCH, GOTO_LABEL, NO_ARG, NO_ARG); // goto defaultExit
+
+        bool isDefault = false;
+        int defaultJumpAddress;
+
+        int mapStart = CODE_BASE.nextIndex();
+        int check = CODE_BASE.backpatch(node, {jumpToMAP}, mapStart);
+
+        if (caseMap1.find(DEFAULT_CASE) != caseMap1.end())
+        {
+            isDefault = true;
+            defaultJumpAddress = caseMap1[DEFAULT_CASE];
+            caseMap1.erase(DEFAULT_CASE);
+        }
+        else
+        {
+            defaultJumpAddress = -1;
+        }
+
+        for (auto it : caseMap1)
+        {
+            if (it.first == DEFAULT_CASE)
+            {
+                // Should not happen
+            }
+            else
+            {
+                std::string caseIndex = "L(" + std::to_string(it.second) + ")";
+                CODE_BASE.addTAC(node, caseIndex, GOTO_EQUAL, varName1, it.first); // if (varName1 == it.first) goto it.second
+            }
+        }
+
+        if (isDefault)
+        {
+            std::string defaultIndex = "L(" + std::to_string(defaultJumpAddress) + ")";
+            CODE_BASE.addTAC(node, defaultIndex, GOTO_LABEL, NO_ARG, NO_ARG); // goto defaultJumpAddress
+        }
+
+        mergeList(S_nextList, S1_nextList);
+        mergeList(S_nextList, S1_breakList);
+        mergeList(S_nextList, defaultExit);
+        continueList = S1_continueList; // Pass it up since switch is not a loop
     }
     else
     {
@@ -414,16 +497,14 @@ void selection_statement_H(ASTNode *node, std::vector<int> &S_nextList)
         return;
     }
 
-    aptLOG("⬆️ S_nextList = " + toString(S_nextList)); // 🌴 Adding syn_attr
+    aptLOG("⬆️ S_nextList = " + toString(S_nextList));
+    aptLOG("⬆️ breakList = " + toString(breakList));
+    aptLOG("⬆️ continueList = " + toString(continueList));
 
     EXIT_H;
 }
 
-std::stack<std::string> CONTINUE_LABELS;   // Jumps to the next iteration
-std::set<std::string> USER_DEFINED_LABELS; // used by goto statement
-std::stack<std::string> SWITCH_ARG;        // used by switch statement to make comparison
-
-void iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList)
+void iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<int> &breakList, std::vector<int> &continueList, std::map<std::string, int> &caseMap)
 {
     ENTRY_H;
 
@@ -435,11 +516,13 @@ void iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList)
     std::string P5 = "FOR LPAREN expression_statement expression_statement expression RPAREN statement";
     std::string P6 = "FOR LPAREN declaration expression_statement expression RPAREN statement";
 
-    aptLOG("⬇️ S_nextList = " + toString(S_nextList)); // 🌴 Adding syn_attr
-
     // Early Scope Entry
-    int scopeNo = SYM_TABLE.earlyEntry();                             //  [☀️ EarlyScope Entry]                                                         // This will tell the symbol table to ignore the next entry by compound_statement
-    aptLOG("Early Scope Entry : S" + std::to_string(scopeNo) + " ☀️"); // 🌴 Adding syn_att
+    int scopeNo = SYM_TABLE.earlyEntry(); //  [☀️ EarlyScope Entry]                                                         // This will tell the symbol table to ignore the next entry by compound_statement
+    aptLOG("Early Scope Entry : S" + std::to_string(scopeNo) + " ☀️");
+
+    aptLOG("⬇️ S_nextList = " + toString(S_nextList));
+    aptLOG("⬇️ breakList = " + toString(breakList));
+    aptLOG("⬇️ continueList = " + toString(continueList));
 
     if (whichProduction == P1)
     {
@@ -465,8 +548,7 @@ void iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList)
         Type whichType = whatIsType(type1);
         if (whichType == Type::STRUCT_UNION)
         {
-            BUG_EXIT;
-            semanticLOG.push_back("🚨 Type Error: Expression inside while statement cannot be of type STRUCT_UNION");
+            semanticError("SEMANTIC ERROR ‼️: Expression inside while statement cannot be of type STRUCT_UNION");
             return;
         }
 
@@ -480,16 +562,25 @@ void iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList)
 
         int check = CODE_BASE.backpatch(node, E_truelist, s_Start);
 
-        std::vector<int> S1_nextList; // This value will be fetchec
+        std::vector<int> S1_nextList;   // This value will be fetchec
+        std::vector<int> breakList1;    // This value will be fetchec
+        std::vector<int> continueList1; // This value will be fetchec
+        breakAllowed++;
+        continueAllowed++;
         // Next we evaluate the statement
-        statement_H(node->children[4], S1_nextList);
+        statement_H(node->children[4], S1_nextList, breakList1, continueList1,caseMap);
+
+        breakAllowed--;
+        continueAllowed--;
 
         // Backpatch the S1_nextList
+        mergeList(S1_nextList, continueList1); // As S_nextList is a syn_attribute we don't send this below
         int check2 = CODE_BASE.backpatch(node, S1_nextList, loopStart);
 
         CODE_BASE.addTAC(node, loopStartLabel, GOTO_LABEL, NO_ARG, NO_ARG); // goto loopStart
 
         mergeList(S_nextList, E_falselist);
+        mergeList(S_nextList, breakList1);
     }
     else if (whichProduction == P2)
     {
@@ -515,8 +606,7 @@ void iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList)
         Type whichType = whatIsType(type1);
         if (whichType == Type::STRUCT_UNION)
         {
-            BUG_EXIT;
-            semanticLOG.push_back("🚨 Type Error: Expression inside while statement cannot be of type STRUCT_UNION");
+            semanticError("SEMANTIC ERROR ‼️: Expression inside while statement cannot be of type STRUCT_UNION");
             return;
         }
 
@@ -532,16 +622,25 @@ void iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList)
 
         int check = CODE_BASE.backpatch(node, E_falselist, s_Start);
 
-        std::vector<int> S1_nextList; // This value will be fetchec
+        std::vector<int> S1_nextList;   // This value will be fetchecd
+        std::vector<int> breakList1;    // This value will be fetchecd
+        std::vector<int> continueList1; // This value will be fetchecd
+        breakAllowed++;
+        continueAllowed++;
         // Next we evaluate the statement
-        statement_H(node->children[4], S1_nextList);
+        statement_H(node->children[4], S1_nextList, breakList1, continueList1,caseMap);
+
+        breakAllowed--;
+        continueAllowed--;
 
         // Backpatch the S1_nextList
+        mergeList(S1_nextList, continueList1); // As S_nextList is a syn_attribute we don't send this below
         int check2 = CODE_BASE.backpatch(node, S1_nextList, loopStart);
 
         CODE_BASE.addTAC(node, loopStartLabel, GOTO_LABEL, NO_ARG, NO_ARG); // goto loopStart
 
         mergeList(S_nextList, E_truelist);
+        mergeList(S_nextList, breakList1);
     }
     else if (whichProduction == P3)
     {
@@ -570,8 +669,6 @@ void iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList)
         Type whichType = whatIsType(type1);
         if (whichType == Type::STRUCT_UNION)
         {
-            BUG_EXIT;
-            semanticLOG.push_back("🚨 Type Error: Expression inside do while statement cannot be of type STRUCT_UNION");
             return;
         }
 
@@ -587,16 +684,24 @@ void iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList)
 
         int check = CODE_BASE.backpatch(node, E_truelist, s_Start);
 
-        std::vector<int> S1_nextList; // This value will be fetchec
+        std::vector<int> S1_nextList;   // This value will be fetchecd
+        std::vector<int> breakList1;    // This value will be fetchecd
+        std::vector<int> continueList1; // This value will be fetchecd
         // Next we evaluate the statement
-        statement_H(node->children[1], S1_nextList);
+        breakAllowed++;
+        continueAllowed++;
+        statement_H(node->children[1], S1_nextList, breakList1, continueList1,caseMap);
+        breakAllowed--;
+        continueAllowed--;
 
         // Backpatch the S1_nextList
+        mergeList(S1_nextList, continueList1);
         int check2 = CODE_BASE.backpatch(node, S1_nextList, loopStart);
 
         CODE_BASE.addTAC(node, loopStartLabel, GOTO_LABEL, NO_ARG, NO_ARG); // goto loopStart
 
         mergeList(S_nextList, E_falselist);
+        mergeList(S_nextList, breakList1);
     }
     else if (whichProduction == P4)
     {
@@ -641,15 +746,24 @@ void iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList)
 
         int check = CODE_BASE.backpatch(node, ES2_truelist, s_Start);
 
-        std::vector<int> S1_nextList; // This value will be fetched
+        std::vector<int> S1_nextList;   // This value will be fetched
+        std::vector<int> breakList1;    // This value will be fetched
+        std::vector<int> continueList1; // This value will be fetched
+        breakAllowed++;
+        continueAllowed++;
         // Next we evaluate the statement
-        statement_H(node->children[5], S1_nextList);
+        statement_H(node->children[5], S1_nextList, breakList1, continueList1,caseMap);
+        breakAllowed--;
+        continueAllowed--;
 
+        // Backpatch the S1_nextList
+        mergeList(S1_nextList, continueList1); // As S_nextList is a syn_attribute we don't send this below
         int check2 = CODE_BASE.backpatch(node, S1_nextList, loopStart);
 
         CODE_BASE.addTAC(node, loopStartLabel, GOTO_LABEL, NO_ARG, NO_ARG); // goto loopStart
 
         mergeList(S_nextList, ES2_falselist);
+        mergeList(S_nextList, breakList1);
     }
     else if (whichProduction == P5)
     {
@@ -694,10 +808,18 @@ void iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList)
 
         int check = CODE_BASE.backpatch(node, ES2_truelist, s_Start);
 
-        std::vector<int> S1_nextList; // This value will be fetched
+        std::vector<int> S1_nextList;   // This value will be fetched
+        std::vector<int> breakList1;    // This value will be fetched
+        std::vector<int> continueList1; // This value will be fetched
+        breakAllowed++;
+        continueAllowed++;
         // Next we evaluate the statement
-        statement_H(node->children[6], S1_nextList);
+        statement_H(node->children[6], S1_nextList, breakList1, continueList1,caseMap);
+        breakAllowed--;
+        continueAllowed--;
 
+        // Backpatch the S1_nextList
+        mergeList(S1_nextList, continueList1); // As S_nextList is a syn_attribute we don't send this below
         int check2 = CODE_BASE.backpatch(node, S1_nextList, loopStart);
 
         // Call the third Expression_3
@@ -710,6 +832,7 @@ void iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList)
         CODE_BASE.addTAC(node, loopStartLabel, GOTO_LABEL, NO_ARG, NO_ARG); // goto loopStart
 
         mergeList(S_nextList, ES2_falselist);
+        mergeList(S_nextList, breakList1);
     }
     else if (whichProduction == P6)
     {
@@ -751,10 +874,18 @@ void iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList)
 
         int check = CODE_BASE.backpatch(node, ES2_truelist, s_Start);
 
-        std::vector<int> S1_nextList; // This value will be fetched
+        std::vector<int> S1_nextList;   // This value will be fetched
+        std::vector<int> breakList1;    // This value will be fetched
+        std::vector<int> continueList1; // This value will be fetched
+        breakAllowed++;
+        continueAllowed++;
         // Next we evaluate the statement
-        statement_H(node->children[6], S1_nextList);
+        statement_H(node->children[6], S1_nextList, breakList1, continueList1,caseMap);
+        breakAllowed--;
+        continueAllowed--;
 
+        // Backpatch the S1_nextList
+        mergeList(S1_nextList, continueList1);
         int check2 = CODE_BASE.backpatch(node, S1_nextList, loopStart);
 
         // Call the third Expression_3
@@ -767,6 +898,7 @@ void iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList)
         CODE_BASE.addTAC(node, loopStartLabel, GOTO_LABEL, NO_ARG, NO_ARG); // goto loopStart
 
         mergeList(S_nextList, ES2_falselist);
+        mergeList(S_nextList, breakList1);
     }
     else
     {
@@ -776,32 +908,65 @@ void iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList)
     }
 
     // EXIT of Early Entry
-    int exitedScope = SYM_TABLE.earlyExit();                                   //  [☀️ EarlyScope Entry's EXIT]
-    aptLOG("Exit due to EarlyEntry : S" + std::to_string(exitedScope) + " ☀️"); // 🌴 Adding syn_attr
+    int exitedScope = SYM_TABLE.earlyExit(); //  [☀️ EarlyScope Entry's EXIT]
+    aptLOG("Exit due to EarlyEntry : S" + std::to_string(exitedScope) + " ☀️");
 
-    aptLOG("⬆️ S_nextList = " + toString(S_nextList)); // 🌴 Adding syn_attr
+    aptLOG("⬆️ S_nextList = " + toString(S_nextList));
+    aptLOG("⬆️ breakList = " + toString(breakList));
+    aptLOG("⬆️ continueList = " + toString(continueList));
 
     EXIT_H;
 }
 
-void jump_statement_H(ASTNode *node, std::vector<int> &S_nextList)
+int breakAllowed = 0;
+int continueAllowed = 0;
+int caseAllowed = 0;
+
+void jump_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<int> &breakList, std::vector<int> &continueList, std::map<std::string, int> &caseMap)
 {
     ENTRY_H;
     std::string whichProduction = getProduction(node);
     std::string P1 = "GOTO IDENTIFIER SEMI_COLON";
     std::string P2 = "CONTINUE SEMI_COLON";
     std::string P3 = "BREAK SEMI_COLON";
-    std::string P4 = "RETURN expression SEMI_COLON";
-    std::string P5 = "RETURN SEMI_COLON";
+    std::string P4 = "RETURN expression SEMI_COLON"; // [TOWRITE]
+    std::string P5 = "RETURN SEMI_COLON";            // [TOWRITE]
 
     if (whichProduction == P1)
     {
+        std::string labelUsed = node->children[1]->value;
+        int index = CODE_BASE.addTAC(node, TO_BACKPATCH, GOTO_LABEL, NO_ARG, NO_ARG); // goto labelUsed
+        if (labelList.find(labelUsed) == labelList.end())
+        {
+            std::vector<int> perLabelList = {index};
+            labelList[labelUsed] = perLabelList;
+        }
+        else
+        {
+            labelList[labelUsed].push_back(index);
+        }
     }
     else if (whichProduction == P2)
     {
+        if (continueAllowed <= 0)
+        {
+            semanticError("SEMANTIC ERROR ‼️ : \'continue\' statement not in loop statement");
+            return;
+        }
+        int aLabel = CODE_BASE.addTAC(node, TO_BACKPATCH, GOTO_LABEL, NO_ARG, NO_ARG); // goto aLabel
+
+        mergeList(continueList, aLabel);
     }
     else if (whichProduction == P3)
     {
+        if (breakAllowed <= 0)
+        {
+            semanticError("SEMANTIC ERROR ‼️ : \'break\' statement not in loop or switch statement");
+            return;
+        }
+        int aLabel = CODE_BASE.addTAC(node, TO_BACKPATCH, GOTO_LABEL, NO_ARG, NO_ARG); // goto aLabel
+
+        mergeList(breakList, aLabel);
     }
     else if (whichProduction == P4)
     {
@@ -817,30 +982,91 @@ void jump_statement_H(ASTNode *node, std::vector<int> &S_nextList)
         return;
     }
 
-    aptLOG("S_nextList = " + toString(S_nextList)); // 🌴 Adding syn_attr
+    aptLOG("S_nextList = " + toString(S_nextList));
 
     EXIT_H;
 }
 
-void labeled_statement_H(ASTNode *node, std::vector<int> &S_nextList)
+void labeled_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<int> &breakList, std::vector<int> &continueList, std::map<std::string, int> &caseMap)
 {
     ENTRY_H;
     std::string whichProduction = getProduction(node);
     std::string P1 = "IDENTIFIER COLON statement";
     std::string P2 = "CASE constant_expression COLON statement";
-    std::string P3 = "DEFAULT COLON statement";
+    std::string P3 = "DEFAULT COLON statement"; // [🔴🔴🔴 TOTHINK 🔴🔴🔴]
 
     aptLOG("⬇️ S_nextList = " + toString(S_nextList));
 
     if (whichProduction == P1)
     {
-        // []
+        int labelIndex = CODE_BASE.nextIndex();
+        std::string label = node->children[0]->value;
+        if (labelMap.find(label) != labelMap.end())
+        {
+            semanticError("SEMANTIC ERROR ‼️ : Label already defined");
+            return;
+        }
+        labelMap[label] = labelIndex;
+
+        // Call the statement
+        std::vector<int> S1_nextList;
+        std::vector<int> S1_breakList;
+        std::vector<int> S1_continueList;
+        statement_H(node->children[2], S1_nextList, S1_breakList, S1_continueList, caseMap);
+
+        // Pass the data up
+        S_nextList = S1_nextList;
+        breakList = S1_breakList;
+        continueList = S1_continueList;
     }
     else if (whichProduction == P2)
     {
+        if (caseAllowed <= 0)
+        {
+            semanticError("SEMANTIC ERROR ‼️ : \'case\' statement not in any switch statement");
+            return;
+        }
+
+        std::string constExpr;
+        // call the constant_expression
+        constant_expression_H(node->children[1], constExpr);
+
+        // NO need to check
+
+        if (caseMap.find(constExpr) != caseMap.end())
+        {
+            semanticError("SEMANTIC ERROR ‼️ : case - \'" + constExpr + "\' already exists");
+            return;
+        }
+        int caseIndex = CODE_BASE.nextIndex();
+        caseMap[constExpr] = caseIndex;
+
+        // Call the statement
+        statement_H(node->children[3], S_nextList, breakList, continueList, caseMap);
     }
     else if (whichProduction == P3)
     {
+        if (caseAllowed <= 0)
+        {
+            semanticError("SEMANTIC ERROR ‼️ : \'default\' statement not in any switch statement");
+            return;
+        }
+
+        aptHERE;
+
+        std::string constExpr = DEFAULT_CASE;
+
+        if (caseMap.find(constExpr) != caseMap.end())
+        {
+            semanticError("SEMANTIC ERROR ‼️ : default already exists");
+            return;
+        }
+        int defaultIndex = CODE_BASE.nextIndex();
+        caseMap[constExpr] = defaultIndex;
+        aptHERE;
+        // Call the statement
+        statement_H(node->children[2], S_nextList, breakList, continueList, caseMap);
+        aptHERE;
     }
     else
     {

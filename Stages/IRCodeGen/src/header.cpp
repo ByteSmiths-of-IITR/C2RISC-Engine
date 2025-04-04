@@ -54,3 +54,7 @@ std::string getCurrentTime()
 
     return oss.str(); // Convert stream to string
 }
+
+// GOTO Label's Declaration
+std::map<std::string, int> labelMap;                      // This will be used to keep track of the labels
+std::map<std::string, std::vector<int>> labelList; // This will be used to keep track of the labels

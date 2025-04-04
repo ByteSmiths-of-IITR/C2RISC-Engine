@@ -17,6 +17,7 @@ std::string ASSIGN_OP = "=";
 std::string IF_FALSE = "if_false";
 std::string IF_TRUE = "if";
 std::string GOTO_LABEL = "goto";
+std::string GOTO_EQUAL = "goto_equal";
 std::string TO_BACKPATCH = "to_backpatch";
 
 #include <iomanip>
@@ -123,7 +124,9 @@ std::string TAC_Quadruple::toString()
     {
         str = "goto " + result; // goto arg1
     }
-
+    else if(op == GOTO_EQUAL){
+        str = "if " + arg1 + " == " + arg2 + " goto " + result; // if arg1 == arg2 goto result
+    }
 
     else
     {

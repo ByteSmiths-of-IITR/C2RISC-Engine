@@ -29,7 +29,7 @@ void closeHandlerLog()
 
 std::vector<std::string> compilerLOG; // [extern declared in header.h]
 std::vector<std::string> semanticLOG; // [extern declared in header.h]
-
+std::string semanticMessage; // [extern declared in header.h]
 //====================[ Globally Accessible Variables ]=========================================================================================
 SymbolTable SYM_TABLE; // Global Symbol Table
 TAC CODE_BASE;         // Global TAC Code Base
@@ -270,7 +270,7 @@ int ProcessDecSpecifiers(std::vector<std::string> &valueVector, TypeExpression &
     // Check if the valueVector is empty
     if (valueVector.empty())
     {
-        // return LOW_ERROR; // ERROR
+        return LOW_ERROR; // ERROR
     }
 
     // Print the valueVector
@@ -309,7 +309,7 @@ int ProcessDecSpecifiers(std::vector<std::string> &valueVector, TypeExpression &
     // 2. Process the storageClass
     if (storageClassVector.size() > 1)
     {
-        // SEMANTIC ERROR 🚨 : Multiple storage classes
+        semanticMessage = "Multiple Storage Classes in declaration specifiers";
         check = LOW_ERROR; // ERROR
     }
     else if (storageClassVector.size() == 1)
@@ -369,7 +369,7 @@ int ProcessDecSpecifiers(std::vector<std::string> &valueVector, TypeExpression &
 
     if (duplicate)
     {
-        // SEMANTIC ERROR 🚨 : Duplicate Type Qualifier
+        semanticMessage = "Duplicate Type Qualifiers in declaration specifiers";
         check = WARNING;
     }
 
@@ -399,7 +399,7 @@ int ProcessDecSpecifiers(std::vector<std::string> &valueVector, TypeExpression &
         // Then there must be only one typedef defined type
         if (typeSpecifierVector.size() != 1)
         {
-            // SEMANTIC ERROR 🚨 : Multiple type specifiers
+            semanticMessage = "More than one TypeSpecifier with User Defined TypeSpecifier";
             check = LOW_ERROR; // ERROR
         }
         else
@@ -420,7 +420,7 @@ int ProcessDecSpecifiers(std::vector<std::string> &valueVector, TypeExpression &
                 int lookupCheck = SYM_TABLE.lookup(typeName, sym);
                 if (lookupCheck == LOOKUP_FAILURE)
                 {
-                    // SEMANTIC ERROR 🚨 : Type name not found
+                    semanticMessage = "TypeSpecifier \"" + typeName + "\" not found in symbol table";
                     check = LOW_ERROR; // ERROR
                 }
                 else
@@ -433,7 +433,7 @@ int ProcessDecSpecifiers(std::vector<std::string> &valueVector, TypeExpression &
                     }
                     else
                     {
-                        // SEMANTIC ERROR 🚨 : Not a typedef
+                        semanticMessage = "TypeSpecifier \"" + typeName + "\" is not a typedef nor a record type";
                         check = LOW_ERROR; // ERROR
                     }
                 }
@@ -447,7 +447,7 @@ int ProcessDecSpecifiers(std::vector<std::string> &valueVector, TypeExpression &
         std::string finalBase = combineType(typeSpecifierVector);
         if (finalBase == INVALID_COMBINATION)
         {
-            // SEMANTIC ERROR 🚨 : Invalid TypeSpecifier's Combination
+            semanticMessage = "Invalid Type Combination of inbuild typeSpecifiers in declaration specifiers";
             check = LOW_ERROR; // ERROR
         }
         else
@@ -558,13 +558,17 @@ void external_declaration_H(ASTNode *node)
 
 void function_definition_H(ASTNode *node)
 {
-    lastFuncCalled = "function_definition_H";
+    ENTRY_H;
     // This will be used to fetch the function name
     std::string whichProduction = getProduction(node);
     std::string P1 = "declaration_specifiers declarator compound_statement";
 
     if (whichProduction == P1)
     {
+        // TO RESET GOTOLABEL maps
+        labelList.clear();
+        labelMap.clear();
+
         // Data to be fetched from declaration_specifiers
         std::vector<std::string> valueVector;
         // Call the declaration_specifiers handler
@@ -576,12 +580,17 @@ void function_definition_H(ASTNode *node)
         int check = ProcessDecSpecifiers(valueVector, inh_type, storageClass);
         if (check != OKAY)
         {
-            // SEMANTIC ERROR 🚨 : Error in ProcessDecSpecifiers
+            semanticError(semanticMessage);
+            semanticMessage = ""; // reset the message
+            // ERROR_EXIT;
+            // return;
         }
 
         if (storageClass != StorageClass::NONE)
         {
-            // SEMANTIC ERROR 🚨 : Functions don't have storage class
+            semanticError("Storage Class not allowed in function definition");
+            // ERROR_EXIT;
+            // return;
         }
 
         // Data to be fetched from declarator
@@ -595,14 +604,39 @@ void function_definition_H(ASTNode *node)
         Type type = whatIsType(type1);
         if (type != Type::FUNCTION)
         {
-            // SEMANTIC ERROR 🚨 : Function Definition is not a function type
+            semanticError("Function definition must have a function type");
+            ERROR_EXIT;
+            return;
+        }
+
+        TypeExpression funcType = type1;
+
+        LevelInfo *levelInfo = funcType.levelStack.top();
+        ParameterInfo *paramInfo = dynamic_cast<ParameterInfo *>(levelInfo);
+
+        // Check if funtion definition is not abstract
+        bool isAbstract = paramInfo->isAbstract;
+
+        if (isAbstract)
+        {
+            semanticError("Abstract function definition not allowed");
+            ERROR_EXIT;
+            return;
         }
 
         // Check if the function is already defined
         GenericSymbol *sym = nullptr;
+        aptHERE;
         int lookupCheck = SYM_TABLE.lookup(varName, sym);
         if (lookupCheck == LOOKUP_SUCCESS)
         {
+            // Check if lookedUp symbol is a function
+            if (sym->symbolType != SYMBOL_TYPE::FUNCTION)
+            {
+                semanticError("Function Definition \"" + varName + "\" collision with variable");
+                ERROR_EXIT;
+                return;
+            }
             // Function name already exists // check if declared or not
             Function *func = dynamic_cast<Function *>(sym);
             bool isDefined = func->isDefined;
@@ -616,7 +650,9 @@ void function_definition_H(ASTNode *node)
                 // Function is already defined
                 if (isDefined)
                 {
-                    // SEMANTIC ERROR 🚨 : Function already defined
+                    semanticError("Redefinition of function \"" + varName + "\"");
+                    ERROR_EXIT;
+                    return;
                 }
                 else
                 {
@@ -627,14 +663,11 @@ void function_definition_H(ASTNode *node)
             }
             else
             {
-                // SEMANTIC ERROR 🚨 : Function signature mismatch
-                // WE are not supporting overloading of functions
+                semanticError("Function Definition \"" + varName + "\" signature mismatch with previous declaration");
             }
         }
         else
         {
-            // Function neither defined not declared
-
             // Create a Symbol Table Entry
             Function *func = new Function();
             func->symbolName = varName;
@@ -645,35 +678,27 @@ void function_definition_H(ASTNode *node)
             int insertCheck = SYM_TABLE.insert(SYMBOL_TYPE::FUNCTION, varName, func);
             if (insertCheck == INSERT_FAILURE)
             {
-                // SEMANTIC ERROR 🚨 : Function already present in the current scope
+                // Should not happen since we already checked for presence
+                compilerError("Function Insertion failed but lookup was success");
+                ERROR_EXIT;
+                return;
             }
             else
             {
-                // Okay
                 aptLOG("Function dec+def added ☞ \"" + varName + "\""); // 🌴 Adding syn_attr
             }
         }
 
         // Now we have list of all the prameters & their names
-
-        TypeExpression funcType = type1;
-
-        LevelInfo *levelInfo = funcType.levelStack.top();
-        ParameterInfo *paramInfo = dynamic_cast<ParameterInfo *>(levelInfo);
-
-        // Check if funtion definition is not abstract
-        bool isAbstract = paramInfo->isAbstract;
-        if (isAbstract)
-        {
-            // SEMANTIC ERROR 🚨 : Function is abstract
-        }
-        else
+        if(!isAbstract)
         {
             // OKAY
             TypeExpression returnType = funcType;
             int check = popALevel(returnType);
             if (check != POP_SUCCESS)
             {
+                compilerError("Function Definition - popALevel failed");
+                return;
             }
 
             // Now we have parameter list
@@ -702,7 +727,7 @@ void function_definition_H(ASTNode *node)
                 int insertCheck = SYM_TABLE.insert(SYMBOL_TYPE::VARIABLE, paramNames[i], var);
                 if (insertCheck == INSERT_FAILURE)
                 {
-                    // SEMANTIC ERROR 🚨 : Parameter already present in the current scope
+                    semanticError("Parameter \"" + paramNames[i] + "\" already declared in function scope");
                 }
                 else
                 {
@@ -719,19 +744,31 @@ void function_definition_H(ASTNode *node)
         // Call the compound_statement handler
         // Data to be fetched
         std::vector<int> S1_nextList;
-        compound_statement_H(node->children[2], S1_nextList);
+        std::vector<int> S1_breakList;
+        std::vector<int> S1_continueList;
+        std::map<std::string, int> caseMap;
+        compound_statement_H(node->children[2], S1_nextList, S1_breakList, S1_continueList, caseMap);
 
         // Backpatch the next list
         int aLabel = CODE_BASE.nextIndex();
         CODE_BASE.backpatch(node, S1_nextList, aLabel);
 
-        // [ToDecide - HOW TO CHECK RETURN TYPE OF FUNCTION]
-
-        // SYM_TABLE.exitScope(); // [☀️ EarlyScope Entry's EXIT]
-        // [Will be Handled by Compound Statments this is due to - ☀️ EarlyScope Entry]
-
-        // CODE_BASE.addTAC(node, NO_ARG, BLANK, NO_ARG, NO_ARG); // To be added
-
+        // TO BACKPATCH GOTO LABELS
+        for(auto &pair : labelList)
+        {
+            std::string label = pair.first;
+            std::vector<int> list = pair.second;
+            if(labelMap.find(label) != labelMap.end())
+            {
+                int labelIndex = labelMap[label];
+                CODE_BASE.backpatch(node, list, labelIndex);
+            }
+            else
+            {
+                semanticError("Use of undeclared label \"" + label + "\"");
+            }
+        }
+        
         // Early Entry's Exit
         int exitedScope = SYM_TABLE.earlyExit(); //  [☀️ EarlyScope Entry] [IT's POSSIBLE that the early scope entry was never used in here]
         if (exitedScope == NO_EXIT)
@@ -746,8 +783,10 @@ void function_definition_H(ASTNode *node)
     }
     else
     {
-        // Wrong Production
+        compilerError("Function Definition encountered wrong production");
+        return;
     }
 
+    EXIT_H;
     return;
 }

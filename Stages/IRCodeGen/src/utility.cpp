@@ -3,6 +3,8 @@
 
 int orderOfEval = 0; // Global variable to keep track of the order of evaluation
 
+// std::vector<std::pair<std::pair<int, int>, std::pair<std::string, std::string>>> PARSER_TABLE;
+
 std::set<std::string> typeDefIDs; // Defined Here
 bool expectingTypeName = false; // Global variable to check if we are expecting a type name
 
@@ -308,6 +310,7 @@ std::string escapeCharacters(const std::string &input)
 
 std::string escapeCharacters1(const std::string &input)
 {
+    // return input;
     std::string result;
     for (char ch : input)
     {
@@ -433,7 +436,7 @@ void writeNode_A(std::ofstream &out, ASTNode *node, int parentId, int &nodeCount
 
     // Heading with larger font
     std::string headerColor = "black";
-    out << "  <tr><td><FONT COLOR=\"" << headerColor << "\"><font point-size=\"14\"><b>" << header << "</b></font></FONT></td></tr>\n";
+    out << "  <tr><td><FONT COLOR=\"" << headerColor << "\"><font point-size=\"14\"><b>" << escapeCharacters(header) << "</b></font></FONT></td></tr>\n";
 
     // Extra info with smaller font
     // int size = node->attributes.size();
@@ -787,105 +790,107 @@ std::string getTokenName(int token)
         // Destructor
     }
 
-    // PARSER_TABLE
-void printParserTable(std::ostream &out)
-    {
-        // Sort by (lineNo, columnNo)
-    std::sort(PARSER_TABLE.begin(), PARSER_TABLE.end(),
-                [](const auto &a, const auto &b)
-                {
-                    return (a.first.first < b.first.first) ||
-                            (a.first.first == b.first.first && a.first.second < b.first.second);
-                });
+//     // PARSER_TABLE
+// void printParserTable(std::ostream &out)
+//     {
+//         // Sort by (lineNo, columnNo)
+//     std::sort(PARSER_TABLE.begin(), PARSER_TABLE.end(),
+//                 [](const auto &a, const auto &b)
+//                 {
+//                     return (a.first.first < b.first.first) ||
+//                             (a.first.first == b.first.first && a.first.second < b.first.second);
+//                 });
 
-        // Set dynamic column widths
-        int positionWidth = 14; // Width for "LineNo:Column"
-        int idNameWidth = 20;   // Width for Identifier Name
-        int idTypeWidth = 35;   // Width for Identifier Type
+//         // Set dynamic column widths
+//         int positionWidth = 14; // Width for "LineNo:Column"
+//         int idNameWidth = 20;   // Width for Identifier Name
+//         int idTypeWidth = 35;   // Width for Identifier Type
 
-        // Print table header
-        out << "+" << std::string(positionWidth + 2, '-')
-            << "+" << std::string(idNameWidth + 2, '-')
-            << "+" << std::string(idTypeWidth + 2, '-')
-            << "+" << std::endl;
+//         // Print table header
+//         out << "+" << std::string(positionWidth + 2, '-')
+//             << "+" << std::string(idNameWidth + 2, '-')
+//             << "+" << std::string(idTypeWidth + 2, '-')
+//             << "+" << std::endl;
 
-        out << "| " << std::setw(positionWidth) << std::left << "Position"
-            << " | " << std::setw(idNameWidth) << std::left << "Identifier Name"
-            << " | " << std::setw(idTypeWidth) << std::left << "Identifier Type"
-            << " |" << std::endl;
+//         out << "| " << std::setw(positionWidth) << std::left << "Position"
+//             << " | " << std::setw(idNameWidth) << std::left << "Identifier Name"
+//             << " | " << std::setw(idTypeWidth) << std::left << "Identifier Type"
+//             << " |" << std::endl;
 
-        out << "+" << std::string(positionWidth + 2, '-')
-            << "+" << std::string(idNameWidth + 2, '-')
-            << "+" << std::string(idTypeWidth + 2, '-')
-            << "+" << std::endl;
+//         out << "+" << std::string(positionWidth + 2, '-')
+//             << "+" << std::string(idNameWidth + 2, '-')
+//             << "+" << std::string(idTypeWidth + 2, '-')
+//             << "+" << std::endl;
 
-        // Print each entry
-        for (const auto &entry : PARSER_TABLE)
-        {
-            int line = entry.first.first;
-            int column = entry.first.second;
-            std::string idName = entry.second.first;
-            std::string idType = entry.second.second;
+//         // Print each entry
+//         for (const auto &entry : PARSER_TABLE)
+//         {
+//             int line = entry.first.first;
+//             int column = entry.first.second;
+//             std::string idName = entry.second.first;
+//             std::string idType = entry.second.second;
 
-            out << "| " << std::setw(positionWidth) << std::left << (std::to_string(line) + ":" + std::to_string(column))
-                << " | " << std::setw(idNameWidth) << std::left << idName
-                << " | " << std::setw(idTypeWidth) << std::left << idType
-                << " |" << std::endl;
-        }
+//             out << "| " << std::setw(positionWidth) << std::left << (std::to_string(line) + ":" + std::to_string(column))
+//                 << " | " << std::setw(idNameWidth) << std::left << idName
+//                 << " | " << std::setw(idTypeWidth) << std::left << idType
+//                 << " |" << std::endl;
+//         }
 
-        // Print table footer
-        out << "+" << std::string(positionWidth + 2, '-')
-            << "+" << std::string(idNameWidth + 2, '-')
-            << "+" << std::string(idTypeWidth + 2, '-')
-            << "+" << std::endl;
-    }
+//         // Print table footer
+//         out << "+" << std::string(positionWidth + 2, '-')
+//             << "+" << std::string(idNameWidth + 2, '-')
+//             << "+" << std::string(idTypeWidth + 2, '-')
+//             << "+" << std::endl;
+//     }
 
-    void writeLatexTable(std::ostream &out)
-    {
-        // LaTeX document header
-        out << "\\documentclass{article}\n";
-        out << "\\usepackage[a4paper,margin=1in]{geometry}\n";
-        out << "\\usepackage{longtable}\n";
-        out << "\\usepackage[table]{xcolor}\n";
-        out << "\\definecolor{headercolor}{RGB}{79, 129, 189}\n";
-        out << "\\definecolor{rowcolor}{RGB}{217, 225, 242}\n";
-        out << "\\begin{document}\n\n";
-        out << "\\begin{center}\n";
-        out << "    {\\LARGE \\textbf{Parser Table of Input Program}} \\\\[10pt]\n";
-        out << "\\end{center}\n\n";
-        out << "\\renewcommand{\\arraystretch}{1.3}\n";
-        out << "\\setlength{\\arrayrulewidth}{0.7mm}\n";
-        out << "\\rowcolors{2}{rowcolor}{white}\n";
+    // void writeLatexTable(std::ostream &out)
+    // {
+    //     // LaTeX document header
+    //     out << "\\documentclass{article}\n";
+    //     out << "\\usepackage[a4paper,margin=1in]{geometry}\n";
+    //     out << "\\usepackage{longtable}\n";
+    //     out << "\\usepackage[table]{xcolor}\n";
+    //     out << "\\definecolor{headercolor}{RGB}{79, 129, 189}\n";
+    //     out << "\\definecolor{rowcolor}{RGB}{217, 225, 242}\n";
+    //     out << "\\begin{document}\n\n";
+    //     out << "\\begin{center}\n";
+    //     out << "    {\\LARGE \\textbf{Parser Table of Input Program}} \\\\[10pt]\n";
+    //     out << "\\end{center}\n\n";
+    //     out << "\\renewcommand{\\arraystretch}{1.3}\n";
+    //     out << "\\setlength{\\arrayrulewidth}{0.7mm}\n";
+    //     out << "\\rowcolors{2}{rowcolor}{white}\n";
 
-        // Begin table
-        out << "\\begin{longtable}{|l|c|c|}\n";
-        out << "    \\hline\n";
-        out << "    \\rowcolor{headercolor} \\textbf{lineNo:columnNo} & \\textbf{Identifier Name} & \\textbf{Identifier Type} \\\\ \n";
-        out << "    \\hline\n";
-        out << "    \\endfirsthead\n";
-        out << "    \\hline\n";
-        out << "    \\rowcolor{headercolor} \\textbf{lineNo:columnNo} & \\textbf{Identifier Name} & \\textbf{Identifier Type} \\\\ \n";
-        out << "    \\hline\n";
-        out << "    \\endhead\n";
-        // Populate table rows from PARSER_TABLE
-        for (const auto &entry : PARSER_TABLE)
-        {
-            std::string correctTokenName;
-            // Replace _ with \\_
-            for (char c : entry.second.first)
-            {
-                if (c == '_')
-                    correctTokenName += "\\_";
-                else
-                    correctTokenName += c;
-            }
-            out << "    " << entry.first.first << ":" << entry.first.second << " & "
-                << correctTokenName << " & "
-                << entry.second.second << " \\\\ \n";
-            out << "    \\hline\n";
-        }
+    //     // Begin table
+    //     out << "\\begin{longtable}{|l|c|c|}\n";
+    //     out << "    \\hline\n";
+    //     out << "    \\rowcolor{headercolor} \\textbf{lineNo:columnNo} & \\textbf{Identifier Name} & \\textbf{Identifier Type} \\\\ \n";
+    //     out << "    \\hline\n";
+    //     out << "    \\endfirsthead\n";
+    //     out << "    \\hline\n";
+    //     out << "    \\rowcolor{headercolor} \\textbf{lineNo:columnNo} & \\textbf{Identifier Name} & \\textbf{Identifier Type} \\\\ \n";
+    //     out << "    \\hline\n";
+    //     out << "    \\endhead\n";
+    //     // Populate table rows from PARSER_TABLE
+    //     for (const auto &entry : PARSER_TABLE)
+    //     {
+    //         std::string correctTokenName;
+    //         // Replace _ with \\_
+    //         for (char c : entry.second.first)
+    //         {
+    //             if (c == '_')
+    //                 correctTokenName += "\\_";
+    //             else
+    //                 correctTokenName += c;
+    //         }
+    //         out << "    " << entry.first.first << ":" << entry.first.second << " & "
+    //             << correctTokenName << " & "
+    //             << entry.second.second << " \\\\ \n";
+    //         out << "    \\hline\n";
+    //     }
 
-        // End table and document
-        out << "\\end{longtable}\n\n";
-        out << "\\end{document}\n";
-    }
+    //     // End table and document
+    //     out << "\\end{longtable}\n\n";
+    //     out << "\\end{document}\n";
+    // }
+
+    // //

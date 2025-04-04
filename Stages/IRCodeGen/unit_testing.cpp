@@ -1,5 +1,8 @@
 #include <iostream>
+#include "utility.h"
 
 int main(){
-    std::string locatio = std::to_string(__LINE__) + " " + __FILE__;
+    std::string a = ">";
+    std::string b = escapeCharacters(a);
+    std::cout << b << std::endl;
 }

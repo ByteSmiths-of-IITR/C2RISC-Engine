@@ -27,7 +27,6 @@
 #define LEXERLOGHEADER  "----------------------------------- LEXER LOG ------------------------------------"
 
 // Global DS 
-std::vector<std::pair<std::pair<int,int>, std::pair<std::string, std::string>> > PARSER_TABLE;
 
 
 // Handler Functions
@@ -342,7 +341,7 @@ postfix_expression
         LINE
         $$ = new ASTNode("Function Call");
         $$->addChild($1);
-        PARSER_TABLE.push_back({$1->position, {$1->value, "function call"}});
+        // PARSER_TABLE.push_back({$1->position, {$1->value, "function call"}});
     }
     | postfix_expression LPAREN argument_expression_list rparen 
     { 
@@ -350,7 +349,7 @@ postfix_expression
         $$ = new ASTNode("Function Call");
         $$->addChild($1);
         $$->addChild($3);
-        PARSER_TABLE.push_back({$1->position, {$1->value, "function call"}});
+        // PARSER_TABLE.push_back({$1->position, {$1->value, "function call"}});
     }
     | postfix_expression DOT identifier 
     { 
@@ -987,7 +986,7 @@ struct_or_union_specifier
         std::string isStruct = $1->value == "struct" ? "structID" : "unionID";
         $$->addChild(isStruct, $2->value,$2->position);
         $$->addChild($4); 
-        PARSER_TABLE.push_back({$2->position, {$2->value, $1->value}});
+        // PARSER_TABLE.push_back({$2->position, {$2->value, $1->value}});
     }
     | struct_or_union LCURLY struct_declaration_list rcurly 
     {
@@ -1001,7 +1000,7 @@ struct_or_union_specifier
         $$ = $1;
         std::string isStruct = $1->value == "struct" ? "structID" : "unionID";
         $$->addChild(isStruct, $2->value,$2->position);
-        PARSER_TABLE.push_back({$2->position, {$2->value, $1->value}});
+        // PARSER_TABLE.push_back({$2->position, {$2->value, $1->value}});
     }
     ;
 
@@ -1987,9 +1986,9 @@ int noOfPointers(ASTNode* node){
 void E_S_U_Declaration_Handler(ASTNode* declarationSpecifiers, ASTNode* initDeclaratorList,std::string s1,std::string s2){
     for(auto item : initDeclaratorList->children){
         if(item->type == "Initializer"){
-            PARSER_TABLE.push_back({item->children[0]->position,{item->children[0]->value, s2}});
+            // PARSER_TABLE.push_back({item->children[0]->position,{item->children[0]->value, s2}});
         } else {
-            PARSER_TABLE.push_back({item->position,{item->value, s2}});
+            // PARSER_TABLE.push_back({item->position,{item->value, s2}});
         }
     }
 }
@@ -2043,13 +2042,13 @@ void Declaration_Handler(ASTNode* declarationSpecifiers, ASTNode* initDeclarator
             tempNode = tempNode->children[0];
             }
         }
-        PARSER_TABLE.push_back({tempNode->position,{tempNode->value, type+(pointCount?(" "+std::to_string(pointCount)+"-D ptr "):"")+(arrayCount?(" "+std::to_string(arrayCount)+"-D Arr "):"")}});
+        // PARSER_TABLE.push_back({tempNode->position,{tempNode->value, type+(pointCount?(" "+std::to_string(pointCount)+"-D ptr "):"")+(arrayCount?(" "+std::to_string(arrayCount)+"-D Arr "):"")}});
     }
 }
 
 void Function_Def_Handler(ASTNode* declarator){
     std::string functionName=declarator->value;
-    PARSER_TABLE.push_back({declarator->position, {functionName, "function declaration"}});
+    // PARSER_TABLE.push_back({declarator->position, {functionName, "function declaration"}});
 
     declarator = (declarator->children.size()) ?declarator->children[0] : nullptr;
     if(declarator==nullptr) return;
@@ -2083,9 +2082,9 @@ void Struct_Union_Declaration_Handler(ASTNode* specifierQualifierList, ASTNode* 
     if(type == "") type = "int";
     for(auto children : structDeclaratorList->children){
         if(children->type == "Struct or Union Declarator"){
-            PARSER_TABLE.push_back({children->children[0]->position, {children->children[0]->value, type}});
+            // PARSER_TABLE.push_back({children->children[0]->position, {children->children[0]->value, type}});
         }else if(children->type == "Identifier"){
-            PARSER_TABLE.push_back({children->position,{children->value, type}});
+            // PARSER_TABLE.push_back({children->position,{children->value, type}});
         }
     }
 }
@@ -2093,13 +2092,13 @@ void Struct_Union_Declaration_Handler(ASTNode* specifierQualifierList, ASTNode* 
 void Enum_Declaration_Handler(ASTNode* enumSpecifier){
     for(auto children : enumSpecifier->children){
         if(children->type == "enumID"){
-            PARSER_TABLE.push_back({children->position, {children->value, "enum"}});
+            // PARSER_TABLE.push_back({children->position, {children->value, "enum"}});
         } else if(children->type == "Enum List"){
             for(auto item : children->children){
                 if(item->type == "Enum Assignment"){
-                    PARSER_TABLE.push_back({item->children[0]->position, {item->children[0]->value, "enum Element"}});
+                    // PARSER_TABLE.push_back({item->children[0]->position, {item->children[0]->value, "enum Element"}});
                 } else {
-                    PARSER_TABLE.push_back({item->position, {item->value, "enum Element"}});
+                    // PARSER_TABLE.push_back({item->position, {item->value, "enum Element"}});
                 }
             }
         }

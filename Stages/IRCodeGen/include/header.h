@@ -515,6 +515,7 @@ extern std::string ASSIGN_OP;
 extern std::string IF_FALSE;
 extern std::string IF_TRUE;
 extern std::string GOTO_LABEL;
+extern std::string GOTO_EQUAL;
 extern std::string TO_BACKPATCH;
 
 class TAC_Quadruple
@@ -586,6 +587,8 @@ bool isA_FloatingType(std::string baseType);                           // Check 
 std::string combineType(std::vector<std::string> typeSpecifierVector); // Combine the types
 // Return value
 extern std::string INVALID_COMBINATION;                                                        // This will be used for invalid combination of types
+
+int isFunctionAbstract(const TypeExpression &typeExpr); // This will check if the function is abstract or not
 int ProcessConstants(std::string constant, TypeExpression &typeExpr, std::string &finalValue); // This will process the constants
 
 int elementWidth(const TypeExpression &typeExpr); // This will return the width of the element or say below level
@@ -634,20 +637,27 @@ extern int ANNOTATE; // 0 - OFF | 1 - ON [extern declared in header.h]
 //=====================[ Handler Error Handling ]=========================================================================================
 
 extern std::vector<std::string> compilerLOG;
-
-#define compilerError(x)      \
-    compilerLOG.push_back(LOC + " " + x); \
-    aptLOG(x);                \
-    BUG_EXIT
+// extern std::vector<std::string> semanticWarning;
+#define compilerError(x)                             \
+    compilerLOG.push_back(LOC + " 💥 " + x + " 💥"); \
+    aptLOG(x); \
+    BUG_EXIT; // This will be used to log the errors
 
 extern std::ofstream *handlerLog; // This will be used to log the errors
 
-#define aptHERE if(ANNOTATE) node->addAttribute("👌 " + std::to_string(__LINE__) + ":" + __FILE__ + " ")
+#define aptHERE   \
+    if (ANNOTATE) \
+    node->addAttribute("👌 " + std::to_string(__LINE__) + ":" + __FILE__ + " ")
 
-#define semanticError(x)                  \
-    semanticLOG.push_back(LOC + " " + x); \
-    aptLOG(x);                            \
-    ERROR_EXIT
+#define semanticWarning(x)                                     \
+    semanticLOG.push_back(LOC + " SEMANTIC Warning ❗️: " + x); \
+    aptLOG(x);
+
+#define semanticError(x)                                     \
+    semanticLOG.push_back(LOC + " SEMANTIC ERROR ‼️ : " + x); \
+    aptLOG(x);
+
+extern std::string semanticMessage;
 
 #define aptLOG(x) \
     if (ANNOTATE) \
@@ -658,9 +668,8 @@ extern std::ofstream *handlerLog; // This will be used to log the errors
     node->addAttribute("🤞 Entry")
 
 #define ERROR_EXIT \
-    if (ANNOTATE) \
-        node->addAttribute("🆎 EXIT ✋")
-
+    if (ANNOTATE)  \
+    node->addAttribute("🆎 EXIT ✋")
 
 #define EXIT_H    \
     if (ANNOTATE) \
@@ -734,17 +743,26 @@ void external_declaration_H(ASTNode *node);
 
 void function_definition_H(ASTNode *node);
 
+//=====================[ Labels ]=========================================================================================
+
+extern std::map<std::string, int> labelMap;               // This will be used to keep track of the labels
+extern std::map<std::string, std::vector<int>> labelList; // This will be used to keep track of the labels
+
 //=====================[ Statements Handlers ]=========================================================================================
+extern std::string DEFAULT_CASE;
+extern int caseAllowed;
+extern int breakAllowed;    // This will be used to check if break is allowed or not
+extern int continueAllowed; // This will be used to check if continue is allowed or not
 
-void statement_H(ASTNode *node, std::vector<int> &S_nextList);
-void statement_list_H(ASTNode *node, std::vector<int> &S_nextList);
+void statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<int> &breakList, std::vector<int> &continueList, std::map<std::string, int> &caseMap);
+void statement_list_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<int> &breakList, std::vector<int> &continueList, std::map<std::string, int> &caseMap);
 
-void labeled_statement_H(ASTNode *node, std::vector<int> &S_nextList);                                                                                               // 1
-void compound_statement_H(ASTNode *node, std::vector<int> &S_nextList);                                                                                              // 2
-void expression_statement_H(ASTNode *node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace); // 3
-void selection_statement_H(ASTNode *node, std::vector<int> &S_nextList);                                                                                             // 4
-void iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList);                                                                                             // 5
-void jump_statement_H(ASTNode *node, std::vector<int> &S_nextList);                                                                                                  // 6
+void labeled_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<int> &breakList, std::vector<int> &continueList, std::map<std::string, int> &caseMap);   // 1
+void compound_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<int> &breakList, std::vector<int> &continueList, std::map<std::string, int> &caseMap);  // 2
+void expression_statement_H(ASTNode *node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace);       // 3
+void selection_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<int> &breakList, std::vector<int> &continueList, std::map<std::string, int> &caseMap); // 4
+void iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<int> &breakList, std::vector<int> &continueList, std::map<std::string, int> &caseMap); // 5
+void jump_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<int> &breakList, std::vector<int> &continueList, std::map<std::string, int> &caseMap);      // 6
 // void declaration(ASTNode* node); // 7 [In Declaration Handler Section]
 
 //=====================[ Declaration Handlers ]=========================================================================================

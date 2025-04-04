@@ -236,11 +236,11 @@ UNIT_TEST = unit_testing.cpp
 
 UNIT_TEST_EXECUTABLE = $(BIN_DIR)/unit_test
 
-$(UNIT_TEST_EXECUTABLE): $(UNIT_TEST) $(OBJ_FILES)
+$(UNIT_TEST_EXECUTABLE): $(UNIT_TEST) $(EXECUTABLE)
 	@echo "------- Making Unit Test -------"
-	$(CXX) $(CXXFLAGS) $(UNIT_TEST) $(OBJ_FILES) -o $(UNIT_TEST_EXECUTABLE)
+	$(CXX) $(CXXFLAGS)  $(UNIT_TEST) $(OBJ_FILES) -o $(UNIT_TEST_EXECUTABLE)
 
-unitTest: all $(UNIT_TEST_EXECUTABLE) $(OBJ_FILES)
+unitTest: all $(UNIT_TEST_EXECUTABLE)
 	@echo "------- Running Unit Test -------"
 	./$(UNIT_TEST_EXECUTABLE)
 
@@ -252,7 +252,7 @@ $(IRCodeFile):
 
 irCode: all $(EXECUTABLE) $(INPUT) $(OUTPUT) $(CERR) $(IRCodeFile)
 	@echo "🚥 Starting C2RISC Engine 🟢 "
-	@./$(EXECUTABLE) $(INPUT) $(OUTPUT) -tac $(IRCodeFile) -APTree $(APTreeFile) 2> $(CERR)
+	@-./$(EXECUTABLE) $(INPUT) $(OUTPUT) -tac $(IRCodeFile) -APTree $(APTreeFile) 2> $(CERR)
 	@echo "🎄 ------- Visualizing Annotated PTree ------- 🎄"
-	@$(DOT) -Tsvg $(APTreeFile) -o $(APTreeSVG)
+	@-$(DOT) -Tsvg $(APTreeFile) -o $(APTreeSVG)
 	@open -a "Visual Studio Code" $(IRCodeFile)
