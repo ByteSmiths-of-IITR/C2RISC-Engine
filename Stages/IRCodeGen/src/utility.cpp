@@ -253,18 +253,71 @@ void generateDOT(ASTNode* root, const std::string& filename) {
     out.close();
 }
 
-std::string escapeBrackets(const std::string &input)
+std::string escapeCharacters(const std::string &input)
+{
+    std::ostringstream result;
+
+    std::unordered_map<std::string, std::string> opEscape = {
+        {"<", "&lt;"},
+        {">", "&gt;"},
+        {"&", "&amp;"},
+        {"\"", "&quot;"},
+        {"'", "&apos;"},
+        {"[", "&#91;"},
+        {"]", "&#93;"},
+        {"{", "&#123;"},
+        {"}", "&#125;"},
+        {"<=", "&le;"},
+        {">=", "&ge;"},
+        {"==", "&#61;&#61;"},
+        {"!=", "&#33;&#61;"},
+        {"&&", "&#38;&#38;"},
+        {"||", "&#124;&#124;"},
+        {"=", "&#61;"},
+        {"!", "&#33;"}
+    };
+
+    // Scan character-by-character and build escapes
+    for (size_t i = 0; i < input.size();)
+    {
+        bool matched = false;
+
+        // Try to match longest possible multi-char operator first
+        for (const auto &entry : opEscape)
+        {
+            const std::string &op = entry.first;
+            if (input.substr(i, op.length()) == op)
+            {
+                result << entry.second;
+                i += op.length();
+                matched = true;
+                break;
+            }
+        }
+
+        // If no match, copy character as is
+        if (!matched)
+        {
+            result << input[i];
+            ++i;
+        }
+    }
+
+    return result.str();
+}
+
+std::string escapeCharacters1(const std::string &input)
 {
     std::string result;
     for (char ch : input)
     {
         if (ch == '[')
         {
-            result += "["; // Escape opening bracket
+            result += "\["; // Escape opening bracket
         }
         else if (ch == ']')
         {
-            result += "]"; // Escape closing bracket (optional, for safety)
+            result += "\]"; // Escape closing bracket (optional, for safety)
         }
         else
         {
@@ -393,7 +446,7 @@ void writeNode_A(std::ofstream &out, ASTNode *node, int parentId, int &nodeCount
         // Customize the color based on the attribute type
         std::string color = getColor(info);
         
-        out << "  <tr><td><FONT COLOR=\"" << color << "\"><font point-size=\"10\">" << escapeBrackets(info) << "</font></FONT></td></tr>\n";
+        out << "  <tr><td><FONT COLOR=\"" << color << "\"><font point-size=\"10\">" << escapeCharacters(info) << "</font></FONT></td></tr>\n";
     }
 
     out << "</table>\n";

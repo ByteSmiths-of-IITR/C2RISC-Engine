@@ -10,4 +10,7 @@ bool isIntegral(const TypeExpression &typeExpr)
     return true; // [📍 ToDo]
 }
 
-
+bool isValidTypeExpression(const TypeExpression &typeExpr){
+    // Dummy Implementation
+    return true;
+}

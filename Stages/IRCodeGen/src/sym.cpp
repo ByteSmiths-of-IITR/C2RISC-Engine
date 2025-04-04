@@ -73,15 +73,10 @@ int SymbolTable::earlyEntry(){
 }
 
 int NO_EXIT = -10;
+int IGNORED = -20;
 
 int SymbolTable::earlyExit(){
-    // This will handle the exit needed for earlyEntry
-    if(!this->wasEarlyEntered){
-        // If it's false - Normal Exit handled it
-        return NO_EXIT; //
-    }
     // If it's true - So we need to exit
-    CERR << "Info: earlyExit is set to true\n";
     this->wasEarlyEntered = false; // set it to false
     return (this->exitScope());
 }
@@ -91,7 +86,7 @@ int SymbolTable::enterScope()
     if(wasEarlyEntered){
         // Ignore this enter
         wasEarlyEntered = false; // set it to false
-        return this->scopeNo;
+        return IGNORED;
     }
 
     if(globalScope == -100){
@@ -267,13 +262,13 @@ int SymbolTable::lookup(const std::string &key, GenericSymbol *&sym)
 
     if (!head)
     {
-        return LOOKUP_FAILURE;
+        compilerLOG.push_back("If symbolKey is present, then head should not be nullptr");
     }
 
     SymbolNode *node = head->next;
     if (!node)
     {
-        return BUG; // This would happen if node is deleted
+        return LOOKUP_FAILURE; // This would happen if symbol was deleted
     }
 
     sym = node->symbol;

@@ -57,6 +57,8 @@ extern FILE *yyin;
 extern std::vector<std::string> lexerLOG;
 std::vector<std::string> parserLOG;
 std::vector<std::string> bisonLOG;
+extern std::vector<std::string> semanticLOG;
+extern std::vector<std::string> compilerLOG;
 
 extern std::string lastToken;
 
@@ -118,6 +120,7 @@ void signalHandler(int signum) {
 
     // Don't Think will be needed anymore [since we removed the handlerFunctions, which were cause of segFaults]
 
+
     std::string signalName = "Unknown Signal";
     switch (signum) {
         case SIGINT:
@@ -135,7 +138,8 @@ void signalHandler(int signum) {
         default:
             signalName = "Unknown Signal";
     }
-    std::string signalMessage = "🚨 SignalHandler " + signalName + " received. Exiting gracefully.";
+    std::string signalMessage = "❤️‍🔥 SignalHandler 💥" + signalName + " received. Exiting gracefully.";
+
     *output << signalMessage << std::endl;
     *output << "Where was I Last: " << lastFuncCalled << std::endl;
     
@@ -162,28 +166,18 @@ void signalHandler(int signum) {
     }    
 
     
-    *output << "💔💔 Exiting gracefully" << std::endl;
-    closeOutputFile();
-    exit(0); // Clean Exit
-    return;
-
-    *output << "\U0001F6A8 * Input Program failed in the PARSE stage \U0001F6A8" << std::endl;
-    *output << "Where was I Last: " << whereWasILast << std::endl;
-    *output << std::endl;
-    // cerr the log
-    *output << ((parserLOG.size() > 0) ? PARSERLOGHEADER : BISONLOGHEADER) << std::endl;
-    for (auto& log : parserLOG) {
+    *output << "💔💔 Exiting gracefully\n" << std::endl;
+    
+    *output << SEMANTICLOGHEADER << std::endl;
+    for(const auto& log : semanticLOG){
         *output << log << std::endl;
-        // TODO ------------ Handle this [ Not printing the logs of parser ]
-        if(parserLOG.size()==0){
-            *output << "$(SignalHandler) Syntax Error at line " << yylineno << " near token: " << lastToken << std::endl;
-        }
     }
     *output << LOGFOOTER << std::endl;
-    *output << std::endl;
 
-    *output << "--- No Further Processing will be done ---" << std::endl;
+    std::cout << "My Name is : " << getpid() << " and I am commiting sucide 😵 now ☠️\n" << std::endl;
+
     closeOutputFile();
+    kill(getpid(), SIGKILL);  // Sends SIGKILL to itself
     exit(0); // Clean Exit
 }
 

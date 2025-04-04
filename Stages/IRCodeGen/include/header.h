@@ -336,7 +336,7 @@ extern int const LOOKUP_FAILURE; // Not Found
 extern std::string GLOBAL_SCOPE;
 extern std::string LOCAL_SCOPE;
 extern int NO_EXIT;
-
+extern int IGNORED;
 class SymbolTable
 {
 public:
@@ -572,6 +572,8 @@ public:
 
 //=====================[ TypeChecking Utilities 🅰️ ]=========================================================================================
 
+bool isValidTypeExpression(const TypeExpression &typeExpr); // This will check if the type expression is valid or not
+
 bool isIntegral(const TypeExpression &typeExpr);
 bool isConstant(const TypeExpression &typeExpr);
 bool isNumeric(const TypeExpression &typeExpr);
@@ -610,7 +612,7 @@ std::string toString(StorageClass storageClass);
 std::string toString(TypeQualifier typeQualifier);
 std::string toString(std::vector<TypeQualifier> typeQualifiers);
 std::string toString(std::map<std::string, TypeExpression> members);
-std::string toString(std::vector<PointerInfo*> ptrInfo);
+std::string toString(std::vector<PointerInfo *> ptrInfo);
 std::string toString(std::vector<TypeExpression> &paramVector);
 std::string toString(SPACE space);
 std::string toString(VALUE_TYPE valueType);
@@ -631,7 +633,21 @@ extern int ANNOTATE; // 0 - OFF | 1 - ON [extern declared in header.h]
 
 //=====================[ Handler Error Handling ]=========================================================================================
 
+extern std::vector<std::string> compilerLOG;
+
+#define compilerError(x)      \
+    compilerLOG.push_back(LOC + " " + x); \
+    aptLOG(x);                \
+    BUG_EXIT
+
 extern std::ofstream *handlerLog; // This will be used to log the errors
+
+#define aptHERE if(ANNOTATE) node->addAttribute("👌 " + std::to_string(__LINE__) + ":" + __FILE__ + " ")
+
+#define semanticError(x)                  \
+    semanticLOG.push_back(LOC + " " + x); \
+    aptLOG(x);                            \
+    ERROR_EXIT
 
 #define aptLOG(x) \
     if (ANNOTATE) \
@@ -641,14 +657,19 @@ extern std::ofstream *handlerLog; // This will be used to log the errors
     if (ANNOTATE) \
     node->addAttribute("🤞 Entry")
 
+#define ERROR_EXIT \
+    if (ANNOTATE) \
+        node->addAttribute("🆎 EXIT ✋")
+
+
 #define EXIT_H    \
     if (ANNOTATE) \
         node->addAttribute("Exit ✌️");
 
-#define LOC std::to_string(__LINE__) + ":" + __FILE__
+#define LOC std::to_string(__LINE__) + " :" + __FILE__
 
-#define ERROR_EXIT_H \                                                                                        
-    if (ANNOTATE) node->addAttribute("🚨 ERROR Exit [" + std::to_string(__LINE__) + ":" + __FILE__ + "] ✋")
+#define BUG_EXIT \                                                                                        
+    if (ANNOTATE) node->addAttribute("😱 COMPILER BUG Exit [" + std::to_string(__LINE__) + ":" + __FILE__ + "] ✋")
 
 #define PASS_THE_ERROR(x)                                                                          \
     if (PASS_ERROR == x)                                                                           \
@@ -657,8 +678,7 @@ extern std::ofstream *handlerLog; // This will be used to log the errors
         return;                                                                                    \
     }
 
-#define ENTRY_MSG *handlerLog << "[" << __LINE__ << "] "
-// #define ENTRY_MSG /**/ //
+// #define ENTRY_MSG
 
 #define HERE std::cerr << "[" << __LINE__ << " in " << __FILE__ << "] " << std::endl
 
@@ -673,7 +693,7 @@ extern std::ofstream *handlerLog; // This will be used to log the errors
 #define USAGE_SPACE_CHANGE(value, type, space, node)                                                    \
     if (space == SPACE::ADDRESS_SPACE)                                                                  \
     {                                                                                                   \
-        if (getSpace(type) != SPACE::VALUE_SPACE)                                                       \
+        if (getSpace(type) == SPACE::VALUE_SPACE)                                                       \
         {                                                                                               \
             std::string tempName = newTemp();                                                           \
             CODE_BASE.addTAC(node, tempName, RIGHT_STAR, value, NO_ARG);                                \
@@ -682,7 +702,7 @@ extern std::ofstream *handlerLog; // This will be used to log the errors
     }                                                                                                   \
     else if (space != SPACE::VALUE_SPACE)                                                               \
     {                                                                                                   \
-        ERROR_EXIT_H;                                                                                   \
+        BUG_EXIT;                                                                                       \
         A_PTree node->attributes.push_back("🌋 Something Wrong in Space 💥 Change Code [" + LOC + "]"); \
         value = PASS_ERROR;                                                                             \
         return;                                                                                         \
@@ -762,7 +782,7 @@ void declarator_H(ASTNode *node, TypeExpression inh_type, std::string &varName, 
 void direct_declarator_H(ASTNode *node, TypeExpression inh_type, std::string &varName, TypeExpression &type);
 
 //----- Pointer -----
-void pointer_H(ASTNode *node, std::vector<PointerInfo*> inh_ptrInfo, std::vector<PointerInfo*> &ptrInfo);
+void pointer_H(ASTNode *node, std::vector<PointerInfo *> inh_ptrInfo, std::vector<PointerInfo *> &ptrInfo);
 
 //----- Parameters -----
 void parameter_type_list_H(ASTNode *node, std::vector<TypeExpression> &paramVector, std::vector<std::string> &varName_list);

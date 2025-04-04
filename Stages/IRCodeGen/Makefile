@@ -145,7 +145,7 @@ $(APTreeSVG):
 
 Aptree: all $(INPUT) $(OUTPUT) $(EXECUTABLE) $(APTreeFile) $(APTreeSVG)  $(CERR)
 	@echo "🚥 Starting C2RISC Engine 🟢 on -" $(INPUT)
-	@./$(EXECUTABLE) $(INPUT) $(OUTPUT) -APTree $(APTreeFile) 2> $(CERR)
+	@-./$(EXECUTABLE) $(INPUT) $(OUTPUT) -APTree $(APTreeFile) 2> $(CERR)
 	@echo "🎄 ------- Visualizing Annotated PTree -------🎄"
 	@$(DOT) -Tsvg $(APTreeFile) -o $(APTreeSVG)
 	@open $(APTreeSVG)

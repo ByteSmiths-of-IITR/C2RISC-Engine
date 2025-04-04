@@ -22,6 +22,15 @@ bool isIntegral(const TypeExpression &typeExpr) {
     return false;
 }
 
+bool isValidTypeExpression(const TypeExpression &typeExpr) {
+    // // Check if the type expression is valid
+    // Type topType = whatIsType(typeExpr);
+    // if(topType == Type::VARIABLE || topType == Type::ENUM_CONSTANT || topType == Type::ENUM) {
+    //     return true; // Valid type expression
+    // }
+    return true;
+}
+
 bool isConstant(const TypeExpression &typeExpr) {
     // Check if the type expression is a constant type
     Type topType = whatIsType(typeExpr);
@@ -140,6 +149,12 @@ std::string combineType(std::vector<std::string> typeSpecifierVector){
     std::string finalBase;
 
     if(size == 1){
+        if(typeSpecifierVector[0] == TYPE_SIGNED){
+            return TYPE_INT;
+        }
+        if(typeSpecifierVector[0] == TYPE_UNSIGNED){
+            return "unsigned int";
+        }
         return typeSpecifierVector[0];
     }
 

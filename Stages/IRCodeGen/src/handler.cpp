@@ -27,6 +27,7 @@ void closeHandlerLog()
     return;
 }
 
+std::vector<std::string> compilerLOG; // [extern declared in header.h]
 std::vector<std::string> semanticLOG; // [extern declared in header.h]
 
 //====================[ Globally Accessible Variables ]=========================================================================================
@@ -126,12 +127,12 @@ std::string toString(std::map<std::string, TypeExpression> members)
     return str;
 }
 
-std::string toString(std::vector<PointerInfo*> ptrInfo)
+std::string toString(std::vector<PointerInfo *> ptrInfo)
 {
     std::string str = "[ ";
     for (size_t i = 0; i < ptrInfo.size(); ++i)
     {
-        PointerInfo* unit = ptrInfo[i];
+        PointerInfo *unit = ptrInfo[i];
         str += " *";
         for (size_t j = 0; j < unit->typeQualifiers.size(); ++j)
         {
@@ -483,18 +484,18 @@ void semanticPass(ASTNode *node, std::string filename)
     }
 
     // We will openScope here
-    int globalScope = SYM_TABLE.enterScope();                                              // GlobalScope
-    std::string scopeName = GLOBAL_SCOPE;                                                  // Global Scope Name
-    SYM_TABLE.setScopeName(scopeName);                                                     // Set the name of the scope
-    A_PTree node->addAttribute("Scope (Global) : S" + std::to_string(globalScope) + " ⤵️"); // 🌴 Adding syn_attr
+    int globalScope = SYM_TABLE.enterScope();                          // GlobalScope
+    std::string scopeName = GLOBAL_SCOPE;                              // Global Scope Name
+    SYM_TABLE.setScopeName(scopeName);                                 // Set the name of the scope
+    aptLOG("Scope (Global) : S" + std::to_string(globalScope) + " ⤵️"); // 🌴 Adding syn_attr
 
     lastFuncCalled = "semanticPass";
 
     translation_unit_H(node->children[0]);
 
     // SCOPE EXIT
-    globalScope = SYM_TABLE.exitScope();                                                        // GlobalScope
-    A_PTree node->addAttribute("Scope (Global) S" + std::to_string(globalScope) + " Exited ↙️"); // 🌴 Adding syn_attr
+    globalScope = SYM_TABLE.exitScope();                                    // GlobalScope
+    aptLOG("Scope (Global) S" + std::to_string(globalScope) + " Exited ↙️"); // 🌴 Adding syn_attr
 
     closeHandlerLog(); // 😵‍💫🤬 Critical CODE [MUST be at BOTTOM]
 }
@@ -621,7 +622,7 @@ void function_definition_H(ASTNode *node)
                 {
                     // Function is declared
                     func->isDefined = true;
-                    A_PTree node->addAttribute("Function ☞ \"" + varName + "\"" + " defined"); // 🌴 Adding syn_attr
+                    aptLOG("Function ☞ \"" + varName + "\"" + " defined"); // 🌴 Adding syn_attr
                 }
             }
             else
@@ -649,7 +650,7 @@ void function_definition_H(ASTNode *node)
             else
             {
                 // Okay
-                A_PTree node->addAttribute("Function dec+def added ☞ \"" + varName + "\""); // 🌴 Adding syn_attr
+                aptLOG("Function dec+def added ☞ \"" + varName + "\""); // 🌴 Adding syn_attr
             }
         }
 
@@ -682,9 +683,9 @@ void function_definition_H(ASTNode *node)
             // OPEN a NEW SCOPE
             int scopeNo = SYM_TABLE.earlyEntry(); //  [☀️ EarlyScope Entry]
 
-            std::string scopeName = varName + " S" + std::to_string(scopeNo);      // Function Scope Name
-            SYM_TABLE.setScopeName(scopeName);                                     // Set the name of the scope
-            A_PTree node->addAttribute("Early Scope Entry : " + scopeName + " ☀️"); // 🌴 Adding syn_attr
+            std::string scopeName = varName + " S" + std::to_string(scopeNo); // Function Scope Name
+            SYM_TABLE.setScopeName(scopeName);                                // Set the name of the scope
+            aptLOG("Early Scope Entry : " + scopeName + " ☀️");                // 🌴 Adding syn_attr
 
             // Add the parameters to the symbol table
 
@@ -706,7 +707,7 @@ void function_definition_H(ASTNode *node)
                 else
                 {
                     // Okay
-                    A_PTree node->addAttribute("Parameter added ☞ \"" + paramNames[i] + "\""); // 🌴 Adding syn_attr
+                    aptLOG("Parameter added ☞ \"" + paramNames[i] + "\""); // 🌴 Adding syn_attr
                 }
             }
         }
@@ -732,12 +733,15 @@ void function_definition_H(ASTNode *node)
         // CODE_BASE.addTAC(node, NO_ARG, BLANK, NO_ARG, NO_ARG); // To be added
 
         // Early Entry's Exit
-        int exitedScope = SYM_TABLE.earlyExit();                                                       //  [☀️ EarlyScope Entry] [IT's POSSIBLE that the early scope entry was never used in here]
-        if(exitedScope==NO_EXIT){
+        int exitedScope = SYM_TABLE.earlyExit(); //  [☀️ EarlyScope Entry] [IT's POSSIBLE that the early scope entry was never used in here]
+        if (exitedScope == NO_EXIT)
+        {
             int currScope = SYM_TABLE.scopeNo;
-            A_PTree node->addAttribute("Already 😅 Exited | Now in S" + std::to_string(currScope) + " ☀️"); // 🌴 Adding syn_attr
-        }else{
-            A_PTree node->addAttribute("Exit due to EarlyEntry : S" + std::to_string(exitedScope) + " ☀️"); // 🌴 Adding syn_attr
+            aptLOG("Already 😅 Exited | Now in S" + std::to_string(currScope) + " ☀️"); // 🌴 Adding syn_attr
+        }
+        else
+        {
+            aptLOG("Exit due to EarlyEntry : S" + std::to_string(exitedScope) + " ☀️"); // 🌴 Adding syn_attr
         }
     }
     else

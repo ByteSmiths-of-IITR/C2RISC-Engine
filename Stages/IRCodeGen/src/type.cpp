@@ -34,7 +34,7 @@ int width(const BaseInfo &info)
         int w = width(baseType);
         if (w == -1)
         {
-                    return -1;
+            return -1;
         }
         return w;
     }
@@ -84,7 +84,7 @@ int width(const TypeExpression &typeExpr)
 
     if (isEmpty(temp))
     {
-            return 1;
+        return 1;
     }
 
     Type topType = whatIsType(temp);
@@ -125,26 +125,28 @@ int width(const TypeExpression &typeExpr)
     return size;
 }
 
-int elementWidth(const TypeExpression &typeExpr){
+int elementWidth(const TypeExpression &typeExpr)
+{
     // Remove Top Parenthesis
     TypeExpression temp = typeExpr;
     removeTopParenthesis(temp);
 
-    if(isEmpty(temp))
+    if (isEmpty(temp))
     {
         return -1;
     }
 
     // If base type
     Type topType = whatIsType(temp);
-    if(topType == Type::VARIABLE || topType == Type::ENUM_CONSTANT || topType == Type::ENUM || topType == Type::STRUCT_UNION)
+    if (topType == Type::VARIABLE || topType == Type::ENUM_CONSTANT || topType == Type::ENUM || topType == Type::STRUCT_UNION)
     {
         return 1;
     }
-    else if(topType == Type::FUNCTION){
+    else if (topType == Type::FUNCTION)
+    {
         return 1;
     }
-    else if(topType == Type::POINTER || topType == Type::ARRAY)
+    else if (topType == Type::POINTER || topType == Type::ARRAY)
     {
         // Find width of below level
         TypeExpression belowLevel = temp;
@@ -369,17 +371,212 @@ TypeExpression createTypeExpression(GenericSymbol *symbol)
 
 int ProcessConstants(std::string inputValue, TypeExpression &typeExpr, std::string &finalValue)
 {
-    // [TODO] - To be implemented
-
-    // Dummy Implementation
+    // Allocate a new BaseInfo to record the type.
     BaseInfo *base = new BaseInfo();
-    base->baseType = TYPE_INT;
-    typeExpr.levelStack.push(base);
+    try
+    {
+        // ----- Character Literals -----
+        // If input is enclosed in single quotes, assume it's a character literal.
+        if (inputValue.size() >= 3 && inputValue.front() == '\'' && inputValue.back() == '\'')
+        {
+            // For now, only support single-character literal without escapes.
+            if (inputValue.size() == 3)
+            {
+                char c = inputValue[1];
+                base->baseType = TYPE_CHAR;
+                finalValue = std::string(1, c);
+                typeExpr.levelStack.push(base);
+                return 0;
+            }
+            else
+            {
+                throw std::invalid_argument("Invalid character literal");
+            }
+        }
 
-    // Set the final value
-    finalValue = "1234";
+        // ----- Floating-Point Literals (with trailing 'f') -----
+        if (!inputValue.empty() && inputValue.back() == 'f')
+        {
+            // Remove trailing 'f'
+            std::string numPart = inputValue.substr(0, inputValue.size() - 1);
+            float fval = std::stof(numPart);
+            // (Could add an explicit range check using std::numeric_limits<float>::max())
+            base->baseType = TYPE_FLOAT;
+            finalValue = std::to_string(fval);
+            typeExpr.levelStack.push(base);
+            return 0;
+        }
 
-    return 0;
+        // ----- Floating-Point Literals (decimal point) -----
+        if (inputValue.find('.') != std::string::npos)
+        {
+            double dval = std::stod(inputValue);
+            base->baseType = TYPE_DOUBLE;
+            finalValue = std::to_string(dval);
+            typeExpr.levelStack.push(base);
+            return 0;
+        }
+
+        // ----- Exponent Notation -----
+        if (inputValue.find('e') != std::string::npos ||
+            inputValue.find('E') != std::string::npos)
+        {
+            double dval = std::stod(inputValue);
+            // If the value is integral, choose an integer type.
+            if (dval == static_cast<long long>(dval))
+            {
+                long long ival = static_cast<long long>(dval);
+                if (ival >= std::numeric_limits<int>::min() &&
+                    ival <= std::numeric_limits<int>::max())
+                {
+                    base->baseType = TYPE_INT;
+                }
+                else if (ival >= std::numeric_limits<long>::min() &&
+                         ival <= std::numeric_limits<long>::max())
+                {
+                    base->baseType = TYPE_LONG;
+                }
+                else
+                {
+                    base->baseType = TYPE_LONG;
+                }
+                finalValue = std::to_string(ival);
+            }
+            else
+            {
+                base->baseType = TYPE_DOUBLE;
+                finalValue = std::to_string(dval);
+            }
+            typeExpr.levelStack.push(base);
+            return 0;
+        }
+
+        // ----- Binary Literals -----
+        if (inputValue.size() > 2 &&
+            (inputValue.substr(0, 2) == "0b" || inputValue.substr(0, 2) == "0B"))
+        {
+            std::string binPart = inputValue.substr(2);
+            // Validate that every character is '0' or '1'
+            for (char ch : binPart)
+            {
+                if (ch != '0' && ch != '1')
+                    throw std::invalid_argument("Invalid binary literal");
+            }
+            long long value = 0;
+            for (char ch : binPart)
+            {
+                value = value * 2 + (ch - '0');
+            }
+            if (value >= std::numeric_limits<int>::min() &&
+                value <= std::numeric_limits<int>::max())
+            {
+                base->baseType = TYPE_INT;
+            }
+            else if (value >= std::numeric_limits<long>::min() &&
+                     value <= std::numeric_limits<long>::max())
+            {
+                base->baseType = TYPE_LONG;
+            }
+            else
+            {
+                base->baseType = TYPE_LONG;
+            }
+            finalValue = std::to_string(value);
+            typeExpr.levelStack.push(base);
+            return 0;
+        }
+
+        // ----- Hexadecimal Literals -----
+        if (inputValue.size() > 2 &&
+            (inputValue.substr(0, 2) == "0x" || inputValue.substr(0, 2) == "0X"))
+        {
+            std::string hexPart = inputValue.substr(2);
+            for (char ch : hexPart)
+            {
+                if (!std::isxdigit(ch))
+                    throw std::invalid_argument("Invalid hexadecimal literal");
+            }
+            long long value = std::stoll(hexPart, nullptr, 16);
+            if (value >= std::numeric_limits<int>::min() &&
+                value <= std::numeric_limits<int>::max())
+            {
+                base->baseType = TYPE_INT;
+            }
+            else if (value >= std::numeric_limits<long>::min() &&
+                     value <= std::numeric_limits<long>::max())
+            {
+                base->baseType = TYPE_LONG;
+            }
+            else
+            {
+                base->baseType = TYPE_LONG;
+            }
+            finalValue = std::to_string(value);
+            typeExpr.levelStack.push(base);
+            return 0;
+        }
+
+        // ----- Octal Literals -----
+        // If the number starts with '0' and is more than one digit.
+        if (inputValue.size() > 1 && inputValue[0] == '0')
+        {
+            std::string octPart = inputValue.substr(1);
+            for (char ch : octPart)
+            {
+                if (ch < '0' || ch > '7')
+                    throw std::invalid_argument("Invalid octal literal");
+            }
+            long long value = std::stoll(inputValue, nullptr, 8);
+            if (value >= std::numeric_limits<int>::min() &&
+                value <= std::numeric_limits<int>::max())
+            {
+                base->baseType = TYPE_INT;
+            }
+            else if (value >= std::numeric_limits<long>::min() &&
+                     value <= std::numeric_limits<long>::max())
+            {
+                base->baseType = TYPE_LONG;
+            }
+            else
+            {
+                base->baseType = TYPE_LONG;
+            }
+            finalValue = std::to_string(value);
+            typeExpr.levelStack.push(base);
+            return 0;
+        }
+
+        // ----- Decimal Integer Literals -----
+        {
+            long long value = std::stoll(inputValue, nullptr, 10);
+            if (value >= std::numeric_limits<int>::min() &&
+                value <= std::numeric_limits<int>::max())
+            {
+                base->baseType = TYPE_INT;
+            }
+            else if (value >= std::numeric_limits<long>::min() &&
+                     value <= std::numeric_limits<long>::max())
+            {
+                base->baseType = TYPE_LONG;
+            }
+            else
+            {
+                base->baseType = TYPE_LONG;
+            }
+            finalValue = std::to_string(value);
+            typeExpr.levelStack.push(base);
+            return 0;
+        }
+    }
+    catch (const std::exception &ex)
+    {
+        std::cerr << "Error in ProcessConstants: " << ex.what() << "\n";
+        delete base;
+        return -1;
+    }
+    // Should not get here.
+    delete base;
+    return -1;
 }
 
 // Needed during Space & ValueType Logics
@@ -564,10 +761,8 @@ int checkEquivalance(const TypeExpression &typeExpr1, const TypeExpression &type
     return res;
 }
 
-
-
-int ourEquivalent(const TypeExpression &type1, const TypeExpression &type2){
-    
+int ourEquivalent(const TypeExpression &type1, const TypeExpression &type2)
+{
 
     // REmove Parenthesis
     TypeExpression temp1 = type1;
@@ -594,17 +789,18 @@ int ourEquivalent(const TypeExpression &type1, const TypeExpression &type2){
     }
 
     // Then we need to check for custom types
-    if(topType1 == Type::STRUCT_UNION && topType2 == Type::STRUCT_UNION){
+    if (topType1 == Type::STRUCT_UNION && topType2 == Type::STRUCT_UNION)
+    {
         // Both are struct/union
         // Check if they are same
         BaseInfo *base1 = dynamic_cast<BaseInfo *>(temp1.levelStack.top());
         BaseInfo *base2 = dynamic_cast<BaseInfo *>(temp2.levelStack.top());
-        if(base1->baseType == base2->baseType){
+        if (base1->baseType == base2->baseType)
+        {
             return EQUIVALENT;
         }
     }
 }
-
 
 /*
 
