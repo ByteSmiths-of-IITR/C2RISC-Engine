@@ -1,6 +1,17 @@
-int main(){
-    int d, i = 1, a = 1;
-    for(int i = 0; i == 10; a++){
-        a++;
-    }
+int anvit(int **, int *(*)[7]);
+
+int anvit(int **x, int *(*y)[7])
+{
+    int g;
+    return 84;
+}
+
+int main()
+{
+    int **e;
+    int tt;
+    int *(*u)[7];
+
+    anvit(e, u);
+    return 0;
 }

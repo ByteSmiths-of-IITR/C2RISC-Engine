@@ -1,7 +1,7 @@
 #include "header.h"
 #include "utility.h"
 
-std::string NO_ARG_NAME = "0000";
+std::string NO_ARG_NAME = "NO_ARG_NAME";
 
 //====================[ Declaration Handlers ]=========================================================================================
 
@@ -1014,14 +1014,14 @@ void declarator_H(ASTNode *node, TypeExpression inh_type, std::string &varName, 
         TypeExpression type1; // to be fetched ⬆️
 
         // 1. Call the function again to fetch the next value
-        std::vector<PointerInfo> ptrInfo; // can't use this since it's a stack variable
+        std::vector<PointerInfo*> ptrInfo = std::vector<PointerInfo*>();
         pointer_H(node->children[0], ptrInfo, ptrInfo);
 
         // Update the inh_type
         for (auto &unit : ptrInfo)
         {
             PointerInfo *info = new PointerInfo(); // This will make a heap copy
-            info->typeQualifiers = unit.typeQualifiers;
+            info->typeQualifiers = unit->typeQualifiers;
             inh_type.levelStack.push(info);
         }
 
@@ -1169,10 +1169,10 @@ void direct_declarator_H(ASTNode *node, TypeExpression inh_type, std::string &va
 }
 
 // ----- Pointer Handlers -----
-void pointer_H(ASTNode *node, std::vector<PointerInfo> inh_ptrInfo, std::vector<PointerInfo> &ptrInfo)
+void pointer_H(ASTNode *node, std::vector<PointerInfo*> inh_ptrInfo, std::vector<PointerInfo*> &ptrInfo)
 {
 
-    
+    ENTRY_H;
     std::string whichProduction = getProduction(node);
     std::string P1 = "STAR";
     std::string P2 = "STAR type_qualifier_list";
@@ -1184,7 +1184,7 @@ void pointer_H(ASTNode *node, std::vector<PointerInfo> inh_ptrInfo, std::vector<
     if (whichProduction == P1)
     {
         // Last Production 🚦 - Need to rotate
-        PointerInfo info;        // Create a new PointerInfo
+        PointerInfo* info = new PointerInfo(); // Create a new PointerInfo
         ptrInfo = inh_ptrInfo;   // rotate inh_PtrInfo to syn_PtrInfo ☯️
         ptrInfo.push_back(info); // Push the new info to inh_ptrInfo1 to pass
     }
@@ -1195,18 +1195,18 @@ void pointer_H(ASTNode *node, std::vector<PointerInfo> inh_ptrInfo, std::vector<
         type_qualifier_list_H(node->children[1], typeQualifiers);
 
         // Last Production 🚦 - Need to rotate
-        PointerInfo info; // Create a new PointerInfo
-        info.typeQualifiers = typeQualifiers;
+        PointerInfo* info = new PointerInfo(); // Create a new PointerInfo
+        info->typeQualifiers = typeQualifiers;
 
         ptrInfo = inh_ptrInfo; // rotate inh_PtrInfo to syn_PtrInfo ☯️
         ptrInfo.push_back(info);
     }
     else if (whichProduction == P3)
     {
-        std::vector<PointerInfo> ptrInfo1;
-        std::vector<PointerInfo> inh_ptrInfo1 = inh_ptrInfo;
+        std::vector<PointerInfo*> ptrInfo1 = std::vector<PointerInfo*>();
+        std::vector<PointerInfo*> inh_ptrInfo1 = inh_ptrInfo;
 
-        PointerInfo info;             // Create a new PointerInfo
+        PointerInfo* info = new PointerInfo();             // Create a new PointerInfo
         inh_ptrInfo1.push_back(info); // Push the new info to inh_ptrInfo1 to pass
 
         pointer_H(node->children[1], inh_ptrInfo1, ptrInfo1);
@@ -1216,14 +1216,14 @@ void pointer_H(ASTNode *node, std::vector<PointerInfo> inh_ptrInfo, std::vector<
     else if (whichProduction == P4)
     {
 
-        std::vector<PointerInfo> ptrInfo1;
-        std::vector<PointerInfo> inh_ptrInfo1 = inh_ptrInfo;
+        std::vector<PointerInfo*> ptrInfo1 = std::vector<PointerInfo*>();
+        std::vector<PointerInfo*> inh_ptrInfo1 = inh_ptrInfo;
 
         std::vector<TypeQualifier> typeQualifiers; // Recieve syn_attr ⬆️
         type_qualifier_list_H(node->children[1], typeQualifiers);
 
-        PointerInfo info; // Create a new PointerInfo
-        info.typeQualifiers = typeQualifiers;
+        PointerInfo* info = new PointerInfo(); // Create a new PointerInfo
+        info->typeQualifiers = typeQualifiers;
         inh_ptrInfo1.push_back(info); // Push the new info to inh_ptrInfo1 to pass
 
         pointer_H(node->children[1], inh_ptrInfo1, ptrInfo1);
@@ -1233,10 +1233,14 @@ void pointer_H(ASTNode *node, std::vector<PointerInfo> inh_ptrInfo, std::vector<
     else
     {
         // Wrong Production
+        ERROR_EXIT_H;
+        A_PTree node->addAttribute("Wrong Production in pointer_H");
+        return;
     }
 
     A_PTree node->addAttribute("syn_ptrInfo = " + toString(ptrInfo)); // 🌴 Adding syn_attr
 
+    EXIT_H;
     return;
 }
 
@@ -1278,8 +1282,9 @@ void parameter_type_list_H(ASTNode *node, std::vector<TypeExpression> &paramVect
 
 void parameter_list_H(ASTNode *node, std::vector<TypeExpression> &paramVector, std::vector<std::string> &varName_list)
 {
+    ENTRY_H;
 
-        std::string whichProduction = getProduction(node);
+    std::string whichProduction = getProduction(node);
     std::string P1 = "parameter_declaration";
     std::string P2 = "parameter_list COMMA parameter_declaration";
 
@@ -1326,26 +1331,32 @@ void parameter_list_H(ASTNode *node, std::vector<TypeExpression> &paramVector, s
     else
     {
         // Wrong Production
+        ERROR_EXIT_H;
+        A_PTree node->addAttribute("Wrong Production in parameter_list_H");
+        return;
     }
 
     A_PTree node->addAttribute("syn_type = " + toString(paramVector)); // 🌴 Adding syn_attr
 
+    EXIT_H;
     return;
 }
 
 void parameter_declaration_H(ASTNode *node, TypeExpression &type, std::string varName)
 {
-
-        std::string whichProduction = getProduction(node);
+    ENTRY_H;
+    std::string whichProduction = getProduction(node);
     std::string P1 = "declaration_specifiers declarator";
     std::string P2 = "declaration_specifiers abstract_declarator";
     std::string P3 = "declaration_specifiers";
 
     A_PTree node->addAttribute("inh_type = " + toString(type)); // 🌳 Adding inh_attr
- 
+
     if (whichProduction != P1 && whichProduction != P2 && whichProduction != P3)
     {
         // Wrong Production
+        ERROR_EXIT_H;
+        A_PTree node->addAttribute("Wrong Production in parameter_declaration_H");
         return;
     }
 
@@ -1360,16 +1371,16 @@ void parameter_declaration_H(ASTNode *node, TypeExpression &type, std::string va
     int check = ProcessDecSpecifiers(valueVector, inh_type, inh_storageClass);
     if (check != OKAY)
     {
-        // SEMANTIC ERROR 🚨 : Invalid TypeSpecifier
+        aptLOG("SEMANTIC ERROR 🚨 : Invalid TypeSpecifier");
     }
     if (inh_storageClass != StorageClass::NONE)
     {
-        // SEMANTIC ERROR 🚨 : Storage Class NOT ALLOWED Here
+        aptLOG("SEMANTIC ERROR 🚨 : TO Check if StorageClass Allowed Here or NOT");
     }
- 
+
     if (whichProduction == P1)
     {
-
+        aptLOG("Production 1");
         // 3. Prepare syn_data to be fetched
         std::string varName1; // to be fetched ⬆️
         TypeExpression type1; // to be fetched ⬆️
@@ -1378,15 +1389,18 @@ void parameter_declaration_H(ASTNode *node, TypeExpression &type, std::string va
         // 3. Pass the data up
         type = type1; // send syn_attr ⬆️
         varName = varName1;
-        // varName is now used;
     }
     else if (whichProduction == P2)
     {
-
+        aptLOG("Production 2");
         // 3. Prepare syn_data to be fetched
         TypeExpression type1; // to be fetched ⬆️
 
+        aptLOG("Calling abstract_declarator_H");
         abstract_declarator_H(node->children[1], inh_type, type1);
+        aptLOG("Returned from abstract_declarator_H");
+
+        
 
         // 3. Pass the data up
         type = type1; // send syn_attr ⬆️
@@ -1395,17 +1409,20 @@ void parameter_declaration_H(ASTNode *node, TypeExpression &type, std::string va
     }
     else if (whichProduction == P3)
     {
+        aptLOG("Production 3");
         // 3. Pass the data up
         type = inh_type; // send syn_attr ⬆️
     }
 
     else
-    {
+    {   
+        aptLOG("Production WRONG");
         // Wrong Production
     }
 
     A_PTree node->addAttribute("syn_type = " + toString(type)); // 🌴 Adding syn_attr
 
+    EXIT_H;
     return;
 }
 
@@ -1514,8 +1531,9 @@ void type_name_H(ASTNode *node, TypeExpression &type)
 // ----- Abstract Declarator Handlers -----
 void abstract_declarator_H(ASTNode *node, TypeExpression inh_type, TypeExpression &type)
 {
+    ENTRY_H;
 
-        std::string whichProduction = getProduction(node);
+    std::string whichProduction = getProduction(node);
     std::string P1 = "pointer";
     std::string P2 = "direct_abstract_declarator";
     std::string P3 = "pointer direct_abstract_declarator";
@@ -1525,15 +1543,14 @@ void abstract_declarator_H(ASTNode *node, TypeExpression inh_type, TypeExpressio
     if (whichProduction == P1)
     {
         TypeExpression type1 = inh_type;
-
+        aptLOG("Production 1");
         // 1. Call the function again to fetch the next value
-        std::vector<PointerInfo> ptrInfo;
+        std::vector<PointerInfo*> ptrInfo = std::vector<PointerInfo*>();
         pointer_H(node->children[0], ptrInfo, ptrInfo);
         for (int i = 0; i < ptrInfo.size(); i++)
         {
-            PointerInfo info = ptrInfo[i];
-            PointerInfo *infoPtr = &info;
-            type1.levelStack.push(infoPtr);
+            PointerInfo *info = ptrInfo[i];
+            type1.levelStack.push(info);
         }
 
         // Pass the data up
@@ -1541,6 +1558,7 @@ void abstract_declarator_H(ASTNode *node, TypeExpression inh_type, TypeExpressio
     }
     else if (whichProduction == P2)
     {
+        aptLOG("Production 2");
         // 1. Call the function again to fetch the next value
         TypeExpression type1;
         direct_abstract_declarator_H(node->children[0], inh_type, type1);
@@ -1551,14 +1569,14 @@ void abstract_declarator_H(ASTNode *node, TypeExpression inh_type, TypeExpressio
     else if (whichProduction == P3)
     {
         TypeExpression type1 = inh_type;
-
+        aptLOG("Production 3");
         // 1. Call the function again to fetch the next value
-        std::vector<PointerInfo> ptrInfo;
+        std::vector<PointerInfo*> ptrInfo = std::vector<PointerInfo*>();
         pointer_H(node->children[0], ptrInfo, ptrInfo);
         for (int i = 0; i < ptrInfo.size(); i++)
         {
-            PointerInfo info = ptrInfo[i];
-            PointerInfo *infoPtr = &info;
+            PointerInfo *info = ptrInfo[i];
+            PointerInfo *infoPtr = info;
             type1.levelStack.push(infoPtr);
         }
         // 2. Call the function again to fetch the next value
@@ -1571,42 +1589,56 @@ void abstract_declarator_H(ASTNode *node, TypeExpression inh_type, TypeExpressio
     else
     {
         // Wrong Production
+        ERROR_EXIT_H;
+        A_PTree node->addAttribute("Error in abstract_declarator_H"); // 🌴 Adding syn_attr
+        return;
     }
 
     A_PTree node->addAttribute("syn_type = " + toString(type)); // 🌴 Adding syn_attr
 
+    EXIT_H;
     return;
 }
 
 void direct_abstract_declarator_H(ASTNode *node, TypeExpression inh_type, TypeExpression &type)
 {
 
-        std::string whichProduction = getProduction(node);
+    ENTRY_H;
+
+    std::string whichProduction = getProduction(node);
     std::string P1 = "LPAREN abstract_declarator RPAREN";
-
-    A_PTree node->addAttribute("inh_type = " + toString(inh_type)); // 🌳 Adding inh_attr
-
-    if (whichProduction == P1)
-    {
-        // 1. Call the function again to fetch the next value
-        TypeExpression type1;
-        abstract_declarator_H(node->children[1], inh_type, type1);
-
-        // Pass the data up
-        type = type1; // send syn_attr ⬆️
-    }
 
     std::string P2 = "LSQUARE RSQUARE";
     std::string P3 = "LSQUARE constant_expression RSQUARE";
     std::string P4 = "direct_abstract_declarator LSQUARE RSQUARE";
     std::string P5 = "direct_abstract_declarator LSQUARE constant_expression RSQUARE";
 
-    if (whichProduction == P2 || whichProduction == P3 || whichProduction == P4 || whichProduction == P5)
+    std::string P6 = "LPAREN RPAREN";
+    std::string P7 = "LPAREN parameter_type_list RPAREN";
+    std::string P8 = "direct_abstract_declarator LPAREN RPAREN";
+    std::string P9 = "direct_abstract_declarator LPAREN parameter_type_list RPAREN";
+
+    A_PTree node->addAttribute("inh_type = " + toString(inh_type)); // 🌳 Adding inh_attr
+
+    if (whichProduction == P1)
+    {
+        aptLOG("Production 1");
+        // 1. Call the function again to fetch the next value
+        TypeExpression type1 = inh_type;
+        ParenthesisInfo *info = new ParenthesisInfo();
+        inh_type.levelStack.push(info);
+        abstract_declarator_H(node->children[1], inh_type, type1);
+
+        // Pass the data up
+        type = type1; // send syn_attr ⬆️
+    }
+
+    else if (whichProduction == P2 || whichProduction == P3 || whichProduction == P4 || whichProduction == P5)
     {
 
-        int indexConstExpr = (whichProduction == P4) ? 1 : 2;
+        int indexConstExpr = (whichProduction == P3) ? 1 : 2;
         std::string constValue = "NULL";
-        if (whichProduction == P2 || whichProduction == P3)
+        if (whichProduction == P3 || whichProduction == P5)
         {
             // 1. Call the function again to fetch the next value
             constant_expression_H(node->children[indexConstExpr], constValue);
@@ -1616,12 +1648,11 @@ void direct_abstract_declarator_H(ASTNode *node, TypeExpression inh_type, TypeEx
         ArrayInfo *info = new ArrayInfo();
         info->dimSize = constValue1;
 
-        TypeExpression type1;
         inh_type.levelStack.push(info); // Push the new info to inh_type
+        TypeExpression type1 = inh_type;
         if (whichProduction == P4 || whichProduction == P5)
         {
             // 1. Call the function again to fetch the next value
-            TypeExpression type1;
             direct_abstract_declarator_H(node->children[0], inh_type, type1);
         }
 
@@ -1629,12 +1660,7 @@ void direct_abstract_declarator_H(ASTNode *node, TypeExpression inh_type, TypeEx
         type = type1; // send syn_attr ⬆️
     }
 
-    std::string P6 = "LPAREN RPAREN";
-    std::string P7 = "LPAREN parameter_type_list RPAREN";
-    std::string P8 = "direct_abstract_declarator LPAREN RPAREN";
-    std::string P9 = "direct_abstract_declarator LPAREN parameter_type_list RPAREN";
-
-    if (whichProduction == P6 || whichProduction == P7 || whichProduction == P8 || whichProduction == P9)
+    else if (whichProduction == P6 || whichProduction == P7 || whichProduction == P8 || whichProduction == P9)
     {
         //
         std::vector<TypeExpression> paramVector;
@@ -1655,12 +1681,11 @@ void direct_abstract_declarator_H(ASTNode *node, TypeExpression inh_type, TypeEx
             info->isAbstract = true;
         }
 
-        TypeExpression type1;
         inh_type.levelStack.push(info); // Push the new info to inh_type
+        TypeExpression type1 = inh_type;
         if (whichProduction == P8 || whichProduction == P9)
         {
             // 1. Call the function again to fetch the next value
-            TypeExpression type1;
             direct_abstract_declarator_H(node->children[0], inh_type, type1);
         }
 
@@ -1670,10 +1695,14 @@ void direct_abstract_declarator_H(ASTNode *node, TypeExpression inh_type, TypeEx
     else
     {
         // Wrong Production
+        ERROR_EXIT_H;
+        A_PTree node->addAttribute("Error in direct_abstract_declarator_H"); // 🌴 Adding syn_attr
+        return;
     }
 
     A_PTree node->addAttribute("syn_type = " + toString(type)); // 🌴 Adding syn_attr
 
+    EXIT_H;
     return;
 }
 

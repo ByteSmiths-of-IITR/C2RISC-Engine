@@ -2396,6 +2396,15 @@ int main(int argc, char **argv) {
     signal(SIGSEGV, signalHandler); // Catch segmentation fault
     signal(SIGTRAP, signalHandler);
     signal(SIGABRT, signalHandler); // Catch abort signal
+    signal(SIGINT, signalHandler); // Catch interrupt signal
+    signal(SIGFPE, signalHandler); // Catch floating point exception
+    signal(SIGILL, signalHandler); // Catch illegal instruction
+    signal(SIGBUS, signalHandler); // Catch bus error
+    signal(SIGQUIT, signalHandler); // Catch quit signal
+    signal(SIGTERM, signalHandler); // Catch termination signal
+    signal(SIGUSR1, signalHandler); // Catch user-defined signal 1
+    signal(SIGUSR2, signalHandler); // Catch user-defined signal 2
+
 
     //------------------------ cmd line arguments handling ------------------------
 

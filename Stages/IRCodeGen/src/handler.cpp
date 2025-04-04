@@ -126,16 +126,16 @@ std::string toString(std::map<std::string, TypeExpression> members)
     return str;
 }
 
-std::string toString(std::vector<PointerInfo> ptrInfo)
+std::string toString(std::vector<PointerInfo*> ptrInfo)
 {
     std::string str = "[ ";
     for (size_t i = 0; i < ptrInfo.size(); ++i)
     {
-        PointerInfo unit = ptrInfo[i];
+        PointerInfo* unit = ptrInfo[i];
         str += " *";
-        for (size_t j = 0; j < unit.typeQualifiers.size(); ++j)
+        for (size_t j = 0; j < unit->typeQualifiers.size(); ++j)
         {
-            str += toString(unit.typeQualifiers[j]) + " ";
+            str += toString(unit->typeQualifiers[j]) + " ";
         }
         if (i != ptrInfo.size() - 1)
         {

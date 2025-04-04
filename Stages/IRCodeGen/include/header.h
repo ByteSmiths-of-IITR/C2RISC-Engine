@@ -610,7 +610,7 @@ std::string toString(StorageClass storageClass);
 std::string toString(TypeQualifier typeQualifier);
 std::string toString(std::vector<TypeQualifier> typeQualifiers);
 std::string toString(std::map<std::string, TypeExpression> members);
-std::string toString(std::vector<PointerInfo> ptrInfo);
+std::string toString(std::vector<PointerInfo*> ptrInfo);
 std::string toString(std::vector<TypeExpression> &paramVector);
 std::string toString(SPACE space);
 std::string toString(VALUE_TYPE valueType);
@@ -762,7 +762,7 @@ void declarator_H(ASTNode *node, TypeExpression inh_type, std::string &varName, 
 void direct_declarator_H(ASTNode *node, TypeExpression inh_type, std::string &varName, TypeExpression &type);
 
 //----- Pointer -----
-void pointer_H(ASTNode *node, std::vector<PointerInfo> inh_ptrInfo, std::vector<PointerInfo> &ptrInfo);
+void pointer_H(ASTNode *node, std::vector<PointerInfo*> inh_ptrInfo, std::vector<PointerInfo*> &ptrInfo);
 
 //----- Parameters -----
 void parameter_type_list_H(ASTNode *node, std::vector<TypeExpression> &paramVector, std::vector<std::string> &varName_list);
