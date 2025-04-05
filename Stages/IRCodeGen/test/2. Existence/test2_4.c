@@ -14,3 +14,22 @@ int main(){
     }
     int b = a; // error: ‘a’ undeclared (first use in this function)
 }
+
+//=========================== C2RISC-Engine =========================================================//
+// Lexical Analysis 👍 | Syntax Analysis 👍 | Semantic Analysis ❌
+// 
+// ------------------------------------------------------------------------------------
+// ----------------------------------- SEMANTIC LOG -----------------------------------
+// SEMANTIC ERROR ‼️ : Identifier "A" not 🫠 found in the current scope
+// SEMANTIC ERROR ‼️ : Identifier "x" not 🫠 found in the current scope
+// SEMANTIC ERROR ‼️ : Identifier "a" not 🫠 found in the current scope
+// ----------------------------------- END OF LOG -----------------------------------
+// 
+// ------------------------------------------------------------------------------------
+// CodeLineNo : TAC                           
+// ---------- : -------------------------------
+// 0          : func                          
+// 1          : A$2 = 2                       
+// 2          : main                          
+// 3          : a$4 = 2                       
+// 

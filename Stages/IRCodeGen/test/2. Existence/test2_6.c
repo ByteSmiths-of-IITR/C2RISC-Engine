@@ -18,3 +18,20 @@ int main()
 
     int Person = 190;
 }
+
+//=========================== C2RISC-Engine =========================================================//
+// ❤️‍🔥 SignalHandler 💥SIGSEGV received. Exiting gracefully.
+// ❤️‍🔥 SignalHandler 💥SIGSEGV received. Exiting gracefully.
+// My Name is 54859and I am commiting Suicide 😵 at 2025-04-05 - 12:19:13 🪦
+// 
+// ------------------------------------------------------------------------------------
+// The Last Function Called - SymbolNode::deleteCurrent
+// 😎 Exiting gracefully 😎
+// 
+// ----------------------------------- SEMANTIC LOG -----------------------------------
+// Error: Member Selection expression "$0" not found in symbol table
+// Error: Member Selection expression "$1" not found in symbol table
+// ----------------------------------- END OF LOG -----------------------------------
+// 
+// ------------------------------------------------------------------------------------
+// 

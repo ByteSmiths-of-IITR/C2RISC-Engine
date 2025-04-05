@@ -1,25 +1,46 @@
 #!/bin/bash
 
 # -------- Configuration --------
-EXECUTABLE="bin/C2RISC_Engine"  # Change this or override via CLI
-TEST_DIR="test"
+EXECUTABLE="bin/C2RISC_Engine"   # Default executable
+TEST_DIR="test"                  # Default test directory
+ERROR="output/testing.log"       # Error log file
 
-# -------- Override executable via CLI arg --------
+# -------- Parse arguments --------
+FILTER_DIR=""
 if [ $# -ge 1 ]; then
-    EXECUTABLE="$1"
+    FILTER_DIR="$TEST_DIR/$1."  # Match the numbered folder pattern
+fi
+
+if [ $# -ge 2 ]; then
+    EXECUTABLE="$2"  # Optional override for executable
 fi
 
 # -------- Check if executable exists --------
 if [ ! -x "$EXECUTABLE" ]; then
-    echo "❌ Compiler's Executable '$EXECUTABLE' not found or not executable."
-    echo "Running 'make' to build the compiler."
-    make compiler
+    echo "❌ Compiler executable '$EXECUTABLE' not found or not executable."
+    echo "🔧 Running 'make compiler' to build the compiler..."
+    make compiler || { echo "❌ Make failed."; exit 1; }
 fi
 
-# -------- Loop through all files recursively --------
+# -------- Ensure output directory for log exists --------
+mkdir -p "$(dirname "$ERROR")"
+> "$ERROR"  # Clear previous error log
+
+# -------- Find and run tests --------
 echo "🚀 Running tests with: $EXECUTABLE"
-find "$TEST_DIR" -type f | while IFS= read -r test_file; do
-    echo "🔹 Running on: $test_file"
-    "$EXECUTABLE" "$test_file" -t 2> 
-    echo "---------------------------"
-done
+
+# If a specific numbered folder is given, filter by it
+if [ -n "$FILTER_DIR" ]; then
+    find "$FILTER_DIR"* -type f 2>/dev/null | while IFS= read -r test_file; do
+        echo "🔹 Running on: $test_file"
+        "$EXECUTABLE" "$test_file" -t 2>>"$ERROR"
+        echo "---------------------------"
+    done
+else
+    # Run all tests if no folder filter is provided
+    find "$TEST_DIR" -type f | while IFS= read -r test_file; do
+        echo "🔹 Running on: $test_file"
+        "$EXECUTABLE" "$test_file" -t 2>>"$ERROR"
+        echo "---------------------------"
+    done
+fi
