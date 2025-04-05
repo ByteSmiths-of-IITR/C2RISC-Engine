@@ -98,7 +98,9 @@ std::string input_file;
 int compilerMode = 0; // 0-Output to Terminal, 1-output_file, 2-TestMode (send to inputFile itself)
 std::string output_file;
 std::ostringstream outputStream;
-std::ostringstream terminalStream;
+std::ostringstream notificationStream;
+std::ostringstream errorStream;
+
 
 bool ptree = false;
 bool Aptree = false;
@@ -112,23 +114,31 @@ bool compressed = false; // Default is PTree, if AST is needed, change it to fal
 // TAC CODE_BASE; [Are declared in handler.cpp]
 
 void exit_compiler(){
+    std::cerr << "Compiler Mode: " << compilerMode << std::endl;
+    std::cerr << "Debugging Mode d1: " << (ptree ? "ON" : "OFF") << std::endl;
+    std::cerr << "Debugging Mode d2: " << (Aptree ? "ON" : "OFF") << std::endl;
     // First we print output depending on the mode
     if(compilerMode == 0){ //Terminal
-        std::cout << terminalStream.str() << std::endl;
+        std::cout << notificationStream.str() << std::endl;
+        std::cout << errorStream.str() << std::endl;
         std::cout << outputStream.str() << std::endl;
     }else if(compilerMode == 1){ //Output to file
-        std::cout << terminalStream.str() << std::endl;
+        std::cout << notificationStream.str() << std::endl;
+        std::cout << "Output & ERROR Report Generated in " << output_file << std::endl;
         std::ofstream out(output_file);
         if(out.is_open()){
             out << outputStream.str() << std::endl;
+            out << errorStream.str() << std::endl;
             out.close();
         }else{
             std::cerr << "Error opening file: " << output_file << std::endl;
         }
     }else if(compilerMode == 2){ //TestMode
         std::ostringstream testStream;
-        testStream << terminalStream.str() << std::endl;
+        std::cout << "Testing : " << input_file << " result appended to it" << std::endl;
+        testStream << notificationStream.str() << std::endl;
         testStream << outputStream.str() << std::endl;
+        testStream << errorStream.str() << std::endl;
         insertAfterMarker(input_file,MARKER,testStream);
     }
 
@@ -169,21 +179,20 @@ void signalHandler(int signum) {
     }
     std::string signalMessage = "❤️‍🔥 SignalHandler 💥" + signalName + " received. Exiting gracefully.";
 
-    outputStream << signalMessage << std::endl;
-    outputStream << "The Last Function Called - " << lastFuncCalled << std::endl;
+    notificationStream << signalMessage << std::endl;
+    errorStream << "The Last Function Called - " << lastFuncCalled << std::endl;
     
-    outputStream << signalMessage << std::endl;
-    terminalStream << signalMessage << std::endl;
+    notificationStream << signalMessage << std::endl;
 
-    outputStream <<  "😎 Exiting gracefully 😎\n" << std::endl;
+    errorStream <<  "😎 Exiting gracefully 😎\n" << std::endl;
     
-    outputStream <<  SEMANTICLOGHEADER << std::endl;
+    errorStream <<  SEMANTICLOGHEADER << std::endl;
     for(const auto& log : semanticLOG){
-        outputStream <<  log << std::endl;
+        errorStream <<  log << std::endl;
     }
-    outputStream <<  LOGFOOTER << std::endl;
+    errorStream <<  LOGFOOTER << std::endl;
 
-    terminalStream <<  "My Name is " << getpid() << "and I am commiting Suicide 😵 at " << getCurrentTime() << " 🪦" << std::endl;
+    notificationStream <<  "My Name is " << getpid() << "and I am commiting Suicide 😵 at " << getCurrentTime() << " 🪦" << std::endl;
 
     exit_compiler();
 
@@ -2494,17 +2503,16 @@ int main(int argc, char **argv) {
     std::string terminalMsg = "";
 
     if(lexerFailed){
-        outputStream <<  "\U0001F6A8 Input Program failed in Lexical Analysis Phase \U0001F6A8\n" << std::endl;
-        terminalStream << "Lexical Analysis ❌\n";
+        notificationStream << "Lexical Analysis ❌\n";
         
-        outputStream <<  LEXERLOGHEADER << std::endl;
+        errorStream <<  LEXERLOGHEADER << std::endl;
         for(auto log : lexerLOG){
-            outputStream <<  log << std::endl;
+            errorStream <<  log << std::endl;
         }
-        outputStream <<  LOGFOOTER << std::endl;
-        outputStream <<  std::endl;
+        errorStream <<  LOGFOOTER << std::endl;
+        errorStream <<  std::endl;
 
-        outputStream <<  "😊 Thanku for using our \"C2RISC-Engine\" " << std::endl;   
+        notificationStream <<  "😊 Thanku for using our \"C2RISC-Engine\" " << std::endl;   
         // Clean Up
         fclose(yyin);
         exit_compiler();
@@ -2512,34 +2520,32 @@ int main(int argc, char **argv) {
     }
 
     if(syntaxError){
-        outputStream <<  "\U0001F6A8 Input Program failed in Syntax Analysis Phase \U0001F6A8\n" << std::endl;
-        terminalStream << "Lexical Analysis 👍 | Syntax Analysis ❌\n";
-        outputStream <<  "\U0001F6A8 yyerror() was called " << noOfyyerrorCalls << " times \U0001F6A8\n" << std::endl;
+        notificationStream << "Lexical Analysis 👍 | Syntax Analysis ❌\n";
+        errorStream <<  "\U0001F6A8 yyerror() was called " << noOfyyerrorCalls << " times \U0001F6A8\n" << std::endl;
 
         // We print ourCustom Error Only if Bison-don't Report any Error
 
         if(parseError && !TURN_OFF){
-            outputStream <<  PARSERLOGHEADER << std::endl;
+            errorStream <<  PARSERLOGHEADER << std::endl;
             for(auto log : parserLOG){
-                outputStream <<  log << std::endl;
+                errorStream <<  log << std::endl;
             }
 
-            outputStream <<  LOGFOOTER << std::endl;
-            outputStream <<  std::endl;
+            errorStream <<  LOGFOOTER << std::endl;
+            errorStream <<  std::endl;
         }
         
         if(bisonError){
-            outputStream <<  BISONLOGHEADER << std::endl;
+            errorStream <<  BISONLOGHEADER << std::endl;
             for(auto log : bisonLOG){
-                outputStream <<  log << std::endl;
+                errorStream <<  log << std::endl;
             }
-            outputStream <<  LOGFOOTER << std::endl;
+            errorStream <<  LOGFOOTER << std::endl;
         }
         
-        outputStream <<  std::endl;
-        outputStream << std::endl;
+        errorStream <<  std::endl;
 
-        outputStream <<  "😊 Thanku for using our \"C2RISC-Engine\" " << std::endl;
+        notificationStream <<  "😊 Thanku for using our \"C2RISC-Engine\" " << std::endl;
 
         // If we only have custom error - i.e no bison error then we can print the AST
             // Clean Up
@@ -2557,20 +2563,10 @@ int main(int argc, char **argv) {
     // Early exit if we are in debugging mode and to print pTree Only
     if(ptree){
         // We are in debugging mode and exit after parsing stage
-        if(!syntaxError){
-            outputStream <<  "\U0001F170\U0000FE0F Parsing completed successfully \U0001F170\U0000FE0F\n" << std::endl;
-        }
-        outputStream <<  "\U0001F53A Parser Tree generated as DOT file: " << dot_file << " can be visualized using Graphviz\n";
-        terminalStream << "Lexical Analysis 👍 | Syntax Analysis 👍\n";
-        outputStream <<  "\U0001F6A8 yyerror() was called " << noOfyyerrorCalls << " times \U0001F6A8\n" << std::endl;
-        outputStream <<  PARSERLOGHEADER << std::endl;
-        for(auto log : parserLOG){
-            outputStream <<  log << std::endl;
-        }
-        outputStream <<  LOGFOOTER << std::endl;
-        outputStream <<  std::endl;
-        outputStream <<  "😊 Thanku for using our \"C2RISC-Engine\" " << std::endl << std::endl;
-
+        notificationStream <<  "\U0001F53A Parser Tree generated as DOT file: " << dot_file << " can be visualized using Graphviz\n";
+        notificationStream << "Lexical Analysis 👍 | Syntax Analysis 👍\n";
+        
+        notificationStream <<  "😊 Thanku for using our \"C2RISC-Engine\" " << std::endl << std::endl;
         // Clean Up and exit
         if(yyin) fclose(yyin);  // Close the input file
         exit_compiler(); // This will handle printing of ptree
@@ -2597,29 +2593,24 @@ int main(int argc, char **argv) {
     // We print the semantic log in the output file
     bool semanticFailed = (semanticLOG.size() > 0);
     if(semanticFailed){
-        terminalStream <<  "Lexical Analysis 👍 | Syntax Analysis 👍 | Semantic Analysis ❌\n" << std::endl;
-        outputStream <<  "\U0001F6A8 Input Program failed in Semantic Analysis Phase \U0001F6A8\n" << std::endl;
-        outputStream <<  SEMANTICLOGHEADER << std::endl;
+        notificationStream <<  "Lexical Analysis 👍 | Syntax Analysis 👍 | Semantic Analysis ❌" << std::endl;
+        errorStream <<  SEMANTICLOGHEADER << std::endl;
         for(auto log : semanticLOG){
-            outputStream <<  log << std::endl;
+            errorStream <<  log << std::endl;
         }
-        outputStream <<  LOGFOOTER << std::endl;
-        if(TERMINAL_MESSAGE){
-            std::cout << terminalMsg << std::endl;
-        }
+        errorStream <<  LOGFOOTER << std::endl;
     }
     else{
-        terminalStream <<  "Lexical Analysis 👍 | Syntax Analysis 👍 | Semantic Analysis 👍 | 🔖 IRCode Gen" << std::endl;
-        outputStream <<  "🥳  Input Program passed Semantic Analysis Phase \U0001F170\U0000FE0F\n" << std::endl;
-        if(TERMINAL_MESSAGE){
-            std::cout << terminalMsg << std::endl;
-        }
+        notificationStream <<  "Lexical Analysis 👍 | Syntax Analysis 👍 | Semantic Analysis 👍 | 🔖 IRCode Gen" << std::endl;
     }
 
+
+    // Print the IR code
+    CODE_BASE.printTAC(outputStream);
 
     // Print the Annotated Parse Tree
     if(Aptree){
-        outputStream <<  "\U0001F53A Annotated Parse Tree generated as DOT file: " << dot_file << " can be visualized using Graphviz\n";
+        notificationStream <<  "\U0001F53A APTree generated as DOT file: " << dot_file << " can be visualized using Graphviz";
     }
 
 

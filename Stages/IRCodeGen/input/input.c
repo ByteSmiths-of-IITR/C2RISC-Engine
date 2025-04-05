@@ -1,26 +1,35 @@
 // function and variable name collision
 
 #include <stdio.h>
-// typedef int INT;
-// struct A
-// {
-//     int x;
-// };
-
 int main(){
-    int arr[10][5];
-    int f;
-    int k = arr[1]++;
+    int a = 0;
+    {
+        for (int i = 0; i < 10;i++){
+            i++;
+            int a = 0;
+            i++;
+        }
+    }
 }
 
 //=========================== C2RISC-Engine ==========================================//
-// Lexical Analysis 👍 | Syntax Analysis 👍 | Semantic Analysis ❌
+// Lexical Analysis 👍 | Syntax Analysis 👍 | Semantic Analysis 👍 | 🔖 IRCode Gen
+// 🔺 APTree generated as DOT file: build/annotated_ast_graph.dot can be visualized using Graphviz
+// CodeLineNo : TAC                           
+// ---------- : -------------------------------
+// 0          : main                          
+// 1          : a$1 = 0                       
+// 2          : i$3 = 0                       
+// 3          : $0 = i$3 < 10                 
+// 4          : if $0 goto L(6)               
+// 5          : goto L(14)                    
+// 6          : $1 = i$3                      
+// 7          : i$3 = i$3 + 1                 
+// 8          : a$3 = 0                       
+// 9          : $2 = i$3                      
+// 10         : i$3 = i$3 + 1                 
+// 11         : $3 = i$3                      
+// 12         : i$3 = i$3 + 1                 
+// 13         : goto L(3)                     
 // 
-// 
-// 🚨 Input Program failed in Semantic Analysis Phase 🚨
-// 
-// ----------------------------------- SEMANTIC LOG -----------------------------------
-// Error: Inc or Dec expression "$2" is not a pointer or variable type
-// ----------------------------------- END OF LOG -----------------------------------
-// 🔺 Annotated Parse Tree generated as DOT file: build/annotated_ast_graph.dot can be visualized using Graphviz
 // 

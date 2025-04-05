@@ -228,6 +228,7 @@ std::string ASTStyle(ASTNode* node) {
         {
             std::cerr << "⚠️ Marker not found in file: " << fileName << "\n";
             fileBuffer << '\n'; // Optional extra line
+            fileBuffer << marker << '\n';
             std::istringstream contentStream(newContent.str());
             std::string contentLine;
             while (std::getline(contentStream, contentLine))
