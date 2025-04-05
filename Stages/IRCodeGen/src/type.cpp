@@ -868,9 +868,9 @@ int ourEquivalent(const TypeExpression &type1, const TypeExpression &type2)
     bool isNumeric2 = isNumeric(type2);
     if (isNumeric1 && isNumeric2)
     {
-        std::cerr << LOC << "Both are numeric\n";
-        std::cerr << LOC << "Type1: " << toString(type1) << "\n";
-        std::cerr << LOC << "Type2: " << toString(type2) << "\n";
+        std::cerr << LOC << " Both are numeric\n";
+        std::cerr << LOC << " 😅Type1: " << toString(type1) << "\n";
+        std::cerr << LOC << " Type2: " << toString(type2) << "\n";
         // Both are numeric
         std::string base1 = isPrimitive(type1);
         std::string base2 = isPrimitive(type2);

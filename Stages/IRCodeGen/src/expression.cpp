@@ -1445,7 +1445,7 @@ int unary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::st
 
         TypeExpression type0;
         BaseInfo *base = new BaseInfo();
-        base->baseType = TYPE_INT;
+        base->baseType = TYPE_LONG;
         type0.levelStack.push_back(base);
         type = type0; // Set Correctly
     }
@@ -1467,7 +1467,7 @@ int unary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::st
 
         TypeExpression type0;
         BaseInfo *base = new BaseInfo();
-        base->baseType = TYPE_INT;
+        base->baseType = TYPE_LONG;
         type0.levelStack.push_back(base);
         type = type0; // Set Correctly
     }
@@ -3010,10 +3010,42 @@ int conditional_expression_H(ASTNode *node, std::string inh_whereToSendString, s
         CODE_BASE.backpatch(node,{trueExit}, endOf);
 
         // 🆎 Type Checking
+        // If in baseType -> widen to max width | else both must be same
+        int isSame = checkEquivalance(type2, type3);
+        aptLOG("isSame = " + std::to_string(isSame));
+        if(isSame != EQUIVALENT){
+            // we check for baseType
+            std::string primType1 = isPrimitive(type2);
+            std::string primType2 = isPrimitive(type3);
+
+            if (primType1 != "NOT_PRIMITIVE" && primType2 != "NOT_PRIMITIVE"){
+                std::string widenType = maxWidth(primType1, primType2);
+                // We cast the varName0 to the max width type
+                CODE_BASE.addTAC(node, varName0, CAST, widenType, varName0);
+
+                // Assign 
+                BaseInfo *base = new BaseInfo();
+                base->baseType = widenType;
+                TypeExpression type0;
+                type0.levelStack.push_back(base);
+                type = type0;
+            }
+            else{
+                // NOT PRIMITIVE & not same
+                semanticError("Conditional expression requires compatible types, but found \"" + toString(type2) + "\" and \"" + toString(type3) + "\"");
+                FAIL_H;
+                return FAIL;
+            }
+        }
+        else{
+            // If same Okay
+            type = type2;
+        }
+
 
         // Set the result attributes
         varName = varName0;
-        type = type3; // [Both Type must be same]
+        
         valueType = VALUE_TYPE::RVALUE;
         valueSpace = SPACE::VALUE_SPACE;
     }
