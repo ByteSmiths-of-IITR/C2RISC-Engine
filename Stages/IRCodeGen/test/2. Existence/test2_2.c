@@ -24,4 +24,5 @@ void func(){
 // 0          : main                          
 // 1          : func                          
 // 2          : a$2 = 1                       
+// 3          : return #####                  
 // 

@@ -14,17 +14,12 @@ int main(){
 // 
 // ------------------------------------------------------------------------------------
 // ----------------------------------- SEMANTIC LOG -----------------------------------
-// Error: Member Selection expression "$0" not found in symbol table
-// Error: Member Selection expression "$1" not found in symbol table
-// Error: Member Selection expression "$2" not found in symbol table
+// SEMANTIC ERROR ‼️ : RecordID "COLOR" already 🫠 present in the current scope
 // ----------------------------------- END OF LOG -----------------------------------
 // 
 // ------------------------------------------------------------------------------------
 // CodeLineNo : TAC                           
 // ---------- : -------------------------------
 // 0          : main                          
-// 1          : $0 = c$1.offset               
-// 2          : $1 = c$1.offset               
-// 3          : $2 = c$1.offset               
-// 4          : color$1 = 0                   
+// 1          : return 0                      
 // 

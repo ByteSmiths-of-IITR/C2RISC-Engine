@@ -15,7 +15,7 @@ extern int ANNOTATE; // 0 - OFF | 1 - ON [value set by header.cpp]
 #define WORD_SIZEx4 16  // long double or long long
 #define BYTE_SIZEx2 2   // short
 #define BYTE_SIZE 1     // 8 bits, char
-#define ADDRESS_SIZE 16 // 64 bit address
+#define ADDRESS_SIZE 8 // 64 bit address
 
 //===================[ Memory Monitoring + Debugging ]============================================================================================
 extern int MEMORY_MONITORING; // 0 - OFF | 1 - ON [value set by header.cpp]
@@ -227,6 +227,10 @@ int width(std::string primType); // This will return the width of the primitive 
 int width(const TypeExpression &typeExpr);
 
 int ourEquivalent(const TypeExpression &type1, const TypeExpression &type2);
+
+int typeResolution(const TypeExpression &target, const TypeExpression &soucre);
+
+int typeResoulution(const std::string &target, const std::string &source);
 
 int checkEquivalance(const TypeExpression &typeExpr1, const TypeExpression &typeExpr2);
 // Return Values

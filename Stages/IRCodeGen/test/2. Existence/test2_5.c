@@ -10,16 +10,15 @@ union U{
 }; 
 
 //=========================== C2RISC-Engine =========================================================//
-// ❤️‍🔥 SignalHandler 💥SIGSEGV received. Exiting gracefully.
-// ❤️‍🔥 SignalHandler 💥SIGSEGV received. Exiting gracefully.
-// My Name is 54861and I am commiting Suicide 😵 at 2025-04-05 - 12:19:13 🪦
+// Lexical Analysis 👍 | Syntax Analysis 👍 | Semantic Analysis ❌
 // 
 // ------------------------------------------------------------------------------------
-// The Last Function Called - SymbolTable::enterScope
-// 😎 Exiting gracefully 😎
-// 
 // ----------------------------------- SEMANTIC LOG -----------------------------------
+// SEMANTIC ERROR ‼️ : RecordID "U" not found
 // ----------------------------------- END OF LOG -----------------------------------
 // 
 // ------------------------------------------------------------------------------------
+// CodeLineNo : TAC                           
+// ---------- : -------------------------------
+// 0          : main                          
 // 

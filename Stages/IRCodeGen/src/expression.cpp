@@ -215,6 +215,11 @@ int primary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
         if (isConst)
         {
             val0Type = VALUE_TYPE::NM_LVALUE; // Non Modifiable LValue
+            // Check specialy for enum constant
+            if (whichType == Type::ENUM_CONSTANT)
+            {
+                val0Type = VALUE_TYPE::RVALUE; // Read Only Value
+            }
         }
 
         if (val0Space == SPACE::ADDRESS_SPACE)
@@ -243,9 +248,9 @@ int primary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
             {
                 // If variable is Constant
                 if (isConst)
-                {   // 🤯 MIGHT BE WRONG
-                    // Change the name to the value
-                    varName1 = std::to_string(((Variable *)symbol)->compileTimeConstant);
+                { // 🤯 MIGHT BE WRONG
+                    // Change the name to the value [Feature TURNED OFF]
+                    // varName1 = std::to_string(((Variable *)symbol)->compileTimeConstant);
                 }
                 else
                 {
@@ -485,6 +490,17 @@ int postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
         int p_check = postfix_expression_H(node->children[0], inh_whereToSendString, varName1, type1, valueType1, valueSpace1);
         PASS_THE_ERROR(p_check);
 
+        // 🅱️ TypeChecking for Array Itself - postfix_expression
+        Type whichType1 = whatIsType(type1);
+        // must be array or pointer
+        if (whichType1 != Type::ARRAY && whichType1 != Type::POINTER)
+        {
+            semanticError("Subscript expression \"" + varName1 + "\" is not an array or pointer type");
+            FAIL_H;
+            return FAIL;
+        }
+
+
         // From expression
         std::string varName2;
         TypeExpression type2;
@@ -505,16 +521,6 @@ int postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
 
         // 🚀 SPACE CHANGE 🚀
         USAGE_SPACE_CHANGE(varName2, type2, valueSpace2, node);
-
-        // 🅱️ TypeChecking for Array Itself - postfix_expression
-        Type whichType1 = whatIsType(type1);
-        // must be array or pointer
-        if (whichType1 != Type::ARRAY && whichType1 != Type::POINTER)
-        {
-            semanticError("Subscript expression \"" + varName1 + "\" is not an array or pointer type");
-            FAIL_H;
-            return FAIL;
-        }
 
         // We need SPACE CHANGE for postfix_expression [array - Address , pointer-Value]
 
@@ -545,9 +551,9 @@ int postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
         varName = finalAddress;            // Change the name to the address
         valueSpace = SPACE::ADDRESS_SPACE; // Array Subscript is in address space
         // 🤔🤔🤔🤔🤔🤔 IMP LOGIC 🤔🤔🤔🤔🤔
-        valueType = getValueType(type); // Set Correctly
-        std::cerr << "Type : " << toString(type) << std::endl;
         type = elementType; // Set Correctly
+        valueType = getValueType(type); // Set Correctly
+        std::cerr << LOC << "Type : " << toString(type) << std::endl;
     }
     else if (whichProduction == P3 || whichProduction == P4)
     {
@@ -563,11 +569,14 @@ int postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
         PASS_THE_ERROR(p_check);
 
         // From argument_expression_list
-        std::vector<std::string> argName;
-        std::vector<TypeExpression> argType;
-        int a_check = argument_expression_list_H(node->children[2], argType, argName);
-        PASS_THE_ERROR(a_check);
+        std::vector<std::string> argName = {};    // to be fetched ⬆️
+        std::vector<TypeExpression> argType = {}; // to be fetched ⬆️
 
+        if (whichProduction == P4)
+        {
+            int a_check = argument_expression_list_H(node->children[2], argType, argName);
+            PASS_THE_ERROR(a_check);
+        }
         // 🅰️ TypeChecking for Function Call
 
         Type whichType1 = whatIsType(type1);
@@ -634,13 +643,34 @@ int postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
             // Check if the types of parameters are same
             for (int i = 0; i < paramTypes.size(); i++)
             {
-                int check = ourEquivalent(paramTypes[i], argType[i]); // ⚠️⚠️⚠️⚠️ Vulnerable Code
-                if (check != OKAY)
+                // 🆎 TypeCasting
+                TypeExpression source = argType[i];
+                TypeExpression dest = paramTypes[i];
+
+                bool isNum = isNumeric(source);
+                bool isNum2 = isNumeric(dest);
+                if (!(isNum && isNum2))
                 {
-                    // SEMANTIC ERROR 🚨 : Function Call expression \"" + varName1 + "\" does not match the signature
-                    semanticError("Function Call expression \"" + varName1 + "\" does not match the signature");
-                    FAIL_H;
-                    return FAIL;
+                    // Check if the types are same
+                    int check = ourEquivalent(dest, source);
+                    if (check != OKAY)
+                    {
+                        // SEMANTIC ERROR 🚨 : Assignment expression's operand \"" + varName1 + "\" and \"" + varName2 + "\" are not compatible
+                        semanticError("Function Call argument \'" + argName[i] + "\' of type \'" + toString(source) + "\' is not compatible with \'" + toString(dest) + "\'");
+                        FAIL_H;
+                        return FAIL;
+                    }
+                }
+                else
+                {
+                    // Implicit Type Casting
+                    int equal = ourEquivalent(source, dest);
+                    if (equal != OKAY)
+                    {
+                        std::string castedVarNam = newTemp();
+                        CODE_BASE.addTAC(node, castedVarNam, CAST, toString(dest), argName[i]); // Cast it
+                        argName[i] = castedVarNam;                                              // Change the name to the address
+                    }
                 }
             }
         }
@@ -683,6 +713,30 @@ int postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
         // From IDENTIFIER
         std::string varName2 = node->children[2]->value;
 
+        // If we are using -> operator remove the top pointer level
+        if (whichProduction == P6)
+        {
+            // We need SPACE CHANGE for postfix_expression [array - Address , pointer-Value]
+            // TypeExpression tempType = type1;
+            Type whichType = whatIsType(type1);
+            if (whichType == Type::POINTER || whichType == Type::ARRAY)
+            {
+                // First we remove the top level with is
+                if (popALevel(type1) != POP_SUCCESS)
+                {
+                    compilerError("Error in popALevel");
+                    FAIL_H;
+                    return FAIL;
+                }
+            }
+            else
+            {
+                semanticError("Member Selection operator \'" + node->children[1]->value + "\' used on \"" + varName1 + "\" which is not a pointer/array type of Struc/Union");
+                FAIL_H;
+                return FAIL;
+            }
+        }
+
         // Data to find/calculate
         TypeExpression type0;
         int memberOffset = 0;
@@ -695,8 +749,7 @@ int postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
         // must be struct or union
         if (whichType1 != Type::STRUCT_UNION)
         {
-            // SEMANTIC ERROR 🚨 : Member Selection expression \"" + varName1 + "\" is not a struct or union type
-            semanticError("Member Selection expression \"" + varName1 + "\" is not 🙃 a struct or union type");
+            semanticError("Member Selection operator \'" + node->children[1]->value + "\' used on \"" + varName1 + "\" which is not a Struc/Union object");
             FAIL_H;
             return FAIL;
         }
@@ -807,7 +860,7 @@ int postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
 
         // 🅰️ TypeChecking for Inc or Dec
         // We will check if valueType is M_LVALUE;
-        if(valueType1 != VALUE_TYPE::M_LVALUE)
+        if (valueType1 != VALUE_TYPE::M_LVALUE)
         {
             // SEMANTIC ERROR 🚨 : Inc or Dec expression \"" + varName1 + "\" is not a modifiable lvalue
             semanticError("Inc or Dec expression \"" + varName1 + "\" is not a modifiable lvalue");
@@ -848,7 +901,7 @@ int postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
             if (check != POP_SUCCESS)
             {
                 compilerError("Error in popALevel");
-                BUG_H;  
+                BUG_H;
                 return BUG; // SetUp Dummy Data
             }
             int size = width(belowLevel);
@@ -953,25 +1006,56 @@ int assignment_expression_H(ASTNode *node, std::string inh_whereToSendString, st
 
         // 🅰️ TypeChecking for varName2
         // Rule - valueType - {M_LVALUE, NM_LVALUE, RVALUE} Allowed
-        // Rule - type ❓ 
-        if(valueType2 == VALUE_TYPE::UNKNOWN){
+        
+        if (valueType2 == VALUE_TYPE::UNKNOWN)
+        {
             semanticError("Assignment expression's operand \"" + varName1 + "\" has unknown value type");
             FAIL_H;
             return FAIL;
         }
 
-
-
         // 🅱️ TypeChecking for varName1
         // Rule - valueType - {M_LVALUE} Allowed
-        // Rule - type ❓
 
-        if(valueType1 != VALUE_TYPE::M_LVALUE){
+        if (valueType1 != VALUE_TYPE::M_LVALUE)
+        {
             semanticError("Assignment expression's operand \"" + varName1 + "\" is not a modifiable lvalue");
             FAIL_H;
             return FAIL;
         }
+
+        //🆎 TypeCasting 
+        TypeExpression source = type2;
+        TypeExpression dest = type1;
+
+        bool isNum = isNumeric(type2);
+        bool isNum2 = isNumeric(type1);
+        if(!(isNum && isNum2)){
+            // Check if the types are same
+            int check = ourEquivalent(type2, type1);
+            if (check != OKAY)
+            {
+                // SEMANTIC ERROR 🚨 : Assignment expression's operand \"" + varName1 + "\" and \"" + varName2 + "\" are not compatible
+                semanticError("Assignment expression's operand \"" + varName1 + "\" and \"" + varName2 + "\" are not compatible");
+                FAIL_H;
+                return FAIL;
+            }
+        }else{
+            // Implicit Type Casting
+            int equal = ourEquivalent(type2, type1);
+            if (equal != OKAY)
+            {
+                std::string castedVarNam = newTemp();
+                CODE_BASE.addTAC(node, castedVarNam, CAST, toString(dest), varName2); // Cast it
+                varName2 = castedVarNam; // Change the name to the address
+            }
+        }
+
         
+
+
+
+
 
         // 🎉 SIDE EFFECTS 🎉
         int width1 = elementWidth(type1);
@@ -1100,7 +1184,8 @@ int unary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::st
         // aptLOG("u_check okay");
         // 🅰️ TypeChecking for Inc or Dec
         // We will check if valueType is M_LVALUE;
-        if(valueType1 != VALUE_TYPE::M_LVALUE){
+        if (valueType1 != VALUE_TYPE::M_LVALUE)
+        {
             semanticError("Unary expression \"" + varName1 + "\" is not a modifiable lvalue");
             FAIL_H;
             return FAIL;
@@ -1151,7 +1236,7 @@ int unary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::st
         else if (valueSpace1 == SPACE::VALUE_SPACE)
         {
             CODE_BASE.addTAC(node, resName, op, varName1, std::to_string(width1)); // resName = varName2 op width1
-            varName = resName; // Change the name to the address
+            varName = resName;                                                     // Change the name to the address
         }
         else
         {
@@ -1165,7 +1250,6 @@ int unary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::st
         valueType = VALUE_TYPE::RVALUE;
         valueSpace = getSpace(type1); // return space is of varName1
         // All syn_attribute already sent up & inh_attribute already sent down
-
     }
     else if (whichProduction == P4)
     {
@@ -1184,12 +1268,12 @@ int unary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::st
 
         // Operator Dependent
         std::string op = node->children[0]->value;
-        if(op == "&")
+        if (op == "&")
         {
             // Value Type - {M_LVALUE, NM_LVALUE} Allowed
-            if(valueType1 != VALUE_TYPE::M_LVALUE && valueType1 != VALUE_TYPE::NM_LVALUE)
+            if (valueType1 != VALUE_TYPE::M_LVALUE && valueType1 != VALUE_TYPE::NM_LVALUE)
             {
-                semanticError("Unary expression \"" + varName1 + "\" is not a modifiable lvalue");
+                semanticError("Unary expression \"" + varName1 + "\" is not a lvalue");
                 FAIL_H;
                 return FAIL;
             }
@@ -1199,14 +1283,14 @@ int unary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::st
             type0 = type1;
             PointerInfo *ptrInfo = new PointerInfo();
             type0.levelStack.push_back(ptrInfo);
-            
+
             std::string temp = newTemp();
-            if(valueSpace1 == SPACE::ADDRESS_SPACE)
+            if (valueSpace1 == SPACE::ADDRESS_SPACE)
             {
                 // Load the value from address
                 CODE_BASE.addTAC(node, temp, ASSIGN_OP, varName1, NO_ARG); // varName = *varName1
             }
-            else if(valueSpace1 == SPACE::VALUE_SPACE)
+            else if (valueSpace1 == SPACE::VALUE_SPACE)
             {
                 CODE_BASE.addTAC(node, temp, AMPERSEND, varName1, NO_ARG); // varName = varName1
             }
@@ -1217,8 +1301,9 @@ int unary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::st
                 return BUG; // SetUp Dummy Data
             }
 
-            varName0 = temp; // Change the name to the address
+            varName0 = temp;                  // Change the name to the address
             valueSpace0 = SPACE::VALUE_SPACE; // return space is of varName1
+            varName = varName0;               // Change the name to the address
         }
         else if (op == "*")
         {
@@ -1235,7 +1320,7 @@ int unary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::st
             }
             valueType0 = VALUE_TYPE::M_LVALUE;
             valueSpace0 = SPACE::ADDRESS_SPACE; // return space is of varName1
-            type0 = type1; // return type is of varName1
+            type0 = type1;                      // return type is of varName1
             // Pop the top level
             int check = popALevel(type0);
             if (check != POP_SUCCESS)
@@ -1244,8 +1329,9 @@ int unary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::st
                 BUG_H;
                 return BUG;
             }
-            
+
             // There is no need to deref Now - will be de-referenced in the USAGE_SPACE_CHANGE
+            varName0 = varName1; // Change the name to the address
         }
         else if (op == "+")
         {
@@ -1260,16 +1346,16 @@ int unary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::st
                 return FAIL;
             }
             valueType0 = VALUE_TYPE::RVALUE;
-            type0 = type1; // return type is of varName1
+            type0 = type1;                    // return type is of varName1
             valueSpace0 = SPACE::VALUE_SPACE; // return space is of varName1
-            varName0 = varName1; // Change the name to the address
+            varName0 = varName1;              // Change the name to the address
         }
         else if (op == "-")
         {
-
+            aptLOG("Unary Minus");
             USAGE_SPACE_CHANGE(varName1, type1, valueSpace1, node);
 
-            if(!isNumeric(type1))
+            if (!isNumeric(type1))
             {
                 semanticError("In Unary expression \"" + varName1 + "\" is not a numeric type");
                 FAIL_H;
@@ -1278,11 +1364,12 @@ int unary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::st
 
             // IRCode Gen
             std::string resName = newTemp();
-            CODE_BASE.addTAC(node, resName, "-", "0", varName0); // resName = 0 - varName1
-            varName0 = resName; // Change the name to the address
-            valueSpace0 = SPACE::VALUE_SPACE; // return space is of varName1
-            type0 = type1; // return type is of varName1
+            CODE_BASE.addTAC(node, resName, "-", "0", varName1); // resName = 0 - varName1
+            varName0 = resName;                                  // Change the name to the address
+            valueSpace0 = SPACE::VALUE_SPACE;                    // return space is of varName1
+            type0 = type1;                                       // return type is of varName1
             valueType0 = VALUE_TYPE::RVALUE;
+            // varName = varName0; // Change the name to the address
         }
         else if (op == "~")
         {
@@ -1302,9 +1389,9 @@ int unary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::st
             CODE_BASE.addTAC(node, resName, "~", varName1, NO_ARG); // resName = ~varName1
 
             valueType0 = VALUE_TYPE::RVALUE;
-            type0 = type1; // return type is of varName1
+            type0 = type1;                    // return type is of varName1
             valueSpace0 = SPACE::VALUE_SPACE; // return space is of varName1
-            varName0 = resName; // Change the name to the address
+            varName0 = resName;               // Change the name to the address
         }
         else if (op == "!")
         {
@@ -1324,9 +1411,9 @@ int unary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::st
             CODE_BASE.addTAC(node, resName, "!", varName1, NO_ARG); // resName = !varName1
 
             valueType0 = VALUE_TYPE::RVALUE;
-            type0 = type1; // return type is of varName1
+            type0 = type1;                    // return type is of varName1
             valueSpace0 = SPACE::VALUE_SPACE; // return space is of varName1
-            varName0 = resName; // Change the name to the address
+            varName0 = resName;               // Change the name to the address
         }
         else
         {
@@ -1335,13 +1422,12 @@ int unary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::st
             return BUG;
         }
 
-        varName = varName0; // Change the name to the address
+        varName = varName0;       // Change the name to the address
         valueSpace = valueSpace0; // return space is of varName1
-        valueType = valueType0; // Set Correctly
-        type = type0; // Set Correctly
-
+        valueType = valueType0;   // Set Correctly
+        type = type0;             // Set Correctly
     }
-    else if (whichProduction == P5 || whichProduction == P6)
+    else if (whichProduction == P5)
     {
         // Call the unary_expression handler
         std::string varName1 = "Just a Dummy";
@@ -1353,10 +1439,32 @@ int unary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::st
 
         std::string resName = std::to_string(width(type1));
 
-        varName = resName; // Change the name to the address
+        varName = resName;               // Change the name to the address
         valueSpace = SPACE::VALUE_SPACE; // return space is of varName1
-        valueType = VALUE_TYPE::RVALUE; // Set Correctly
-        
+        valueType = VALUE_TYPE::RVALUE;  // Set Correctly
+
+        TypeExpression type0;
+        BaseInfo *base = new BaseInfo();
+        base->baseType = TYPE_INT;
+        type0.levelStack.push_back(base);
+        type = type0; // Set Correctly
+    }
+    else if(whichProduction == P6)
+    {
+        // Call the type_name handler
+        std::string varName1 = "Just a Dummy";
+        TypeExpression type1;
+        VALUE_TYPE valueType1;
+        SPACE valueSpace1;
+        int tn_check = type_name_H(node->children[2], type1);
+        PASS_THE_ERROR(tn_check);
+
+        std::string resName = std::to_string(width(type1));
+
+        varName = resName;               // Change the name to the address
+        valueSpace = SPACE::VALUE_SPACE; // return space is of varName1
+        valueType = VALUE_TYPE::RVALUE;  // Set Correctly
+
         TypeExpression type0;
         BaseInfo *base = new BaseInfo();
         base->baseType = TYPE_INT;
@@ -1408,7 +1516,8 @@ int cast_expression_H(ASTNode *node, std::string inh_whereToSendString, std::str
         TypeExpression type1;
         int tn_check = type_name_H(node->children[1], type1);
         PASS_THE_ERROR(tn_check);
-        
+
+
         std::string varName2;
         TypeExpression type2;
         VALUE_TYPE valueType2;
@@ -1417,7 +1526,42 @@ int cast_expression_H(ASTNode *node, std::string inh_whereToSendString, std::str
         int cex_check = cast_expression_H(node->children[3], inh_whereToSendString, varName2, type2, valueType2, valueSpace2);
         PASS_THE_ERROR(cex_check);
 
-        // TODO: logic for possible casting and change in scope etc
+        // Call Usage Space Change
+        // TODO - Check if it is needed
+
+        // Check if cast-able 
+        Type srcType = whatIsType(type2);
+        Type destType = whatIsType(type1);
+
+        if(srcType == Type::STRUCT_UNION || destType == Type::STRUCT_UNION){
+            // Check if the types are same
+            int check = ourEquivalent(type2, type1);
+            if (check != OKAY)
+            {
+                // SEMANTIC ERROR 🚨 : Assignment expression's operand \"" + varName1 + "\" and \"" + varName2 + "\" are not compatible
+                semanticError("Explicit cast from \"" + toString(type2) + "\" to \"" + toString(type1) + "\" is not allowed");
+                FAIL_H;
+                return FAIL;
+            }
+        }else{
+            bool isAllowed = isNumeric(type2) && isNumeric(type1);
+            isAllowed = isAllowed || ((srcType == Type::POINTER || srcType == Type::ARRAY) && (destType == Type::POINTER || destType == Type::ARRAY));
+            isAllowed = isAllowed || (srcType == Type::FUNCTION && destType == Type::FUNCTION);
+
+            if(!isAllowed){
+                // SEMANTIC ERROR 🚨 : Assignment expression's operand \"" + varName1 + "\" and \"" + varName2 + "\" are not compatible
+                semanticError("Explicit cast from \"" + toString(type2) + "\" to \"" + toString(type1) + "\" is not allowed");
+                FAIL_H;
+                return FAIL;
+            }
+            // Implicit Type Casting
+            // NO CODE NEEDED
+        }
+        
+        varName = varName2; // Change the name to the address
+        valueSpace = getSpace(type1); // return space is of varName1
+        valueType = getValueType(type1); // Set Correctly
+        type = type1; // Set Correctly
     }
     else
     {
@@ -1456,7 +1600,7 @@ int multiplicative_expression_H(ASTNode *node, std::string inh_whereToSendString
         int cex_check = cast_expression_H(node->children[0], inh_whereToSendString, varName, type, valueType, valueSpace);
         PASS_THE_ERROR(cex_check);
     }
-    else if (whichProduction == P2 || whichProduction == P3 || whichProduction == P4)
+    else if (whichProduction == P2 || whichProduction == P3)
     {
 
         std::string varName1, varName2;
@@ -1489,7 +1633,83 @@ int multiplicative_expression_H(ASTNode *node, std::string inh_whereToSendString
         if (!isNum1 || !isNum2)
         {
             // SEMANTIC ERROR 🚨 : Invalid operator for given type
-            semanticError("Operand " + node->children[0]->value + "cannot work on types \"" + toString(type1) + "\" and \"" + toString(type2) + "\"");
+            semanticError("Operand " + node->children[1]->value + " cannot work on types \"" + toString(type1) + "\" and \"" + toString(type2) + "\"");
+            FAIL_H;
+            return FAIL;
+        }
+        else
+        {
+            std::string primType1 = isPrimitive(type1);
+            std::string primType2 = isPrimitive(type2);
+
+            std::string widenType = maxWidth(primType1, primType2);
+
+            if (primType1 != widenType)
+            {
+
+                CODE_BASE.addTAC(node, varName1, CAST, widenType, varName1);
+            }
+
+            if (primType2 != widenType)
+            {
+
+                CODE_BASE.addTAC(node, varName2, CAST, widenType, varName2);
+            }
+
+            // Now we have both the operands in same type
+            // Now we can perform the operation
+            std::string result = newTemp();
+
+            CODE_BASE.addTAC(node, result, node->children[1]->value, varName1, varName2);
+
+            // Sending syn_attr up
+            varName = result; // Change the name to the result
+
+            // Create a new TypeExpression
+            BaseInfo *base = new BaseInfo();
+            base->baseType = widenType;
+            TypeExpression type0;
+            type0.levelStack.push_back(base);
+
+            type = type0; // Change the type to the result type
+
+            valueType = getValueType(type0);
+            valueSpace = getSpace(type0);
+        }
+    }
+    else if (whichProduction == P4)
+    {
+        std::string varName1, varName2;
+        TypeExpression type1, type2;
+        VALUE_TYPE valueType1, valueType2;
+        SPACE valueSpace1, valueSpace2;
+
+        int mex_check = multiplicative_expression_H(node->children[0], inh_whereToSendString, varName1, type1, valueType1, valueSpace1);
+        PASS_THE_ERROR(mex_check);
+
+        int cex_check = cast_expression_H(node->children[2], inh_whereToSendString, varName2, type2, valueType2, valueSpace2);
+        PASS_THE_ERROR(cex_check);
+
+        // check all possible types that can come in type1 and type2
+
+        //----------------------- Space 🚀Change 🔖IR Code ----------------------------
+
+        // 🚀 USAGE 🤫 SPACE CHANGE 🚀
+        USAGE_SPACE_CHANGE(varName1, type1, valueSpace1, node);
+        USAGE_SPACE_CHANGE(varName2, type2, valueSpace2, node);
+
+        Type whichType1 = whatIsType(type1);
+        Type whichType2 = whatIsType(type2);
+
+        // if either type is not BaseType then invalid operator for given type
+
+        bool isNum1 = isIntegral(type1);
+        bool isNum2 = isIntegral(type2);
+
+        if (!isNum1 || !isNum2)
+        {
+            // SEMANTIC ERROR 🚨 : Invalid operator for given type
+            semanticError("Operand " + node->children[1]->value + " cannot work on types \"" + toString(type1) + "\" and \"" + toString(type2) + "\"");
             FAIL_H;
             return FAIL;
         }
@@ -1638,11 +1858,8 @@ int additive_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
                 std::string integralVar = isIntegral(type1) ? varName1 : varName2;
                 TypeExpression pointerType = isIntegral(type1) ? type2 : type1;
 
-                //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                // VINEET HANDLE width and check space too
-                //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                int elementWidth = width(pointerType);
-                std::string elementWidthStr = std::to_string(elementWidth);
+                int eleWidth = elementWidth(pointerType);
+                std::string elementWidthStr = std::to_string(eleWidth);
 
                 std::string scaledIntegral = newTemp();
 
@@ -2753,6 +2970,52 @@ int conditional_expression_H(ASTNode *node, std::string inh_whereToSendString, s
     {
         int loex_check = logical_or_expression_H(node->children[0], inh_whereToSendString, varName, type, valueType, valueSpace);
         PASS_THE_ERROR(loex_check);
+    }
+    else if(whichProduction == P2){
+        // Call logical_or_expression_H for the first part
+        std::string varName1, varName2, varName3;
+        TypeExpression type1, type2, type3;
+        VALUE_TYPE valueType1, valueType2, valueType3;
+        SPACE valueSpace1, valueSpace2, valueSpace3;
+        int loex_check = logical_or_expression_H(node->children[0], inh_whereToSendString, varName1, type1, valueType1, valueSpace1);
+        PASS_THE_ERROR(loex_check);
+
+        std::string varName0 = newTemp();
+
+        int falseJump = CODE_BASE.addTAC(node, TO_BACKPATCH, IF_FALSE, varName1, NO_ARG);
+
+        // Call expression_H for the second part
+        int expr_check = expression_H(node->children[2], inh_whereToSendString, varName2, type2, valueType2, valueSpace2);
+        PASS_THE_ERROR(expr_check);
+        // 🚀 USAGE 🤫 SPACE CHANGE 🚀
+        USAGE_SPACE_CHANGE(varName2, type2, valueSpace2, node);
+        CODE_BASE.addTAC(node, varName0, ASSIGN_OP, varName2, NO_ARG);
+
+
+
+        int trueExit = CODE_BASE.addTAC(node, TO_BACKPATCH, GOTO_LABEL, NO_ARG, NO_ARG);
+
+        int falseStart = CODE_BASE.nextIndex();
+
+        CODE_BASE.backpatch(node,{falseJump}, falseStart);
+
+        // Call conditional_expression_H for the third part
+        int cond_check = conditional_expression_H(node->children[4], inh_whereToSendString, varName3, type3, valueType3, valueSpace3);
+        PASS_THE_ERROR(cond_check);
+        // 🚀 USAGE 🤫 SPACE CHANGE 🚀
+        USAGE_SPACE_CHANGE(varName3, type3, valueSpace3, node);
+        CODE_BASE.addTAC(node, varName0, ASSIGN_OP, varName3, NO_ARG);
+
+        int endOf = CODE_BASE.nextIndex();
+        CODE_BASE.backpatch(node,{trueExit}, endOf);
+
+        // 🆎 Type Checking
+
+        // Set the result attributes
+        varName = varName0;
+        type = type3; // [Both Type must be same]
+        valueType = VALUE_TYPE::RVALUE;
+        valueSpace = SPACE::VALUE_SPACE;
     }
     else
     {

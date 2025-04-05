@@ -1687,11 +1687,15 @@ int type_name_H(ASTNode *node, TypeExpression &type)
         int check = ProcessDecSpecifiers(valueVector, inh_type, inh_storageClass);
         if (check != OKAY)
         {
-            // SEMANTIC ERROR 🚨 : Invalid TypeSpecifier
+            semanticError("Invalid TypeSpecifier for TypeName");
+            FAIL_H;
+            return FAIL;
         }
         if (inh_storageClass != StorageClass::NONE)
         {
-            // SEMANTIC ERROR 🚨 : TO Check if StorageClass Allowed Here or NOT
+            semanticError("StorageClass not allowed in TypeName");
+            FAIL_H;
+            return FAIL;
         }
 
         // Pass the data up
@@ -1711,7 +1715,9 @@ int type_name_H(ASTNode *node, TypeExpression &type)
         int check = ProcessDecSpecifiers(valueVector, inh_type, inh_storageClass);
         if (check != OKAY)
         {
-            // SEMANTIC ERROR 🚨 : Invalid TypeSpecifier
+            semanticError("Invalid TypeSpecifier for TypeName");
+            FAIL_H;
+            return FAIL;
         }
 
         // 4. Call the function again to fetch the next value
@@ -1721,6 +1727,9 @@ int type_name_H(ASTNode *node, TypeExpression &type)
     else
     {
         // Wrong Production
+        compilerError("Wrong Production in type_name_H");
+        BUG_H;
+        return BUG;
     }
 
     aptLOG("syn_type = " + toString(type)); // 🌴 Adding syn_attr
@@ -1933,21 +1942,44 @@ int initializer_H(ASTNode *node, TypeExpression inh_type, std::string inh_varNam
         SPACE valueSpace1;
         int aex_check = assignment_expression_H(node->children[0], "NONE", varName1, type1, valuetype1, valueSpace1);
         PASS_THE_ERROR(aex_check);
-        
+
+        // 🚀 USAGE 🤫 SPACE CHANGE 🚀
+        USAGE_SPACE_CHANGE(varName1, type1, valueSpace1, node);
+
         // 🅱️ TypeChecking
         // Logic - If Base -> If both are numeric(+enum/enumConstats) -> typecast arg to resultType and assign (IRCode Needed)
         // Logic - If Base -> If both are Record(union/struct) Object -> MUST be EXACT match else ERROR
         // Logic - If both (POINTER,FUNCTION,ARRAY) -> IGNORE BELOW LEVEL -> just assign varName and returnType = resultType
-        int isValid = ourEquivalent(inh_type, type1);
-        if (isValid != EQUIVALENT)
+        // 🆎 TypeCasting
+        TypeExpression source = type1;
+        TypeExpression dest = inh_type;
+
+        bool isNum = isNumeric(dest);
+        bool isNum2 = isNumeric(source);
+        if (!(isNum && isNum2))
         {
-            semanticError("Initialization Type Mismatch 😔 for \'" + inh_varName + "\' which is \'" + toString(inh_type) + "\' and initialized it with \'" + toString(type1) + "\'");
-            FAIL_H;
-            return FAIL;
+            // Check if the types are same
+            int check = ourEquivalent(source, type1);
+            if (check != OKAY)
+            {
+                // SEMANTIC ERROR 🚨 : Assignment expression's operand \"" + varName1 + "\" and \"" + varName2 + "\" are not compatible
+                semanticError("Assignment expression's operand \"" + inh_varName + "\" and \"" + varName1 + "\" are not compatible");
+                FAIL_H;
+                return FAIL;
+            }
+        }
+        else
+        {
+            // Implicit Type Casting
+            int equal = ourEquivalent(dest, source);
+            if (equal != OKAY)
+            {
+                std::string castedVarNam = newTemp();
+                CODE_BASE.addTAC(node, castedVarNam, CAST, toString(dest), varName1); // Cast it
+                varName1 = castedVarNam;                                              // Change the name to the address
+            }
         }
 
-        // 🚀 USAGE 🤫 SPACE CHANGE 🚀
-        USAGE_SPACE_CHANGE(varName1, type1, valueSpace1, node);
 
         // 🎉 SIDE EFFECTS 🎉
 

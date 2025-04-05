@@ -1,16 +1,16 @@
-/*conditional_expression
-    : logical_or_expression
-    | logical_or_expression QUESTION expression COLON conditional_expression
-    ;
-*/
-int main() {
-    int a = 10, b = 20;
-    // int result = (a > b) ? a : b;
-    char* f;
-    // Negative Cases
-    // result = (a > b) ? f : a; // Error: assignment to ‘int’ from ‘char *’ makes integer from pointer without a cast
+enum COlor
+{
+    RED,
+    GREEN
+    // BLUE
+};
 
-    return 0;
+int main()
+{
+    enum COlor color;
+    int *ptr = &color + -100;
+    // ()
+    return 1;
 }
 
 //=========================== C2RISC-Engine =========================================================//
@@ -22,8 +22,11 @@ int main() {
 // CodeLineNo : TAC                           
 // ---------- : -------------------------------
 // 0          : main                          
-// 1          : a$1 = 10                      
-// 2          : b$1 = 20                      
-// 3          : return 0                      
+// 1          : $0 = &color$1                 
+// 2          : $1 = 0 - 100                  
+// 3          : $2 = $1 * 8                   
+// 4          : $3 = $0 + $2                  
+// 5          : ptr$1 = $3                    
+// 6          : return 1                      
 // 
 // 

@@ -207,7 +207,6 @@ StorageClass getStorageClass(const std::string &value)
         return StorageClass::TYPEDEF;
     else
         return StorageClass::NONE;
-    // TODO : Add error handling
 }
 
 TypeQualifier getTypeQualifier(const std::string &value)
@@ -237,7 +236,7 @@ std::string getProduction(ASTNode *node)
     }
     return production;
 }
-// TODO : do error handling
+
 int ProcessDecSpecifiers(std::vector<std::string> &valueVector, TypeExpression &type, StorageClass &storageClass)
 {
     // 1. Initialize the base and storageClass
@@ -574,6 +573,8 @@ int function_definition_H(ASTNode *node)
             return FAIL;
         }
 
+        TypeExpression returnTypeExpr = inh_type;
+
         // Data to be fetched from declarator
         std::string varName;
         TypeExpression type1; // This type will contain information about the function along with names of parameters
@@ -691,7 +692,7 @@ int function_definition_H(ASTNode *node)
             // OPEN a NEW SCOPE
             int scopeNo = SYM_TABLE.earlyEntry(); //  [☀️ EarlyScope Entry]
 
-            std::string scopeName = varName + " S" + std::to_string(scopeNo); // Function Scope Name
+            std::string scopeName = varName;                                  // Function Scope Name
             SYM_TABLE.setScopeName(scopeName);                                // Set the name of the scope
             aptLOG("Early Scope Entry : " + scopeName + " ☀️");                // 🌴 Adding syn_attr
 
@@ -749,6 +750,33 @@ int function_definition_H(ASTNode *node)
             else
             {
                 semanticError("Use of undeclared label \"" + label + "\"");
+            }
+        }
+
+        // The last Code was supposed to be a return statement
+        int returnIndex = CODE_BASE.nextIndex();
+        TAC_Quadruple code = CODE_BASE.code[returnIndex - 1];
+
+        bool returnAbsent = (code.op != RETURN_FUNCTION);
+
+        if(returnAbsent){
+            aptLOG("Return Statement not found in function \"" + varName + "\""); // 🌴 Adding syn_attr
+            Type whichReturnType = whatIsType(returnTypeExpr);
+            if(whichReturnType == Type::VARIABLE){
+                aptLOG("Return Type is Variable"); // 🌴 Adding syn_attr
+                BaseInfo *base = (BaseInfo *)returnTypeExpr.levelStack[0];
+                std::string ret = base->baseType;
+                if(ret != TYPE_VOID){
+                    // 
+                    semanticError("Function \'" + varName + "\'s return type is not void but no return statement found");
+                    FAIL_H;
+                    return FAIL;
+                }
+            }
+            else{
+                semanticError("Function \'" + varName + "\'s return type is not void but no return statement found");
+                FAIL_H;
+                return FAIL;
             }
         }
 

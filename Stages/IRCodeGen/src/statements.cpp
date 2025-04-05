@@ -1027,9 +1027,9 @@ int jump_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<in
         // Find the function name
         GenericSymbol *sym;
         int lookupCheck = SYM_TABLE.lookup(currFuncName, sym);
-        if (lookupCheck == 0)
+        if (lookupCheck == LOOKUP_FAILURE)
         {
-            semanticError("\'return\'' statement use in non-function scope - " + currFuncName);
+            semanticError("\'return\' statement use in non-function scope - " + currFuncName);
             FAIL_H;
             ;
             return FAIL;
@@ -1057,12 +1057,34 @@ int jump_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<in
         }
 
         // We check if the return type is same as the function type
-        int check1 = ourEquivalent(returnType, type1);
-        if (check1 == 0)
+        // 🆎 TypeCasting
+        TypeExpression source = type1;
+        TypeExpression dest = returnType;
+
+        bool isNum = isNumeric(source);
+        bool isNum2 = isNumeric(dest);
+        if (!(isNum && isNum2))
         {
-            semanticError("Return type mismatch - Expected : \'" + toString(returnType) + "\' Found : \'" + toString(type1) + "\'");
-            FAIL_H;
-            return FAIL;
+            // Check if the types are same
+            int check = ourEquivalent(source, dest);
+            if (check != OKAY)
+            {
+                // SEMANTIC ERROR 🚨 : Assignment expression's operand \"" + varName1 + "\" and \"" + varName2 + "\" are not compatible
+                semanticError("Return type mismatch - Expected : \'" + toString(dest) + "\' Found : \'" + toString(source) + "\'");
+                FAIL_H;
+                return FAIL;
+            }
+        }
+        else
+        {
+            // Implicit Type Casting
+            int equal = ourEquivalent(source, dest);
+            if (equal != OKAY)
+            {
+                std::string castedVarNam = newTemp();
+                CODE_BASE.addTAC(node, castedVarNam, CAST, toString(dest), varName1); // Cast it
+                varName1 = castedVarNam;                                              // Change the name to the address
+            }
         }
 
         CODE_BASE.addTAC(node, NO_ARG, RETURN_FUNCTION, varName1, NO_ARG); // return varName1
@@ -1075,7 +1097,7 @@ int jump_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<in
         // Find the function name
         GenericSymbol *sym;
         int check = SYM_TABLE.lookup(currFuncName, sym);
-        if (check == 0)
+        if (check == LOOKUP_FAILURE)
         {
             semanticError("\'return\'' statement use in non-function scope - " + currFuncName);
             FAIL_H;
@@ -1085,25 +1107,30 @@ int jump_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<in
         TypeExpression funcType = ((Function *)sym)->type;
 
         // 🅱️ TypeChecking of Expression
-        TypeExpression returnType = funcType;
-        if (popALevel(returnType))
+        TypeExpression returnTypeExpr = funcType;
+        if (popALevel(returnTypeExpr))
         {
             compilerError("Error in popALevel");
             BUG_H;
             return BUG;
         }
+        aptLOG("Return Type : " + toString(returnTypeExpr));
 
-        // Create a int type
-        BaseInfo* base = new BaseInfo();
-        base->baseType = TYPE_VOID;
-        TypeExpression voidType = TypeExpression();
-        voidType.levelStack.push_back(base);
+        Type whichType = whatIsType(returnTypeExpr);
+        if(whichType != Type::VARIABLE){
+            semanticError("Return type mismatch - Expected : \'" + toString(returnTypeExpr) + "\' Found : \'void\'");
+            FAIL_H;
+            return FAIL;
+        }
 
         // We check if the return type is same as the function type
-        int check2 = ourEquivalent(returnType, voidType);
+        BaseInfo *base = (BaseInfo *)returnTypeExpr.levelStack[0];
+
+        std::string voidType = base->baseType;
+        bool check2 = (voidType == TYPE_VOID);
         if (check2 == 0)
         {
-            semanticError("Return type mismatch - Expected : \'" + toString(returnType) + "\' Found : \'" + toString(voidType) + "\'");
+            semanticError("Return type mismatch - Expected : \'" + toString(returnTypeExpr) + "\' Found : \'void\'");
             FAIL_H;
             return FAIL;
         }

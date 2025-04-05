@@ -27,9 +27,7 @@ int main(){
 // 
 // ------------------------------------------------------------------------------------
 // ----------------------------------- SEMANTIC LOG -----------------------------------
-// Error: Member Selection expression "$0" not found in symbol table
-// Error: Member Selection expression "$1" not found in symbol table
-// SEMANTIC ERROR ‼️ : Identifier "obj1" not 🫠 found in the current scope
+// SEMANTIC ERROR ‼️ : Member "b" not found in record "U"
 // ----------------------------------- END OF LOG -----------------------------------
 // 
 // ------------------------------------------------------------------------------------
@@ -37,6 +35,8 @@ int main(){
 // ---------- : -------------------------------
 // 0          : func                          
 // 1          : $0 = obj$0.offset             
-// 2          : main                          
-// 3          : $1 = obj$0.offset             
+// 2          : $1 = $0 + 0                   
+// 3          : *$1 = 2                       
+// 4          : main                          
+// 5          : $2 = obj$0.offset             
 // 

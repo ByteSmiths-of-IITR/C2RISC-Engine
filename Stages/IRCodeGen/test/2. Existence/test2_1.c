@@ -17,8 +17,7 @@ int main(){
 // 
 // ------------------------------------------------------------------------------------
 // ----------------------------------- SEMANTIC LOG -----------------------------------
-// SEMANTIC ERROR ‼️ : Parameter "" already declared in function scope
-// Error: Function Call expression "func" does not match the signature
+// SEMANTIC ERROR ‼️ : Function Call expression "func" does not match the signature
 // ----------------------------------- END OF LOG -----------------------------------
 // 
 // ------------------------------------------------------------------------------------
@@ -26,5 +25,6 @@ int main(){
 // ---------- : -------------------------------
 // 0          : func                          
 // 1          : a$2 = 2                       
-// 2          : main                          
+// 2          : return a$1                    
+// 3          : main                          
 // 

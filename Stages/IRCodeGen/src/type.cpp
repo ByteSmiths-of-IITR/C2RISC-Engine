@@ -14,7 +14,7 @@ int width(const UserDType &dtype)
             totalSize = std::max(totalSize, width(member.second));
         }
     }
-    else if(recordType == RecordType::STRUCT)
+    else if (recordType == RecordType::STRUCT)
     {
         // For struct
         for (auto &member : members)
@@ -29,10 +29,11 @@ int width(const UserDType &dtype)
     }
     else
     {
-        std::cerr << LOC << "Error: Unknown Record Type\n";
+        std::cerr << LOC << LOC << "Error: Unknown Record Type\n";
         return -1;
     }
-    
+    std::cerr << LOC << LOC << "Width of " << dtype.symbolName << " : " << totalSize << std::endl;
+    return totalSize;
 }
 
 int width(const BaseInfo &info)
@@ -60,7 +61,10 @@ int width(const BaseInfo &info)
         std::string baseType = info.baseType;
 
         std::string recordType = baseType.substr(0, baseType.find(" "));
-        std::string recordName = baseType.substr(baseType.find(" ") + 1, baseType.length());
+
+        size_t a = baseType.find(' '), b = baseType.find(' ', a + 1);
+        std::string recordName = baseType.substr(a + 1, b - a - 1);
+
         std::string lastPart = baseType.substr(baseType.find_last_of(" ") + 1, baseType.length());
         std::string scopeNoStr = lastPart.substr(1, lastPart.length() - 1);
         int scopeNo = std::stoi(scopeNoStr);
@@ -69,11 +73,12 @@ int width(const BaseInfo &info)
         int recordCheck = SYM_TABLE.lookupRecord(recordName, recordSymbol, scopeNo);
         if (recordCheck == LOOKUP_FAILURE)
         {
-            std::cerr << "Error: Record \"" + recordName + "\" not found in symbol table\n";
+            std::cerr << LOC << "Error: Record \"" + recordName + "\" not found in symbol table\n";
             return -1;
         }
         else
         {
+            std::cerr << LOC << "😆 Found Record \"" + recordName + "\" in symbol table\n";
             // Find the width of the record
             UserDType *record = dynamic_cast<UserDType *>(recordSymbol);
             return width(*record);
@@ -129,7 +134,7 @@ int width(const TypeExpression &typeExpr)
     }
     else
     {
-        std::cerr << "Error : Something wrong in width(TypeExpression)\n";
+        std::cerr << LOC << "Error : Something wrong in width(TypeExpression)\n";
         return -1;
     }
 
@@ -166,7 +171,7 @@ int elementWidth(const TypeExpression &typeExpr)
         return width(belowLevel);
     }
 
-    std::cerr << "Error: Something wrong in elementWidth(TypeExpression)\n";
+    std::cerr << LOC << "Error: Something wrong in elementWidth(TypeExpression)\n";
     return -1;
 }
 
@@ -183,7 +188,7 @@ bool topIsParenthesis(const TypeExpression &typeExpr)
     // HERE;
     if (!info)
     {
-        std::cerr << "Error: LevelInfo is nullptr\n";
+        std::cerr << LOC << "Error: LevelInfo is nullptr\n";
         // HERE;
         return false;
     }
@@ -213,7 +218,7 @@ Type whatIsType(const TypeExpression &typeExpr)
     LevelInfo *info = temp.levelStack.back();
     if (!info)
     {
-        std::cerr << "Error: LevelInfo is nullptr\n";
+        std::cerr << LOC << "Error: LevelInfo is nullptr\n";
         return Type::UNKNOWN;
     }
 
@@ -256,7 +261,8 @@ Type whatIsType(const TypeExpression &typeExpr)
     return Type::UNKNOWN;
 }
 
-std::string toString(Type whichType){
+std::string toString(Type whichType)
+{
     if (whichType == Type::VARIABLE)
     {
         return "VARIABLE";
@@ -297,13 +303,14 @@ std::string toString(const TypeExpression &typeExpr)
     TypeExpression temp = typeExpr;
     removeTopParenthesis(temp);
     std::string result = "";
-    for(int i = typeExpr.levelStack.size() - 1; i >= 0; i--){
+    for (int i = typeExpr.levelStack.size() - 1; i >= 0; i--)
+    {
         int k = typeExpr.levelStack[i]->levelType;
-        if (k==PARENTHESIS_LEVEL)
+        if (k == PARENTHESIS_LEVEL)
         {
             result = "(" + result + ")";
         }
-        else if (k==BASE_LEVEL)
+        else if (k == BASE_LEVEL)
         {
             BaseInfo *base = dynamic_cast<BaseInfo *>(typeExpr.levelStack[i]);
             // Add qualifiers
@@ -322,7 +329,7 @@ std::string toString(const TypeExpression &typeExpr)
             baseadd = baseadd + base->baseType;
             result = baseadd + (result.empty() ? "" : " ") + result;
         }
-        else if (k==POINTER_LEVEL)
+        else if (k == POINTER_LEVEL)
         {
             PointerInfo *ptr = dynamic_cast<PointerInfo *>(typeExpr.levelStack[i]);
             // Add qualifiers
@@ -339,7 +346,7 @@ std::string toString(const TypeExpression &typeExpr)
             }
             result = "*" + result;
         }
-        else if (k==ARRAY_LEVEL)
+        else if (k == ARRAY_LEVEL)
         {
             ArrayInfo *arr = dynamic_cast<ArrayInfo *>(typeExpr.levelStack[i]);
             result = result + "[" + std::to_string(arr->dimSize) + "]";
@@ -361,7 +368,7 @@ std::string toString(const TypeExpression &typeExpr)
         }
         else
         {
-            std::cerr << "Error: Unknown LevelInfo type\n";
+            std::cerr << LOC << "Error: Unknown LevelInfo type\n";
             return "";
         }
     }
@@ -398,7 +405,7 @@ TypeExpression createTypeExpression(GenericSymbol *symbol)
 
     if (!symbol)
     {
-        std::cerr << "Error: Symbol is nullptr\n";
+        std::cerr << LOC << "Error: Symbol is nullptr\n";
         return typeExpr;
     }
 
@@ -622,7 +629,7 @@ int ProcessConstants(std::string inputValue, TypeExpression &typeExpr, std::stri
     }
     catch (const std::exception &ex)
     {
-        std::cerr << "Error in ProcessConstants: " << ex.what() << "\n";
+        std::cerr << LOC << "Error in ProcessConstants: " << ex.what() << "\n";
         delete base;
         return -1;
     }
@@ -684,7 +691,7 @@ bool isModifiableLvalue(const TypeExpression &type)
     removeTopParenthesis(temp);
 
     Type topType = whatIsType(temp);
-    std::cerr << "Top Type: " << toString(temp) << "\n";
+    std::cerr << LOC << "Top Type: " << toString(temp) << "\n";
 
     // Logic - Array or Function
     if (topType == Type::ARRAY || topType == Type::FUNCTION)
@@ -761,7 +768,7 @@ int checkEquivalance(const TypeExpression &typeExpr1, const TypeExpression &type
     if (!info1 || !info2)
     {
         // Should not happen
-        std::cerr << "Error: LevelInfo is nullptr\n";
+        std::cerr << LOC << "Error: LevelInfo is nullptr\n";
         return false;
     }
 
@@ -811,19 +818,19 @@ int ourEquivalent(const TypeExpression &type1, const TypeExpression &type2)
     TypeExpression temp2 = type2;
     removeTopParenthesis(temp1);
     removeTopParenthesis(temp2);
-    // std::cerr << "Type1: " << toString(temp1) << "\n";
-    // std::cerr << "Type2: " << toString(temp2) << "\n";
+    // std::cerr << LOC  << "Type1: " << toString(temp1) << "\n";
+    // std::cerr << LOC  << "Type2: " << toString(temp2) << "\n";
     // If top is pointer Type - POINTER, ARRAY
     // Then ignore lower levels
     Type topType1 = whatIsType(temp1);
     Type topType2 = whatIsType(temp2);
 
-    // std::cerr << "Top Type1: " << toString(topType1) << "\n";
-    // std::cerr << "Top Type2: " << toString(topType2) << "\n";
+    // std::cerr << LOC  << "Top Type1: " << toString(topType1) << "\n";
+    // std::cerr << LOC  << "Top Type2: " << toString(topType2) << "\n";
 
     bool isPtr1 = (topType1 == Type::POINTER || topType1 == Type::ARRAY);
-    bool isPtr2 = (topType2 == Type::POINTER ||  topType2 == Type::ARRAY);
-    if(isPtr1 && isPtr2)
+    bool isPtr2 = (topType2 == Type::POINTER || topType2 == Type::ARRAY);
+    if (isPtr1 && isPtr2)
     {
         return EQUIVALENT;
     }
@@ -840,7 +847,7 @@ int ourEquivalent(const TypeExpression &type1, const TypeExpression &type2)
         for (int i = 0; i < param1->paramsType.size(); i++)
         {
             int res = ourEquivalent(param1->paramsType[i], param2->paramsType[i]);
-            if(res != EQUIVALENT)
+            if (res != EQUIVALENT)
             {
                 return res;
             }
@@ -856,15 +863,14 @@ int ourEquivalent(const TypeExpression &type1, const TypeExpression &type2)
         return res;
     }
 
-
     // Check equivalance of base level
     bool isNumeric1 = isNumeric(type1);
     bool isNumeric2 = isNumeric(type2);
     if (isNumeric1 && isNumeric2)
     {
-        std::cerr << "Both are numeric\n";
-        std::cerr << "Type1: " << toString(type1) << "\n";
-        std::cerr << "Type2: " << toString(type2) << "\n";
+        std::cerr << LOC << "Both are numeric\n";
+        std::cerr << LOC << "Type1: " << toString(type1) << "\n";
+        std::cerr << LOC << "Type2: " << toString(type2) << "\n";
         // Both are numeric
         std::string base1 = isPrimitive(type1);
         std::string base2 = isPrimitive(type2);
@@ -891,14 +897,8 @@ int ourEquivalent(const TypeExpression &type1, const TypeExpression &type2)
         }
     }
 
-   
-
     return LOW_ERROR;
 }
-
-/*
-
-*/
 
 //=====================[ SubLevel Type's Utilities ]=========================================================================================
 
@@ -950,7 +950,7 @@ int checkEquivalance(const LevelInfo &info1, const LevelInfo &info2)
     else
     {
         // Unknown Level
-        std::cerr << "Error: Unknown LevelInfo\n";
+        std::cerr << LOC << "Error: Unknown LevelInfo\n";
         return LOW_ERROR;
     }
 

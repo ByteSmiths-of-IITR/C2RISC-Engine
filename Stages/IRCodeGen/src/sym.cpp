@@ -57,13 +57,15 @@ int SymbolTable::getGlobaScopeNo()
     return this->globalScope;
 }
 
-int SymbolTable::earlyEntry(){
-    if(this->wasEarlyEntered){
+int SymbolTable::earlyEntry()
+{
+    if (this->wasEarlyEntered)
+    {
         // it's true // So why called again
         CERR << "Error: Twice EarlyEntry is already true\n";
         return -1;
     }
-    
+
     // it's false // So we can set it to true
     CERR << "Info: earlyEntry is set to true\n";
     // call the enterScope
@@ -75,7 +77,8 @@ int SymbolTable::earlyEntry(){
 int NO_EXIT = -10;
 int IGNORED = -20;
 
-int SymbolTable::earlyExit(){
+int SymbolTable::earlyExit()
+{
     // If it's true - So we need to exit
     this->wasEarlyEntered = false; // set it to false
     return (this->exitScope());
@@ -83,13 +86,15 @@ int SymbolTable::earlyExit(){
 
 int SymbolTable::enterScope()
 {
-    if(wasEarlyEntered){
+    if (wasEarlyEntered)
+    {
         // Ignore this enter
         wasEarlyEntered = false; // set it to false
         return IGNORED;
     }
 
-    if(globalScope == -100){
+    if (globalScope == -100)
+    {
         globalScope = this->nextScopeNo;
     }
 
@@ -169,7 +174,7 @@ int SymbolTable::insert(SYMBOL_TYPE symbolType, const std::string &key, GenericS
         // Checking if the symbol is in the current scope [We can't insert it]
         if (temp->scopeNo == this->scopeNo)
         {
-            std::cerr << "Error: Symbol is already present in the current scope\n";
+            std::cerr << LOC << "Error: Symbol is already present in the current scope\n";
             return INSERT_FAILURE;
         }
         status = 1;
@@ -181,7 +186,7 @@ int SymbolTable::insert(SYMBOL_TYPE symbolType, const std::string &key, GenericS
     // Filling Some Information in the SymbolNode
     if (!symbol)
     {
-        std::cerr << "Error: Symbol is nullptr\n";
+        std::cerr << LOC << "Error: Symbol is nullptr\n";
         return BUG;
     }
 
@@ -206,7 +211,7 @@ int SymbolTable::insert(SYMBOL_TYPE symbolType, const std::string &key, GenericS
         head = this->symTable[key]; // won't give segmentation fault
         if (!head)
         {
-            std::cerr << "Error: Symbol is present in the outer scope but head is nullptr\n";
+            std::cerr << LOC << "Error: Symbol is present in the outer scope but head is nullptr\n";
             // This should not happen
             return BUG;
         }
@@ -452,7 +457,6 @@ void SymbolTable::setScopeName(const std::string &scopeName)
 
 std::string GLOBAL_SCOPE = "Global";
 std::string LOCAL_SCOPE = "Local";
-
 
 std::string SymbolTable::getScopeName()
 {

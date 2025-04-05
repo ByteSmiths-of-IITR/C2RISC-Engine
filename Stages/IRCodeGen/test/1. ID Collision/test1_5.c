@@ -17,9 +17,13 @@ enum A{ // error: ‘A’ defined as wrong kind of tag
 void A(); // no error (collision) here
 
 //=========================== C2RISC-Engine =========================================================//
-// Lexical Analysis 👍 | Syntax Analysis 👍 | Semantic Analysis 👍 | 🔖 IRCode Gen
+// Lexical Analysis 👍 | Syntax Analysis 👍 | Semantic Analysis ❌
 // 
 // ------------------------------------------------------------------------------------
+// ----------------------------------- SEMANTIC LOG -----------------------------------
+// SEMANTIC ERROR ‼️ : RecordID "A" already 🫠 present in the current scope
+// SEMANTIC ERROR ‼️ : RecordID "A" already 🫠 present in the current scope
+// ----------------------------------- END OF LOG -----------------------------------
 // 
 // ------------------------------------------------------------------------------------
 // CodeLineNo : TAC                           

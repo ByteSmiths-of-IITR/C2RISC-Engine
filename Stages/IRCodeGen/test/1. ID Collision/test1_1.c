@@ -26,4 +26,5 @@ int main(){
 // 0          : func$0 = 10                   
 // 1          : main                          
 // 2          : func$1 = 30                   
+// 3          : return 0                      
 // 
