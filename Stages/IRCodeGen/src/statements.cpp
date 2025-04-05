@@ -119,7 +119,7 @@ int statement_list_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<in
         // Call the statement handler
         std::vector<int> S1_nextList;
         int s_check = statement_H(node->children[0], S1_nextList, breakList, continueList, caseMap);
-        PASS_THE_ERROR(s_check);
+        RECOVER_THE_ERROR(s_check);
 
         // Pass the data up
         S_nextList = S1_nextList;
@@ -129,7 +129,7 @@ int statement_list_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<in
         // Call the statement list handler
         std::vector<int> S1_nextList;
         int sl_check = statement_list_H(node->children[0], S1_nextList, breakList, continueList, caseMap);
-        PASS_THE_ERROR(sl_check);
+        RECOVER_THE_ERROR(sl_check);
 
         // BackPatch the next list
         int aLabel = CODE_BASE.nextIndex();
@@ -138,7 +138,7 @@ int statement_list_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<in
         // Call the statement handler
         std::vector<int> S2_nextList;
         int s_check = statement_H(node->children[1], S2_nextList, breakList, continueList, caseMap);
-        PASS_THE_ERROR(s_check);
+        RECOVER_THE_ERROR(s_check);
 
         // Pass the data up
         S_nextList = S2_nextList;
@@ -203,7 +203,7 @@ int compound_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vecto
         std::vector<int> S1_breakList;
         std::vector<int> S1_continueList;
         int sl_check = statement_list_H(node->children[1], S1_nextList, S1_breakList, S1_continueList, caseMap);
-        PASS_THE_ERROR(sl_check);
+        RECOVER_THE_ERROR(sl_check);
 
         // Pass the data up
         S_nextList = S1_nextList;
@@ -214,7 +214,7 @@ int compound_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vecto
     {
         // For Now Just Call Declaration List
         int dcl_check = declaration_list_H(node->children[1]);
-        PASS_THE_ERROR(dcl_check);
+        RECOVER_THE_ERROR(dcl_check);
 
         S_nextList = std::vector<int>(); // No Next List
     }
@@ -222,14 +222,14 @@ int compound_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vecto
     {
         // For Now Just Call Declaration List
         int dcl_check = declaration_list_H(node->children[1]);
-        PASS_THE_ERROR(dcl_check);
+        RECOVER_THE_ERROR(dcl_check);
 
         // For Now Just Call Statement List
         std::vector<int> S1_nextList;
         std::vector<int> S1_breakList;
         std::vector<int> S1_continueList;
         int sl_check = statement_list_H(node->children[2], S1_nextList, S1_breakList, S1_continueList, caseMap);
-        PASS_THE_ERROR(sl_check);
+        RECOVER_THE_ERROR(sl_check);
 
         S_nextList = S1_nextList; // This was last statement - can't backpatch here send UP
         breakList = S1_breakList;
@@ -277,7 +277,7 @@ int expression_statement_H(ASTNode *node, std::string inh_whereToSendString, std
         VALUE_TYPE valueType1 = VALUE_TYPE::UNKNOWN;
         SPACE valueSpace1 = SPACE::UNKNOWN_SPACE;
         int e_check = expression_H(node->children[0], "NONE", varName1, type1, valueType1, valueSpace1);
-        PASS_THE_ERROR(e_check);
+        RECOVER_THE_ERROR(e_check);
 
         // Pass the data up
         varName = varName1;
@@ -339,7 +339,7 @@ int selection_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vect
         SPACE valueSpace1;
 
         int e_check = expression_H(node->children[2], "NONE", varName1, type1, valueType1, valueSpace1);
-        PASS_THE_ERROR(e_check);
+        RECOVER_THE_ERROR(e_check);
 
         // 🚀 USAGE 🤫 SPACE CHANGE 🚀
         USAGE_SPACE_CHANGE(varName1, type1, valueSpace1, node);
@@ -367,7 +367,7 @@ int selection_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vect
         std::vector<int> S1_nextList; // This value will be fetchec
         // Next we evaluate the statement
         int s_check = statement_H(node->children[4], S1_nextList, breakList, continueList, caseMap);
-        PASS_THE_ERROR(s_check);
+        RECOVER_THE_ERROR(s_check);
 
         mergeList(S_nextList, E_falselist);
         mergeList(S_nextList, S1_nextList);
@@ -385,7 +385,7 @@ int selection_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vect
         SPACE valueSpace1;
 
         int e_check = expression_H(node->children[2], "NONE", varName1, type1, valueType1, valueSpace1);
-        PASS_THE_ERROR(e_check);
+        RECOVER_THE_ERROR(e_check);
 
         // 🚀 USAGE 🤫 SPACE CHANGE 🚀
         USAGE_SPACE_CHANGE(varName1, type1, valueSpace1, node);
@@ -413,7 +413,7 @@ int selection_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vect
         std::vector<int> S1_nextList; // This value will be fetchec
         // Next we evaluate the statement
         int s_check = statement_H(node->children[4], S1_nextList, breakList, continueList, caseMap);
-        PASS_THE_ERROR(s_check);
+        RECOVER_THE_ERROR(s_check);
 
         int cLabel = CODE_BASE.addTAC(node, TO_BACKPATCH, GOTO_LABEL, NO_ARG, NO_ARG); // goto cLabel
 
@@ -426,7 +426,7 @@ int selection_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vect
         std::vector<int> S2_nextList; // This value will be fetchec
         // Next we evaluate the statement
         int s_check2 = statement_H(node->children[6], S2_nextList, breakList, continueList, caseMap);
-        PASS_THE_ERROR(s_check2);
+        RECOVER_THE_ERROR(s_check2);
         // aptLOG("s2 okay");
 
         mergeList(S_nextList, S1_nextList);
@@ -443,7 +443,7 @@ int selection_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vect
         SPACE valueSpace1;
 
         int e_check = expression_H(node->children[2], "NONE", varName1, type1, valueType1, valueSpace1);
-        PASS_THE_ERROR(e_check);
+        RECOVER_THE_ERROR(e_check);
 
         // 🚀 USAGE 🤫 SPACE CHANGE 🚀
         USAGE_SPACE_CHANGE(varName1, type1, valueSpace1, node);
@@ -470,7 +470,7 @@ int selection_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vect
         caseAllowed++;
         breakAllowed++;
         int s_check = statement_H(node->children[4], S1_nextList, S1_breakList, S1_continueList, caseMap1);
-        PASS_THE_ERROR(s_check);
+        RECOVER_THE_ERROR(s_check);
         caseAllowed--;
         breakAllowed--;
         int defaultExit = CODE_BASE.addTAC(node, TO_BACKPATCH, GOTO_LABEL, NO_ARG, NO_ARG); // goto defaultExit
@@ -566,7 +566,7 @@ int iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vect
         VALUE_TYPE valueType1;
         SPACE valueSpace1;
         int e_check = expression_H(node->children[2], "NONE", varName1, type1, valueType1, valueSpace1);
-        PASS_THE_ERROR(e_check);
+        RECOVER_THE_ERROR(e_check);
 
         // 🚀 USAGE 🤫 SPACE CHANGE 🚀
         USAGE_SPACE_CHANGE(varName1, type1, valueSpace1, node);
@@ -599,7 +599,7 @@ int iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vect
         continueAllowed++;
         // Next we evaluate the statement
         int s_check = statement_H(node->children[4], S1_nextList, breakList1, continueList1, caseMap);
-        PASS_THE_ERROR(s_check);
+        RECOVER_THE_ERROR(s_check);
 
         breakAllowed--;
         continueAllowed--;
@@ -627,7 +627,7 @@ int iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vect
         VALUE_TYPE valueType1;
         SPACE valueSpace1;
         int e_check = expression_H(node->children[2], "NONE", varName1, type1, valueType1, valueSpace1);
-        PASS_THE_ERROR(e_check);
+        RECOVER_THE_ERROR(e_check);
 
         // 🚀 USAGE 🤫 SPACE CHANGE 🚀
         USAGE_SPACE_CHANGE(varName1, type1, valueSpace1, node);
@@ -662,7 +662,7 @@ int iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vect
         continueAllowed++;
         // Next we evaluate the statement
         int s_check = statement_H(node->children[4], S1_nextList, breakList1, continueList1, caseMap);
-        PASS_THE_ERROR(s_check);
+        RECOVER_THE_ERROR(s_check);
         breakAllowed--;
         continueAllowed--;
 
@@ -691,7 +691,7 @@ int iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vect
         VALUE_TYPE valueType1;
         SPACE valueSpace1;
         int e_check = expression_H(node->children[4], "NONE", varName1, type1, valueType1, valueSpace1);
-        PASS_THE_ERROR(e_check);
+        RECOVER_THE_ERROR(e_check);
 
         // 🚀 USAGE 🤫 SPACE CHANGE 🚀
         USAGE_SPACE_CHANGE(varName1, type1, valueSpace1, node);
@@ -727,7 +727,7 @@ int iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vect
         breakAllowed++;
         continueAllowed++;
         int s_check = statement_H(node->children[1], S1_nextList, breakList1, continueList1, caseMap);
-        PASS_THE_ERROR(s_check);
+        RECOVER_THE_ERROR(s_check);
         breakAllowed--;
         continueAllowed--;
 
@@ -748,7 +748,7 @@ int iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vect
         VALUE_TYPE valueType1 = VALUE_TYPE::UNKNOWN;
         SPACE valueSpace1 = SPACE::UNKNOWN_SPACE;
         int est_check = expression_statement_H(node->children[2], "NONE", varName1, type1, valueType1, valueSpace1);
-        PASS_THE_ERROR(est_check);
+        RECOVER_THE_ERROR(est_check);
 
         int loopStart = CODE_BASE.nextIndex();
         std::string loopStartLabel = "L(" + std::to_string(loopStart) + ")";
@@ -760,7 +760,7 @@ int iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vect
         VALUE_TYPE valueType2 = VALUE_TYPE::UNKNOWN;
         SPACE valueSpace2 = SPACE::UNKNOWN_SPACE;
         int est_check2 = expression_statement_H(node->children[3], "NONE", varName2, type2, valueType2, valueSpace2);
-        PASS_THE_ERROR(est_check2);
+        RECOVER_THE_ERROR(est_check2);
 
         // TypeChecking of ExpressionStatement_2
         //  Type NOT allowed - STRUCT_UNION
@@ -792,7 +792,7 @@ int iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vect
         continueAllowed++;
         // Next we evaluate the statement
         int s_check = statement_H(node->children[5], S1_nextList, breakList1, continueList1, caseMap);
-        PASS_THE_ERROR(s_check);
+        RECOVER_THE_ERROR(s_check);
         breakAllowed--;
         continueAllowed--;
 
@@ -1000,7 +1000,7 @@ int jump_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<in
         if (continueAllowed <= 0)
         {
             semanticError("\'continue\' statement not in loop statement");
-            FAIL_H;
+            FAIL_H; 
             return FAIL;
         }
         int aLabel = CODE_BASE.addTAC(node, TO_BACKPATCH, GOTO_LABEL, NO_ARG, NO_ARG); // goto aLabel
@@ -1042,7 +1042,7 @@ int jump_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<in
         VALUE_TYPE valueType1;
         SPACE valueSpace1;
         int e_check = expression_H(node->children[1], "NONE", varName1, type1, valueType1, valueSpace1);
-        PASS_THE_ERROR(e_check);
+        RECOVER_THE_ERROR(e_check);
 
         // 🚀 USAGE 🤫 SPACE CHANGE 🚀
         USAGE_SPACE_CHANGE(varName1, type1, valueSpace1, node);
@@ -1156,7 +1156,7 @@ int labeled_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector
     std::string whichProduction = getProduction(node);
     std::string P1 = "IDENTIFIER COLON statement";
     std::string P2 = "CASE constant_expression COLON statement";
-    std::string P3 = "DEFAULT COLON statement"; // [🔴🔴🔴 TOTHINK 🔴🔴🔴]
+    std::string P3 = "DEFAULT COLON statement";
 
     aptLOG("⬇️ S_nextList = " + toString(S_nextList));
 
@@ -1177,7 +1177,7 @@ int labeled_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector
         std::vector<int> S1_breakList;
         std::vector<int> S1_continueList;
         int s_check = statement_H(node->children[2], S1_nextList, S1_breakList, S1_continueList, caseMap);
-        PASS_THE_ERROR(s_check);
+        RECOVER_THE_ERROR(s_check);
 
         // Pass the data up
         S_nextList = S1_nextList;
@@ -1195,7 +1195,7 @@ int labeled_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector
         std::string constExpr;
         // call the constant_expression
         int cex_check = constant_expression_H(node->children[1], constExpr);
-        PASS_THE_ERROR(cex_check);
+        RECOVER_THE_ERROR(cex_check);
 
         // NO need to check
 
@@ -1209,7 +1209,7 @@ int labeled_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector
 
         // Call the statement
         int s_check = statement_H(node->children[3], S_nextList, breakList, continueList, caseMap);
-        PASS_THE_ERROR(s_check);
+        RECOVER_THE_ERROR(s_check);
     }
     else if (whichProduction == P3)
     {
@@ -1233,7 +1233,7 @@ int labeled_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector
         aptHERE;
         // Call the statement
         int s_check = statement_H(node->children[2], S_nextList, breakList, continueList, caseMap);
-        PASS_THE_ERROR(s_check);
+        RECOVER_THE_ERROR(s_check);
         aptHERE;
     }
     else

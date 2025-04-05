@@ -723,7 +723,7 @@ extern std::string semanticMessage;
     if (ANNOTATE) node->addAttribute("😱 COMPILER BUG Exit [" + std::to_string(__LINE__) + ":" + __FILE__ + "] ✋")
 
 #define RECOVER_H \
-    if (ANNOTATE) node->addAttribute("🤕 COMPILER Exit [" + std::to_string(__LINE__) + ":" + __FILE__ + "] ✋")
+    if (ANNOTATE) node->addAttribute("🤕 RECOVERY from Semantic Error 🤘")
 
 #define RECOVER_THE_ERROR(x) \
     if ((x) == FAIL)         \
