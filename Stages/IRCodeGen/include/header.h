@@ -3,24 +3,7 @@
 
 #include "utility.h"
 
-//====================[ GCC Header Files ]=========================================================================================
-#include <iostream>
-#include <vector>
-#include <string>
-#include <map>
-#include <fstream>
-#include <stdexcept>
-#include <numeric>
-#include <algorithm>
-#include <stack>
-#include <map>
-#include <utility>
-#include <map>
-#include <iomanip>
-#include <memory>
-#include <sstream>
-#include <iomanip>
-#include <cassert>
+
 //====================[ Globaly Accessible SymbolTable & TAC-CodeBase ]=========================================================================================
 
 //====================[ Annotated PTree Utilities ]=========================================================================================

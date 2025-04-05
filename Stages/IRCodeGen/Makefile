@@ -60,7 +60,7 @@ PARSER_C = $(BUILD_DIR)/parser.tab.c
 PARSER = $(GRAMMAR_DIR)/parser.y # just change Grammar File Here will change all 
 
 PARSER_H = $(INCLUDE_DIR)/parser.tab.h
-EXECUTABLE = $(BIN_DIR)/parser
+EXECUTABLE = $(BIN_DIR)/C2RISC_Engine
 
 # Making Object files
 SRC_FILES = $(wildcard $(SRC_DIR)/*.cpp)
@@ -72,30 +72,31 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
 -include $(OBJ_FILES:.o=.d)
 
 
-
 #More Result FIle
 S_EXPR = $(OUTPUT_DIR)/s_expr.txt
 Recursive = $(OUTPUT_DIR)/recursive_output.txt
 
 
-
 # Default target
-all: $(REQUIRED_DIRS) $(OUTPUT) $(INPUT) $(CERR)
+all: $(REQUIRED_DIRS) $(OUTPUT) $(INPUT) $(CERR) 
+
+compiler: all $(EXECUTABLE) $(INPUT) $(OUTPUT) $(CERR)
+	@echo "-----🏗️ C2RISC_Engine Successfully Built 🏗️-----"
 
 # Step 1: Generate parser files from Bison
 $(PARSER_C) $(PARSER_H): $(PARSER) 
 	@echo "~~~~~~~~~~~~~~~~~~~~~ Making Parser ~~~~~~~~~~~~~~~~~"
-	@$(BISON) -d $(PARSER) --output=$(PARSER_C) --header=$(PARSER_H) 
+	$(BISON) -d $(PARSER) --output=$(PARSER_C) --header=$(PARSER_H) 
 
 # Step 2: Generate lexer file from Flex
 $(LEXER_C): $(LEXER) 
 	@echo "~~~~~~~~~~~~~~~~~~~~~ Making Lexer ~~~~~~~~~~~~~~~~~"
-	@$(FLEX) -o $(LEXER_C) $(LEXER)
+	$(FLEX) -o $(LEXER_C) $(LEXER)
 
 # Step 3: Compile everything together into an executable
 $(EXECUTABLE): $(LEXER_C) $(PARSER_C) $(PARSER_H) $(OBJ_FILES) 
 	@echo "=================== 🔨 Making C2RISC Engine 🔨 ==================="
-	@$(CXX) $(CXXFLAGS) $(LEXER_C) $(PARSER_C) $(OBJ_FILES) -o $(EXECUTABLE)
+	$(CXX) $(CXXFLAGS) $(LEXER_C) $(PARSER_C) $(OBJ_FILES) -o $(EXECUTABLE)
 
 $(CERR): | $(OUTPUT_DIR)
 	@touch $(CERR)
@@ -103,8 +104,9 @@ $(CERR): | $(OUTPUT_DIR)
 $(OUTPUT): | $(OUTPUT_DIR)
 	@touch $(OUTPUT)
 
-run: all $(EXECUTABLE) $(INPUT) $(OUTPUT) $(CERR)  
-	@./$(EXECUTABLE) $(INPUT) $(OUTPUT) 2> $(CERR) 
+run: all $(EXECUTABLE) $(INPUT) $(OUTPUT) $(CERR)
+	@echo "🚥 Starting C2RISC Engine 🟢 on -" $(INPUT)
+	./$(EXECUTABLE) $(INPUT) 2> $(CERR)
 
 # This will only run the parser and generate the output file [NO RESULT]
 
@@ -149,9 +151,8 @@ s: all $(EXECUTABLE) $(INPUT)  $(CERR)
 
 # Clean generated files
 clean:
-	@rm -f $(LEXER_C) $(PARSER_C) $(PARSER_H) $(EXECUTABLE) $(OUTPUT) \
-	$(CERR) $(PTreeFile) $(PTreeSVG) $(S_EXPR) $(Recursive) $(ASSEMBLY) \
-	$(OBJ_FILES)
+	@rm -f $(LEXER_C) $(PARSER_C) $(PARSER_H) $(EXECUTABLE) \
+	$(OBJ_DIR)/* $(BUILD_DIR)/* $(OUTPUT_DIR)/* $(BIN_DIR)/*
 
 again:
 	rm -f $(EXECUTABLE) \
@@ -201,19 +202,6 @@ sym: all $(SYM_H) $(SYM_CPP) $(SYM_TEST)
 	@./$(BIN_DIR)/symTest $(SYM_TABLEFile)
 
 
-# IRSemantic = $(SRC_DIR)/IRCodeGen.y
-# IRSemantic_H = $(INCLUDE_DIR)/IRCodeGen.tab.h
-# IRSemantic_CPP = $(SRC_DIR)/IRCodeGen.tab.c
-# IRSemantic_EXECUTABLE = $(BIN_DIR)/IRCodeGen
-
-# $(IRSemantic_H): $(IRSemantic)
-# 	$(BISON) -d $(IRSemantic) --output=$(IRSemantic_CPP) --header=$(IRSemantic_H)
-
-
-# IRCode: $(IRSemantic)  $(IRSemantic_H) $(IRSemantic_CPP) $(SYM_CPP) $(SEMANTIC_CPP) $(TAC_CPP) $(UTILITY_CPP)
-# 	$(CXX) $(LEXER_C) $(IRSemantic_CPP) $(SYM_CPP) $(SEMANTIC_CPP) $(TAC_CPP) $(UTILITY_CPP) -o $(IRSemantic_EXECUTABLE) $(CXXFLAGS) -I $(INCLUDE_DIR)
-# 	./$(IRSemantic_EXECUTABLE)
-
 UNIT_TEST = unit_testing.cpp
 
 UNIT_TEST_EXECUTABLE = $(BIN_DIR)/unit_test
@@ -234,18 +222,18 @@ $(IRCodeFile):
 
 irCode: all $(EXECUTABLE) $(INPUT) $(OUTPUT) $(CERR) $(IRCodeFile)
 	@echo "🚥 Starting C2RISC Engine 🟢 "
-	@-./$(EXECUTABLE) $(INPUT) -o $(OUTPUT) -d2 $(APTreeFile) 2> $(CERR)
+	@-./$(EXECUTABLE) $(INPUT) -o $(IRCodeFile) -d2 $(APTreeFile) 2> $(CERR)
 	@echo "🎄 APTree in - " $(APTreeSVG)
 	@-$(DOT) -Tsvg $(APTreeFile) -o $(APTreeSVG)
 	@open -a "Visual Studio Code" $(IRCodeFile)
 
 
-testing: all $(EXECUTABLE) $(INPUT) $(OUTPUT) $(CERR) $(IRCodeFile)
+testing: all $(EXECUTABLE) $(INPUT) $(OUTPUT) $(CERR)
 	@echo "🚥 Starting C2RISC Engine 🟢 "
 	@-./$(EXECUTABLE) $(INPUT) -t  2> $(CERR)
 	@echo "Testing Over"
 
-debugging: all $(EXECUTABLE) $(INPUT) $(OUTPUT) $(CERR) $(IRCodeFile)
+debugging: all $(EXECUTABLE) $(INPUT) $(OUTPUT) $(CERR)
 	@echo "🚥 Starting C2RISC Engine 🟢 "
 	@-./$(EXECUTABLE) $(INPUT) -t -d2 $(APTreeFile) 2> $(CERR)
 	@echo "🎄 APTree in - " $(APTreeSVG)

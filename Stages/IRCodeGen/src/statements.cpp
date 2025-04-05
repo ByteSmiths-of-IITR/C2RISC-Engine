@@ -519,8 +519,8 @@ void iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vec
     std::string P6 = "FOR LPAREN declaration expression_statement expression RPAREN statement";
 
     // Early Scope Entry
-    int scopeNo = SYM_TABLE.earlyEntry(); //  [☀️ EarlyScope Entry]                                                         // This will tell the symbol table to ignore the next entry by compound_statement
-    aptLOG("Early Scope Entry : S" + std::to_string(scopeNo) + " ☀️");
+    int enteredScope = SYM_TABLE.enterScope(); // This will tell the symbol table to ignore the next entry by compound_statement
+    aptLOG("Scope Entered : S" + std::to_string(enteredScope) + " ⤵️");
 
     aptLOG("⬇️ S_nextList = " + toString(S_nextList));
     aptLOG("⬇️ breakList = " + toString(breakList));
@@ -910,8 +910,8 @@ void iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vec
     }
 
     // EXIT of Early Entry
-    int exitedScope = SYM_TABLE.earlyExit(); //  [☀️ EarlyScope Entry's EXIT]
-    aptLOG("Exit due to EarlyEntry : S" + std::to_string(exitedScope) + " ☀️");
+    int exitedScope = SYM_TABLE.exitScope(); //  
+    aptLOG("Scope Exited : S" + std::to_string(exitedScope) + " ↙️");
 
     aptLOG("⬆️ S_nextList = " + toString(S_nextList));
     aptLOG("⬆️ breakList = " + toString(breakList));

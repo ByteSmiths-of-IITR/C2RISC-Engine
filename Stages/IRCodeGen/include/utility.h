@@ -1,6 +1,23 @@
 #ifndef UTILITY_H
 #define UTILITY_H
-
+//====================[ GCC Header Files ]=========================================================================================
+#include <iostream>
+#include <vector>
+#include <string>
+#include <map>
+#include <fstream>
+#include <stdexcept>
+#include <numeric>
+#include <algorithm>
+#include <stack>
+#include <map>
+#include <utility>
+#include <map>
+#include <iomanip>
+#include <memory>
+#include <sstream>
+#include <iomanip>
+#include <cassert>
 #include <string>
 #include <vector>
 #include <fstream>
@@ -11,7 +28,6 @@
 #include <algorithm>
 #include <set>
 #include <iomanip>
-
 #include <memory>
 #include <sstream>
 #include <iomanip>
@@ -21,6 +37,11 @@
 #include <cstdio>
 #include <cctype>
 #include <signal.h>
+#include <limits>
+#include <unordered_map>
+#include <unordered_set>
+#include <cmath>
+#include <cstdint>
 
 // Forward declaration
 class TokenAttribute;
