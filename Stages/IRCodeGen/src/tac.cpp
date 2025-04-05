@@ -19,6 +19,7 @@ std::string IF_TRUE = "if";
 std::string GOTO_LABEL = "goto";
 std::string GOTO_EQUAL = "goto_equal";
 std::string TO_BACKPATCH = "to_backpatch";
+std::string RETURN_FUNCTION = "return";
 
 #include <iomanip>
 
@@ -127,11 +128,14 @@ std::string TAC_Quadruple::toString()
     else if(op == GOTO_EQUAL){
         str = "if " + arg1 + " == " + arg2 + " goto " + result; // if arg1 == arg2 goto result
     }
-
+    else if(op == RETURN_FUNCTION){
+        str = "return " + arg1; // return arg1
+    }
     else
     {
         str = result + " = " + arg1 + " " + op + " " + arg2; // result = arg1 op arg2
     }
+
 
     return str;
 }

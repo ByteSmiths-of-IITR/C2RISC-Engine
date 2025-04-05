@@ -23,8 +23,9 @@ int main(){
 // 
 // ------------------------------------------------------------------------------------
 // ----------------------------------- SEMANTIC LOG -----------------------------------
-// SEMANTIC ERROR ‼️ : Redefinition of function "func1"
-// SEMANTIC ERROR ‼️ : Redefinition of function "func1"
+// SEMANTIC ERROR ‼️ : Function Definition "func1" signature mismatch with previous declaration
+// SEMANTIC ERROR ‼️ : Initialization Type Mismatch 😔 for 'a' which is 'float' and initialized it with 'double'
+// SEMANTIC ERROR ‼️ : Function Definition "func1" signature mismatch with previous declaration
 // ----------------------------------- END OF LOG -----------------------------------
 // 
 // ------------------------------------------------------------------------------------
@@ -32,5 +33,7 @@ int main(){
 // ---------- : -------------------------------
 // 0          : func1                         
 // 1          : a$1 = 10                      
-// 2          : main                          
+// 2          : func1                         
+// 3          : func1                         
+// 4          : main                          
 // 

@@ -3,7 +3,7 @@
 
 //=====================[ Statements ]=========================================================================================
 
-void statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<int> &breakList, std::vector<int> &continueList, std::map<std::string, int> &caseMap)
+int statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<int> &breakList, std::vector<int> &continueList, std::map<std::string, int> &caseMap)
 {
     ENTRY_H;
 
@@ -23,7 +23,8 @@ void statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<int> &
         // Call the labeled statement handler
         // Data to be fetched
         std::vector<int> S1_nextList;
-        labeled_statement_H(node->children[0], S1_nextList, breakList, continueList, caseMap);
+        int ls_check = labeled_statement_H(node->children[0], S1_nextList, breakList, continueList, caseMap);
+        PASS_THE_ERROR(ls_check);
 
         // Pass the data up
         S_nextList = S1_nextList;
@@ -33,7 +34,8 @@ void statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<int> &
         // Call the compound statement handler
         // Data to be fetched
         std::vector<int> S1_nextList;
-        compound_statement_H(node->children[0], S1_nextList, breakList, continueList, caseMap);
+        int cs_check = compound_statement_H(node->children[0], S1_nextList, breakList, continueList, caseMap);
+        PASS_THE_ERROR(cs_check);
 
         // Pass the data up
         S_nextList = S1_nextList;
@@ -46,7 +48,8 @@ void statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<int> &
         TypeExpression type;
         VALUE_TYPE valueType = VALUE_TYPE::UNKNOWN;
         SPACE valueSpace = SPACE::UNKNOWN_SPACE;
-        expression_statement_H(node->children[0], "NONE", varName, type, valueType, valueSpace);
+        int est_check = expression_statement_H(node->children[0], "NONE", varName, type, valueType, valueSpace);
+        PASS_THE_ERROR(est_check);
 
         // Pass the data up
         S_nextList = std::vector<int>(); // No Next List
@@ -55,7 +58,8 @@ void statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<int> &
     {
         // Call the selection statement handler
         std::vector<int> S1_nextList;
-        selection_statement_H(node->children[0], S1_nextList, breakList, continueList, caseMap);
+        int sst_check = selection_statement_H(node->children[0], S1_nextList, breakList, continueList, caseMap);
+        PASS_THE_ERROR(sst_check);
 
         // Pass the data up
         S_nextList = S1_nextList;
@@ -65,8 +69,8 @@ void statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<int> &
         // Call the iteration statement handler
         // Data to be fetched
         std::vector<int> S1_nextList;
-        iteration_statement_H(node->children[0], S1_nextList, breakList, continueList, caseMap);
-
+        int ist_check = iteration_statement_H(node->children[0], S1_nextList, breakList, continueList, caseMap);
+        PASS_THE_ERROR(ist_check);
         // Pass the data up
         S_nextList = S1_nextList;
     }
@@ -75,7 +79,8 @@ void statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<int> &
         // Call the jump statement handler
         // Data to be fetched
         std::vector<int> S1_nextList;
-        jump_statement_H(node->children[0], S1_nextList, breakList, continueList, caseMap);
+        int jst_check = jump_statement_H(node->children[0], S1_nextList, breakList, continueList, caseMap);
+        PASS_THE_ERROR(jst_check);
 
         // Pass the data up
         S_nextList = S1_nextList;
@@ -83,20 +88,23 @@ void statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<int> &
     else if (whichProduction == P7)
     {
         // Call the declaration handler
-        declaration_H(node->children[0]);
-    }
+        int dcl_check = declaration_H(node->children[0]);
+        PASS_THE_ERROR(dcl_check);
+    }   
     else
     {
-        BUG_EXIT;
-        return;
+        compilerError("")
+        BUG_H;
+        return BUG;
     }
 
     aptLOG("⬆️ S_nextList = " + toString(S_nextList));
 
     EXIT_H;
+    return OKAY;
 }
 
-void statement_list_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<int> &breakList, std::vector<int> &continueList, std::map<std::string, int> &caseMap)
+int statement_list_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<int> &breakList, std::vector<int> &continueList, std::map<std::string, int> &caseMap)
 {
     ENTRY_H;
 
@@ -110,7 +118,8 @@ void statement_list_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<i
     {
         // Call the statement handler
         std::vector<int> S1_nextList;
-        statement_H(node->children[0], S1_nextList, breakList, continueList, caseMap);
+        int s_check = statement_H(node->children[0], S1_nextList, breakList, continueList, caseMap);
+        PASS_THE_ERROR(s_check);
 
         // Pass the data up
         S_nextList = S1_nextList;
@@ -119,7 +128,8 @@ void statement_list_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<i
     {
         // Call the statement list handler
         std::vector<int> S1_nextList;
-        statement_list_H(node->children[0], S1_nextList, breakList, continueList, caseMap);
+        int sl_check = statement_list_H(node->children[0], S1_nextList, breakList, continueList, caseMap);
+        PASS_THE_ERROR(sl_check);
 
         // BackPatch the next list
         int aLabel = CODE_BASE.nextIndex();
@@ -127,25 +137,28 @@ void statement_list_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<i
 
         // Call the statement handler
         std::vector<int> S2_nextList;
-        statement_H(node->children[1], S2_nextList, breakList, continueList, caseMap);
+        int s_check = statement_H(node->children[1], S2_nextList, breakList, continueList, caseMap);
+        PASS_THE_ERROR(s_check);
 
         // Pass the data up
         S_nextList = S2_nextList;
     }
     else
     {
-        BUG_EXIT;
+        compilerError("Wrong Production in statement_list_H");
+        BUG_H;
         // Setup Dummy Data
         S_nextList = std::vector<int>(); // No Next List
-        return;
+        return BUG;
     }
 
     aptLOG("⬆️ S_nextList = " + toString(S_nextList));
 
     EXIT_H;
+    return OKAY;
 }
 
-void compound_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<int> &breakList, std::vector<int> &continueList, std::map<std::string, int> &caseMap)
+int compound_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<int> &breakList, std::vector<int> &continueList, std::map<std::string, int> &caseMap)
 {
     ENTRY_H;
 
@@ -157,9 +170,10 @@ void compound_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vect
 
     if (whichProduction != P1 && whichProduction != P2 && whichProduction != P3 && whichProduction != P4)
     {
-        BUG_EXIT;
+        compilerError("Wrong Production in compound_statement_H");
+        BUG_H;
         S_nextList = std::vector<int>();
-        return;
+        return BUG;
     }
 
     int enteredScope = SYM_TABLE.enterScope();
@@ -188,7 +202,8 @@ void compound_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vect
         std::vector<int> S1_nextList;
         std::vector<int> S1_breakList;
         std::vector<int> S1_continueList;
-        statement_list_H(node->children[1], S1_nextList, S1_breakList, S1_continueList, caseMap);
+        int sl_check = statement_list_H(node->children[1], S1_nextList, S1_breakList, S1_continueList, caseMap);
+        PASS_THE_ERROR(sl_check);
 
         // Pass the data up
         S_nextList = S1_nextList;
@@ -198,20 +213,23 @@ void compound_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vect
     else if (whichProduction == P3)
     {
         // For Now Just Call Declaration List
-        declaration_list_H(node->children[1]);
+        int dcl_check = declaration_list_H(node->children[1]);
+        PASS_THE_ERROR(dcl_check);
 
         S_nextList = std::vector<int>(); // No Next List
     }
     else if (whichProduction == P4)
     {
         // For Now Just Call Declaration List
-        declaration_list_H(node->children[1]);
+        int dcl_check = declaration_list_H(node->children[1]);
+        PASS_THE_ERROR(dcl_check);
 
         // For Now Just Call Statement List
         std::vector<int> S1_nextList;
         std::vector<int> S1_breakList;
         std::vector<int> S1_continueList;
-        statement_list_H(node->children[2], S1_nextList, S1_breakList, S1_continueList, caseMap);
+        int sl_check = statement_list_H(node->children[2], S1_nextList, S1_breakList, S1_continueList, caseMap);
+        PASS_THE_ERROR(sl_check);
 
         S_nextList = S1_nextList; // This was last statement - can't backpatch here send UP
         breakList = S1_breakList;
@@ -219,8 +237,9 @@ void compound_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vect
     }
     else
     {
-        BUG_EXIT;
-        return;
+        compilerError("Wrong Production in compound_statement_H");
+        BUG_H;
+        return BUG;
     }
 
     aptLOG("⬆️ S_nextList = " + toString(S_nextList));
@@ -239,9 +258,10 @@ void compound_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vect
     }
 
     EXIT_H;
+    return OKAY;
 }
 
-void expression_statement_H(ASTNode *node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace)
+int expression_statement_H(ASTNode *node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace)
 {
     ENTRY_H;
     std::string whichProduction = getProduction(node);
@@ -256,8 +276,8 @@ void expression_statement_H(ASTNode *node, std::string inh_whereToSendString, st
         TypeExpression type1 = TypeExpression();
         VALUE_TYPE valueType1 = VALUE_TYPE::UNKNOWN;
         SPACE valueSpace1 = SPACE::UNKNOWN_SPACE;
-        expression_H(node->children[0], "NONE", varName1, type1, valueType1, valueSpace1);
-        PASS_THE_ERROR(varName1);
+        int e_check = expression_H(node->children[0], "NONE", varName1, type1, valueType1, valueSpace1);
+        PASS_THE_ERROR(e_check);
 
         // Pass the data up
         varName = varName1;
@@ -275,9 +295,9 @@ void expression_statement_H(ASTNode *node, std::string inh_whereToSendString, st
     }
     else
     {
-        BUG_EXIT;
-        varName = PASS_ERROR;
-        return;
+        compilerError("Wrong Production in expression_statement_H");
+        BUG_H;
+        return BUG;
     }
 
     aptLOG("❣️ varName : " + varName);
@@ -286,13 +306,14 @@ void expression_statement_H(ASTNode *node, std::string inh_whereToSendString, st
     aptLOG("❣️ valueSpace : " + toString(valueSpace));
 
     EXIT_H;
+    return OKAY;
 }
 
 //==================== [Control Flow Statements] =========================================================================================
 
 std::string DEFAULT_CASE = "DEFAULT_CASE";
 
-void selection_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<int> &breakList, std::vector<int> &continueList, std::map<std::string, int> &caseMap)
+int selection_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<int> &breakList, std::vector<int> &continueList, std::map<std::string, int> &caseMap)
 {
     ENTRY_H;
 
@@ -317,8 +338,8 @@ void selection_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vec
         VALUE_TYPE valueType1;
         SPACE valueSpace1;
 
-        expression_H(node->children[2], "NONE", varName1, type1, valueType1, valueSpace1);
-        PASS_THE_ERROR(varName1);
+        int e_check = expression_H(node->children[2], "NONE", varName1, type1, valueType1, valueSpace1);
+        PASS_THE_ERROR(e_check);
 
         // 🚀 USAGE 🤫 SPACE CHANGE 🚀
         USAGE_SPACE_CHANGE(varName1, type1, valueSpace1, node);
@@ -328,9 +349,9 @@ void selection_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vec
         Type whichType = whatIsType(type1);
         if (whichType == Type::STRUCT_UNION)
         {
-            BUG_EXIT;
-            semanticLOG.push_back("🚨 Type Error: Expression inside if statement cannot be of type STRUCT_UNION");
-            return;
+            semanticError("Expression inside if statement cannot be of type STRUCT_UNION");
+            FAIL_H;
+            return FAIL;
         }
 
         int aLabel = CODE_BASE.addTAC(node, TO_BACKPATCH, IF_TRUE, varName1, NO_ARG);  // if (varName != 0) goto aLabel
@@ -345,7 +366,8 @@ void selection_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vec
 
         std::vector<int> S1_nextList; // This value will be fetchec
         // Next we evaluate the statement
-        statement_H(node->children[4], S1_nextList, breakList, continueList, caseMap);
+        int s_check = statement_H(node->children[4], S1_nextList, breakList, continueList, caseMap);
+        PASS_THE_ERROR(s_check);
 
         mergeList(S_nextList, E_falselist);
         mergeList(S_nextList, S1_nextList);
@@ -362,8 +384,8 @@ void selection_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vec
         VALUE_TYPE valueType1;
         SPACE valueSpace1;
 
-        expression_H(node->children[2], "NONE", varName1, type1, valueType1, valueSpace1);
-        PASS_THE_ERROR(varName1);
+        int e_check = expression_H(node->children[2], "NONE", varName1, type1, valueType1, valueSpace1);
+        PASS_THE_ERROR(e_check);
 
         // 🚀 USAGE 🤫 SPACE CHANGE 🚀
         USAGE_SPACE_CHANGE(varName1, type1, valueSpace1, node);
@@ -373,9 +395,9 @@ void selection_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vec
         Type whichType = whatIsType(type1);
         if (whichType == Type::STRUCT_UNION)
         {
-            BUG_EXIT;
-            semanticLOG.push_back("🚨 Type Error: Expression inside if statement cannot be of type STRUCT_UNION");
-            return;
+            semanticError("Type Error: Expression inside if statement cannot be of type STRUCT_UNION");
+            FAIL_H;
+            return FAIL;
         }
 
         int aLabel = CODE_BASE.addTAC(node, TO_BACKPATCH, IF_TRUE, varName1, NO_ARG);  // if (varName != 0) goto aLabel
@@ -390,7 +412,8 @@ void selection_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vec
 
         std::vector<int> S1_nextList; // This value will be fetchec
         // Next we evaluate the statement
-        statement_H(node->children[4], S1_nextList, breakList, continueList, caseMap);
+        int s_check = statement_H(node->children[4], S1_nextList, breakList, continueList, caseMap);
+        PASS_THE_ERROR(s_check);
 
         int cLabel = CODE_BASE.addTAC(node, TO_BACKPATCH, GOTO_LABEL, NO_ARG, NO_ARG); // goto cLabel
 
@@ -402,7 +425,8 @@ void selection_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vec
 
         std::vector<int> S2_nextList; // This value will be fetchec
         // Next we evaluate the statement
-        statement_H(node->children[6], S2_nextList, breakList, continueList, caseMap);
+        int s_check2 = statement_H(node->children[6], S2_nextList, breakList, continueList, caseMap);
+        PASS_THE_ERROR(s_check2);
         // aptLOG("s2 okay");
 
         mergeList(S_nextList, S1_nextList);
@@ -418,8 +442,8 @@ void selection_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vec
         VALUE_TYPE valueType1;
         SPACE valueSpace1;
 
-        expression_H(node->children[2], "NONE", varName1, type1, valueType1, valueSpace1);
-        PASS_THE_ERROR(varName1);
+        int e_check = expression_H(node->children[2], "NONE", varName1, type1, valueType1, valueSpace1);
+        PASS_THE_ERROR(e_check);
 
         // 🚀 USAGE 🤫 SPACE CHANGE 🚀
         USAGE_SPACE_CHANGE(varName1, type1, valueSpace1, node);
@@ -445,7 +469,8 @@ void selection_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vec
         std::vector<int> S1_continueList; // This value will be fetchec
         caseAllowed++;
         breakAllowed++;
-        statement_H(node->children[4], S1_nextList, S1_breakList, S1_continueList, caseMap1);
+        int s_check = statement_H(node->children[4], S1_nextList, S1_breakList, S1_continueList, caseMap1);
+        PASS_THE_ERROR(s_check);
         caseAllowed--;
         breakAllowed--;
         int defaultExit = CODE_BASE.addTAC(node, TO_BACKPATCH, GOTO_LABEL, NO_ARG, NO_ARG); // goto defaultExit
@@ -493,10 +518,10 @@ void selection_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vec
     }
     else
     {
-        // Wrong Production
-        BUG_EXIT;
+        compilerError("Wrong Production in selection_statement_H");
+        BUG_H;
         S_nextList = std::vector<int>();
-        return;
+        return BUG;
     }
 
     aptLOG("⬆️ S_nextList = " + toString(S_nextList));
@@ -504,9 +529,10 @@ void selection_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vec
     aptLOG("⬆️ continueList = " + toString(continueList));
 
     EXIT_H;
+    return OKAY;
 }
 
-void iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<int> &breakList, std::vector<int> &continueList, std::map<std::string, int> &caseMap)
+int iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<int> &breakList, std::vector<int> &continueList, std::map<std::string, int> &caseMap)
 {
     ENTRY_H;
 
@@ -539,7 +565,8 @@ void iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vec
         TypeExpression type1;
         VALUE_TYPE valueType1;
         SPACE valueSpace1;
-        expression_H(node->children[2], "NONE", varName1, type1, valueType1, valueSpace1);
+        int e_check = expression_H(node->children[2], "NONE", varName1, type1, valueType1, valueSpace1);
+        PASS_THE_ERROR(e_check);
 
         // 🚀 USAGE 🤫 SPACE CHANGE 🚀
         USAGE_SPACE_CHANGE(varName1, type1, valueSpace1, node);
@@ -551,7 +578,8 @@ void iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vec
         if (whichType == Type::STRUCT_UNION)
         {
             semanticError("SEMANTIC ERROR ‼️: Expression inside while statement cannot be of type STRUCT_UNION");
-            return;
+            FAIL_H;
+            return FAIL;
         }
 
         int aLabel = CODE_BASE.addTAC(node, TO_BACKPATCH, IF_TRUE, varName1, NO_ARG);  // if (varName1 != 0) goto aLabel
@@ -570,7 +598,8 @@ void iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vec
         breakAllowed++;
         continueAllowed++;
         // Next we evaluate the statement
-        statement_H(node->children[4], S1_nextList, breakList1, continueList1, caseMap);
+        int s_check = statement_H(node->children[4], S1_nextList, breakList1, continueList1, caseMap);
+        PASS_THE_ERROR(s_check);
 
         breakAllowed--;
         continueAllowed--;
@@ -597,7 +626,8 @@ void iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vec
         TypeExpression type1;
         VALUE_TYPE valueType1;
         SPACE valueSpace1;
-        expression_H(node->children[2], "NONE", varName1, type1, valueType1, valueSpace1);
+        int e_check = expression_H(node->children[2], "NONE", varName1, type1, valueType1, valueSpace1);
+        PASS_THE_ERROR(e_check);
 
         // 🚀 USAGE 🤫 SPACE CHANGE 🚀
         USAGE_SPACE_CHANGE(varName1, type1, valueSpace1, node);
@@ -609,7 +639,8 @@ void iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vec
         if (whichType == Type::STRUCT_UNION)
         {
             semanticError("SEMANTIC ERROR ‼️: Expression inside while statement cannot be of type STRUCT_UNION");
-            return;
+            FAIL_H;
+            return FAIL;
         }
 
         int aLabel = CODE_BASE.addTAC(node, TO_BACKPATCH, IF_TRUE, varName1, NO_ARG);  // if (varName1 != 0) goto aLabel
@@ -630,8 +661,8 @@ void iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vec
         breakAllowed++;
         continueAllowed++;
         // Next we evaluate the statement
-        statement_H(node->children[4], S1_nextList, breakList1, continueList1, caseMap);
-
+        int s_check = statement_H(node->children[4], S1_nextList, breakList1, continueList1, caseMap);
+        PASS_THE_ERROR(s_check);
         breakAllowed--;
         continueAllowed--;
 
@@ -659,7 +690,8 @@ void iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vec
         TypeExpression type1;
         VALUE_TYPE valueType1;
         SPACE valueSpace1;
-        expression_H(node->children[4], "NONE", varName1, type1, valueType1, valueSpace1);
+        int e_check = expression_H(node->children[4], "NONE", varName1, type1, valueType1, valueSpace1);
+        PASS_THE_ERROR(e_check);
 
         // 🚀 USAGE 🤫 SPACE CHANGE 🚀
         USAGE_SPACE_CHANGE(varName1, type1, valueSpace1, node);
@@ -671,7 +703,9 @@ void iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vec
         Type whichType = whatIsType(type1);
         if (whichType == Type::STRUCT_UNION)
         {
-            return;
+            compilerError("Expression inside do while statement cannot be of type STRUCT_UNION");
+            FAIL_H;
+            return FAIL;
         }
 
         int aLabel = CODE_BASE.addTAC(node, TO_BACKPATCH, IF_TRUE, varName1, NO_ARG);  // if (varName1 != 0) goto aLabel
@@ -692,7 +726,8 @@ void iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vec
         // Next we evaluate the statement
         breakAllowed++;
         continueAllowed++;
-        statement_H(node->children[1], S1_nextList, breakList1, continueList1, caseMap);
+        int s_check = statement_H(node->children[1], S1_nextList, breakList1, continueList1, caseMap);
+        PASS_THE_ERROR(s_check);
         breakAllowed--;
         continueAllowed--;
 
@@ -712,7 +747,8 @@ void iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vec
         TypeExpression type1;
         VALUE_TYPE valueType1 = VALUE_TYPE::UNKNOWN;
         SPACE valueSpace1 = SPACE::UNKNOWN_SPACE;
-        expression_statement_H(node->children[2], "NONE", varName1, type1, valueType1, valueSpace1);
+        int est_check = expression_statement_H(node->children[2], "NONE", varName1, type1, valueType1, valueSpace1);
+        PASS_THE_ERROR(est_check);
 
         int loopStart = CODE_BASE.nextIndex();
         std::string loopStartLabel = "L(" + std::to_string(loopStart) + ")";
@@ -723,16 +759,17 @@ void iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vec
         TypeExpression type2;
         VALUE_TYPE valueType2 = VALUE_TYPE::UNKNOWN;
         SPACE valueSpace2 = SPACE::UNKNOWN_SPACE;
-        expression_statement_H(node->children[3], "NONE", varName2, type2, valueType2, valueSpace2);
+        int est_check2 = expression_statement_H(node->children[3], "NONE", varName2, type2, valueType2, valueSpace2);
+        PASS_THE_ERROR(est_check2);
 
         // TypeChecking of ExpressionStatement_2
         //  Type NOT allowed - STRUCT_UNION
         Type whichType = whatIsType(type2);
         if (whichType == Type::STRUCT_UNION)
         {
-            BUG_EXIT;
-            semanticLOG.push_back("🚨 Type Error: Expression inside for statement cannot be of type STRUCT_UNION");
-            return;
+            semanticError("🚨 Type Error: Expression inside for statement cannot be of type STRUCT_UNION");
+            FAIL_H;
+            return FAIL;
         }
 
         // 🚀 USAGE 🤫 SPACE CHANGE 🚀
@@ -754,7 +791,8 @@ void iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vec
         breakAllowed++;
         continueAllowed++;
         // Next we evaluate the statement
-        statement_H(node->children[5], S1_nextList, breakList1, continueList1, caseMap);
+        int s_check = statement_H(node->children[5], S1_nextList, breakList1, continueList1, caseMap);
+        PASS_THE_ERROR(s_check);
         breakAllowed--;
         continueAllowed--;
 
@@ -774,7 +812,8 @@ void iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vec
         TypeExpression type1;
         VALUE_TYPE valueType1 = VALUE_TYPE::UNKNOWN;
         SPACE valueSpace1 = SPACE::UNKNOWN_SPACE;
-        expression_statement_H(node->children[2], "NONE", varName1, type1, valueType1, valueSpace1);
+        int est_check = expression_statement_H(node->children[2], "NONE", varName1, type1, valueType1, valueSpace1);
+        PASS_THE_ERROR(est_check);
 
         int loopStart = CODE_BASE.nextIndex();
         std::string loopStartLabel = "L(" + std::to_string(loopStart) + ")";
@@ -785,16 +824,17 @@ void iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vec
         TypeExpression type2;
         VALUE_TYPE valueType2 = VALUE_TYPE::UNKNOWN;
         SPACE valueSpace2 = SPACE::UNKNOWN_SPACE;
-        expression_statement_H(node->children[3], "NONE", varName2, type2, valueType2, valueSpace2);
+        int est_check2 = expression_statement_H(node->children[3], "NONE", varName2, type2, valueType2, valueSpace2);
+        PASS_THE_ERROR(est_check2);
 
         // TypeChecking of ExpressionStatement_2
         //  Type NOT allowed - STRUCT_UNION
         Type whichType = whatIsType(type2);
         if (whichType == Type::STRUCT_UNION)
         {
-            BUG_EXIT;
-            semanticLOG.push_back("🚨 Type Error: Expression inside for statement cannot be of type STRUCT_UNION");
-            return;
+            semanticError("🚨 Type Error: Expression inside for statement cannot be of type STRUCT_UNION");
+            FAIL_H;
+            return FAIL;
         }
 
         // 🚀 USAGE 🤫 SPACE CHANGE 🚀
@@ -816,7 +856,8 @@ void iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vec
         breakAllowed++;
         continueAllowed++;
         // Next we evaluate the statement
-        statement_H(node->children[6], S1_nextList, breakList1, continueList1, caseMap);
+        int st_check = statement_H(node->children[6], S1_nextList, breakList1, continueList1, caseMap);
+        PASS_THE_ERROR(st_check);
         breakAllowed--;
         continueAllowed--;
 
@@ -830,7 +871,8 @@ void iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vec
         TypeExpression type3;
         VALUE_TYPE valueType3 = VALUE_TYPE::UNKNOWN;
         SPACE valueSpace3 = SPACE::UNKNOWN_SPACE;
-        expression_H(node->children[4], "NONE", varName3, type3, valueType3, valueSpace3);
+        int e_check = expression_H(node->children[4], "NONE", varName3, type3, valueType3, valueSpace3);
+        PASS_THE_ERROR(e_check);
 
         CODE_BASE.addTAC(node, loopStartLabel, GOTO_LABEL, NO_ARG, NO_ARG); // goto loopStart
 
@@ -841,7 +883,8 @@ void iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vec
     {
 
         // Call the Declaration Statement [since it is only executed once]
-        declaration_H(node->children[2]);
+        int dcl_check = declaration_H(node->children[2]);
+        PASS_THE_ERROR(dcl_check);
 
         int loopStart = CODE_BASE.nextIndex();
         std::string loopStartLabel = "L(" + std::to_string(loopStart) + ")";
@@ -852,16 +895,17 @@ void iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vec
         TypeExpression type2;
         VALUE_TYPE valueType2 = VALUE_TYPE::UNKNOWN;
         SPACE valueSpace2 = SPACE::UNKNOWN_SPACE;
-        expression_statement_H(node->children[3], "NONE", varName2, type2, valueType2, valueSpace2);
+        int est_check = expression_statement_H(node->children[3], "NONE", varName2, type2, valueType2, valueSpace2);
+        PASS_THE_ERROR(est_check);
 
         // TypeChecking of ExpressionStatement_2
         //  Type NOT allowed - STRUCT_UNION
         Type whichType = whatIsType(type2);
         if (whichType == Type::STRUCT_UNION)
         {
-            BUG_EXIT;
-            semanticLOG.push_back("🚨 Type Error: Expression inside for statement cannot be of type STRUCT_UNION");
-            return;
+            semanticError("🚨 Type Error: Expression inside for statement cannot be of type STRUCT_UNION");
+            FAIL_H;
+            return FAIL;
         }
 
         // 🚀 USAGE 🤫 SPACE CHANGE 🚀
@@ -883,8 +927,8 @@ void iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vec
         breakAllowed++;
         continueAllowed++;
         // Next we evaluate the statement
-        statement_H(node->children[6], S1_nextList, breakList1, continueList1, caseMap);
-        breakAllowed--;
+        int st_check = statement_H(node->children[6], S1_nextList, breakList1, continueList1, caseMap);
+        PASS_THE_ERROR(st_check);
         continueAllowed--;
 
         // Backpatch the S1_nextList
@@ -897,8 +941,8 @@ void iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vec
         TypeExpression type3;
         VALUE_TYPE valueType3 = VALUE_TYPE::UNKNOWN;
         SPACE valueSpace3 = SPACE::UNKNOWN_SPACE;
-        expression_H(node->children[4], "NONE", varName3, type3, valueType3, valueSpace3);
-
+        int e_check = expression_H(node->children[4], "NONE", varName3, type3, valueType3, valueSpace3);
+        PASS_THE_ERROR(e_check);
         CODE_BASE.addTAC(node, loopStartLabel, GOTO_LABEL, NO_ARG, NO_ARG); // goto loopStart
 
         mergeList(S_nextList, ES2_falselist);
@@ -906,13 +950,13 @@ void iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vec
     }
     else
     {
-        // Wrong Production
-        BUG_EXIT;
-        return;
+        compilerError("Wrong Production in iteration_statement_H");
+        BUG_H;
+        return BUG;
     }
 
     // EXIT of Early Entry
-    int exitedScope = SYM_TABLE.exitScope(); //  
+    int exitedScope = SYM_TABLE.exitScope(); //
     aptLOG("Scope Exited : S" + std::to_string(exitedScope) + " ↙️");
 
     aptLOG("⬆️ S_nextList = " + toString(S_nextList));
@@ -920,13 +964,14 @@ void iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vec
     aptLOG("⬆️ continueList = " + toString(continueList));
 
     EXIT_H;
+    return OKAY;
 }
 
 int breakAllowed = 0;
 int continueAllowed = 0;
 int caseAllowed = 0;
 
-void jump_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<int> &breakList, std::vector<int> &continueList, std::map<std::string, int> &caseMap)
+int jump_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<int> &breakList, std::vector<int> &continueList, std::map<std::string, int> &caseMap)
 {
     ENTRY_H;
     std::string whichProduction = getProduction(node);
@@ -955,7 +1000,8 @@ void jump_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<i
         if (continueAllowed <= 0)
         {
             semanticError("\'continue\' statement not in loop statement");
-            return;
+            FAIL_H;
+            return FAIL;
         }
         int aLabel = CODE_BASE.addTAC(node, TO_BACKPATCH, GOTO_LABEL, NO_ARG, NO_ARG); // goto aLabel
 
@@ -966,7 +1012,8 @@ void jump_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<i
         if (breakAllowed <= 0)
         {
             semanticError("\'break\' statement not in loop or switch statement");
-            return;
+            FAIL_H;
+            return FAIL;
         }
         int aLabel = CODE_BASE.addTAC(node, TO_BACKPATCH, GOTO_LABEL, NO_ARG, NO_ARG); // goto aLabel
 
@@ -974,24 +1021,109 @@ void jump_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<i
     }
     else if (whichProduction == P4)
     {
+        std::string currFuncName = SYM_TABLE.currnetScope;
+        aptLOG("Current Function Name : " + currFuncName);
+
+        // Find the function name
+        GenericSymbol *sym;
+        int lookupCheck = SYM_TABLE.lookup(currFuncName, sym);
+        if (lookupCheck == 0)
+        {
+            semanticError("\'return\'' statement use in non-function scope - " + currFuncName);
+            FAIL_H;
+            ;
+            return FAIL;
+        }
+        TypeExpression funcType = ((Function *)sym)->type;
+
+        // WE evaluate the expression
+        std::string varName1 = "Just a Dummy";
+        TypeExpression type1;
+        VALUE_TYPE valueType1;
+        SPACE valueSpace1;
+        int e_check = expression_H(node->children[1], "NONE", varName1, type1, valueType1, valueSpace1);
+        PASS_THE_ERROR(e_check);
+
+        // 🚀 USAGE 🤫 SPACE CHANGE 🚀
+        USAGE_SPACE_CHANGE(varName1, type1, valueSpace1, node);
+
+        // 🅱️ TypeChecking of Expression
+        TypeExpression returnType = funcType;
+        if (popALevel(returnType))
+        {
+            compilerError("Error in popALevel");
+            BUG_H;
+            return BUG;
+        }
+
+        // We check if the return type is same as the function type
+        int check1 = ourEquivalent(returnType, type1);
+        if (check1 == 0)
+        {
+            semanticError("Return type mismatch - Expected : \'" + toString(returnType) + "\' Found : \'" + toString(type1) + "\'");
+            FAIL_H;
+            return FAIL;
+        }
+
+        CODE_BASE.addTAC(node, NO_ARG, RETURN_FUNCTION, varName1, NO_ARG); // return varName1
     }
     else if (whichProduction == P5)
     {
+        std::string currFuncName = SYM_TABLE.currnetScope;
+        aptLOG("Current Function Name : " + currFuncName);
+
+        // Find the function name
+        GenericSymbol *sym;
+        int check = SYM_TABLE.lookup(currFuncName, sym);
+        if (check == 0)
+        {
+            semanticError("\'return\'' statement use in non-function scope - " + currFuncName);
+            FAIL_H;
+            ;
+            return FAIL;
+        }
+        TypeExpression funcType = ((Function *)sym)->type;
+
+        // 🅱️ TypeChecking of Expression
+        TypeExpression returnType = funcType;
+        if (popALevel(returnType))
+        {
+            compilerError("Error in popALevel");
+            BUG_H;
+            return BUG;
+        }
+
+        // Create a int type
+        BaseInfo* base = new BaseInfo();
+        base->baseType = TYPE_VOID;
+        TypeExpression voidType = TypeExpression();
+        voidType.levelStack.push_back(base);
+
+        // We check if the return type is same as the function type
+        int check2 = ourEquivalent(returnType, voidType);
+        if (check2 == 0)
+        {
+            semanticError("Return type mismatch - Expected : \'" + toString(returnType) + "\' Found : \'" + toString(voidType) + "\'");
+            FAIL_H;
+            return FAIL;
+        }
+
+        CODE_BASE.addTAC(node, NO_ARG, RETURN_FUNCTION, NO_ARG, NO_ARG); // return varName1
     }
     else
     {
-        // Wrong Production
-        BUG_EXIT;
-        S_nextList = std::vector<int>();
-        return;
+        compilerError("Wrong Production in jump_statement_H");
+        BUG_H;
+        return BUG;
     }
 
     aptLOG("S_nextList = " + toString(S_nextList));
 
     EXIT_H;
+    return OKAY;
 }
 
-void labeled_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<int> &breakList, std::vector<int> &continueList, std::map<std::string, int> &caseMap)
+int labeled_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<int> &breakList, std::vector<int> &continueList, std::map<std::string, int> &caseMap)
 {
     ENTRY_H;
     std::string whichProduction = getProduction(node);
@@ -1008,7 +1140,8 @@ void labeled_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vecto
         if (labelMap.find(label) != labelMap.end())
         {
             semanticError("Label already defined");
-            return;
+            FAIL_H;
+            return FAIL;
         }
         labelMap[label] = labelIndex;
 
@@ -1016,7 +1149,8 @@ void labeled_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vecto
         std::vector<int> S1_nextList;
         std::vector<int> S1_breakList;
         std::vector<int> S1_continueList;
-        statement_H(node->children[2], S1_nextList, S1_breakList, S1_continueList, caseMap);
+        int s_check = statement_H(node->children[2], S1_nextList, S1_breakList, S1_continueList, caseMap);
+        PASS_THE_ERROR(s_check);
 
         // Pass the data up
         S_nextList = S1_nextList;
@@ -1028,32 +1162,34 @@ void labeled_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vecto
         if (caseAllowed <= 0)
         {
             semanticError("\'case\' statement not in any switch statement");
-            return;
+            FAIL_H; return FAIL;
         }
 
         std::string constExpr;
         // call the constant_expression
-        constant_expression_H(node->children[1], constExpr);
+        int cex_check = constant_expression_H(node->children[1], constExpr);
+        PASS_THE_ERROR(cex_check);
 
         // NO need to check
 
         if (caseMap.find(constExpr) != caseMap.end())
         {
             semanticError("case - \'" + constExpr + "\' already exists");
-            return;
+            FAIL_H; return FAIL;
         }
         int caseIndex = CODE_BASE.nextIndex();
         caseMap[constExpr] = caseIndex;
 
         // Call the statement
-        statement_H(node->children[3], S_nextList, breakList, continueList, caseMap);
+        int s_check = statement_H(node->children[3], S_nextList, breakList, continueList, caseMap);
+        PASS_THE_ERROR(s_check);
     }
     else if (whichProduction == P3)
     {
         if (caseAllowed <= 0)
         {
             semanticError("\'default\' statement not in any switch statement");
-            return;
+            FAIL_H; return FAIL;
         }
 
         aptHERE;
@@ -1063,24 +1199,25 @@ void labeled_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vecto
         if (caseMap.find(constExpr) != caseMap.end())
         {
             semanticError("default already exists");
-            return;
+            FAIL_H; return FAIL;
         }
         int defaultIndex = CODE_BASE.nextIndex();
         caseMap[constExpr] = defaultIndex;
         aptHERE;
         // Call the statement
-        statement_H(node->children[2], S_nextList, breakList, continueList, caseMap);
+        int s_check = statement_H(node->children[2], S_nextList, breakList, continueList, caseMap);
+        PASS_THE_ERROR(s_check);
         aptHERE;
     }
     else
     {
-        // Wrong Production
-        BUG_EXIT;
-        S_nextList = std::vector<int>();
-        return;
+        compilerError("Wrong Production in labeled_statement_H");
+        BUG_H;
+        return BUG;
     }
 
     aptLOG("⬆️ S_nextList = " + toString(S_nextList));
 
     EXIT_H;
+    return OKAY;
 }

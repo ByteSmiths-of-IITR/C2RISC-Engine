@@ -444,7 +444,7 @@ int ProcessDecSpecifiers(std::vector<std::string> &valueVector, TypeExpression &
 
 void semanticPass(ASTNode *node)
 {
-    
+
     if (node == nullptr)
     {
         return;
@@ -456,7 +456,6 @@ void semanticPass(ASTNode *node)
 
     if (whichProduction != P1)
     {
-        // SEMANTIC ERROR 🚨 : Invalid Production
         return;
     }
 
@@ -473,15 +472,16 @@ void semanticPass(ASTNode *node)
     // SCOPE EXIT
     globalScope = SYM_TABLE.exitScope();                                    // GlobalScope
     aptLOG("Scope (Global) S" + std::to_string(globalScope) + " Exited ↙️"); // 🌴 Adding syn_attr
-
 }
 // SYM_TABLE - Will be Globaly available
 // CODE_BASE - Will be Globaly available (TAC)
 
 //====================[ Starting Handlers ]=========================================================================================
 
-void translation_unit_H(ASTNode *node)
+int translation_unit_H(ASTNode *node)
 {
+    ENTRY_H
+
     lastFuncCalled = "translation_unit_H";
     std::string whichProduction = getProduction(node);
     std::string P1 = "external_declaration";
@@ -503,11 +503,15 @@ void translation_unit_H(ASTNode *node)
     {
         // Wrong Production
     }
-    return;
+    
+    EXIT_H
+    return OKAY;
 }
 
-void external_declaration_H(ASTNode *node)
+int external_declaration_H(ASTNode *node)
 {
+    ENTRY_H
+
     lastFuncCalled = "external_declaration_H";
     std::string whichProduction = getProduction(node);
     std::string P1 = "function_definition";
@@ -527,12 +531,14 @@ void external_declaration_H(ASTNode *node)
     {
         // Wrong Production
     }
-    return;
+
+    EXIT_H
+    return OKAY;
 }
 
 //====================[ Function Definition Handlers ]=========================================================================================
 
-void function_definition_H(ASTNode *node)
+int function_definition_H(ASTNode *node)
 {
     ENTRY_H;
     // This will be used to fetch the function name
@@ -557,16 +563,15 @@ void function_definition_H(ASTNode *node)
         if (check != OKAY)
         {
             semanticError(semanticMessage);
-            semanticMessage = ""; // reset the message
-            // ERROR_EXIT;
-            // return;
+            FAIL_H;
+            return FAIL;
         }
 
         if (storageClass != StorageClass::NONE)
         {
             semanticError("Storage Class not allowed in function definition");
-            // ERROR_EXIT;
-            // return;
+            FAIL_H;
+            return FAIL;
         }
 
         // Data to be fetched from declarator
@@ -581,8 +586,8 @@ void function_definition_H(ASTNode *node)
         if (type != Type::FUNCTION)
         {
             semanticError("Function definition must have a function type");
-            ERROR_EXIT;
-            return;
+            FAIL_H;
+            return FAIL;
         }
 
         TypeExpression funcType = type1;
@@ -596,8 +601,8 @@ void function_definition_H(ASTNode *node)
         if (isAbstract)
         {
             semanticError("Abstract function definition not allowed");
-            ERROR_EXIT;
-            return;
+            FAIL_H;
+            return FAIL;
         }
 
         // Check if the function is already defined
@@ -610,16 +615,17 @@ void function_definition_H(ASTNode *node)
             if (sym->symbolType != SYMBOL_TYPE::FUNCTION)
             {
                 semanticError("Function Definition \"" + varName + "\" collision with variable");
-                ERROR_EXIT;
-                return;
+                FAIL_H;
+                return FAIL;
             }
             // Function name already exists // check if declared or not
             Function *func = dynamic_cast<Function *>(sym);
+            TypeExpression newFuncType = func->type;
             bool isDefined = func->isDefined;
-            bool sameSignature = true;
 
-            // Check if the function signature is same
-            // To use CheckEquivalence function
+            aptLOG("newFuncType : " + toString(newFuncType));
+            aptLOG("type1 : " + toString(type1));
+            bool sameSignature = (ourEquivalent(newFuncType, type1) == EQUIVALENT);
 
             if (sameSignature)
             {
@@ -627,8 +633,8 @@ void function_definition_H(ASTNode *node)
                 if (isDefined)
                 {
                     semanticError("Redefinition of function \"" + varName + "\"");
-                    ERROR_EXIT;
-                    return;
+                    FAIL_H;
+                    return FAIL;
                 }
                 else
                 {
@@ -656,8 +662,8 @@ void function_definition_H(ASTNode *node)
             {
                 // Should not happen since we already checked for presence
                 compilerError("Function Insertion failed but lookup was success");
-                ERROR_EXIT;
-                return;
+                FAIL_H;
+                return FAIL;
             }
             else
             {
@@ -674,7 +680,8 @@ void function_definition_H(ASTNode *node)
             if (check != POP_SUCCESS)
             {
                 compilerError("Function Definition - popALevel failed");
-                return;
+                BUG_H;
+                return BUG;
             }
 
             // Now we have parameter list
@@ -760,9 +767,10 @@ void function_definition_H(ASTNode *node)
     else
     {
         compilerError("Function Definition encountered wrong production");
-        return;
+        BUG_H;
+        return BUG;
     }
 
     EXIT_H;
-    return;
+    return OKAY;
 }

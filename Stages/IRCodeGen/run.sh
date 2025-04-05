@@ -17,8 +17,6 @@ fi
 
 # -------- Check if executable exists --------
 if [ ! -x "$EXECUTABLE" ]; then
-    echo "❌ Compiler executable '$EXECUTABLE' not found or not executable."
-    echo "🔧 Running 'make compiler' to build the compiler..."
     make compiler || { echo "❌ Make failed."; exit 1; }
 fi
 
@@ -31,14 +29,14 @@ echo "🚀 Running tests with: $EXECUTABLE"
 
 # If a specific numbered folder is given, filter by it
 if [ -n "$FILTER_DIR" ]; then
-    find "$FILTER_DIR"* -type f 2>/dev/null | while IFS= read -r test_file; do
+    find "$FILTER_DIR"* -type f -name "*.c" 2>/dev/null | while IFS= read -r test_file; do
         echo "🔹 Running on: $test_file"
         "$EXECUTABLE" "$test_file" -t 2>>"$ERROR"
         echo "---------------------------"
     done
 else
-    # Run all tests if no folder filter is provided
-    find "$TEST_DIR" -type f | while IFS= read -r test_file; do
+    # Run all .c tests if no folder filter is provided
+    find "$TEST_DIR" -type f -name "*.c" | while IFS= read -r test_file; do
         echo "🔹 Running on: $test_file"
         "$EXECUTABLE" "$test_file" -t 2>>"$ERROR"
         echo "---------------------------"

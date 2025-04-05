@@ -4,23 +4,35 @@
 
 int width(const UserDType &dtype)
 {
-    if (dtype.totalSize == -1)
+    std::map<std::string, TypeExpression> members = dtype.members;
+    int totalSize = 0;
+    RecordType recordType = dtype.recordType;
+    if (recordType == RecordType::UNION)
     {
-        // has not been calculated yet
-        int size = 0;
-        for (auto &pair : dtype.members)
+        for (auto &member : members)
         {
-            std::string memberName = pair.first;
-            TypeExpression memberType = pair.second;
-
-            int memberSize = width(memberType);
-            if (memberSize == -1)
-            {
-                return -1;
-            }
-            size += memberSize;
+            totalSize = std::max(totalSize, width(member.second));
         }
     }
+    else if(recordType == RecordType::STRUCT)
+    {
+        // For struct
+        for (auto &member : members)
+        {
+            totalSize += width(member.second);
+        }
+    }
+    else if (recordType == RecordType::ENUM)
+    {
+        // For enum
+        totalSize = WORD_SIZE; // Size of enum
+    }
+    else
+    {
+        std::cerr << LOC << "Error: Unknown Record Type\n";
+        return -1;
+    }
+    
 }
 
 int width(const BaseInfo &info)
@@ -358,6 +370,8 @@ std::string toString(const TypeExpression &typeExpr)
 
 int popALevel(TypeExpression &typeExpr)
 {
+    // REMOVE TOP PARENTHESIS
+    removeTopParenthesis(typeExpr);
     // This will pop a level from the type expression
     if (typeExpr.levelStack.empty())
     {
@@ -366,6 +380,8 @@ int popALevel(TypeExpression &typeExpr)
     LevelInfo *info = typeExpr.levelStack.back();
     typeExpr.levelStack.pop_back();
 
+    // Remove ParenthesisInfo
+    removeTopParenthesis(typeExpr);
     return POP_SUCCESS;
 }
 
@@ -795,24 +811,71 @@ int ourEquivalent(const TypeExpression &type1, const TypeExpression &type2)
     TypeExpression temp2 = type2;
     removeTopParenthesis(temp1);
     removeTopParenthesis(temp2);
-    // If top is pointer Type - POINTER, FUNCTION, ARRAY
+    // std::cerr << "Type1: " << toString(temp1) << "\n";
+    // std::cerr << "Type2: " << toString(temp2) << "\n";
+    // If top is pointer Type - POINTER, ARRAY
     // Then ignore lower levels
     Type topType1 = whatIsType(temp1);
     Type topType2 = whatIsType(temp2);
 
-    bool isPtr1 = (topType1 == Type::POINTER || topType1 == Type::FUNCTION || topType1 == Type::ARRAY);
-    bool isPtr2 = (topType2 == Type::POINTER || topType2 == Type::FUNCTION || topType2 == Type::ARRAY);
+    // std::cerr << "Top Type1: " << toString(topType1) << "\n";
+    // std::cerr << "Top Type2: " << toString(topType2) << "\n";
+
+    bool isPtr1 = (topType1 == Type::POINTER || topType1 == Type::ARRAY);
+    bool isPtr2 = (topType2 == Type::POINTER ||  topType2 == Type::ARRAY);
     if(isPtr1 && isPtr2)
     {
         return EQUIVALENT;
     }
+
+    if (topType1 == Type::FUNCTION && topType2 == Type::FUNCTION)
+    {
+        // We check parameter types
+        ParameterInfo *param1 = dynamic_cast<ParameterInfo *>(temp1.levelStack.back());
+        ParameterInfo *param2 = dynamic_cast<ParameterInfo *>(temp2.levelStack.back());
+        if (param1->paramsType.size() != param2->paramsType.size())
+        {
+            return LOW_ERROR;
+        }
+        for (int i = 0; i < param1->paramsType.size(); i++)
+        {
+            int res = ourEquivalent(param1->paramsType[i], param2->paramsType[i]);
+            if(res != EQUIVALENT)
+            {
+                return res;
+            }
+        }
+        // Okay
+
+        // We recurse on return type
+        TypeExpression returnType1 = temp1;
+        TypeExpression returnType2 = temp2;
+        popALevel(returnType1);
+        popALevel(returnType2);
+        int res = ourEquivalent(returnType1, returnType2);
+        return res;
+    }
+
 
     // Check equivalance of base level
     bool isNumeric1 = isNumeric(type1);
     bool isNumeric2 = isNumeric(type2);
     if (isNumeric1 && isNumeric2)
     {
-        return EQUIVALENT;
+        std::cerr << "Both are numeric\n";
+        std::cerr << "Type1: " << toString(type1) << "\n";
+        std::cerr << "Type2: " << toString(type2) << "\n";
+        // Both are numeric
+        std::string base1 = isPrimitive(type1);
+        std::string base2 = isPrimitive(type2);
+        if (base1 == base2)
+        {
+            return EQUIVALENT;
+        }
+        else
+        {
+            return LOW_ERROR;
+        }
     }
 
     // Then we need to check for custom types
@@ -827,6 +890,9 @@ int ourEquivalent(const TypeExpression &type1, const TypeExpression &type2)
             return EQUIVALENT;
         }
     }
+
+   
+
     return LOW_ERROR;
 }
 

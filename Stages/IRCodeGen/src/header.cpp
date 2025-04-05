@@ -29,6 +29,9 @@ int const WARNING = -1;
 int const LOW_ERROR = -2;
 int const HIGH_ERROR = -3;
 
+int const FAIL = -1;
+// int const BUG = -102;
+
 int const INSERT_SUCCESS = 0;
 int const INSERT_SUCCESS_WITH_WARNING = 1;
 int const INSERT_FAILURE = -1; // Already present in the current scope
@@ -37,7 +40,7 @@ int const LOOKUP_SUCCESS = 0; // Found
 int const LOOKUP_FAILURE = -1; // Not Found
 
 std::string IN_SYNTAX_PHASE = "$IN_SYNTAX_PHASE$"; // This will be used to check if we are in syntax phase or not
-std::string PASS_ERROR = "0000"; // This will be used to pass error in the function
+const std::string PASS_ERROR = "0000"; // This will be used to pass error in the function
 std::string lastFuncCalled = "init"; // Global variable to keep track of the last function called
 
 //=== [Global Variables] ==========================================================================================================

@@ -182,6 +182,7 @@ void signalHandler(int signum) {
     std::string signalMessage = "❤️‍🔥 SignalHandler 💥" + signalName + " received. Exiting gracefully.";
 
     notificationStream << signalMessage << std::endl;
+    std::cout << signalMessage << std::endl;
     errorStream << "The Last Function Called - " << lastFuncCalled << std::endl;
     
     notificationStream << signalMessage << std::endl;
@@ -193,9 +194,9 @@ void signalHandler(int signum) {
         errorStream <<  log << std::endl;
     }
     errorStream <<  LOGFOOTER << std::endl;
-
-    notificationStream <<  "My Name is " << getpid() << "and I am commiting Suicide 😵 at " << getCurrentTime() << " 🪦" << std::endl;
-
+    std::string suicideMessage = "My Name is " + std::to_string(getpid()) + " and I am commiting Suicide 😵 at " + getCurrentTime() + " 🪦\n";
+    notificationStream << suicideMessage;
+    std::cout << suicideMessage << std::endl;
     exit_compiler();
 
     kill(getpid(), SIGKILL);  // Sends SIGKILL to itself
