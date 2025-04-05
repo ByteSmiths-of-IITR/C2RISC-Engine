@@ -822,7 +822,8 @@ void iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vec
 
         // Backpatch the S1_nextList
         mergeList(S1_nextList, continueList1); // As S_nextList is a syn_attribute we don't send this below
-        int check2 = CODE_BASE.backpatch(node, S1_nextList, loopStart);
+        int nextAddress = CODE_BASE.nextIndex();
+        int check2 = CODE_BASE.backpatch(node, S1_nextList, nextAddress);
 
         // Call the third Expression_3
         std::string varName3 = "Just a Dummy";
@@ -888,7 +889,8 @@ void iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vec
 
         // Backpatch the S1_nextList
         mergeList(S1_nextList, continueList1);
-        int check2 = CODE_BASE.backpatch(node, S1_nextList, loopStart);
+        int nextAddress = CODE_BASE.nextIndex();
+        int check2 = CODE_BASE.backpatch(node, S1_nextList, nextAddress);
 
         // Call the third Expression_3
         std::string varName3 = "Just a Dummy";
