@@ -125,7 +125,7 @@ ptree: all $(INPUT) $(OUTPUT) $(EXECUTABLE)  $(CERR)
 	open $(PTreeSVG)
 
 APTreeFile = $(BUILD_DIR)/annotated_ast_graph.dot
-APTreeSVG = $(OUTPUT_DIR)/A_PTree.svg
+APTreeSVG = $(INPUT_DIR)/A_PTree.svg
 
 $(APTreeFile):
 	@touch $(APTreeFile)
@@ -241,6 +241,11 @@ irCode: all $(EXECUTABLE) $(INPUT) $(OUTPUT) $(CERR) $(IRCodeFile)
 
 
 testing: all $(EXECUTABLE) $(INPUT) $(OUTPUT) $(CERR) $(IRCodeFile)
+	@echo "🚥 Starting C2RISC Engine 🟢 "
+	@-./$(EXECUTABLE) $(INPUT) -t  2> $(CERR)
+	@echo "Testing Over"
+
+debugging: all $(EXECUTABLE) $(INPUT) $(OUTPUT) $(CERR) $(IRCodeFile)
 	@echo "🚥 Starting C2RISC Engine 🟢 "
 	@-./$(EXECUTABLE) $(INPUT) -t -d2 $(APTreeFile) 2> $(CERR)
 	@echo "🎄 ------- Visualizing Annotated PTree ------- 🎄"

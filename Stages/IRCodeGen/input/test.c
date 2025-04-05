@@ -1,21 +1,19 @@
-// function and variable name collision
-
-#include <stdio.h>
 int main(){
     int i = 0;
     {
-        for (int i = 0; i < 10;i++){
+        // for (int i = 0; i < 10;i++){
             while(1){
                 if(1) i++;
                 i--;
             }
-        }
+        // }
     }
+    return 0;
 }
 
 //=========================== C2RISC-Engine =========================================================//
 // Lexical Analysis 👍 | Syntax Analysis 👍 | Semantic Analysis 👍 | 🔖 IRCode Gen
-// 🔺 APTree generated as DOT file: build/annotated_ast_graph.dot can be visualized using Graphviz
+// 
 // ------------------------------------------------------------------------------------
 // 
 // ------------------------------------------------------------------------------------

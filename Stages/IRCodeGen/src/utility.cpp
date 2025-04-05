@@ -250,7 +250,7 @@ std::string ASTStyle(ASTNode* node) {
         outputFile.close();
     }
 
-std::string MARKER = "//=========================== C2RISC-Engine ==========================================//";
+std::string MARKER = "//=========================== C2RISC-Engine =========================================================//";
 
 void writeNode(std::ofstream &out, ASTNode* node, int parentId, int &nodeCount) {
     if (!node) return;

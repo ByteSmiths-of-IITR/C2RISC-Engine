@@ -137,8 +137,10 @@ void exit_compiler(){
         std::ostringstream testStream;
         std::cout << "Testing : " << input_file << " result appended to it" << std::endl;
         testStream << notificationStream.str() << std::endl;
-        testStream << outputStream.str() << std::endl;
+        testStream << "------------------------------------------------------------------------------------" << std::endl;
         testStream << errorStream.str() << std::endl;
+        testStream << "------------------------------------------------------------------------------------" << std::endl;
+        testStream << outputStream.str() << std::endl;
         insertAfterMarker(input_file,MARKER,testStream);
     }
 
