@@ -120,12 +120,12 @@ PTreeSVG = $(OUTPUT_DIR)/PTree.svg
 ptree: all $(INPUT) $(OUTPUT) $(EXECUTABLE)  $(CERR)
 	@echo "🚥 Starting C2RISC Engine 🟢 on -" $(INPUT)
 	@./$(EXECUTABLE) $(INPUT) -t -d1 $(PTreeFile)  2> $(CERR)
-	@echo "🌲 ------- Visualizing PTree ------- 🌲"
+	@echo "🌲 PTree in " $(PTreeSVG) 
 	@$(DOT) -Tsvg $(PTreeFile) -o $(PTreeSVG)
 	open $(PTreeSVG)
 
 APTreeFile = $(BUILD_DIR)/annotated_ast_graph.dot
-APTreeSVG = $(INPUT_DIR)/A_PTree.svg
+APTreeSVG = $(OUTPUT_DIR)/A_PTree.svg
 
 $(APTreeFile):
 	@touch $(APTreeFile)
@@ -136,7 +136,7 @@ $(APTreeSVG):
 Aptree: all $(INPUT) $(OUTPUT) $(EXECUTABLE) $(APTreeFile) $(APTreeSVG)  $(CERR)
 	@echo "🚥 Starting C2RISC Engine 🟢 on -" $(INPUT)
 	@-./$(EXECUTABLE) $(INPUT) -t -d2 $(APTreeFile) 2> $(CERR)
-	@echo "🎄 ------- Visualizing Annotated PTree -------🎄"
+	@echo "🎄 APTree in - " $(APTreeSVG)
 	@$(DOT) -Tsvg $(APTreeFile) -o $(APTreeSVG)
 	@open $(APTreeSVG)
 
@@ -235,7 +235,7 @@ $(IRCodeFile):
 irCode: all $(EXECUTABLE) $(INPUT) $(OUTPUT) $(CERR) $(IRCodeFile)
 	@echo "🚥 Starting C2RISC Engine 🟢 "
 	@-./$(EXECUTABLE) $(INPUT) -o $(OUTPUT) -d2 $(APTreeFile) 2> $(CERR)
-	@echo "🎄 ------- Visualizing Annotated PTree ------- 🎄"
+	@echo "🎄 APTree in - " $(APTreeSVG)
 	@-$(DOT) -Tsvg $(APTreeFile) -o $(APTreeSVG)
 	@open -a "Visual Studio Code" $(IRCodeFile)
 
@@ -248,5 +248,5 @@ testing: all $(EXECUTABLE) $(INPUT) $(OUTPUT) $(CERR) $(IRCodeFile)
 debugging: all $(EXECUTABLE) $(INPUT) $(OUTPUT) $(CERR) $(IRCodeFile)
 	@echo "🚥 Starting C2RISC Engine 🟢 "
 	@-./$(EXECUTABLE) $(INPUT) -t -d2 $(APTreeFile) 2> $(CERR)
-	@echo "🎄 ------- Visualizing Annotated PTree ------- 🎄"
+	@echo "🎄 APTree in - " $(APTreeSVG)
 	@-$(DOT) -Tsvg $(APTreeFile) -o $(APTreeSVG)
