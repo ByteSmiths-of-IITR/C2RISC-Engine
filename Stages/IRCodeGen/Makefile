@@ -112,16 +112,6 @@ run: all $(EXECUTABLE) $(INPUT) $(OUTPUT) $(CERR)
 # Result dot (graphviz) tool
 DOT = dot
 
-ASTFile = $(BUILD_DIR)/ast_graph.dot
-ASTOUT = $(OUTPUT_DIR)/AST.pdf
-
-## For Visualizing the AST
-ast: all $(INPUT) $(OUTPUT) $(EXECUTABLE) $(CERR)
-	@echo "🚥 Starting C2RISC Engine 🟢 on -" $(INPUT)
-	@./$(EXECUTABLE) $(INPUT) $(OUTPUT) -ast $(ASTFile) 2> $(CERR)
-	@echo "🌴 ------- Visualizing AST ------- 🌴"
-	@$(DOT) -Tpdf $(ASTFile) -o $(ASTOUT)
-	open $(ASTOUT)
 
 
 PTreeFile = $(BUILD_DIR)/ptree_graph.dot
@@ -129,7 +119,7 @@ PTreeSVG = $(OUTPUT_DIR)/PTree.svg
 
 ptree: all $(INPUT) $(OUTPUT) $(EXECUTABLE)  $(CERR)
 	@echo "🚥 Starting C2RISC Engine 🟢 on -" $(INPUT)
-	@./$(EXECUTABLE) $(INPUT) $(OUTPUT) -ptree $(PTreeFile) 2> $(CERR)
+	@./$(EXECUTABLE) $(INPUT) -t -d1 $(PTreeFile)  2> $(CERR)
 	@echo "🌲 ------- Visualizing PTree ------- 🌲"
 	@$(DOT) -Tsvg $(PTreeFile) -o $(PTreeSVG)
 	open $(PTreeSVG)
@@ -145,7 +135,7 @@ $(APTreeSVG):
 
 Aptree: all $(INPUT) $(OUTPUT) $(EXECUTABLE) $(APTreeFile) $(APTreeSVG)  $(CERR)
 	@echo "🚥 Starting C2RISC Engine 🟢 on -" $(INPUT)
-	@-./$(EXECUTABLE) $(INPUT) $(OUTPUT) -APTree $(APTreeFile) 2> $(CERR)
+	@-./$(EXECUTABLE) $(INPUT) -t -d2 $(APTreeFile) 2> $(CERR)
 	@echo "🎄 ------- Visualizing Annotated PTree -------🎄"
 	@$(DOT) -Tsvg $(APTreeFile) -o $(APTreeSVG)
 	@open $(APTreeSVG)
@@ -174,26 +164,18 @@ semantic: all $(EXECUTABLE) $(INPUT) $(OUTPUT)
 	@echo "---------------------------------------------GCC Compilation---------------------------------------------"
 	$(CC) -fsyntax-only $(INPUT) && echo "✅ Successfully Compiled by GCC"
 	@echo "-------------------------------------------Our Syntax Analysis-------------------------------------------"
-	@./$(EXECUTABLE) $(INPUT) $(OUTPUT) 2> $(CERR)
+	@./$(EXECUTABLE) $(INPUT) -o $(OUTPUT) 2> $(CERR)
 	
 
 execute: all $(INPUT)
 	$(CC) $(INPUT) -o $(BIN_DIR)/input_exec
 	@./$(BIN_DIR)/input_exec
 
-sem_ast: all $(EXECUTABLE) $(INPUT) $(OUTPUT)  $(CERR)
-	@echo "---------------------------------------GCC Compilation---------------------------------------"
-	@-$(CC) -fsyntax-only $(INPUT) && echo "✅ Successfully Compiled by GCC"
-	@echo "-------------------------------------------Our Syntax Analysis-------------------------------------------"
-	@./$(EXECUTABLE) $(INPUT) $(OUTPUT) -ast $(PTreeFile) 2> $(CERR)
-	$(DOT) -Tpdf $(PTreeFile) -o $(PTreeSVG)
-	@open $(PTreeSVG)
-
 sem_ptree: all $(EXECUTABLE) $(INPUT) $(OUTPUT)  $(CERR)
 	@echo "---------------------------------------GCC Compilation---------------------------------------"
 	@-$(CC) -fsyntax-only $(INPUT) && echo "✅ Successfully Compiled by GCC"
 	@echo "-------------------------------------------Our Syntax Analysis-------------------------------------------"
-	@./$(EXECUTABLE) $(INPUT) $(OUTPUT) -ptree $(PTreeFile) 2> $(CERR)
+	@./$(EXECUTABLE) $(INPUT) -o $(OUTPUT) -d2 $(PTreeFile) 2> $(CERR)
 	$(DOT) -Tpdf $(PTreeFile) -o $(PTreeSVG)
 
 ASSEMBLY = $(OUTPUT_DIR)/assembly.s
@@ -252,7 +234,7 @@ $(IRCodeFile):
 
 irCode: all $(EXECUTABLE) $(INPUT) $(OUTPUT) $(CERR) $(IRCodeFile)
 	@echo "🚥 Starting C2RISC Engine 🟢 "
-	@-./$(EXECUTABLE) $(INPUT) $(OUTPUT) -tac $(IRCodeFile) -APTree $(APTreeFile) 2> $(CERR)
+	@-./$(EXECUTABLE) $(INPUT) -o $(OUTPUT) -d2 $(APTreeFile) 2> $(CERR)
 	@echo "🎄 ------- Visualizing Annotated PTree ------- 🎄"
 	@-$(DOT) -Tsvg $(APTreeFile) -o $(APTreeSVG)
 	@open -a "Visual Studio Code" $(IRCodeFile)
@@ -260,6 +242,6 @@ irCode: all $(EXECUTABLE) $(INPUT) $(OUTPUT) $(CERR) $(IRCodeFile)
 
 testing: all $(EXECUTABLE) $(INPUT) $(OUTPUT) $(CERR) $(IRCodeFile)
 	@echo "🚥 Starting C2RISC Engine 🟢 "
-	@-./$(EXECUTABLE) $(INPUT) $(OUTPUT) -t -tac $(IRCodeFile) -APTree $(APTreeFile) 2> $(CERR)
-	@echo "🎄 "
+	@-./$(EXECUTABLE) $(INPUT) -t -d2 $(APTreeFile) 2> $(CERR)
+	@echo "🎄 ------- Visualizing Annotated PTree ------- 🎄"
 	@-$(DOT) -Tsvg $(APTreeFile) -o $(APTreeSVG)

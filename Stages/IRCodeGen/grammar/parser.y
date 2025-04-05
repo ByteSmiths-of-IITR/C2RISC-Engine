@@ -66,8 +66,6 @@ bool stopYYERROR = false;
 
 bool customError = false;
 
-std::ofstream* output = nullptr;  // Global pointer
-
 #define YYDEBUG 1
 
 // std::ofstream PARSERlog("parser.log", std::ios::trunc); // [[NOt in use]]
@@ -80,7 +78,6 @@ std::string getPosition(ASTNode* node){
     return std::to_string(node->position.first) + ":" + std::to_string(node->position.second);
 }
 
-
 void ourError(const std::string& msg) {
 
     if(TURN_OFF){
@@ -92,28 +89,60 @@ void ourError(const std::string& msg) {
     parserLOG.push_back(error);
 }
 
-void initOutputFile(const std::string& filename) {
-    output = new std::ofstream(filename);
-    if (!output->is_open()) {
-        delete output;
-        std::cerr << "Error: Unable to open file " << filename << std::endl;
-        output = nullptr;
-    }
-}
 
-void closeOutputFile() {
-    if (output) {
-        output->close();
-        delete output;
-        output = nullptr;
-    }
-}
-
+ASTNode *root;
 ASTNode* topNode;
-std::string dot_file_2 = "annotated_ast_graph.dot";
-bool APTree = false;
-bool tac = false;
-std::string tac_file = "ThreeAC.txt";
+
+std::string input_file;
+
+int compilerMode = 0; // 0-Output to Terminal, 1-output_file, 2-TestMode (send to inputFile itself)
+std::string output_file;
+std::ostringstream outputStream;
+std::ostringstream terminalStream;
+
+bool ptree = false;
+bool Aptree = false;
+std::string dot_file;
+
+//How to view the ParseTree
+bool compressed = false; // Default is PTree, if AST is needed, change it to false
+
+//========================= SEMANTIC + IRCode Gen Phase =========================
+// SymbolTable SYM_TABLE;
+// TAC CODE_BASE; [Are declared in handler.cpp]
+
+void exit_compiler(){
+    // First we print output depending on the mode
+    if(compilerMode == 0){ //Terminal
+        std::cout << terminalStream.str() << std::endl;
+        std::cout << outputStream.str() << std::endl;
+    }else if(compilerMode == 1){ //Output to file
+        std::cout << terminalStream.str() << std::endl;
+        std::ofstream out(output_file);
+        if(out.is_open()){
+            out << outputStream.str() << std::endl;
+            out.close();
+        }else{
+            std::cerr << "Error opening file: " << output_file << std::endl;
+        }
+    }else if(compilerMode == 2){ //TestMode
+        std::ostringstream testStream;
+        testStream << terminalStream.str() << std::endl;
+        testStream << outputStream.str() << std::endl;
+        insertAfterMarker(input_file,MARKER,testStream);
+    }
+
+    // Now if debugging mode is on, we generate a dot file
+    if(ptree){
+        generateDOT(topNode, dot_file);
+    }
+    
+    if(Aptree){
+        generateDOT_A(topNode, dot_file);
+    }
+
+    return;
+}
 
 
 void signalHandler(int signum) {
@@ -140,56 +169,30 @@ void signalHandler(int signum) {
     }
     std::string signalMessage = "❤️‍🔥 SignalHandler 💥" + signalName + " received. Exiting gracefully.";
 
-    *output << signalMessage << std::endl;
-    *output << "Where was I Last: " << lastFuncCalled << std::endl;
+    outputStream << signalMessage << std::endl;
+    outputStream << "The Last Function Called - " << lastFuncCalled << std::endl;
     
-    std::cout << signalMessage << std::endl;
+    outputStream << signalMessage << std::endl;
+    terminalStream << signalMessage << std::endl;
 
-    // We still print the APTree
-    // Print the Annotated Parse Tree
-    if(APTree){
-        generateDOT_A(topNode, dot_file_2);
-        *output << "💔💔 Annotated Parse Tree generated as DOT file: " << dot_file_2 << " can be visualized using Graphviz\n";
-        /* if(TERMINAL_MESSAGE){
-            std::cout << "\U0001F53A Annotated Parse Tree generated" << std::endl;
-        } */
-    }
-
-    // IR Code Generation
+    outputStream <<  "😎 Exiting gracefully 😎\n" << std::endl;
     
-    if(tac){
-        std::ofstream tacOut(tac_file);
-        CODE_BASE.printTAC(tacOut);
-        *output << "💔💔 TAC Code generated as: " << tac_file << "\n";
-        HERE;
-        tacOut.close();
-    }    
-
-    
-    *output << "💔💔 Exiting gracefully\n" << std::endl;
-    
-    *output << SEMANTICLOGHEADER << std::endl;
+    outputStream <<  SEMANTICLOGHEADER << std::endl;
     for(const auto& log : semanticLOG){
-        *output << log << std::endl;
+        outputStream <<  log << std::endl;
     }
-    *output << LOGFOOTER << std::endl;
+    outputStream <<  LOGFOOTER << std::endl;
 
-    std::cout << "My Name is : " << getpid() << " and I am commiting sucide 😵 now ☠️\n" << std::endl;
+    terminalStream <<  "My Name is " << getpid() << "and I am commiting Suicide 😵 at " << getCurrentTime() << " 🪦" << std::endl;
 
-    closeOutputFile();
+    exit_compiler();
+
     kill(getpid(), SIGKILL);  // Sends SIGKILL to itself
     exit(0); // Clean Exit
 }
 
 
-//How to view the ParseTree
-bool compressed = false; // Default is PTree, if AST is needed, change it to false
 
-//========================= SEMANTIC + IRCode Gen Phase =========================
-// SymbolTable SYM_TABLE;
-// TAC CODE_BASE; [Are declared in handler.cpp]
-
-ASTNode *root;
 %}
 
 %union{
@@ -2402,39 +2405,31 @@ int main(int argc, char **argv) {
 
     //------------------------ cmd line arguments handling ------------------------
 
-        std::string inputInstructions = "Usage: " + std::string(argv[0]) + " <input_file> <output_file> [-ast <dot_file>] [-r] [-pt] [-s] \n";
-        inputInstructions += "Options: \n";
-        inputInstructions += "[-ast <dot_file>] : Generate AST as DOT file\n";
-        inputInstructions += "[-r] : Generate Recursive Output\n";
-        inputInstructions += "[-ptree <dot_file> ] : Generate Parser Tree\n";
-        inputInstructions += "[-s <SExp_file>] : Generate S-Expression\n";
-        inputInstructions += "[-APTree <dot_file>] : Generate a Annotated PTree During Semantic Phase\n";
-        inputInstructions += "[-tac <tac_file> ] : Write TAC Code to this File";
-        inputInstructions += "[ -t ] : Testing Mode\n";
+        std::string inputInstructions = "Usage: " + std::string(argv[0]) + " <input_file> [ -o <output_file> ]/[ -t ] [ -d{1,2} <dot_file> ]\n";
 
-        /* std::cout << "argc: " << argc << std::endl; */
-        if (argc < 2) {
-            std::cerr << "Usage: " << argv[0] << " <input_file> <output_file> [-ast <dot_file>] [-r] [-ptree <dot_file>] [-s] [ -APTree <dot_file> ]\n";
+        inputInstructions += "----------Compiler Options----------\n";
+        inputInstructions += "  No Arguments       : Send output to stdout(terminal)\n";
+        inputInstructions += "  -o [<output_file>] : Send output to a file to <output_file> else same name as input create a output file\n";
+        inputInstructions += "  -t                 : TestingMode - Append output to <input_file> \n";
+        inputInstructions += "----------Debugging Options----------\n";
+        inputInstructions += " -d1 <dot_file>      : Print PTree to <dot_file>\n";
+        inputInstructions += " -d2 <dot_file>      : Print Annotated PTree to <dot_file>\n";
+        
+        if(argc < 1){
+            std::cerr << inputInstructions << std::endl;
             return 1;
         }
 
-        std::string input_file = argv[1];
-        std::string output_file = argv[2];
-        std::string dot_file = "ast_graph.dot";
-        dot_file_2 = "annotated_ast_graph.dot";
-        std::string recursive_output_file = "recursive_output.txt";
-        std::string SExp_file = "SExp.txt";
-        std::string LaTeXParserTable = "parser_table.tex";    
-        tac_file = "ThreeAC.txt";
+        input_file = argv[1];
+        compilerMode = 0; // Default mode
+        // take base name of input file
+        std::string base_name = input_file.substr(input_file.find_last_of("/\\") + 1);
+        output_file = base_name + ".txt"; // Default output file name
 
-        bool ast_flag = false;
-        APTree = false;
-        bool parser_tree_flag = false;
-        bool recursive_flag = false;
-        bool parser_table_flag = false;
-        bool testingMode = false;
-        bool SExp_flag = false;
-        tac = false;
+        ptree = false;
+        Aptree = false;
+        dot_file = "graph.dot"; // Default dot file name
+
 
         // Open default output file
         yyin = fopen(input_file.c_str(), "r");
@@ -2442,91 +2437,40 @@ int main(int argc, char **argv) {
             std::cerr << "Error: Unable to open input file\n";
             return 1;
         }
-        /* LINE */
-        initOutputFile(output_file); // open output file
-
-        /* LINE */
-
-        LINE1;
-
+        
         // Parse command line arguments
-        for (int i = 3; i < argc; i++) {
-            if(std::string(argv[i]) == "-APTree") {
-                APTree = true;
-                compressed = false; // we want uncompressed AST
+        for (int i = 2; i < argc; ++i) {
+            if (strcmp(argv[i], "-o") == 0) {
+                compilerMode = 1; // Output mode
                 if (i + 1 < argc) {
-                    dot_file_2 = argv[i + 1];
-                    i++;
+                    output_file = argv[++i];
                 } else {
-                    std::cerr << "Error: Missing argument for -APTree\n";
-                    std::cerr << inputInstructions;
-                    return 1;
+                    // Okay will use default output file name
                 }
-            }
-            else if(std::string(argv[i]) == "-t"){
-                testingMode = true;
-                compressed = false; // we want uncompressed AST
-            }
-            else if (std::string(argv[i]) == "-pt") {
-                parser_table_flag = true;
-                compressed = false; // we want uncompressed AST
-                if (i + 1 < argc) {
-                    LaTeXParserTable = argv[i + 1];
-                    i++;
+            } else if (strcmp(argv[i], "-t") == 0) {
+                compilerMode = 2; // Testing mode
+            } else if (strcmp(argv[i], "-d1") == 0) {
+                ptree = true;
+                if(i + 1 < argc) {
+                    dot_file = argv[++i];
                 } else {
-                    std::cerr << "Error: Missing argument for -pt\n";
-                    std::cerr << inputInstructions;
+                    std::cerr << "Error: No output file specified for -d1 option\n";
                     return 1;
                 }
-            }else if(std::string(argv[i])=="-tac"){
-                tac = true;
-                compressed = false;
-                if(i+1<argc){
-                    tac_file = argv[i+1];
-                    i++;
-                }
-                else{
-                    std::cerr << "Error: Missing argument for -tac\n";
-                    std::cerr << inputInstructions;
-                    return 1;
-                }
-            }
-            else if (std::string(argv[i]) == "-ast") {
-                ast_flag = true;
-                compressed = true; // we want compressed AST
-                if (i + 1 < argc) {
-                    dot_file = argv[i + 1];
-                    i++;
+            } else if (strcmp(argv[i], "-d2") == 0) {
+                Aptree = true;
+                if(i + 1 < argc) {
+                    dot_file = argv[++i];
                 } else {
-                    std::cerr << "Error: Missing argument for -ast\n";
-                    std::cerr << inputInstructions;
+                    std::cerr << "Error: No output file specified for -d2 option\n";
                     return 1;
                 }
-            } else if (std::string(argv[i]) == "-r") {
-                recursive_flag = true;
-            } else if (std::string(argv[i]) == "-ptree") {
-                std::cerr << "We are going to print Parser Tree\n";
-                // If we wish to print parseTree
-                parser_tree_flag = true; 
-                // and if we wish to have parseTree (uncompressed)
-                compressed = false;
-                ast_flag = false; // we only get one things
-                if (i + 1 < argc) {
-                    dot_file = argv[i + 1];
-                    i++;
-                } else {
-                    std::cerr << "Error: Missing argument for -ptree\n";
-                    std::cerr << inputInstructions;
-                    return 1;
-                }
-            } else if (std::string(argv[i]) == "-s") {
-                SExp_flag = true;
             } else {
-                std::cerr << "Error: Invalid argument\n";
-                std::cerr << inputInstructions;
+                std::cerr << "Error: Unknown option " << argv[i] << "\n";
                 return 1;
             }
         }
+
 
     // ------------------------ Symbol Table ------------------------
         // Create a new symbol table
@@ -2550,107 +2494,90 @@ int main(int argc, char **argv) {
     std::string terminalMsg = "";
 
     if(lexerFailed){
-        *output << "\U0001F6A8 Input Program failed in Lexical Analysis Phase \U0001F6A8\n" << std::endl;
-        terminalMsg = "Lexical Analysis ❌\n";
-
-        if(TERMINAL_MESSAGE){
-            std::cout << terminalMsg << std::endl;
-        }
+        outputStream <<  "\U0001F6A8 Input Program failed in Lexical Analysis Phase \U0001F6A8\n" << std::endl;
+        terminalStream << "Lexical Analysis ❌\n";
         
-        *output << LEXERLOGHEADER << std::endl;
+        outputStream <<  LEXERLOGHEADER << std::endl;
         for(auto log : lexerLOG){
-            *output << log << std::endl;
+            outputStream <<  log << std::endl;
         }
-        *output << LOGFOOTER << std::endl;
-        *output << std::endl;
+        outputStream <<  LOGFOOTER << std::endl;
+        outputStream <<  std::endl;
 
-        *output << "----No Further Processing----\n";
+        outputStream <<  "😊 Thanku for using our \"C2RISC-Engine\" " << std::endl;   
         // Clean Up
         fclose(yyin);
-        closeOutputFile();
+        exit_compiler();
         return 0;
     }
 
     if(syntaxError){
-        *output << "\U0001F6A8 Input Program failed in Syntax Analysis Phase \U0001F6A8\n" << std::endl;
-        terminalMsg = "Lexical Analysis 👍 | Syntax Analysis ❌\n";
-        *output << "\U0001F6A8 yyerror() was called " << noOfyyerrorCalls << " times \U0001F6A8\n" << std::endl;
-
-        if(TERMINAL_MESSAGE){
-            std::cout << terminalMsg << std::endl;
-        }
+        outputStream <<  "\U0001F6A8 Input Program failed in Syntax Analysis Phase \U0001F6A8\n" << std::endl;
+        terminalStream << "Lexical Analysis 👍 | Syntax Analysis ❌\n";
+        outputStream <<  "\U0001F6A8 yyerror() was called " << noOfyyerrorCalls << " times \U0001F6A8\n" << std::endl;
 
         // We print ourCustom Error Only if Bison-don't Report any Error
 
         if(parseError && !TURN_OFF){
-            *output << PARSERLOGHEADER << std::endl;
+            outputStream <<  PARSERLOGHEADER << std::endl;
             for(auto log : parserLOG){
-                *output << log << std::endl;
+                outputStream <<  log << std::endl;
             }
 
-            *output << LOGFOOTER << std::endl;
-            *output << std::endl;
+            outputStream <<  LOGFOOTER << std::endl;
+            outputStream <<  std::endl;
         }
         
         if(bisonError){
-            *output << BISONLOGHEADER << std::endl;
+            outputStream <<  BISONLOGHEADER << std::endl;
             for(auto log : bisonLOG){
-                *output << log << std::endl;
+                outputStream <<  log << std::endl;
             }
-            *output << LOGFOOTER << std::endl;
+            outputStream <<  LOGFOOTER << std::endl;
         }
         
-        *output << std::endl;
+        outputStream <<  std::endl;
+        outputStream << std::endl;
 
-        if(!bisonError){
-            *output << "----No Further Processing----\n";
+        outputStream <<  "😊 Thanku for using our \"C2RISC-Engine\" " << std::endl;
 
         // If we only have custom error - i.e no bison error then we can print the AST
             // Clean Up
             fclose(yyin);
-            closeOutputFile();
+            exit_compiler();
             return 0; // For now even if there is a syntax error, we will continue to print the AST
-        }
     }
-    LINE1
-
-    // Success message
     
-    if(!syntaxError) {// Only 
-        *output << "\U0001F44D Input Program passed Syntax Analysis Phase \U0001F44D\n" << std::endl;
-        terminalMsg = "Lexical Analysis 👍 | Syntax Analysis 👍\n";
-        if(TERMINAL_MESSAGE && !(tac||APTree)){
-            std::cout << terminalMsg << std::endl;
+    // Adding a Extra Node on the top of the Ptree
+    ASTNode* temp = new ASTNode("Program");
+    topNode = temp;
+    topNode->addChild(root);
+    topNode->attributes.push_back(getCurrentTime());
+
+    // Early exit if we are in debugging mode and to print pTree Only
+    if(ptree){
+        // We are in debugging mode and exit after parsing stage
+        if(!syntaxError){
+            outputStream <<  "\U0001F170\U0000FE0F Parsing completed successfully \U0001F170\U0000FE0F\n" << std::endl;
         }
-    }
-    // ------------------------- Printing Various Outputs ------------------------
+        outputStream <<  "\U0001F53A Parser Tree generated as DOT file: " << dot_file << " can be visualized using Graphviz\n";
+        terminalStream << "Lexical Analysis 👍 | Syntax Analysis 👍\n";
+        outputStream <<  "\U0001F6A8 yyerror() was called " << noOfyyerrorCalls << " times \U0001F6A8\n" << std::endl;
+        outputStream <<  PARSERLOGHEADER << std::endl;
+        for(auto log : parserLOG){
+            outputStream <<  log << std::endl;
+        }
+        outputStream <<  LOGFOOTER << std::endl;
+        outputStream <<  std::endl;
+        outputStream <<  "😊 Thanku for using our \"C2RISC-Engine\" " << std::endl << std::endl;
 
-    if(ast_flag){
-        // Print AST to DOT file
-        generateDOT(root, dot_file);
-        *output << "\U0001F53A AST generated as DOT file: " << dot_file << " can be visualized using Graphviz\n";
-    }
-
-    if(parser_tree_flag){
-        // Print Parser Tree to DOT file
-        generateDOT(root, dot_file);
-        *output << "\U0001F53A Parser Tree generated as DOT file: " << dot_file << " can be visualized using Graphviz\n";
-    }
-
-    if(recursive_flag){
-        // Print Recursive Output
-        printASTToFile(root, recursive_output_file);
-        *output << "\U0001F53A Recursive Output generated as: " << recursive_output_file << "\n";
+        // Clean Up and exit
+        if(yyin) fclose(yyin);  // Close the input file
+        exit_compiler(); // This will handle printing of ptree
+        return 0;
     }
 
-    if(SExp_flag){
-        // Print S-Expression
-        writeASTToSExpression(root, SExp_file);
-        *output << "\U0001F53A S-Expression generated as: " << SExp_file << "\n";
-    }
-
-    LINE1
-
+    LINE1;
 
     /*
 
@@ -2658,46 +2585,32 @@ int main(int argc, char **argv) {
 
     */
 
-    if(!APTree && !tac){ // We don't want to run semantic pass if we are NOT generating APTree
-        if(yyin) fclose(yyin);  // Close the input file if opened
-        closeOutputFile();  // Close the output file
-        if(TERMINAL_MESSAGE){
-            std::cout << "😊 Thanku for Using Our C2RSIC Engine (🔤 Syntax Phase) 😊 \n" << std::endl;
-        }
-        return 0;
-    }
-
     //SYM_TABLE & CODE_BASE are globaly defined
 
-    std::string handlerLogFile = "output/handlers.log";
 
     /* std::cout << "\n\U0001F170\U0000FE0F ---- Starting Semantic Analysis Phase ---- \U0001F170\U0000FE0F\n"; */
 
-    // Adding a Extra Node on the top of the Ptree
-    ASTNode* temp = new ASTNode("Program");
-    topNode = temp;
-    topNode->addChild(root);
-    topNode->attributes.push_back(getCurrentTime());
+    
 
-    semanticPass(topNode, handlerLogFile); // Call the semantic pass 
+    semanticPass(topNode); // Call the semantic pass 
     
     // We print the semantic log in the output file
     bool semanticFailed = (semanticLOG.size() > 0);
     if(semanticFailed){
-        terminalMsg = "Lexical Analysis 👍 | Syntax Analysis 👍 | Semantic Analysis ❌\n";
-        *output << "\U0001F6A8 Input Program failed in Semantic Analysis Phase \U0001F6A8\n" << std::endl;
-        *output << SEMANTICLOGHEADER << std::endl;
+        terminalStream <<  "Lexical Analysis 👍 | Syntax Analysis 👍 | Semantic Analysis ❌\n" << std::endl;
+        outputStream <<  "\U0001F6A8 Input Program failed in Semantic Analysis Phase \U0001F6A8\n" << std::endl;
+        outputStream <<  SEMANTICLOGHEADER << std::endl;
         for(auto log : semanticLOG){
-            *output << log << std::endl;
+            outputStream <<  log << std::endl;
         }
-        *output << LOGFOOTER << std::endl;
+        outputStream <<  LOGFOOTER << std::endl;
         if(TERMINAL_MESSAGE){
             std::cout << terminalMsg << std::endl;
         }
     }
     else{
-        terminalMsg = "Lexical Analysis 👍 | Syntax Analysis 👍 | Semantic Analysis 👍 | 🔖 IRCode Gen";
-        *output << "🥳  Input Program passed Semantic Analysis Phase \U0001F170\U0000FE0F\n" << std::endl;
+        terminalStream <<  "Lexical Analysis 👍 | Syntax Analysis 👍 | Semantic Analysis 👍 | 🔖 IRCode Gen" << std::endl;
+        outputStream <<  "🥳  Input Program passed Semantic Analysis Phase \U0001F170\U0000FE0F\n" << std::endl;
         if(TERMINAL_MESSAGE){
             std::cout << terminalMsg << std::endl;
         }
@@ -2705,48 +2618,13 @@ int main(int argc, char **argv) {
 
 
     // Print the Annotated Parse Tree
-    if(APTree){
-        generateDOT_A(topNode, dot_file_2);
-        *output << "\U0001F53A Annotated Parse Tree generated as DOT file: " << dot_file_2 << " can be visualized using Graphviz\n";
+    if(Aptree){
+        outputStream <<  "\U0001F53A Annotated Parse Tree generated as DOT file: " << dot_file << " can be visualized using Graphviz\n";
     }
 
-    // IR Code Generation
-    
-    if(testingMode){
-        std::vector<std::string> TestingOutput;
-        TestingOutput.push_back(terminalMsg);
-        /* TestingOutput.push_back("\n"); */
-        if(semanticFailed){
-            // Add Semantic Logs to the Testing Output
-            TestingOutput.push_back(SEMANTICLOGHEADER);
-            for(auto log : semanticLOG){
-                TestingOutput.push_back(log);
-            }
-            TestingOutput.push_back(LOGFOOTER);
-        }
-        TestingOutput.push_back(" ");
-
-        // NOW we add the IR Code to the Testing Output
-        CODE_BASE.printTAC(TestingOutput);
-        if(yyin) fclose(yyin);  // Close the input file if opened
-        // Now we use Our Printing to InputFile Itself after the last line
-        insertAfterMarker(input_file, MARKER, TestingOutput);
-    }
-
-    if(tac){
-        std::ofstream tacOut(tac_file);
-        CODE_BASE.printTAC(tacOut);
-        *output << "\U0001F53A TAC Code generated as: " << tac_file << "\n";
-        HERE;
-        tacOut.close();
-    }    
-    HERE;
 
     if (yyin) fclose(yyin);  // Close the input file if opened
-    closeOutputFile();  // Close the output file
-    if(TERMINAL_MESSAGE){
-        std::cout << "😊  Thanku for Using Our C2RSIC Engine (🆎Semantic + 🔖IRCode Gen) 😊 \n" << std::endl;
-    }
+    exit_compiler(); // Clean up and exit
     return 0;
 }
 
@@ -2761,7 +2639,7 @@ void yyerror(const char* s) {
         return;
     }
 
-    std::cerr << "Reaching here\n";
+    /* std::cerr << "Reaching here\n"; */
 
     std::string error = "Syntax Error: " + std::string(s) + " at Line: " + std::to_string(yylineno) + " near Token: " + yytext;
     bisonLOG.push_back(error);

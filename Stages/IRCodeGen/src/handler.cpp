@@ -3,30 +3,6 @@
 
 //=====================[ Error Handling ]=========================================================================================
 
-std::ofstream *handlerLog = nullptr;
-
-void openHandlerLog(const std::string &filename)
-{
-    handlerLog = new std::ofstream(filename);
-    if (!handlerLog->is_open())
-    {
-        delete handlerLog;
-        std::cerr << "Error: Unable to open file " << filename << std::endl;
-        handlerLog = nullptr;
-    }
-}
-
-void closeHandlerLog()
-{
-    if (handlerLog->is_open())
-    {
-        handlerLog->close();
-        delete handlerLog;
-        handlerLog = nullptr;
-    }
-    return;
-}
-
 std::vector<std::string> compilerLOG; // [extern declared in header.h]
 std::vector<std::string> semanticLOG; // [extern declared in header.h]
 std::string semanticMessage;          // [extern declared in header.h]
@@ -466,9 +442,9 @@ int ProcessDecSpecifiers(std::vector<std::string> &valueVector, TypeExpression &
 
 //=====================[ Main Semantic Pass Handler ]=========================================================================================
 
-void semanticPass(ASTNode *node, std::string filename)
+void semanticPass(ASTNode *node)
 {
-    openHandlerLog(filename); // 😵‍💫🤬 Critical CODE [MUST be AT START]
+    
     if (node == nullptr)
     {
         return;
@@ -498,7 +474,6 @@ void semanticPass(ASTNode *node, std::string filename)
     globalScope = SYM_TABLE.exitScope();                                    // GlobalScope
     aptLOG("Scope (Global) S" + std::to_string(globalScope) + " Exited ↙️"); // 🌴 Adding syn_attr
 
-    closeHandlerLog(); // 😵‍💫🤬 Critical CODE [MUST be at BOTTOM]
 }
 // SYM_TABLE - Will be Globaly available
 // CODE_BASE - Will be Globaly available (TAC)

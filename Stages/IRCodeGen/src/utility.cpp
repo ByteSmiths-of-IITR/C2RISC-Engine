@@ -194,60 +194,60 @@ std::string ASTStyle(ASTNode* node) {
 
 //--------------- Writes the AST to a DOT format file recursively
 
-void insertAfterMarker(const std::string &filename, const std::string &marker, const std::vector<std::string> &newContent)
-{
-    std::ifstream inFile(filename);
-    if (!inFile.is_open())
+    void insertAfterMarker(const std::string &fileName, const std::string &marker, std::ostringstream &newContent)
     {
-        std::cerr << "❌ Could not open file: " << filename << "\n";
-        return;
-    }
-
-    std::ostringstream modifiedContent;
-    std::string line;
-    bool markerFound = false;
-
-    while (std::getline(inFile, line))
-    {
-        modifiedContent << line << "\n";
-        if (!markerFound && line.find(marker) != std::string::npos)
+        std::ifstream inputFile(fileName);
+        if (!inputFile)
         {
-            markerFound = true;
-            // Insert new content after the marker
-            for (const auto &content : newContent)
+            std::cerr << "Error: Cannot open file for reading: " << fileName << std::endl;
+            return;
+        }
+
+        std::ostringstream fileBuffer;
+        std::string line;
+        bool markerFound = false;
+
+        while (std::getline(inputFile, line))
+        {
+            fileBuffer << line << '\n';
+            if (!markerFound && line.find(marker) != std::string::npos)
             {
-                modifiedContent << "// " << content << "\n";
+                markerFound = true;
+
+                std::istringstream contentStream(newContent.str());
+                std::string contentLine;
+                while (std::getline(contentStream, contentLine))
+                {
+                    fileBuffer << "// "<< contentLine << '\n';
+                }
+                break;
             }
-            break; // Stop searching after inserting
         }
-    }
 
-    inFile.close(); // Close the input file
-
-    // If marker wasn't found, append content at the end
-    if (!markerFound)
-    {
-        std::cerr << "⚠️ Marker not found in file: " << filename << "\n";
-        modifiedContent << marker << "\n"; // Add the marker at the end
-        for (const auto &content : newContent)
+        if (!markerFound)
         {
-            modifiedContent << "// " << content << "\n";
+            std::cerr << "⚠️ Marker not found in file: " << fileName << "\n";
+            fileBuffer << '\n'; // Optional extra line
+            std::istringstream contentStream(newContent.str());
+            std::string contentLine;
+            while (std::getline(contentStream, contentLine))
+            {
+                fileBuffer << "// " << contentLine << '\n';
+            }
         }
-    }
 
-    // Write back the modified content
-    std::ofstream outFile(filename);
-    if (!outFile.is_open())
-    {
-        std::cerr << "❌ Could not write to file: " << filename << "\n";
-        return;
-    }
+        inputFile.close();
 
-    outFile << modifiedContent.str();
-    // modifiedContent.clear(); // Clear the string stream
-    outFile.close();
-    // std::cout << "✅ Content inserted successfully.\n";
-}
+        std::ofstream outputFile(fileName);
+        if (!outputFile)
+        {
+            std::cerr << "Error: Cannot open file for writing: " << fileName << std::endl;
+            return;
+        }
+
+        outputFile << fileBuffer.str();
+        outputFile.close();
+    }
 
 std::string MARKER = "//=========================== C2RISC-Engine ==========================================//";
 

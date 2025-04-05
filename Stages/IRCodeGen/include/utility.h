@@ -101,6 +101,6 @@ void printASTToFile(ASTNode *root, const std::string &outputFileName);
 
 //Semantic Phase Utilities
 extern std::string MARKER;
-void insertAfterMarker(const std::string &filename, const std::string &marker, const std::vector<std::string> &newContent);
+void insertAfterMarker(const std::string &filename, const std::string &marker, std::ostringstream &newContent);
 
 #endif // UTILITY_H

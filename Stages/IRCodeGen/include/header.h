@@ -606,6 +606,8 @@ public:
         void printTAC(std::ofstream &file);
         void printTAC();                               // prints to stdout
         void printTAC(std::vector<std::string> &list); // prints to stdout
+        void printTAC(std::ostringstream &oss);        // prints to string stream
+
 
         std::string newLabel();
     int nextIndex();
@@ -785,7 +787,7 @@ std::string getCurrentTime();
 
 //=====================[ Main Semantic Pass Handler ]=========================================================================================
 
-void semanticPass(ASTNode *node, std::string filename);
+void semanticPass(ASTNode *node);
 // SYM_TABLE - Will be Globaly available
 // CODE_BASE - Will be Globaly available (TAC)
 

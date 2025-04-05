@@ -15,14 +15,12 @@ int main(){
 
 //=========================== C2RISC-Engine ==========================================//
 // Lexical Analysis 👍 | Syntax Analysis 👍 | Semantic Analysis ❌
-
+// 
+// 
+// 🚨 Input Program failed in Semantic Analysis Phase 🚨
+// 
 // ----------------------------------- SEMANTIC LOG -----------------------------------
 // Error: Inc or Dec expression "$2" is not a pointer or variable type
 // ----------------------------------- END OF LOG -----------------------------------
-//  
-// CodeLineNo : Three Address Code            
-// ---------- : -------------------------------
-// 0          : main                          
-// 1          : $0 = arr$1.offset             
-// 2          : $1 = 1 * 20                   
-// 3          : $2 = $0 + $1                  
+// 🔺 Annotated Parse Tree generated as DOT file: build/annotated_ast_graph.dot can be visualized using Graphviz
+// 
