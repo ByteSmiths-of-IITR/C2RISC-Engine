@@ -4,6 +4,12 @@
 
 int width(const UserDType &dtype)
 {
+    if(dtype.isComplete == false)
+    {
+        std::cerr << LOC << "Error: User Defined Type is not complete\n";
+        return -1;
+    }
+
     std::map<std::string, TypeExpression> members = dtype.members;
     int totalSize = 0;
     RecordType recordType = dtype.recordType;

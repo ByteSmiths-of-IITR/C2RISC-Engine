@@ -494,7 +494,7 @@ class UserDType : public GenericSymbol
 {
 public:
     RecordType recordType; // This will be used for struct, union, enum
-
+    bool isComplete; // This will be used for struct, union, enum
     // Members of the record
     std::map<std::string, TypeExpression> members; // Enum won't use this
 

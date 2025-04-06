@@ -741,21 +741,11 @@ int struct_or_union_specifier_H(ASTNode *node, std::string &value)
     // Code Commong to P1 & P2
     if (whichProduction == P1 || whichProduction == P2)
     {
-
-        // 0. Call struct_declaration_list_H to fill the members
-        std::map<std::string, TypeExpression> members; // fetch syn_attr ⬆️
-        int position = (whichProduction == P1) ? 3 : 2;
-        int strdl_check = struct_declaration_list_H(node->children[position], members);
-        PASS_THE_ERROR(strdl_check);
-
-        // 1. Create a UserDType Unit
+        // 0. Create a UserDType Unit [Incomplete Type]
         UserDType *userDType = new UserDType();
         RecordType recordType = (recordStr == "struct") ? RecordType::STRUCT : RecordType::UNION;
-
-        userDType->recordType = recordType;
-        userDType->members = members;
-
-        // 2. Add it to the symbol table
+        userDType->isComplete = false;
+        // 2. Add it to the symbol table [Incomplete Type]
         std::string recordID = (whichProduction == P1) ? node->children[1]->value : newRecordName();
 
         int check = SYM_TABLE.insertRecord(recordID, userDType);
@@ -771,6 +761,17 @@ int struct_or_union_specifier_H(ASTNode *node, std::string &value)
             aptLOG("RecordID \"" + recordID + "\" added to symbol table");
         }
 
+        // 3. Call struct_declaration_list_H to fill the members
+        std::map<std::string, TypeExpression> members; // fetch syn_attr ⬆️
+        int position = (whichProduction == P1) ? 3 : 2;
+        int strdl_check = struct_declaration_list_H(node->children[position], members);
+        PASS_THE_ERROR(strdl_check);
+
+
+        userDType->recordType = recordType;
+        userDType->members = members;
+        userDType->isComplete = true;
+        
         // 3. Pass a String up
         std::string scope = std::to_string(SYM_TABLE.scopeNo);
         std::string typeSpecifier = recordStr + " " + recordID + " S" + scope;
@@ -921,6 +922,9 @@ int struct_declaration_H(ASTNode *node, std::map<std::string, TypeExpression> &m
     int strdl_check = struct_declarator_list_H(node->children[1], inh_type, syn_members);
     PASS_THE_ERROR(strdl_check);
 
+
+    
+
     // Pass the members up
     members = syn_members; // send syn_attr ⬆️
 
@@ -1024,6 +1028,8 @@ int struct_declarator_H(ASTNode *node, TypeExpression inh_type, std::string &var
 
     aptLOG("inh_type = " + toString(inh_type));
 
+    TypeExpression type0;
+
     if (whichProduction == P1)
     {
         // 0. Prepare syn_data to be fetched ⬆️
@@ -1036,14 +1042,16 @@ int struct_declarator_H(ASTNode *node, TypeExpression inh_type, std::string &var
 
         // 2. Pass the data up
         varName = varName1;
-        type = type1;
+        type0 = type1;
     }
     else if (whichProduction == P2)
     { // ⚡️ Advance Feature ⚡️ - BitFields
-
+        semanticError("BitField not supported yet | Declarator not specified");
+        // FAIL_H;
+        // return FAIL;
         // No Handler to call
-        varName = "";
-        type = inh_type; // Pass the inh_type as it is
+        varName = "JUST_A_BITFIELD"; // To be fetched ⬆️
+        type0 = inh_type; // Pass the inh_type as it is
     }
     else if (whichProduction == P3)
     { // ⚡️ Advance Feature ⚡️ - BitFields
@@ -1056,10 +1064,11 @@ int struct_declarator_H(ASTNode *node, TypeExpression inh_type, std::string &var
         PASS_THE_ERROR(dcl_check);
 
         // [IGNORED] - Constant Expression - BitField Size
+        semanticError("BitField not supported yet | Ignoring the size");
 
         // 2. Pass the data up
         varName = varName1;
-        type = type1;
+        type0 = type1;
     }
     else
     {
@@ -1068,6 +1077,17 @@ int struct_declarator_H(ASTNode *node, TypeExpression inh_type, std::string &var
         BUG_H;
         return BUG;
     }
+
+    // Check if such a variable type is allowed a struct member
+    // Must be able to find width of member
+    int wid = width(type0);
+    if (wid == -1)
+    {
+        semanticError("Invalid type specifier (width can't be found) in struct_declaration : " + toString(type0));
+        FAIL_H;
+        return FAIL;
+    }
+    type = type0; // Pass the type up
 
     aptLOG("syn_varName = " + varName);     // 🌴 Adding syn_attr
     aptLOG("syn_type = " + toString(type)); // 🌴 Adding syn_attr
@@ -1094,6 +1114,7 @@ int enum_specifier_H(ASTNode *node, std::string &value)
     {
         // 1. Create a UserDType Entry
         UserDType *userDType = new UserDType();
+        userDType->isComplete = true; // Incomplete Type
         userDType->recordType = RecordType::ENUM;
         userDType->members = std::map<std::string, TypeExpression>(); // Empty Map // Enum won't use this
 
