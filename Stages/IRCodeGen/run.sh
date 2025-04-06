@@ -1,4 +1,4 @@
-#!/bin/bash
+# !/bin/bash
 
 # -------- Configuration --------
 EXECUTABLE="bin/C2RISC_Engine"   # Default executable
@@ -43,4 +43,4 @@ else
         echo "---------------------------"
         sleep 0.5
     done
-fi
+fii
