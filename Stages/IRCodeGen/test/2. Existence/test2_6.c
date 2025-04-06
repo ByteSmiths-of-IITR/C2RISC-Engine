@@ -25,14 +25,19 @@ int main()
 // ------------------------------------------------------------------------------------
 // ----------------------------------- SEMANTIC LOG -----------------------------------
 // SEMANTIC ERROR ‼️ : Member "age" not found in record "Person"
+// SEMANTIC ERROR ‼️ : RecordID "Person" not found
+// SEMANTIC ERROR ‼️ : Identifier "p1" not 🫠 found in the current scope
+// SEMANTIC ERROR ‼️ : Function 'main's return type is not void but no return statement found
 // ----------------------------------- END OF LOG -----------------------------------
 // 
 // ------------------------------------------------------------------------------------
 // CodeLineNo : TAC                           
 // ---------- : -------------------------------
+// 
 // 0          : main                          
 // 1          : $0 = p$2.offset               
 // 2          : $1 = $0 + 0                   
 // 3          : *$1 = 1                       
 // 4          : $2 = p$2.offset               
+// 5          : Person$1 = 190                
 // 

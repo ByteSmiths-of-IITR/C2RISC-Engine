@@ -805,9 +805,16 @@ int function_definition_H(ASTNode *node)
         int check = ProcessDecSpecifiers(valueVector, inh_type, storageClass);
         if (check != OKAY)
         {
-            semanticError(semanticMessage);
-            FAIL_H;
-            return FAIL;
+            if (check == WARNING)
+            {
+                semanticWarning("Declaration Specifier - " + semanticMessage);
+            }
+            else
+            {
+                semanticError("Invalid Function's return type - " + toString(valueVector));
+                FAIL_H;
+                return FAIL;
+            }
         }
 
         if (storageClass != StorageClass::NONE)

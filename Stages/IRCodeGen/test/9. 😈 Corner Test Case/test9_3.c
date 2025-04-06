@@ -1,14 +1,9 @@
-// same enum ID in different scopes
+int short long a;
+typedef int long MyInt;
 
-enum Color { RED, GREEN, BLUE };
-enum TrafficLight { RED, YELLOW, BLACK };  // error: redeclaration of enumerator 'RED'
+char short unsigned b;
 
-void func(){
-    enum Color { RED, INDIGO, YELLOW }; // no error
-}
-
-int main() {
-    enum Color { RED, INDIGO, YELLOW }; // no error
+int main(){
     return 0;
 }
 
@@ -17,15 +12,14 @@ int main() {
 // 
 // ------------------------------------------------------------------------------------
 // ----------------------------------- SEMANTIC LOG -----------------------------------
-// SEMANTIC ERROR ‼️ : Enum Constant "RED" already present in the current scope
+// SEMANTIC ERROR ‼️ : Declaration Specifiers Combination is not valid - [ int, short, long ]
+// SEMANTIC ERROR ‼️ : Declaration Specifiers Combination is not valid - [ char, short, unsigned ]
 // ----------------------------------- END OF LOG -----------------------------------
 // 
 // ------------------------------------------------------------------------------------
 // CodeLineNo : TAC                           
 // ---------- : -------------------------------
 // 
-// 0          : func                          
-// 
-// 1          : main                          
-// 2          : return 0                      
+// 0          : main                          
+// 1          : return 0                      
 // 

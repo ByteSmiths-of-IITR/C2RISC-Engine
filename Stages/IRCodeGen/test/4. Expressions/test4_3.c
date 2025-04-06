@@ -22,7 +22,7 @@ int main() {
     sizeof(int);
 
     // Negative Cases
-    sizeof(); // error: expected expression before ‘)’ token
+    sizeof(int); // error: expected expression before ‘)’ token
     *10; // error: invalid type argument of unary ‘*’ (have ‘int’)
     
     return 0;
@@ -33,16 +33,18 @@ int main() {
 // 
 // ------------------------------------------------------------------------------------
 // ----------------------------------- SEMANTIC LOG -----------------------------------
-// SEMANTIC ERROR ‼️ : Function 'main's return type is not void but no return statement found
+// SEMANTIC ERROR ‼️ : In Unary expression "10" is not a pointer or array type
 // ----------------------------------- END OF LOG -----------------------------------
 // 
 // ------------------------------------------------------------------------------------
 // CodeLineNo : TAC                           
 // ---------- : -------------------------------
+// 
 // 0          : main                          
 // 1          : a$1 = 5                       
 // 2          : $0 = a$1 + 1                  
 // 3          : $1 = a$1 - 1                  
 // 4          : $2 = &a$1                     
 // 5          : p$1 = $2                      
+// 6          : return 0                      
 // 

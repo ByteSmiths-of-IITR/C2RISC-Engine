@@ -1,16 +1,3 @@
-/*
-postfix_expression
-    : primary_expression
-    | postfix_expression LSQUARE expression RSQUARE
-    | postfix_expression LPAREN RPAREN
-    | postfix_expression LPAREN argument_expression_list RPAREN
-    | postfix_expression DOT IDENTIFIER
-    | postfix_expression PTR_OP IDENTIFIER
-    | postfix_expression INC_OP
-    | postfix_expression DEC_OP
-    ;
-*/
-
 struct Test { int x; } t;
 
 // int arr[10];
@@ -61,6 +48,7 @@ int main() {
 // ------------------------------------------------------------------------------------
 // CodeLineNo : TAC                           
 // ---------- : -------------------------------
+// 
 // 0          : func                          
 // 1          : return 0                      
 // 
@@ -83,5 +71,4 @@ int main() {
 // 17         : $8 = t$3.offset               
 // 18         : $9 = $8 + 0                   
 // 19         : return 0                      
-// 
 // 

@@ -30,6 +30,7 @@ int main(){
 // ----------------------------------- SEMANTIC LOG -----------------------------------
 // SEMANTIC ERROR ‼️ : Symbol "RED" already 🫠 present in the current scope
 // SEMANTIC ERROR ‼️ : RecordID "A" already 🫠 present in the current scope
+// SEMANTIC ERROR ‼️ : Function 'main's return type is not void but no return statement found
 // ----------------------------------- END OF LOG -----------------------------------
 // 
 // ------------------------------------------------------------------------------------
@@ -38,6 +39,7 @@ int main(){
 // 0          : RED$0 = 10                    
 // 1          : A$0 = 10                      
 // 2          : a$0 = a                       
+// 
 // 3          : main                          
 // 4          : RED$1 = 100                   
 // 5          : A$1 = 20                      

@@ -19,13 +19,15 @@ int main() {
 // 
 // ------------------------------------------------------------------------------------
 // ----------------------------------- SEMANTIC LOG -----------------------------------
-// SEMANTIC ERROR ‼️ : Initialization Type Mismatch 😔 for 'a' which is 'int' and initialized it with ''
-// SEMANTIC ERROR ‼️ : Function 'main's return type is not void but no return statement found
+// SEMANTIC ERROR ‼️ : Explicit cast from "float" to "void" is not allowed
 // ----------------------------------- END OF LOG -----------------------------------
 // 
 // ------------------------------------------------------------------------------------
 // CodeLineNo : TAC                           
 // ---------- : -------------------------------
+// 
 // 0          : main                          
 // 1          : f$1 = 3.140000                
+// 2          : a$1 = f$1                     
+// 3          : return 0                      
 // 

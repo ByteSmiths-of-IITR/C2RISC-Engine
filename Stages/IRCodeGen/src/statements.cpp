@@ -93,7 +93,7 @@ int statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<int> &b
     }   
     else
     {
-        compilerError("")
+        compilerError("Wrong Production in statement_H");
         BUG_H;
         return BUG;
     }
@@ -147,8 +147,6 @@ int statement_list_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<in
     {
         compilerError("Wrong Production in statement_list_H");
         BUG_H;
-        // Setup Dummy Data
-        S_nextList = std::vector<int>(); // No Next List
         return BUG;
     }
 
@@ -172,7 +170,6 @@ int compound_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vecto
     {
         compilerError("Wrong Production in compound_statement_H");
         BUG_H;
-        S_nextList = std::vector<int>();
         return BUG;
     }
 
@@ -455,6 +452,8 @@ int selection_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vect
         if (!(baseType == TYPE_CHAR || baseType == TYPE_SHORT || baseType == TYPE_INT || baseType == "ENUM" || baseType == "ENUM_CONSTANT"))
         {
             semanticError("SEMANTIC ERROR ‼️: Expression inside switch statement cannot be of type " + baseType);
+            FAIL_H;
+            return FAIL;
         }
 
         // 🔖 IRCode Gen
@@ -497,6 +496,8 @@ int selection_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vect
             if (it.first == DEFAULT_CASE)
             {
                 // Should not happen
+                compilerError("Default case was alredy found");
+                // BUG_H;
             }
             else
             {
@@ -520,7 +521,6 @@ int selection_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vect
     {
         compilerError("Wrong Production in selection_statement_H");
         BUG_H;
-        S_nextList = std::vector<int>();
         return BUG;
     }
 
@@ -767,7 +767,7 @@ int iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vect
         Type whichType = whatIsType(type2);
         if (whichType == Type::STRUCT_UNION)
         {
-            semanticError("🚨 Type Error: Expression inside for statement cannot be of type STRUCT_UNION");
+            semanticError("Expression inside for statement cannot be of type STRUCT_UNION");
             FAIL_H;
             return FAIL;
         }
@@ -832,7 +832,7 @@ int iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vect
         Type whichType = whatIsType(type2);
         if (whichType == Type::STRUCT_UNION)
         {
-            semanticError("🚨 Type Error: Expression inside for statement cannot be of type STRUCT_UNION");
+            semanticError("Expression inside for statement cannot be of type STRUCT_UNION");
             FAIL_H;
             return FAIL;
         }
@@ -903,7 +903,7 @@ int iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vect
         Type whichType = whatIsType(type2);
         if (whichType == Type::STRUCT_UNION)
         {
-            semanticError("🚨 Type Error: Expression inside for statement cannot be of type STRUCT_UNION");
+            semanticError("Expression inside for statement cannot be of type STRUCT_UNION");
             FAIL_H;
             return FAIL;
         }
@@ -999,7 +999,7 @@ int jump_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<in
     {
         if (continueAllowed <= 0)
         {
-            semanticError("\'continue\' statement not in loop statement");
+            semanticError("\'continue\' statement not 😅 in loop statement");
             FAIL_H; 
             return FAIL;
         }
@@ -1029,7 +1029,7 @@ int jump_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<in
         int lookupCheck = SYM_TABLE.lookup(currFuncName, sym);
         if (lookupCheck == LOOKUP_FAILURE)
         {
-            semanticError("\'return\' statement use in non-function scope - " + currFuncName);
+            semanticError("\'return\' statement used in non-function 😅 scope - " + currFuncName);
             FAIL_H;
             ;
             return FAIL;
@@ -1069,7 +1069,6 @@ int jump_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<in
             int check = ourEquivalent(source, dest);
             if (check != OKAY)
             {
-                // SEMANTIC ERROR 🚨 : Assignment expression's operand \"" + varName1 + "\" and \"" + varName2 + "\" are not compatible
                 semanticError("Return type mismatch - Expected : \'" + toString(dest) + "\' Found : \'" + toString(source) + "\'");
                 FAIL_H;
                 return FAIL;
@@ -1099,9 +1098,8 @@ int jump_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<in
         int check = SYM_TABLE.lookup(currFuncName, sym);
         if (check == LOOKUP_FAILURE)
         {
-            semanticError("\'return\'' statement use in non-function scope - " + currFuncName);
+            semanticError("\'return\'' statement use in non-function 😅 scope - " + currFuncName);
             FAIL_H;
-            ;
             return FAIL;
         }
         TypeExpression funcType = ((Function *)sym)->type;
@@ -1188,8 +1186,9 @@ int labeled_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector
     {
         if (caseAllowed <= 0)
         {
-            semanticError("\'case\' statement not in any switch statement");
-            FAIL_H; return FAIL;
+            semanticError("\'case\' statement not in any switch 😅 statement");
+            FAIL_H; 
+            return FAIL;
         }
 
         std::string constExpr;
@@ -1198,14 +1197,15 @@ int labeled_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector
         RECOVER_THE_ERROR(cex_check);
 
         if(constExpr == NOT_CONSTANT){
-            aptLOG("Constant Expression is not constant");
+            semanticError("case - \'" + constExpr + "\' is not a constant 😔 expression");
+            FAIL_H; return FAIL;
         }
 
         // TypeCheck for constExpr
 
         if (caseMap.find(constExpr) != caseMap.end())
         {
-            semanticError("case - \'" + constExpr + "\' already exists");
+            semanticError("case - \'" + constExpr + "\' already 🫠 exists");
             FAIL_H; return FAIL;
         }
         int caseIndex = CODE_BASE.nextIndex();
@@ -1219,7 +1219,7 @@ int labeled_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector
     {
         if (caseAllowed <= 0)
         {
-            semanticError("\'default\' statement not in any switch statement");
+            semanticError("\'default\' statement not in any switch 😅 statement");
             FAIL_H; return FAIL;
         }
 
@@ -1229,7 +1229,7 @@ int labeled_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector
 
         if (caseMap.find(constExpr) != caseMap.end())
         {
-            semanticError("default already exists");
+            semanticError("default already  exists");
             FAIL_H; return FAIL;
         }
         int defaultIndex = CODE_BASE.nextIndex();

@@ -36,9 +36,14 @@ int declaration_H(ASTNode *node)
     int check = ProcessDecSpecifiers(valueVector, inh_type, inh_storageClass);
     if (check != OKAY)
     {
-        semanticError("Declaration Specifiers are not valid");
+        if(check == WARNING){
+            semanticWarning("Declaration Specifier - " + semanticMessage);
+        }
+        else{
+        semanticError("Declaration Specifiers Combination is not valid - " + toString(valueVector));
         FAIL_H;
         return FAIL;
+        }
     }
 
     if (whichProduction == P1)
@@ -152,6 +157,8 @@ int init_declarator_H(ASTNode *node, TypeExpression inh_type, StorageClass inh_s
     std::string varName; // to be fetched ⬆️
     TypeExpression type; // to be fetched ⬆️
 
+    std::string appendToName = "$"+std::to_string(SYM_TABLE.scopeNo);
+
     // Code Common to (P1, P2)
     if (whichProduction == P1 || whichProduction == P2)
     {
@@ -160,6 +167,8 @@ int init_declarator_H(ASTNode *node, TypeExpression inh_type, StorageClass inh_s
         int decl_check = declarator_H(node->children[0], inh_type, varName, type);
         PASS_THE_ERROR(decl_check);
         SYMBOL_TYPE symbolInsertedType = SYMBOL_TYPE::NONE;
+
+        
 
         // 0 First we Handle Initializer
         if (whichProduction == P2)
@@ -190,7 +199,7 @@ int init_declarator_H(ASTNode *node, TypeExpression inh_type, StorageClass inh_s
                     {
                         // TypeCheck - Initializer is not a scalar
                         Type initTopType = whatIsType(initType);
-                        if (initTopType != Type::ARRAY)
+                        if (initTopType != Type::ARRAY && initTopType != Type::POINTER)
                         {
                             // SEMANTIC ERROR 🚨 : Initializer is not a scalar
                             semanticError("Initializer \"" + initVarName + "\" is a scalar but the variable is an array");
@@ -205,7 +214,7 @@ int init_declarator_H(ASTNode *node, TypeExpression inh_type, StorageClass inh_s
 
                         std::string data = initVarName2 + " = " + initVarName;
                         CODE_BASE.data.push_back(data);                                      // Add to data section
-                        CODE_BASE.addTAC(node, varName, MEM_COPY, initVarName2, NO_ARG); // Assign it to the variable
+                        CODE_BASE.addTAC(node, varName+appendToName, MEM_COPY, initVarName2, NO_ARG); // Assign it to the variable
                         // Change the name to the address
                     }
                     else
@@ -231,14 +240,22 @@ int init_declarator_H(ASTNode *node, TypeExpression inh_type, StorageClass inh_s
                     if (!(isNum && isNum2))
                     {
                         // Check if the types are same
-                        int check = ourEquivalent(dest, source);
+                        int check = checkEquivalance(dest, source);
                         if (check != OKAY)
                         {
-                            // SEMANTIC ERROR 🚨 : Assignment expression's operand \"" + varName1 + "\" and \"" + varName2 + "\" are not compatible
-                            semanticError("Initialization type mismatch - Expected : \'" + toString(dest) + "\' Found : \'" + toString(source) + "\'");
-                            FAIL_H;
-                            return FAIL;
+                            if (check == WARNING)
+                            {
+                                semanticWarning("Initialization type mismatch - Expected : \'" + toString(dest) + "\' Found : \'" + toString(source) + "\'");
+                            }
+                            else
+                            {
+                                semanticError("Initialization type mismatch - Expected : \'" + toString(dest) + "\' Found : \'" + toString(source) + "\'");
+                                FAIL_H;
+                                return FAIL;
+                            }
+                            
                         }
+                        CODE_BASE.addTAC(node, varName+appendToName, ASSIGN_OP, initVarName, NO_ARG);
                     }
                     else
                     {
@@ -246,10 +263,11 @@ int init_declarator_H(ASTNode *node, TypeExpression inh_type, StorageClass inh_s
                         int equal = ourEquivalent(source, dest);
                         if (equal != OKAY)
                         {
-                            // std::string castedVarNam = newTemp();
-                            CODE_BASE.addTAC(node, varName, CAST, toString(dest), initVarName); // Cast it
-                            // initVarName = castedVarNam;                                              // Change the name to the address
+                            std::string castedVarNam = newTemp();
+                            CODE_BASE.addTAC(node, castedVarNam, CAST, toString(dest), initVarName); // Cast it
+                            initVarName = castedVarNam;                                              // Change the name to the address
                         }
+                        CODE_BASE.addTAC(node, varName+appendToName, ASSIGN_OP, initVarName, NO_ARG); // Assign it to the variable
                     }
                 }
                 }
@@ -417,6 +435,8 @@ int init_declarator_H(ASTNode *node, TypeExpression inh_type, StorageClass inh_s
                 aptLOG("Variable added ☞ \"" + varName + "\""); // 🌴 Adding syn_attr
             }
         }
+
+        
     }
     else
     {
@@ -911,10 +931,16 @@ int struct_declaration_H(ASTNode *node, std::map<std::string, TypeExpression> &m
     int check = ProcessDecSpecifiers(valueVector, inh_type, inh_storageClass);
     if (check != OKAY)
     {
-        // SEMANTIC ERROR 🚨 : Invalid TypeSpecifier
-        semanticError("Invalid type specifier");
-        FAIL_H;
-        return FAIL;
+        if (check == WARNING)
+        {
+            semanticWarning("Declaration Specifier - " + semanticMessage);
+        }
+        else
+        {
+            semanticError("Invalid type specifier in struct/union - " + toString(valueVector));
+            FAIL_H;
+            return FAIL;
+        }
     }
 
     // Pass the inh_data ⬇️ & fetch the syn_attr(members) ⬆️
@@ -1633,7 +1659,7 @@ int pointer_H(ASTNode *node, std::vector<PointerInfo *> inh_ptrInfo, std::vector
         info->typeQualifiers = typeQualifiers;
         inh_ptrInfo1.push_back(info); // Push the new info to inh_ptrInfo1 to pass
 
-        int ptr_check = pointer_H(node->children[1], inh_ptrInfo1, ptrInfo1);
+        int ptr_check = pointer_H(node->children[2], inh_ptrInfo1, ptrInfo1);
         PASS_THE_ERROR(ptr_check);
 
         ptrInfo = ptrInfo1; // Pass syn_attr ⬆️
@@ -1799,9 +1825,18 @@ int parameter_declaration_H(ASTNode *node, TypeExpression &type, std::string &va
     StorageClass inh_storageClass = StorageClass::NONE;
     int check = ProcessDecSpecifiers(valueVector, inh_type, inh_storageClass);
     if (check != OKAY)
-    {   
-        semanticError("Invalid TypeSpecifier : " + semanticMessage);
-      
+    {
+        if (check == WARNING)
+        {
+            semanticWarning("Declaration Specifier - " + semanticMessage);
+        }
+        else
+        {
+            semanticError("Invalid TypeSpecifier for parameters - " + toString(valueVector));
+            FAIL_H;
+            return FAIL;
+        }
+
     }
     if (inh_storageClass != StorageClass::NONE)
     {   
@@ -1929,9 +1964,16 @@ int type_name_H(ASTNode *node, TypeExpression &type)
         int check = ProcessDecSpecifiers(valueVector, inh_type, inh_storageClass);
         if (check != OKAY)
         {
-            semanticError("Invalid TypeSpecifier for TypeName");
-            FAIL_H;
-            return FAIL;
+            if (check == WARNING)
+            {
+                semanticWarning("Declaration Specifier - " + semanticMessage);
+            }
+            else
+            {
+                semanticError("Invalid TypeSpecifier for TypeName - " + toString(valueVector));
+                FAIL_H;
+                return FAIL;
+            }
         }
         if (inh_storageClass != StorageClass::NONE)
         {
@@ -1957,9 +1999,16 @@ int type_name_H(ASTNode *node, TypeExpression &type)
         int check = ProcessDecSpecifiers(valueVector, inh_type, inh_storageClass);
         if (check != OKAY)
         {
-            semanticError("Invalid TypeSpecifier for TypeName");
-            FAIL_H;
-            return FAIL;
+            if (check == WARNING)
+            {
+                semanticWarning("Declaration Specifier - " + semanticMessage);
+            }
+            else
+            {
+                semanticError("Invalid TypeSpecifier for TypeName - " + toString(valueVector));
+                FAIL_H;
+                return FAIL;
+            }
         }
 
         // 4. Call the function again to fetch the next value

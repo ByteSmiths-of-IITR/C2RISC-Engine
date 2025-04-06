@@ -1,14 +1,12 @@
-/* goto - simpler version */
+int main(){
+    int a = 10;
+    int *const ptr = &a;
 
-int main() {
-    int a = 0;
+    ptr++; // error: increment of read-only location ‘ptr’
 
-    goto label;
-    a = 10; // This statement is skipped
-
-    label:
-    a = 20;
-    
+    const int *const ptr2 = &a;
+    ptr2++; // error: increment of read-only location ‘ptr2’
+    (*ptr2)++; // error: increment of read-only location ‘*ptr2’
 }
 
 //=========================== C2RISC-Engine =========================================================//
@@ -16,6 +14,9 @@ int main() {
 // 
 // ------------------------------------------------------------------------------------
 // ----------------------------------- SEMANTIC LOG -----------------------------------
+// SEMANTIC ERROR ‼️ : Inc or Dec expression "ptr$1" is not a modifiable lvalue
+// SEMANTIC ERROR ‼️ : Inc or Dec expression "ptr2$1" is not a modifiable lvalue
+// SEMANTIC ERROR ‼️ : Inc or Dec expression "ptr2$1" is not a modifiable lvalue
 // SEMANTIC ERROR ‼️ : Function 'main's return type is not void but no return statement found
 // ----------------------------------- END OF LOG -----------------------------------
 // 
@@ -24,8 +25,9 @@ int main() {
 // ---------- : -------------------------------
 // 
 // 0          : main                          
-// 1          : a$1 = 0                       
-// 2          : goto L(4)                     
-// 3          : a$1 = 10                      
-// 4          : a$1 = 20                      
+// 1          : a$1 = 10                      
+// 2          : $0 = &a$1                     
+// 3          : ptr$1 = $0                    
+// 4          : $1 = &a$1                     
+// 5          : ptr2$1 = $1                   
 // 

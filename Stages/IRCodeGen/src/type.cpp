@@ -940,8 +940,13 @@ int checkEquivalance(const LevelInfo &info1, const LevelInfo &info2)
     int type2 = whichLevelInfo(info2);
     if (type1 != type2)
     {
-        return LOW_ERROR;
-        // Different levelTypes is Low Error
+        if((type1 == ARRAY_LEVEL && POINTER_LEVEL)||(type1==ARRAY_LEVEL && type2 == POINTER_LEVEL)){
+            return EQUIVALENT;
+        }
+        else
+        {
+            return LOW_ERROR;
+        }
     }
 
     if (type1 == BASE_LEVEL)
@@ -1022,12 +1027,58 @@ int checkEquivalance(const ParameterInfo &info1, const ParameterInfo &info2)
     return EQUIVALENT;
 }
 
-int checkEquivalance(const BaseInfo &info1, const BaseInfo &info2)
+int checkEquivalance(const BaseInfo &baseinfo1, const BaseInfo &baseinfo2)
 {
     // Convert to string and compare
-    if (info1.baseType != info2.baseType)
+    TypeExpression info1;
+    info1.levelStack.push_back((LevelInfo *)&baseinfo1);
+    TypeExpression info2;
+    info2.levelStack.push_back((LevelInfo *)&baseinfo2);
+
+    Type topType1 = whatIsType(info1);
+    Type topType2 = whatIsType(info2);
+
+    if (topType1 == Type::VARIABLE && topType2 == Type::VARIABLE)
     {
-        return HIGH_ERROR;
+        // Both are variable
+        if(baseinfo1.baseType == baseinfo2.baseType)
+        {
+            return EQUIVALENT;
+        }
+    }
+
+    bool isNumeric1 = isNumeric(info1);
+    bool isNumeric2 = isNumeric(info2);
+    if (isNumeric1 && isNumeric2)
+    {
+        std::cerr << LOC << " Both are numeric\n";
+        std::cerr << LOC << " 😅Type1: " << toString(info1) << "\n";
+        std::cerr << LOC << " Type2: " << toString(info2) << "\n";
+        // Both are numeric
+        std::string base1 = isPrimitive(info1);
+        std::string base2 = isPrimitive(info2);
+        if (base1 == base2)
+        {
+            return EQUIVALENT;
+        }
+        else
+        {
+            return LOW_ERROR;
+        }
+    }
+
+    // Then we need to check for custom types
+    if (topType1 == Type::STRUCT_UNION && topType2 == Type::STRUCT_UNION)
+    {
+        // Both are struct/union
+        // Check if they are same
+        if(baseinfo1.baseType == baseinfo2.baseType)
+        {
+            return EQUIVALENT;
+        }
+        else{
+            return LOW_ERROR;
+        }
     }
 
     return EQUIVALENT;

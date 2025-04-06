@@ -36,7 +36,6 @@ float multiply(float a, float b)
 
 //=========================== C2RISC-Engine =========================================================//
 // Lexical Analysis 👍 | Syntax Analysis 👍 | Semantic Analysis ❌
-// 🌴 APTree 🌴 has been generated, can be used for debugging ❤️‍🩹 
 // 
 // ------------------------------------------------------------------------------------
 // ----------------------------------- SEMANTIC LOG -----------------------------------

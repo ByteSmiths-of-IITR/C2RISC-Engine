@@ -1,12 +1,3 @@
-/*
-primary_expression
-    : IDENTIFIER
-    | CONSTANT
-    | STRING_LITERAL
-    | LPAREN expression RPAREN
-    ;
-*/
-
 int main() {
     int a = 10;
 
@@ -31,11 +22,11 @@ int main() {
 // ------------------------------------------------------------------------------------
 // CodeLineNo : TAC                           
 // ---------- : -------------------------------
+// 
 // 0          : main                          
 // 1          : a$1 = 10                      
 // 2          : b$1 = 20.000000               
 // 3          : a$1 = (float)a$1              
 // 4          : $0 = a$1 + b$1                
 // 5          : return 0                      
-// 
 // 

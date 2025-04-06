@@ -1,13 +1,15 @@
-// union existence 
-int main(){
+// union existence
+int main()
+{
     union U obj; // error: storage size of ‘obj’ isn’t known
     return 0;
 }
 
-union U{
+union U
+{
     int a;
     int b;
-}; 
+};
 
 //=========================== C2RISC-Engine =========================================================//
 // Lexical Analysis 👍 | Syntax Analysis 👍 | Semantic Analysis ❌
@@ -20,5 +22,7 @@ union U{
 // ------------------------------------------------------------------------------------
 // CodeLineNo : TAC                           
 // ---------- : -------------------------------
+// 
 // 0          : main                          
+// 1          : return 0                      
 // 

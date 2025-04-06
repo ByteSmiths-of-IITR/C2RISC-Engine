@@ -1,14 +1,12 @@
-// same enum ID in different scopes
-
-enum Color { RED, GREEN, BLUE };
-enum TrafficLight { RED, YELLOW, BLACK };  // error: redeclaration of enumerator 'RED'
-
-void func(){
-    enum Color { RED, INDIGO, YELLOW }; // no error
+struct A{
+    struct A *next;
 }
 
-int main() {
-    enum Color { RED, INDIGO, YELLOW }; // no error
+struct B{
+    struct B next;
+} b1, b2;
+
+int main(){
     return 0;
 }
 
@@ -17,15 +15,13 @@ int main() {
 // 
 // ------------------------------------------------------------------------------------
 // ----------------------------------- SEMANTIC LOG -----------------------------------
-// SEMANTIC ERROR ‼️ : Enum Constant "RED" already present in the current scope
+// SEMANTIC ERROR ‼️ : Invalid type specifier (width can't be found) in struct_declaration : struct B S0
 // ----------------------------------- END OF LOG -----------------------------------
 // 
 // ------------------------------------------------------------------------------------
 // CodeLineNo : TAC                           
 // ---------- : -------------------------------
 // 
-// 0          : func                          
-// 
-// 1          : main                          
-// 2          : return 0                      
+// 0          : main                          
+// 1          : return 0                      
 // 

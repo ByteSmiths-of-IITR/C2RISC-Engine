@@ -20,15 +20,20 @@ int main(){
 }
 
 //=========================== C2RISC-Engine =========================================================//
-// Lexical Analysis 👍 | Syntax Analysis 👍 | Semantic Analysis 👍 | 🔖 IRCode Gen
+// Lexical Analysis 👍 | Syntax Analysis 👍 | Semantic Analysis ❌
 // 
 // ------------------------------------------------------------------------------------
+// ----------------------------------- SEMANTIC LOG -----------------------------------
+// SEMANTIC Warning ❗️: Declaration Specifier - Duplicate Type Qualifiers in declaration specifiers
+// ----------------------------------- END OF LOG -----------------------------------
 // 
 // ------------------------------------------------------------------------------------
 // CodeLineNo : TAC                           
 // ---------- : -------------------------------
+// 
 // 0          : func                          
 // 1          : return 1                      
+// 
 // 2          : main                          
 // 3          : return 0                      
 // 

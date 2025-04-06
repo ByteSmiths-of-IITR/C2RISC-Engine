@@ -345,7 +345,7 @@ int primary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
             std::string tempName = "@str" + newTemp();
             // Remove the quotes from the string
             std::string raw = strValue.substr(1, strValue.length() - 2);
-            std::string data = tempName + " : c\"" + raw + "\\00\"";
+            std::string data = tempName + " : c\"" + raw + "\\0\"";
             CODE_BASE.roData.push_back(data); // Add to the rodata
             varName = tempName;
         }
@@ -709,7 +709,6 @@ int postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
                 int check = ourEquivalent(paramTypes[i], argType[i]);
                 if (check != OKAY)
                 {
-                    // SEMANTIC ERROR 🚨 : Assignment expression's operand \"" + varName1 + "\" and \"" + varName2 + "\" are not compatible
                     semanticError("Function Call argument \'" + argName[i] + "\' of type \'" + toString(argType[i]) + "\' is not compatible with \'" + toString(paramTypes[i]) + "\'");
                     FAIL_H;
                     return FAIL;
@@ -742,7 +741,6 @@ int postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
                         aptLOG("Checking " + toString(dest) + " and " + toString(source));
                         if (check != OKAY)
                         {
-                            // SEMANTIC ERROR 🚨 : Assignment expression's operand \"" + varName1 + "\" and \"" + varName2 + "\" are not compatible
                             semanticError("Function Call argument \'" + argName[i] + "\' of type \'" + toString(source) + "\' is not compatible with \'" + toString(dest) + "\'");
                             FAIL_H;
                             return FAIL;
@@ -1106,6 +1104,14 @@ int assignment_expression_H(ASTNode *node, std::string inh_whereToSendString, st
         // 🅱️ TypeChecking for varName1
         // Rule - valueType - {M_LVALUE} Allowed
 
+        bool isCon = isConstant(type1);
+        if (isCon)
+        {
+            semanticError("Assignment expression's operand \"" + varName1 + "\" is a constant");
+            FAIL_H;
+            return FAIL;
+        }
+
         if (valueType1 != VALUE_TYPE::M_LVALUE)
         {
             semanticError("Assignment expression's operand \"" + varName1 + "\" is not a modifiable lvalue");
@@ -1113,26 +1119,65 @@ int assignment_expression_H(ASTNode *node, std::string inh_whereToSendString, st
             return FAIL;
         }
 
-        // 🆎 TypeCasting
+
+        // First we check TypeChecking for operation
+        TypeExpression left = type1;
+        TypeExpression right = type2;
+
         TypeExpression source = type2;
         TypeExpression dest = type1;
 
-        bool isNum = isNumeric(source);
-        bool isNum2 = isNumeric(dest);
-        if (!(isNum && isNum2))
-        {
-            // Check if the types are same
-            int check = ourEquivalent(source, dest);
-            if (check != OKAY)
-            {
-                // SEMANTIC ERROR 🚨 : Assignment expression's operand \"" + varName1 + "\" and \"" + varName2 + "\" are not compatible
-                semanticError("Assignment expression's operand \"" + varName1 + "\" and \"" + varName2 + "\" are not compatible");
+        std::string assOP = node->children[1]->value;
+        if(assOP == "+=" || assOP == "-="){
+            bool isNum = isNumeric(right);
+            // bool isMLvalue = (valueType1 == VALUE_TYPE::M_LVALUE);
+
+            if(!isNum){
+                semanticError("For Operator \""+ assOP + "\" assignment expression's operand \"" + varName2 + "\" is not a numeric type");
                 FAIL_H;
                 return FAIL;
             }
+            
+
+        ///------
+            // Implicit Type Casting
+            int equal = ourEquivalent(source, dest);
+            if (equal != OKAY)
+            {
+                std::string castedVarNam = newTemp();
+                CODE_BASE.addTAC(node, castedVarNam, CAST, toString(dest), varName2); // Cast it
+                varName2 = castedVarNam;                                              // Change the name to the address
+            }
+        ////-----
         }
-        else
-        {
+        else if(assOP == "*=" || assOP == "/="){
+            bool isNum = isNumeric(left);
+            bool isNUm2 = isNumeric(right);
+            if(!isNum || !isNUm2){
+                semanticError("For Operator \""+ assOP + "\" assignment expression's operand \"" + varName1 + "\" or \"" + varName2 + "\" is not a numeric type");
+                FAIL_H;
+                return FAIL;
+            }
+
+            // Implicit Type Casting
+            int equal = ourEquivalent(source, dest);
+            if (equal != OKAY)
+            {
+                std::string castedVarNam = newTemp();
+                CODE_BASE.addTAC(node, castedVarNam, CAST, toString(dest), varName2); // Cast it
+                varName2 = castedVarNam;                                              // Change the name to the address
+            }
+
+
+        }else if(assOP == "%=" || assOP == "<<=" || assOP == ">>="){
+            bool isNum = isIntegral(left);
+            bool isNUm2 = isIntegral(right);
+            if(!isNum || !isNUm2){
+                semanticError("For Operator \""+ assOP + "\" assignment expression's operand \"" + varName1 + "\" or \"" + varName2 + "\" is not a numeric type");
+                FAIL_H;
+                return FAIL;
+            }
+
             // Implicit Type Casting
             int equal = ourEquivalent(source, dest);
             if (equal != OKAY)
@@ -1142,6 +1187,52 @@ int assignment_expression_H(ASTNode *node, std::string inh_whereToSendString, st
                 varName2 = castedVarNam;                                              // Change the name to the address
             }
         }
+        else if(assOP == "&=" || assOP == "^=" || assOP == "|="){
+            bool isNum = isIntegral(left);
+            bool isNUm2 = isIntegral(right);
+            if(!isNum || !isNUm2){
+                semanticError("For Operator \""+ assOP + "\" assignment expression's operand \"" + varName1 + "\" or \"" + varName2 + "\" is not a numeric type");
+                FAIL_H;
+                return FAIL;
+            }
+
+            // Implicit Type Casting
+            int equal = ourEquivalent(source, dest);
+            if (equal != OKAY)
+            {
+                std::string castedVarNam = newTemp();
+                CODE_BASE.addTAC(node, castedVarNam, CAST, toString(dest), varName2); // Cast it
+                varName2 = castedVarNam;                                              // Change the name to the address
+            }
+        }
+        else if(assOP == "="){
+            // Implicit Type Casting
+            bool isNum = isNumeric(source);
+            bool isNum2 = isNumeric(dest);
+            if (!(isNum && isNum2))
+            {
+                // Check if the types are same
+                int check = checkEquivalance(source, dest);
+                if (check != OKAY)
+                {
+                    semanticError("For Operator \""+ assOP + "\" assignment expression's operand \"" + varName1 + "\" or \"" + varName2 + "\" is not compatible");
+                    FAIL_H;
+                    return FAIL;
+                }
+            }
+            else
+            {
+                // Implicit Type Casting
+                int equal = ourEquivalent(source, dest);
+                if (equal != OKAY)
+                {
+                    std::string castedVarNam = newTemp();
+                    CODE_BASE.addTAC(node, castedVarNam, CAST, toString(dest), varName1); // Cast it
+                    varName1 = castedVarNam;                                              // Change the name to the address
+                }
+            }
+        }
+
 
         // 🎉 SIDE EFFECTS 🎉
         int width1 = elementWidth(dest);
@@ -1404,7 +1495,7 @@ int unary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::st
                 FAIL_H;
                 return FAIL;
             }
-            valueType0 = VALUE_TYPE::M_LVALUE;
+            valueType0 = getValueType(type1); // return type is of varName1
             valueSpace0 = SPACE::ADDRESS_SPACE; // return space is of varName1
             type0 = type1;                      // return type is of varName1
             // Pop the top level
@@ -1624,7 +1715,6 @@ int cast_expression_H(ASTNode *node, std::string inh_whereToSendString, std::str
             int check = ourEquivalent(type2, type1);
             if (check != OKAY)
             {
-                // SEMANTIC ERROR 🚨 : Assignment expression's operand \"" + varName1 + "\" and \"" + varName2 + "\" are not compatible
                 semanticError("Explicit cast from \"" + toString(type2) + "\" to \"" + toString(type1) + "\" is not allowed");
                 FAIL_H;
                 return FAIL;
@@ -1638,7 +1728,6 @@ int cast_expression_H(ASTNode *node, std::string inh_whereToSendString, std::str
 
             if (!isAllowed)
             {
-                // SEMANTIC ERROR 🚨 : Assignment expression's operand \"" + varName1 + "\" and \"" + varName2 + "\" are not compatible
                 semanticError("Explicit cast from \"" + toString(type2) + "\" to \"" + toString(type1) + "\" is not allowed");
                 FAIL_H;
                 return FAIL;
@@ -1733,6 +1822,13 @@ int multiplicative_expression_H(ASTNode *node, std::string inh_whereToSendString
 
             std::string widenType = maxWidth(primType1, primType2);
 
+            if(widenType == "SHOULD_NOT_HAPPEN"){
+                semanticError("Implicit Casting is not possible with \'" + toString(type1) + "\' and \'" + toString(type2) + "\'");
+                FAIL_H;
+                return FAIL;
+            }
+
+
             if (primType1 != widenType)
             {
 
@@ -1762,7 +1858,8 @@ int multiplicative_expression_H(ASTNode *node, std::string inh_whereToSendString
 
             type = type0; // Change the type to the result type
 
-            valueType = getValueType(type0);
+            valueType = VALUE_TYPE::RVALUE;
+            // Set Correctly
             valueSpace = getSpace(type0);
         }
     }
@@ -1809,6 +1906,12 @@ int multiplicative_expression_H(ASTNode *node, std::string inh_whereToSendString
 
             std::string widenType = maxWidth(primType1, primType2);
 
+            if(widenType == "SHOULD_NOT_HAPPEN"){
+                semanticError("Implicit Casting is not possible with \'" + toString(type1) + "\' and \'" + toString(type2) + "\'");
+                FAIL_H;
+                return FAIL;
+            }
+
             if (primType1 != widenType)
             {
 
@@ -1838,13 +1941,14 @@ int multiplicative_expression_H(ASTNode *node, std::string inh_whereToSendString
 
             type = type0; // Change the type to the result type
 
-            valueType = getValueType(type0);
+            valueType = VALUE_TYPE::RVALUE;
+            // Set Correctly
             valueSpace = getSpace(type0);
         }
     }
     else
     {
-        compilerError("The Multiplicative Expression Entered Wrong Production");
+        compilerError("Wrong Production in multiplicative_expression_H");
         BUG_H;
         return BUG;
     }
@@ -1919,20 +2023,20 @@ int additive_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
         if ((whichType1 == Type::POINTER || whichType1 == Type::FUNCTION || whichType1 == Type::ARRAY || whichType1 == Type::STRUCT_UNION) &&
             (whichType2 == Type::POINTER || whichType2 == Type::FUNCTION || whichType2 == Type::ARRAY || whichType2 == Type::STRUCT_UNION))
         {
-            semanticLOG.push_back("Error: Invalid operation " + node->children[1]->value + " between incompatible types \"" + toString(type1) + "\" and \"" + toString(type2) + "\"");
+            semanticError("Invalid operation " + node->children[1]->value + " between incompatible types \"" + toString(type1) + "\" and \"" + toString(type2) + "\"");
         }
         // Step 2: if one is of integral type, the other cannot be struct_object or union_object
         else if ((isIntegral(type1) && (whichType2 == Type::STRUCT_UNION)) ||
                  (isIntegral(type2) && (whichType1 == Type::STRUCT_UNION)))
         {
-            semanticLOG.push_back("Error: Invalid operation " + node->children[1]->value + " between integral type and struct/union type");
+            semanticError("Invalid operation " + node->children[1]->value + " between integral type and struct/union type");
         }
 
         // Step 3: if one is float/double type, the other cannot be pointer, function, array, struct_object, or union_object
         else if ((isFloatingPoint(type1) && (whichType2 == Type::POINTER || whichType2 == Type::FUNCTION || whichType2 == Type::ARRAY || whichType2 == Type::STRUCT_UNION)) ||
                  (isFloatingPoint(type2) && (whichType1 == Type::POINTER || whichType1 == Type::FUNCTION || whichType1 == Type::ARRAY || whichType1 == Type::STRUCT_UNION)))
         {
-            semanticLOG.push_back("Error: Invalid operation " + node->children[1]->value + " between floating-point type and incompatible type");
+            semanticError("Invalid operation " + node->children[1]->value + " between floating-point type and incompatible type");
         }
 
         else if (whichProduction == P2)
@@ -1972,6 +2076,12 @@ int additive_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
 
                 std::string widenType = maxWidth(primType1, primType2);
 
+            if(widenType == "SHOULD_NOT_HAPPEN"){
+                semanticError("Implicit Casting is not possible with \'" + toString(type1) + "\' and \'" + toString(type2) + "\'");
+                FAIL_H;
+                return FAIL;
+            }
+
                 if (primType1 != widenType)
                 {
 
@@ -2000,14 +2110,17 @@ int additive_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
                 type0.levelStack.push_back(base);
 
                 type = type0; // Change the type to the result type
-                valueType = getValueType(type0);
+                valueType  = VALUE_TYPE::RVALUE;
+                // Set Correctly
                 valueSpace = getSpace(type0);
             }
 
             // Step 6: If none of the above cases match, it's an invalid operation
             else
             {
-                semanticLOG.push_back("Error: Invalid operation between types \"" + toString(type1) + "\" and \"" + toString(type2) + "\"");
+                semanticError("Invalid operation between types \"" + toString(type1) + "\" and \"" + toString(type2) + "\"");
+                FAIL_H;
+                return FAIL;
             }
         }
 
@@ -2017,7 +2130,9 @@ int additive_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
             // if in left integral then in right we cannot have pointer, function, array
             if (isIntegral(type1) && (whichType2 == Type::POINTER || whichType2 == Type::FUNCTION || whichType2 == Type::ARRAY))
             {
-                semanticLOG.push_back("Error: Invalid operation " + node->children[1]->value + " between integral type and pointer/function/array type");
+                semanticError("Invalid operation " + node->children[1]->value + " between integral type and pointer/function/array type");
+                FAIL_H;
+                return FAIL;
             }
 
             // if in left pointer, function, array then in right integral type (use width and multiply with integral value and subtract)return type is pointer
@@ -2049,6 +2164,12 @@ int additive_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
 
                 std::string widenType = maxWidth(primType1, primType2);
 
+            if(widenType == "SHOULD_NOT_HAPPEN"){
+                semanticError("Implicit Casting is not possible with \'" + toString(type1) + "\' and \'" + toString(type2) + "\'");
+                FAIL_H;
+                return FAIL;
+            }
+
                 if (primType1 != widenType)
                 {
 
@@ -2077,14 +2198,16 @@ int additive_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
                 type0.levelStack.push_back(base);
 
                 type = type0; // Change the type to the result type
-                valueType = getValueType(type0);
+                valueType = VALUE_TYPE::RVALUE;
                 valueSpace = getSpace(type0);
             }
 
             // If none of the above cases match, it's an invalid operation
             else
             {
-                semanticLOG.push_back("Error: Invalid operation between types \"" + toString(type1) + "\" and \"" + toString(type2) + "\"");
+                semanticError("Invalid operation between types \"" + toString(type1) + "\" and \"" + toString(type2) + "\"");
+                FAIL_H;
+                return FAIL;
             }
         }
     }
@@ -2132,10 +2255,10 @@ int shift_expression_H(ASTNode *node, std::string inh_whereToSendString, std::st
         VALUE_TYPE valueType1, valueType2;
         SPACE valueSpace1, valueSpace2;
 
-        int shex_check = shift_expression_H(node->children[0], inh_whereToSendString, varName1, type1, valueType1, valueSpace1);
-        PASS_THE_ERROR(shex_check);
-        int aex_check = additive_expression_H(node->children[2], inh_whereToSendString, varName2, type2, valueType2, valueSpace2);
-        PASS_THE_ERROR(aex_check);
+        int shef_check = shift_expression_H(node->children[0], inh_whereToSendString, varName1, type1, valueType1, valueSpace1);
+        PASS_THE_ERROR(shef_check);
+        int aerox_check = additive_expression_H(node->children[2], inh_whereToSendString, varName2, type2, valueType2, valueSpace2);
+        PASS_THE_ERROR(aerox_check);
         // check all possible types that can come in type1 and type2
 
         // 🚀 USAGE 🤫 SPACE CHANGE 🚀
@@ -2154,7 +2277,9 @@ int shift_expression_H(ASTNode *node, std::string inh_whereToSendString, std::st
 
         if (!isIntegral(type1) || !isIntegral(type2))
         {
-            semanticLOG.push_back("Error: Shift operation requires integral types, but found \"" + toString(type1) + "\" and \"" + toString(type2) + "\"");
+            semanticError("Shift operation requires integral types, but found \"" + toString(type1) + "\" and \"" + toString(type2) + "\"");
+            FAIL_H;
+            return FAIL;
         }
         else
         {
@@ -2191,7 +2316,7 @@ int shift_expression_H(ASTNode *node, std::string inh_whereToSendString, std::st
             // return type will be the current type of the left operand
             varName = result;
             type = type1;
-            valueType = getValueType(type1);
+            valueType = VALUE_TYPE::RVALUE;
             valueSpace = getSpace(type1);
         }
     }
@@ -2279,6 +2404,12 @@ int relational_expression_H(ASTNode *node, std::string inh_whereToSendString, st
 
                 std::string widenType = maxWidth(primType1, primType2);
 
+            if(widenType == "SHOULD_NOT_HAPPEN"){
+                semanticError("Implicit Casting is not possible with \'" + toString(type1) + "\' and \'" + toString(type2) + "\'");
+                FAIL_H;
+                return FAIL;
+            }
+
                 if (primType1 != widenType)
                 {
 
@@ -2311,7 +2442,9 @@ int relational_expression_H(ASTNode *node, std::string inh_whereToSendString, st
         else
         {
             // SEMANTIC ERROR 🚨 : Invalid operation between incompatible types
-            semanticLOG.push_back("Error: Relational operation requires numeric or pointer types, but found \"" + toString(type1) + "\" and \"" + toString(type2) + "\"");
+            semanticError("Relational operation requires numeric or pointer types, but found \"" + toString(type1) + "\" and \"" + toString(type2) + "\"");
+            FAIL_H;
+            return FAIL;
         }
     }
     else
@@ -2385,6 +2518,12 @@ int equality_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
 
                 std::string widenType = maxWidth(primType1, primType2);
 
+            if(widenType == "SHOULD_NOT_HAPPEN"){
+                semanticError("Implicit Casting is not possible with \'" + toString(type1) + "\' and \'" + toString(type2) + "\'");
+                FAIL_H;
+                return FAIL;
+            }
+
                 if (primType1 != widenType)
                 {
 
@@ -2417,12 +2556,15 @@ int equality_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
         else
         {
             // SEMANTIC ERROR 🚨 : Invalid operation between incompatible types
-            semanticLOG.push_back("Error: Equality operation requires numeric or pointer types, but found \"" + toString(type1) + "\" and \"" + toString(type2) + "\"");
+            semanticError("Equality operation requires numeric or pointer types, but found \"" + toString(type1) + "\" and \"" + toString(type2) + "\"");
+            FAIL_H;
+            return FAIL;
+        
         }
     }
     else
     {
-        compilerError("Wrong Production in type_specifier_H");
+        compilerError("Wrong Production in equality_expression_H");
         BUG_H;
         return BUG;
     }
@@ -2481,7 +2623,10 @@ int and_expression_H(ASTNode *node, std::string inh_whereToSendString, std::stri
         //  Ensure both operands are integral
         if (!isIntegral(type1) || !isIntegral(type2))
         {
-            semanticLOG.push_back("Error: BIT_AND operation requires integral types, but found \"" + toString(type1) + "\" and \"" + toString(type2) + "\"");
+            semanticError("BIT_AND operation requires integral types, but found \"" + toString(type1) + "\" and \"" + toString(type2) + "\"");
+            FAIL_H;
+            return FAIL;
+        
         }
         else
         {
@@ -2505,6 +2650,12 @@ int and_expression_H(ASTNode *node, std::string inh_whereToSendString, std::stri
 
             // Cast both to max width type
             std::string widenType = maxWidth(primType1, primType2);
+
+            if(widenType == "SHOULD_NOT_HAPPEN"){
+                semanticError("Implicit Casting is not possible with \'" + toString(type1) + "\' and \'" + toString(type2) + "\'");
+                FAIL_H;
+                return FAIL;
+            }
 
             if (primType1 != widenType)
             {
@@ -2537,7 +2688,7 @@ int and_expression_H(ASTNode *node, std::string inh_whereToSendString, std::stri
     }
     else
     {
-        compilerError("Wrong Production in type_specifier_H");
+        compilerError("Wrong Production in and_expression_H");
         BUG_H;
         return BUG;
     }
@@ -2596,7 +2747,10 @@ int exclusive_or_expression_H(ASTNode *node, std::string inh_whereToSendString, 
         //  Ensure both operands are integral
         if (!isIntegral(type1) || !isIntegral(type2))
         {
-            semanticLOG.push_back("Error: BIT_XOR operation requires integral types, but found \"" + toString(type1) + "\" and \"" + toString(type2) + "\"");
+            semanticError("BIT_XOR operation requires integral types, but found \"" + toString(type1) + "\" and \"" + toString(type2) + "\"");
+            FAIL_H;
+            return FAIL;
+        
         }
         else
         {
@@ -2620,6 +2774,12 @@ int exclusive_or_expression_H(ASTNode *node, std::string inh_whereToSendString, 
 
             // Cast both to max width type
             std::string widenType = maxWidth(primType1, primType2);
+
+            if(widenType == "SHOULD_NOT_HAPPEN"){
+                semanticError("Implicit Casting is not possible with \'" + toString(type1) + "\' and \'" + toString(type2) + "\'");
+                FAIL_H;
+                return FAIL;
+            }
 
             if (primType1 != widenType)
             {
@@ -2652,7 +2812,7 @@ int exclusive_or_expression_H(ASTNode *node, std::string inh_whereToSendString, 
     }
     else
     {
-        compilerError("Wrong Production in type_specifier_H");
+        compilerError("Wrong Production in exclusive_or_expression_H");
         BUG_H;
         return BUG;
     }
@@ -2711,7 +2871,9 @@ int inclusive_or_expression_H(ASTNode *node, std::string inh_whereToSendString, 
         //  Ensure both operands are integral
         if (!isIntegral(type1) || !isIntegral(type2))
         {
-            semanticLOG.push_back("Error: BIT_OR operation requires integral types, but found \"" + toString(type1) + "\" and \"" + toString(type2) + "\"");
+            semanticError("BIT_OR operation requires integral types, but found \"" + toString(type1) + "\" and \"" + toString(type2) + "\"");
+            FAIL_H;
+            return FAIL;
         }
         else
         {
@@ -2735,6 +2897,12 @@ int inclusive_or_expression_H(ASTNode *node, std::string inh_whereToSendString, 
 
             // Cast both to max width type
             std::string widenType = maxWidth(primType1, primType2);
+
+            if(widenType == "SHOULD_NOT_HAPPEN"){
+                semanticError("Implicit Casting is not possible with \'" + toString(type1) + "\' and \'" + toString(type2) + "\'");
+                FAIL_H;
+                return FAIL;
+            }
 
             if (primType1 != widenType)
             {
@@ -2767,7 +2935,7 @@ int inclusive_or_expression_H(ASTNode *node, std::string inh_whereToSendString, 
     }
     else
     {
-        compilerError("Wrong Production in type_specifier_H");
+        compilerError("Wrong Production in inclusive_or_expression_H");
         BUG_H;
         return BUG;
     }
@@ -2831,7 +2999,9 @@ int logical_and_expression_H(ASTNode *node, std::string inh_whereToSendString, s
         if ((!isNumeric(type1) && !(whichType1 == Type::POINTER || whichType1 == Type::ARRAY || whichType1 == Type::FUNCTION)) ||
             (!isNumeric(type2) && !(whichType2 == Type::POINTER || whichType2 == Type::ARRAY || whichType2 == Type::FUNCTION)))
         {
-            semanticLOG.push_back("Error: Logical AND operation requires numeric or pointer types, but found \"" + toString(type1) + "\" and \"" + toString(type2) + "\"");
+            semanticError("Logical AND operation requires numeric or pointer types, but found \"" + toString(type1) + "\" and \"" + toString(type2) + "\"");
+            FAIL_H;
+            return FAIL;
         }
         else
         {
@@ -2869,6 +3039,12 @@ int logical_and_expression_H(ASTNode *node, std::string inh_whereToSendString, s
             // Convert both to max type
             std::string widenType = maxWidth(primType1, primType2);
 
+            if(widenType == "SHOULD_NOT_HAPPEN"){
+                semanticError("Implicit Casting is not possible with \'" + toString(type1) + "\' and \'" + toString(type2) + "\'");
+                FAIL_H;
+                return FAIL;
+            }
+
             if (primType1 != widenType)
             {
 
@@ -2900,7 +3076,7 @@ int logical_and_expression_H(ASTNode *node, std::string inh_whereToSendString, s
     }
     else
     {
-        compilerError("Wrong Production in type_specifier_H");
+        compilerError("Wrong Production in logical_and_expression_H");
         BUG_H;
         return BUG;
     }
@@ -2963,7 +3139,9 @@ int logical_or_expression_H(ASTNode *node, std::string inh_whereToSendString, st
         if ((!isNumeric(type1) && !(whichType1 == Type::POINTER || whichType1 == Type::ARRAY || whichType1 == Type::FUNCTION)) ||
             (!isNumeric(type2) && !(whichType2 == Type::POINTER || whichType2 == Type::ARRAY || whichType2 == Type::FUNCTION)))
         {
-            semanticLOG.push_back("Error: Logical OR operation requires numeric or pointer types, but found \"" + toString(type1) + "\" and \"" + toString(type2) + "\"");
+            semanticError("Logical OR operation requires numeric or pointer types, but found \"" + toString(type1) + "\" and \"" + toString(type2) + "\"");
+            FAIL_H;
+            return FAIL;
         }
         else
         {
@@ -2998,6 +3176,12 @@ int logical_or_expression_H(ASTNode *node, std::string inh_whereToSendString, st
 
             std::string widenType = maxWidth(primType1, primType2);
 
+            if(widenType == "SHOULD_NOT_HAPPEN"){
+                semanticError("Implicit Casting is not possible with \'" + toString(type1) + "\' and \'" + toString(type2) + "\'");
+                FAIL_H;
+                return FAIL;
+            }
+
             if (primType1 != widenType)
             {
 
@@ -3027,7 +3211,7 @@ int logical_or_expression_H(ASTNode *node, std::string inh_whereToSendString, st
     }
     else
     {
-        compilerError("Wrong Production in type_specifier_H");
+        compilerError("Wrong Production in logical_or_expression_H");
         BUG_H;
         return BUG;
     }
@@ -3110,6 +3294,12 @@ int conditional_expression_H(ASTNode *node, std::string inh_whereToSendString, s
             if (primType1 != "NOT_PRIMITIVE" && primType2 != "NOT_PRIMITIVE")
             {
                 std::string widenType = maxWidth(primType1, primType2);
+
+            if(widenType == "SHOULD_NOT_HAPPEN"){
+                semanticError("Implicit Casting is not possible with \'" + toString(type1) + "\' and \'" + toString(type2) + "\'");
+                FAIL_H;
+                return FAIL;
+            }
                 // We cast the varName0 to the max width type
                 CODE_BASE.addTAC(node, varName0, CAST, widenType, varName0);
 
@@ -3142,7 +3332,7 @@ int conditional_expression_H(ASTNode *node, std::string inh_whereToSendString, s
     }
     else
     {
-        compilerError("Wrong Production in type_specifier_H");
+        compilerError("Wrong Production in conditional_expression_H");
         BUG_H;
         return BUG;
     }

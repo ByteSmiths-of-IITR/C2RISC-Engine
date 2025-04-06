@@ -139,7 +139,12 @@ std::string TAC_Quadruple::toString()
     }
     else
     {
-        str = result + " = " + arg1 + " " + op + " " + arg2; // result = arg1 op arg2
+        if(arg2 == NO_ARG){
+            str = result + " = " + op + " " + arg1; // result = op arg1
+        }
+        else{
+            str = result + " = " + arg1 + " " + op + " " + arg2; // result = arg1 op arg2
+        }
     }
 
     return str;
@@ -265,6 +270,7 @@ void TAC::printTAC(std::ostringstream &oss)
     }
     oss << std::endl;
     oss << std::string(w+wcode+6, '-') << std::endl;
+    
     }
     oss << std::setw(w) << "CodeLineNo" << " : " << std::setw(wcode) << std::left << "TAC" << std::endl;
     oss << std::setw(w) << "----------" << " : " << std::setw(wcode) << std::left << "-------------------------------" << std::endl;
