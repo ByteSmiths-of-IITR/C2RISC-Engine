@@ -363,6 +363,14 @@ std::string toString(const TypeExpression &typeExpr)
                     paramStr += ", ";
                 }
             }
+            if(param->isVaradic)
+            {
+                if (paramStr != "(")
+                {
+                    paramStr += ", ";
+                }
+                paramStr += "...";
+            }
             paramStr += ")";
             result = result + paramStr;
         }

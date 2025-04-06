@@ -141,9 +141,10 @@ class ParameterInfo : public LevelInfo
 {
 public:
     bool isAbstract;
+    bool isVaradic;
     std::vector<std::string> paramsName;
     std::vector<TypeExpression> paramsType; // This will have the type of the parameters
-
+    bool isVariadic; // This will be used to check if the function is variadic or not
     ParameterInfo()
     {
         levelType = PARAMETER_LEVEL;
@@ -470,7 +471,6 @@ class Function : public GenericSymbol
 {
 public:
     TypeExpression type; // This will also hold the parameter(top) + (all below)returnType
-
     bool isDefined; // To deal with forward declaration
 
     CON_DES(Function)

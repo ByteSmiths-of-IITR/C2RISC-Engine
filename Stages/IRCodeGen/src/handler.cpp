@@ -439,6 +439,71 @@ int ProcessDecSpecifiers(std::vector<std::string> &valueVector, TypeExpression &
     return check;
 }
 
+int add_printf_scanf(){
+    TypeExpression printfType;
+    TypeExpression scanfType;
+    ParameterInfo *paramInfo = new ParameterInfo();
+
+    // Create first ArgType (const char *)
+    TypeExpression firstArgType;
+    BaseInfo *base = new BaseInfo();
+    base->baseType = TYPE_CHAR;
+    base->typeQualifiers.push_back(TypeQualifier::CONST);
+    firstArgType.levelStack.push_back(base);
+    PointerInfo *ptrInfo = new PointerInfo();
+    firstArgType.levelStack.push_back(ptrInfo);
+
+    paramInfo->paramsType.push_back(firstArgType);
+    paramInfo->isVariadic = true;
+    paramInfo->isVaradic = true;
+
+    // Create the Return Type (void)
+    BaseInfo *base1 = new BaseInfo();
+    base1->baseType = TYPE_VOID;
+
+    printfType.levelStack.push_back(base1);
+    printfType.levelStack.push_back(paramInfo);
+
+    scanfType.levelStack.push_back(base1);
+    scanfType.levelStack.push_back(paramInfo);
+
+    // Add these to the symbol table
+    Function *printfFunc = new Function();
+    printfFunc->symbolName = "printf";
+    printfFunc->type = printfType;
+    printfFunc->isDefined = true;
+    printfFunc->location = std::make_pair(-1, -1);
+    printfFunc->symbolType = SYMBOL_TYPE::FUNCTION;
+    printfFunc->isDefined = true;
+    
+
+    // Create scanf function
+    Function *scanfFunc = new Function();
+    scanfFunc->symbolName = "scanf";
+    scanfFunc->type = scanfType;
+    scanfFunc->isDefined = true;
+    scanfFunc->location = std::make_pair(-1, -1);
+    scanfFunc->symbolType = SYMBOL_TYPE::FUNCTION;
+    scanfFunc->isDefined = true;
+
+    // Add these to the symbol table
+    int insertCheck = SYM_TABLE.insert(SYMBOL_TYPE::FUNCTION, "printf", printfFunc);
+    if (insertCheck == INSERT_FAILURE)
+    {
+        return insertCheck;
+    }
+    insertCheck = SYM_TABLE.insert(SYMBOL_TYPE::FUNCTION, "scanf", scanfFunc);
+    if (insertCheck == INSERT_FAILURE)
+    {
+        return insertCheck;
+    }
+    
+    std::cerr << "Added printf of type " << toString(printfType) << std::endl;
+    std::cerr << "Added scanf of type " << toString(scanfType) << std::endl;
+
+    return INSERT_SUCCESS;
+}
+
 //=====================[ Main Semantic Pass Handler ]=========================================================================================
 
 void semanticPass(ASTNode *node)
@@ -464,7 +529,17 @@ void semanticPass(ASTNode *node)
     SYM_TABLE.setScopeName(scopeName);                                 // Set the name of the scope
     aptLOG("Scope (Global) : S" + std::to_string(globalScope) + " ⤵️"); // 🌴 Adding syn_attr
 
-    lastFuncCalled = "semanticPass";
+    // Hard Code addition of printf & scanf Definitions in SYM_TABLE 🖨️ 🖨️
+    int insertCheck = add_printf_scanf();
+    if (insertCheck == INSERT_FAILURE)
+    {
+        semanticError("Failed to insert printf and scanf in symbol table");
+        FAIL_H; // no need to return
+    }
+    else{
+        aptLOG("Added 🤫 printf and scanf to symbol table 🖨️");
+    }
+
 
     translation_unit_H(node->children[0]);
 

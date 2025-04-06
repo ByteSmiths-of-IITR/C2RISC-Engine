@@ -580,8 +580,11 @@ int postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
         {
             int a_check = argument_expression_list_H(node->children[2], argType, argName);
             PASS_THE_ERROR(a_check);
+
         }
         // 🅰️ TypeChecking for Function Call
+
+        bool wasVaradic = false;
 
         Type whichType1 = whatIsType(type1);
         // must be function or function_pointer
@@ -608,6 +611,7 @@ int postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
                 return FAIL;
             }
 
+            wasVaradic = ((ParameterInfo *)type1.levelStack[type1.levelStack.size() - 1])->isVaradic;
             aptHERE;
             // Find ParameterInfo
             aptLOG("Type : " + toString(type1));
@@ -635,9 +639,31 @@ int postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
         // aptHERE;
         // 🅱️ Function call matches the signature
         // Check if the number of parameters is same
+
+        // Need a TypeCheck for the function call
+
+        if(wasVaradic){
+            // We check all the available parameters
+            int toMatch = paramTypes.size();
+            for (int i = 0; i < toMatch; i++)
+            {
+                // Check if the types are same
+                int check = ourEquivalent(paramTypes[i], argType[i]);
+                if (check != OKAY)
+                {
+                    // SEMANTIC ERROR 🚨 : Assignment expression's operand \"" + varName1 + "\" and \"" + varName2 + "\" are not compatible
+                    semanticError("Function Call argument \'" + argName[i] + "\' of type \'" + toString(argType[i]) + "\' is not compatible with \'" + toString(paramTypes[i]) + "\'");
+                    FAIL_H;
+                    return FAIL;
+                }
+            }
+        }
+        else{
         if (paramTypes.size() != argType.size())
         {
-            // SEMANTIC ERROR 🚨 : Function Call expression \"" + varName1 + "\" does not match the signature
+            
+
+            
             semanticError("Function Call expression \"" + varName1 + "\" does not match the signature");
             FAIL_H;
             return FAIL;
@@ -679,6 +705,7 @@ int postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
             }
         }
 
+    }
         // 🟡varName + 🔖IRCode + 🟡valueSpace
 
         // Write all Parameters to TAC

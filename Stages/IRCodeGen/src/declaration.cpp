@@ -175,34 +175,34 @@ int init_declarator_H(ASTNode *node, TypeExpression inh_type, StorageClass inh_s
                 std::string initVarName;
                 int initSize = -1;
                 int initl_check = initializer_H(node->children[2], initType, initVarName, initSize);
-                PASS_THE_ERROR(initl_check);
-
-                // Now we have got the initializer
-                // Check if it's a scalar initializer or not
-                Type whichType = whatIsType(inh_type1);
-                if (whichType == Type::ARRAY)
-                {
-                    // TypeCheck - Initializer is not a scalar
-                    Type initTopType = whatIsType(initType);
-                    if (initTopType != Type::ARRAY)
+                RECOVER_THE_ERROR(initl_check);
+                if(initl_check == OKAY){
+                    // Now we have got the initializer
+                    // Check if it's a scalar initializer or not
+                    Type whichType = whatIsType(inh_type1);
+                    if (whichType == Type::ARRAY)
                     {
-                        // SEMANTIC ERROR 🚨 : Initializer is not a scalar
-                        semanticError("Initializer \"" + initVarName + "\" is a scalar but the variable is an array");
-                        FAIL_H;
-                        return FAIL;
+                        // TypeCheck - Initializer is not a scalar
+                        Type initTopType = whatIsType(initType);
+                        if (initTopType != Type::ARRAY)
+                        {
+                            // SEMANTIC ERROR 🚨 : Initializer is not a scalar
+                            semanticError("Initializer \"" + initVarName + "\" is a scalar but the variable is an array");
+                            FAIL_H;
+                            return FAIL;
+                        }
+
+                        // We send the initialization code to .data section
+                        std::string initVarName2 = newTemp();
+
+                        // TO adjust initVarName2 as per size of
+
+                        std::string data = initVarName2 + " = " + initVarName;
+                        CODE_BASE.data.push_back(data);                                      // Add to data section
+                        CODE_BASE.addTAC(node, varName, MEM_COPY, initVarName2, NO_ARG); // Assign it to the variable
+                        // Change the name to the address
                     }
-
-                    // We send the initialization code to .data section
-                    std::string initVarName2 = newTemp();
-
-                    // TO adjust initVarName2 as per size of
-
-                    std::string data = initVarName2 + " = " + initVarName;
-                    CODE_BASE.data.push_back(data);                                      // Add to data section
-                    CODE_BASE.addTAC(node, varName, MEM_COPY, initVarName2, NO_ARG); // Assign it to the variable
-                    // Change the name to the address
-                }
-                else
+                    else
                 {
 
                     // Check if the initializer is a scalar
@@ -245,6 +245,7 @@ int init_declarator_H(ASTNode *node, TypeExpression inh_type, StorageClass inh_s
                             // initVarName = castedVarNam;                                              // Change the name to the address
                         }
                     }
+                }
                 }
             }
         }
