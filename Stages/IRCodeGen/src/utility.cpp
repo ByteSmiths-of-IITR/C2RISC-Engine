@@ -249,7 +249,7 @@ void insertAfterMarker(const std::string &fileName, const std::string &marker, s
 
     if (!markerFound)
     {
-        std::cerr << "⚠️ Marker not found in file: " << fileName << "\n";
+        // std::cerr << "⚠️ Marker not found in file: " << fileName << "\n";
         fileBuffer << '\n'; // Optional extra line
         fileBuffer << marker << '\n';
         std::istringstream contentStream(newContent.str());
@@ -319,7 +319,7 @@ void writeNode(std::ofstream &out, ASTNode *node, int parentId, int &nodeCount)
 // Generates a DOT file to visualize the AST
 void generateDOT(ASTNode *root, const std::string &filename)
 {
-    std::cerr << "UnAnnotated DOT File" << std::endl;
+    // std::cerr << "UnAnnotated DOT File" << std::endl;
     std::ofstream out(filename);
     if (!out)
     {
@@ -563,7 +563,7 @@ void writeNode_A(std::ofstream &out, ASTNode *node, int parentId, int &nodeCount
 
 void generateDOT_A(ASTNode *root, const std::string &filename)
 {
-    std::cerr << "Annotated DOT File" << std::endl;
+    // std::cerr << "Annotated DOT File" << std::endl;
     std::ofstream out(filename);
     if (!out)
     {

@@ -186,7 +186,7 @@ int mergeList(std::vector<int> &target, int addition)
 
 int mergeList(std::vector<int> &target, const std::vector<int> &addition)
 {
-    std::cerr << LOC << "Merging " << toString(addition) << " into " << toString(target) << std::endl;
+    // std::cerr << LOC << "Merging " << toString(addition) << " into " << toString(target) << std::endl;
     target.insert(target.end(), addition.begin(), addition.end());
     std::cerr << LOC << "Merged List " << toString(target) << std::endl;
     return 0;

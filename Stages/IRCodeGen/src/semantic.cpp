@@ -52,7 +52,7 @@ bool isValidTypeExpression(const TypeExpression &typeExpr)
     // Attempt to pop one level; if it fails then signal error.
     if(popALevel(belowTypeExpr))
     {
-        std::cerr << LOC << "Error: popALevel failed\n";
+        // std::cerr << LOC << "Error: popALevel failed\n";
         return false;
     }
     Type belowType = whatIsType(belowTypeExpr);
@@ -136,7 +136,7 @@ std::string isPrimitive(const TypeExpression &typeExpr)
         if (baseType == TYPE_INT || baseType == TYPE_CHAR || baseType == TYPE_SHORT || baseType == TYPE_LONG || baseType == TYPE_LONG_LONG ||
             baseType == TYPE_FLOAT || baseType == TYPE_DOUBLE || baseType == TYPE_LONG_DOUBLE || baseType == TYPE_VA_LIST)
         {
-            std::cerr << "🥹 [isPrimitive] Base Type: " << baseType << "\n";
+            // std::cerr << "🥹 [isPrimitive] Base Type: " << baseType << "\n";
             return baseType;
         }
 
@@ -211,9 +211,9 @@ std::string combineType(std::vector<std::string> typeSpecifierVector)
     // print checking
     for (int i = 0; i < size; i++)
     {
-        std::cerr << LOC << typeSpecifierVector[i] << " ";
+        // std::cerr << LOC << typeSpecifierVector[i] << " ";
     }
-    std::cerr << LOC << std::endl;
+    // std::cerr << LOC << std::endl;
 
     if (size == 0)
     {
@@ -302,7 +302,7 @@ std::string combineType(std::vector<std::string> typeSpecifierVector)
         // check
         for (int i = 1; i < 4; i++)
         {
-            std::cerr << LOC << typeSpecifierVector[i] << " ";
+            // std::cerr << LOC << typeSpecifierVector[i] << " ";
         }
 
         if (type1 == TYPE_INT && type2 == TYPE_LONG && type3 == TYPE_LONG)
@@ -369,7 +369,7 @@ std::string combineType(std::vector<std::string> typeSpecifierVector)
         // check
         for (int i = 1; i < 5; i++)
         {
-            std::cerr << LOC << typeSpecifierVector[i] << " ";
+            // std::cerr << LOC << typeSpecifierVector[i] << " ";
         }
         if (type1 == TYPE_INT && type2 == TYPE_LONG && type3 == TYPE_LONG)
         {

@@ -389,8 +389,8 @@ int ProcessDecSpecifiers(std::vector<std::string> &valueVector, TypeExpression &
         }
     }
 
-    std::cerr << LOC << "😇 All are inbuilt types: " << allAreInbuiltType << std::endl;
-    std::cerr << LOC << "😇 Type Specifier Vector: " << toString(typeSpecifierVector) << std::endl;
+    // std::cerr << LOC << "😇 All are inbuilt types: " << allAreInbuiltType << std::endl;
+    // std::cerr << LOC << "😇 Type Specifier Vector: " << toString(typeSpecifierVector) << std::endl;
 
     if (!allAreInbuiltType)
     {

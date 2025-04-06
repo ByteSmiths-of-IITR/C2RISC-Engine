@@ -33,6 +33,7 @@ if [ -n "$FILTER_DIR" ]; then
         echo "🔹 Running on: $test_file"
         "$EXECUTABLE" "$test_file" -t 2>>"$ERROR"
         echo "---------------------------"
+        sleep 0.5
     done
 else
     # Run all .c tests if no folder filter is provided
@@ -40,5 +41,6 @@ else
         echo "🔹 Running on: $test_file"
         "$EXECUTABLE" "$test_file" -t 2>>"$ERROR"
         echo "---------------------------"
+        sleep 0.5
     done
 fi

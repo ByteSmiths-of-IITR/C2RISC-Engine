@@ -67,6 +67,7 @@ SRC_FILES = $(wildcard $(SRC_DIR)/*.cpp)
 OBJ_FILES = $(patsubst $(SRC_DIR)/%.cpp,$(OBJ_DIR)/%.o,$(SRC_FILES))
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
+	@echo "Creating Object File of" $<
 	@$(CXX) $(CXXFLAGS) -MMD -MP -c $< -o $@
 
 -include $(OBJ_FILES:.o=.d)
@@ -81,7 +82,7 @@ Recursive = $(OUTPUT_DIR)/recursive_output.txt
 all: $(REQUIRED_DIRS) $(OUTPUT) $(INPUT) $(CERR) 
 
 compiler: all $(EXECUTABLE) $(INPUT) $(OUTPUT) $(CERR)
-	@echo "-----🏗️ C2RISC_Engine Successfully Built 🏗️-----"
+	@echo "----- 🏗️ C2RISC_Engine Successfully Built 🏗️ -----"
 
 # Step 1: Generate parser files from Bison
 $(PARSER_C) $(PARSER_H): $(PARSER) 

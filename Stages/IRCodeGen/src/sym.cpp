@@ -174,7 +174,7 @@ int SymbolTable::insert(SYMBOL_TYPE symbolType, const std::string &key, GenericS
         // Checking if the symbol is in the current scope [We can't insert it]
         if (temp->scopeNo == this->scopeNo)
         {
-            std::cerr << LOC << "Error: Symbol is already present in the current scope\n";
+            // std::cerr << LOC << "Error: Symbol is already present in the current scope\n";
             return INSERT_FAILURE;
         }
         status = 1;
@@ -186,7 +186,7 @@ int SymbolTable::insert(SYMBOL_TYPE symbolType, const std::string &key, GenericS
     // Filling Some Information in the SymbolNode
     if (!symbol)
     {
-        std::cerr << LOC << "Error: Symbol is nullptr\n";
+        // std::cerr << LOC << "Error: Symbol is nullptr\n";
         return BUG;
     }
 
@@ -211,7 +211,7 @@ int SymbolTable::insert(SYMBOL_TYPE symbolType, const std::string &key, GenericS
         head = this->symTable[key]; // won't give segmentation fault
         if (!head)
         {
-            std::cerr << LOC << "Error: Symbol is present in the outer scope but head is nullptr\n";
+            // std::cerr << LOC << "Error: Symbol is present in the outer scope but head is nullptr\n";
             // This should not happen
             return BUG;
         }

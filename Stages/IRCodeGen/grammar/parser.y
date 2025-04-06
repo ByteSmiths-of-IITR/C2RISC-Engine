@@ -114,9 +114,9 @@ bool compressed = false; // Default is PTree, if AST is needed, change it to fal
 // TAC CODE_BASE; [Are declared in handler.cpp]
 
 void exit_compiler(){
-    std::cerr << "Compiler Mode: " << compilerMode << std::endl;
-    std::cerr << "Debugging Mode d1: " << (ptree ? "ON" : "OFF") << std::endl;
-    std::cerr << "Debugging Mode d2: " << (Aptree ? "ON" : "OFF") << std::endl;
+    // std::cerr << "Compiler Mode: " << compilerMode << std::endl;
+    // std::cerr << "Debugging Mode d1: " << (ptree ? "ON" : "OFF") << std::endl;
+    // std::cerr << "Debugging Mode d2: " << (Aptree ? "ON" : "OFF") << std::endl;
     // First we print output depending on the mode
     if(compilerMode == 0){ //Terminal
         std::cout << notificationStream.str() << std::endl;
@@ -179,15 +179,14 @@ void signalHandler(int signum) {
         default:
             signalName = "Unknown Signal";
     }
-    std::string signalMessage = "❤️‍🔥 SignalHandler 💥" + signalName + " received. Exiting gracefully.";
+    std::string signalMessage = "Just Kidding it's just my SignalHandler 💥 catching " + signalName + " and exit gracefully 😎\n";
 
-    notificationStream << signalMessage << std::endl;
-    std::cout << signalMessage << std::endl;
-    errorStream << "The Last Function Called - " << lastFuncCalled << std::endl;
+    // std::cout << signalMessage << std::endl;
+    // errorStream << "The Last Function Called - " << lastFuncCalled << std::endl;
     
-    notificationStream << signalMessage << std::endl;
+    // notificationStream << signalMessage << std::endl;
 
-    errorStream <<  "😎 Exiting gracefully 😎\n" << std::endl;
+    // errorStream <<  "😎 Exiting gracefully 😎\n" << std::endl;
     
     errorStream <<  SEMANTICLOGHEADER << std::endl;
     for(const auto& log : semanticLOG){
@@ -196,6 +195,7 @@ void signalHandler(int signum) {
     errorStream <<  LOGFOOTER << std::endl;
     std::string suicideMessage = "My Name is " + std::to_string(getpid()) + " and I am commiting Suicide 😵 at " + getCurrentTime() + " 🪦\n";
     notificationStream << suicideMessage;
+    notificationStream << signalMessage;
     std::cout << suicideMessage << std::endl;
     exit_compiler();
 
@@ -1140,7 +1140,7 @@ declaration
 
         if(specifier == TYPEDEF_FOUND){
             typeDefIDs.insert(declarator);
-            std::cerr << "Inserting \'" << declarator << "\' in typedefID's SET" << std::endl;
+            // std::cerr << "Inserting \'" << declarator << "\' in typedefID's SET" << std::endl;
         }
         expectingTypeName = true;
     }
@@ -2427,10 +2427,8 @@ int main(int argc, char **argv) {
     signal(SIGFPE, signalHandler); // Catch floating point exception
     signal(SIGILL, signalHandler); // Catch illegal instruction
     signal(SIGBUS, signalHandler); // Catch bus error
-    signal(SIGQUIT, signalHandler); // Catch quit signal
-    signal(SIGTERM, signalHandler); // Catch termination signal
-    signal(SIGUSR1, signalHandler); // Catch user-defined signal 1
-    signal(SIGUSR2, signalHandler); // Catch user-defined signal 2
+    /* signal(SIGQUIT, signalHandler); // Catch quit signal */
+    /* signal(SIGTERM, signalHandler); // Catch termination signal */
 
 
     //------------------------ cmd line arguments handling ------------------------
@@ -2445,9 +2443,10 @@ int main(int argc, char **argv) {
         inputInstructions += " -d1 <dot_file>      : Print PTree to <dot_file>\n";
         inputInstructions += " -d2 <dot_file>      : Print Annotated PTree to <dot_file>\n";
         
-        if(argc < 1){
+        if(argc < 2){
+
             std::cerr << inputInstructions << std::endl;
-            return 1;
+            return 0;
         }
 
         input_file = argv[1];

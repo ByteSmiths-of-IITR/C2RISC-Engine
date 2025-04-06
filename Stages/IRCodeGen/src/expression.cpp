@@ -615,7 +615,7 @@ int postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
         // 🤔🤔🤔🤔🤔🤔 IMP LOGIC 🤔🤔🤔🤔🤔
         type = elementType;             // Set Correctly
         valueType = getValueType(type); // Set Correctly
-        std::cerr << LOC << "Type : " << toString(type) << std::endl;
+        // std::cerr << LOC << "Type : " << toString(type) << std::endl;
     }
     else if (whichProduction == P3 || whichProduction == P4)
     {
@@ -1126,18 +1126,22 @@ int assignment_expression_H(ASTNode *node, std::string inh_whereToSendString, st
 
         TypeExpression source = type2;
         TypeExpression dest = type1;
+        Type t1 = whatIsType(left);
+        Type t2 = whatIsType(right);
 
         std::string assOP = node->children[1]->value;
         if(assOP == "+=" || assOP == "-="){
             bool isNum = isNumeric(right);
             // bool isMLvalue = (valueType1 == VALUE_TYPE::M_LVALUE);
+            bool bothPtr = ((t1 == Type::ARRAY || t1==Type::POINTER) && (t2==Type::ARRAY || t2 == Type::POINTER));
+            bool okay = ((assOP == "-=") && (bothPtr));
 
-            if(!isNum){
+            if (!isNum && !okay)
+            {
                 semanticError("For Operator \""+ assOP + "\" assignment expression's operand \"" + varName2 + "\" is not a numeric type");
                 FAIL_H;
                 return FAIL;
             }
-            
 
         ///------
             // Implicit Type Casting
@@ -2018,12 +2022,19 @@ int additive_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
 
         Type whichType1 = whatIsType(type1);
         Type whichType2 = whatIsType(type2);
+        bool typeLong = false;
 
         // Step 1: if both are either of pointer, function, array, struct_object, union_object then semantic error
         if ((whichType1 == Type::POINTER || whichType1 == Type::FUNCTION || whichType1 == Type::ARRAY || whichType1 == Type::STRUCT_UNION) &&
             (whichType2 == Type::POINTER || whichType2 == Type::FUNCTION || whichType2 == Type::ARRAY || whichType2 == Type::STRUCT_UNION))
         {
-            semanticError("Invalid operation " + node->children[1]->value + " between incompatible types \"" + toString(type1) + "\" and \"" + toString(type2) + "\"");
+            bool bothPointer = ((whichType1 == Type::POINTER || whichType1 == Type::ARRAY) && (whichType2 == Type::POINTER || whichType2 == Type::ARRAY));
+            if(bothPointer & whichProduction == P3){
+                typeLong = true;
+            }
+            else{
+                semanticError("Invalid operation " + node->children[1]->value + " between incompatible types \"" + toString(type1) + "\" and \"" + toString(type2) + "\"");
+            }
         }
         // Step 2: if one is of integral type, the other cannot be struct_object or union_object
         else if ((isIntegral(type1) && (whichType2 == Type::STRUCT_UNION)) ||
@@ -2039,7 +2050,7 @@ int additive_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
             semanticError("Invalid operation " + node->children[1]->value + " between floating-point type and incompatible type");
         }
 
-        else if (whichProduction == P2)
+        if (whichProduction == P2)
         {
 
             // Step 4: if one is integral and the other is pointer, function, or array (use width and multiply with integral value and add)return type is pointer
@@ -2124,11 +2135,19 @@ int additive_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
             }
         }
 
+        
         else if (whichProduction == P3)
         {
+            aptLOG("here");
+            HERE;
+            if (typeLong)
+            {
+                std::string result = newTemp();
+                CODE_BASE.addTAC(node, result, node->children[1]->value, varName1, varName2);
+            }
 
             // if in left integral then in right we cannot have pointer, function, array
-            if (isIntegral(type1) && (whichType2 == Type::POINTER || whichType2 == Type::FUNCTION || whichType2 == Type::ARRAY))
+            else if (isIntegral(type1) && (whichType2 == Type::POINTER || whichType2 == Type::FUNCTION || whichType2 == Type::ARRAY))
             {
                 semanticError("Invalid operation " + node->children[1]->value + " between integral type and pointer/function/array type");
                 FAIL_H;
@@ -2152,7 +2171,7 @@ int additive_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
 
                 varName = result;
                 type = type1;
-                valueType = getValueType(type1);
+                valueType = VALUE_TYPE::RVALUE;
                 valueSpace = getSpace(type1);
             }
 
@@ -2197,10 +2216,18 @@ int additive_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
                 TypeExpression type0;
                 type0.levelStack.push_back(base);
 
-                type = type0; // Change the type to the result type
+                // Creating a long type
+                TypeExpression longExp;
+                BaseInfo *baselong = new BaseInfo();
+                baselong->baseType = TYPE_LONG;
+                longExp.levelStack.push_back(baselong);
+
+                type = (typeLong) ? longExp : type0;
                 valueType = VALUE_TYPE::RVALUE;
                 valueSpace = getSpace(type0);
             }
+
+            
 
             // If none of the above cases match, it's an invalid operation
             else

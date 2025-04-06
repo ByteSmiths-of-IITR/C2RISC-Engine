@@ -4,9 +4,9 @@
 
 int width(const UserDType &dtype)
 {
-    if(dtype.isComplete == false)
+    if (dtype.isComplete == false)
     {
-        std::cerr << LOC << "Error: User Defined Type is not complete\n";
+        // std::cerr << LOC << "Error: User Defined Type is not complete\n";
         return -1;
     }
 
@@ -35,10 +35,10 @@ int width(const UserDType &dtype)
     }
     else
     {
-        std::cerr << LOC << LOC << "Error: Unknown Record Type\n";
+        // std::cerr << LOC << LOC << "Error: Unknown Record Type\n";
         return -1;
     }
-    std::cerr << LOC << LOC << "Width of " << dtype.symbolName << " : " << totalSize << std::endl;
+    // std::cerr << LOC << LOC << "Width of " << dtype.symbolName << " : " << totalSize << std::endl;
     return totalSize;
 }
 
@@ -79,12 +79,12 @@ int width(const BaseInfo &info)
         int recordCheck = SYM_TABLE.lookupRecord(recordName, recordSymbol, scopeNo);
         if (recordCheck == LOOKUP_FAILURE)
         {
-            std::cerr << LOC << "Error: Record \"" + recordName + "\" not found in symbol table\n";
+            // std::cerr << LOC << "Error: Record \"" + recordName + "\" not found in symbol table\n";
             return -1;
         }
         else
         {
-            std::cerr << LOC << "😆 Found Record \"" + recordName + "\" in symbol table\n";
+            // std::cerr << LOC << "😆 Found Record \"" + recordName + "\" in symbol table\n";
             // Find the width of the record
             UserDType *record = dynamic_cast<UserDType *>(recordSymbol);
             return width(*record);
@@ -140,7 +140,7 @@ int width(const TypeExpression &typeExpr)
     }
     else
     {
-        std::cerr << LOC << "Error : Something wrong in width(TypeExpression)\n";
+        // std::cerr << LOC << "Error : Something wrong in width(TypeExpression)\n";
         return -1;
     }
 
@@ -177,7 +177,7 @@ int elementWidth(const TypeExpression &typeExpr)
         return width(belowLevel);
     }
 
-    std::cerr << LOC << "Error: Something wrong in elementWidth(TypeExpression)\n";
+    // std::cerr << LOC << "Error: Something wrong in elementWidth(TypeExpression)\n";
     return -1;
 }
 
@@ -194,7 +194,7 @@ bool topIsParenthesis(const TypeExpression &typeExpr)
     // HERE;
     if (!info)
     {
-        std::cerr << LOC << "Error: LevelInfo is nullptr\n";
+        // std::cerr << LOC << "Error: LevelInfo is nullptr\n";
         // HERE;
         return false;
     }
@@ -224,7 +224,7 @@ Type whatIsType(const TypeExpression &typeExpr)
     LevelInfo *info = temp.levelStack.back();
     if (!info)
     {
-        std::cerr << LOC << "Error: LevelInfo is nullptr\n";
+        // std::cerr << LOC << "Error: LevelInfo is nullptr\n";
         return Type::UNKNOWN;
     }
 
@@ -264,7 +264,7 @@ Type whatIsType(const TypeExpression &typeExpr)
         return Type::FUNCTION;
     }
 
-    std::cerr << LOC << "Error: Unknown LevelInfo type\n";
+    // std::cerr << LOC << "Error: Unknown LevelInfo type\n";
 
     return Type::UNKNOWN;
 }
@@ -371,7 +371,7 @@ std::string toString(const TypeExpression &typeExpr)
                     paramStr += ", ";
                 }
             }
-            if(param->isVaradic)
+            if (param->isVaradic)
             {
                 if (paramStr != "(")
                 {
@@ -384,7 +384,7 @@ std::string toString(const TypeExpression &typeExpr)
         }
         else
         {
-            std::cerr << LOC << "Error: Unknown LevelInfo type\n";
+            // std::cerr << LOC << "Error: Unknown LevelInfo type\n";
             return "";
         }
     }
@@ -421,7 +421,7 @@ TypeExpression createTypeExpression(GenericSymbol *symbol)
 
     if (!symbol)
     {
-        std::cerr << LOC << "Error: Symbol is nullptr\n";
+        // std::cerr << LOC << "Error: Symbol is nullptr\n";
         return typeExpr;
     }
 
@@ -645,7 +645,7 @@ int ProcessConstants(std::string inputValue, TypeExpression &typeExpr, std::stri
     }
     catch (const std::exception &ex)
     {
-        std::cerr << LOC << "Error in ProcessConstants: " << ex.what() << "\n";
+        // std::cerr << LOC << "Error in ProcessConstants: " << ex.what() << "\n";
         delete base;
         return FAIL;
     }
@@ -707,15 +707,13 @@ bool isModifiableLvalue(const TypeExpression &type)
     removeTopParenthesis(temp);
 
     Type topType = whatIsType(temp);
-    std::cerr << LOC << " Top Type: " << toString(temp) << "\n";
+    // std::cerr << LOC << " Top Type: " << toString(temp) << "\n";
 
     // Logic - Array or Function
     if (topType == Type::ARRAY || topType == Type::FUNCTION)
     {
         return false;
     }
-
-
 
     // Logic - Pointer with const qualifier
     if (topType == Type::POINTER)
@@ -786,7 +784,7 @@ int checkEquivalance(const TypeExpression &typeExpr1, const TypeExpression &type
     if (!info1 || !info2)
     {
         // Should not happen
-        std::cerr << LOC << "Error: LevelInfo is nullptr\n";
+        // std::cerr << LOC << "Error: LevelInfo is nullptr\n";
         return false;
     }
 
@@ -836,15 +834,15 @@ int ourEquivalent(const TypeExpression &type1, const TypeExpression &type2)
     TypeExpression temp2 = type2;
     removeTopParenthesis(temp1);
     removeTopParenthesis(temp2);
-    // std::cerr << LOC  << "Type1: " << toString(temp1) << "\n";
-    // std::cerr << LOC  << "Type2: " << toString(temp2) << "\n";
+    // // std::cerr << LOC  << "Type1: " << toString(temp1) << "\n";
+    // // std::cerr << LOC  << "Type2: " << toString(temp2) << "\n";
     // If top is pointer Type - POINTER, ARRAY
     // Then ignore lower levels
     Type topType1 = whatIsType(temp1);
     Type topType2 = whatIsType(temp2);
 
-    // std::cerr << LOC  << "Top Type1: of Type1: " << toString(topType1) << "is " << toString(temp1) << "\n";
-    // std::cerr << LOC  << "Top Type2: of Type2: " << toString(topType2) << "is " << toString(temp2) << "\n";
+    // // std::cerr << LOC  << "Top Type1: of Type1: " << toString(topType1) << "is " << toString(temp1) << "\n";
+    // // std::cerr << LOC  << "Top Type2: of Type2: " << toString(topType2) << "is " << toString(temp2) << "\n";
 
     bool isPtr1 = (topType1 == Type::POINTER || topType1 == Type::ARRAY);
     bool isPtr2 = (topType2 == Type::POINTER || topType2 == Type::ARRAY);
@@ -883,7 +881,7 @@ int ourEquivalent(const TypeExpression &type1, const TypeExpression &type2)
 
     // Check equivalance of base level
 
-    if(topType1 == Type::VARIABLE && topType2 == Type::VARIABLE)
+    if (topType1 == Type::VARIABLE && topType2 == Type::VARIABLE)
     {
         // Both are variable
         BaseInfo *base1 = dynamic_cast<BaseInfo *>(temp1.levelStack.back());
@@ -898,9 +896,9 @@ int ourEquivalent(const TypeExpression &type1, const TypeExpression &type2)
     bool isNumeric2 = isNumeric(type2);
     if (isNumeric1 && isNumeric2)
     {
-        std::cerr << LOC << " Both are numeric\n";
-        std::cerr << LOC << " 😅Type1: " << toString(type1) << "\n";
-        std::cerr << LOC << " Type2: " << toString(type2) << "\n";
+        // std::cerr << LOC << " Both are numeric\n";
+        // std::cerr << LOC << " 😅Type1: " << toString(type1) << "\n";
+        // std::cerr << LOC << " Type2: " << toString(type2) << "\n";
         // Both are numeric
         std::string base1 = isPrimitive(type1);
         std::string base2 = isPrimitive(type2);
@@ -940,7 +938,8 @@ int checkEquivalance(const LevelInfo &info1, const LevelInfo &info2)
     int type2 = whichLevelInfo(info2);
     if (type1 != type2)
     {
-        if((type1 == ARRAY_LEVEL && POINTER_LEVEL)||(type1==ARRAY_LEVEL && type2 == POINTER_LEVEL)){
+        if ((type1 == ARRAY_LEVEL && POINTER_LEVEL) || (type1 == ARRAY_LEVEL && type2 == POINTER_LEVEL))
+        {
             return EQUIVALENT;
         }
         else
@@ -985,7 +984,7 @@ int checkEquivalance(const LevelInfo &info1, const LevelInfo &info2)
     else
     {
         // Unknown Level
-        std::cerr << LOC << "Error: Unknown LevelInfo\n";
+        // std::cerr << LOC << "Error: Unknown LevelInfo\n";
         return LOW_ERROR;
     }
 
@@ -1041,7 +1040,7 @@ int checkEquivalance(const BaseInfo &baseinfo1, const BaseInfo &baseinfo2)
     if (topType1 == Type::VARIABLE && topType2 == Type::VARIABLE)
     {
         // Both are variable
-        if(baseinfo1.baseType == baseinfo2.baseType)
+        if (baseinfo1.baseType == baseinfo2.baseType)
         {
             return EQUIVALENT;
         }
@@ -1051,9 +1050,9 @@ int checkEquivalance(const BaseInfo &baseinfo1, const BaseInfo &baseinfo2)
     bool isNumeric2 = isNumeric(info2);
     if (isNumeric1 && isNumeric2)
     {
-        std::cerr << LOC << " Both are numeric\n";
-        std::cerr << LOC << " 😅Type1: " << toString(info1) << "\n";
-        std::cerr << LOC << " Type2: " << toString(info2) << "\n";
+        // std::cerr << LOC << " Both are numeric\n";
+        // std::cerr << LOC << " 😅Type1: " << toString(info1) << "\n";
+        // std::cerr << LOC << " Type2: " << toString(info2) << "\n";
         // Both are numeric
         std::string base1 = isPrimitive(info1);
         std::string base2 = isPrimitive(info2);
@@ -1072,11 +1071,12 @@ int checkEquivalance(const BaseInfo &baseinfo1, const BaseInfo &baseinfo2)
     {
         // Both are struct/union
         // Check if they are same
-        if(baseinfo1.baseType == baseinfo2.baseType)
+        if (baseinfo1.baseType == baseinfo2.baseType)
         {
             return EQUIVALENT;
         }
-        else{
+        else
+        {
             return LOW_ERROR;
         }
     }
