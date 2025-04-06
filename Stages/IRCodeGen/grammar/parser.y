@@ -2524,7 +2524,7 @@ int main(int argc, char **argv) {
 
     if(syntaxError){
         notificationStream << "Lexical Analysis 👍 | Syntax Analysis ❌\n";
-        errorStream <<  "\U0001F6A8 yyerror() was called " << noOfyyerrorCalls << " times \U0001F6A8\n" << std::endl;
+        /* errorStream <<  "\U0001F6A8 yyerror() was called " << noOfyyerrorCalls << " times \U0001F6A8\n" << std::endl; */
 
         // We print ourCustom Error Only if Bison-don't Report any Error
 
@@ -2551,10 +2551,10 @@ int main(int argc, char **argv) {
         notificationStream <<  "😊 Thanku for using our \"C2RISC-Engine\" " << std::endl;
 
         // If we only have custom error - i.e no bison error then we can print the AST
-            // Clean Up
-            fclose(yyin);
-            exit_compiler();
-            return 0; // For now even if there is a syntax error, we will continue to print the AST
+        // Clean Up
+        fclose(yyin);
+        exit_compiler();
+        return 0; // For now even if there is a syntax error, we will continue to print the AST
     }
     
     // Adding a Extra Node on the top of the Ptree
@@ -2566,10 +2566,10 @@ int main(int argc, char **argv) {
     // Early exit if we are in debugging mode and to print pTree Only
     if(ptree){
         // We are in debugging mode and exit after parsing stage
-        notificationStream <<  "\U0001F53A Parser Tree generated as DOT file: " << dot_file << " can be visualized using Graphviz\n";
+        notificationStream <<  "\U0001F53A Parser Tree generated can be used for debugging\n";
         notificationStream << "Lexical Analysis 👍 | Syntax Analysis 👍\n";
         
-        notificationStream <<  "😊 Thanku for using our \"C2RISC-Engine\" " << std::endl << std::endl;
+        notificationStream <<  "😊 Thanku for using our \"C2RISC-Engine\" (Till Syntax Phase) " << std::endl << std::endl;
         // Clean Up and exit
         if(yyin) fclose(yyin);  // Close the input file
         exit_compiler(); // This will handle printing of ptree
@@ -2613,7 +2613,7 @@ int main(int argc, char **argv) {
 
     // Print the Annotated Parse Tree
     if(Aptree){
-        notificationStream <<  "\U0001F53A APTree generated as DOT file: " << dot_file << " can be visualized using Graphviz";
+        notificationStream <<  "🌴 APTree 🌴 has been generated, can be used for debugging ❤️‍🩹 \n";
     }
 
 
@@ -2629,11 +2629,6 @@ void yyerror(const char* s) {
     // add to bison LOG
     noOfyyerrorCalls++;
 
-    if(stopYYERROR){
-        return;
-    }
-
-    /* std::cerr << "Reaching here\n"; */
 
     std::string error = "Syntax Error: " + std::string(s) + " at Line: " + std::to_string(yylineno) + " near Token: " + yytext;
     bisonLOG.push_back(error);

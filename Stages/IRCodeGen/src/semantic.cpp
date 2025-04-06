@@ -27,14 +27,52 @@ bool isIntegral(const TypeExpression &typeExpr)
     return false;
 }
 
+bool isVoid(const TypeExpression &typeExpr){
+    // Check if the type expression is a void type
+    LevelInfo *bottomLevel = typeExpr.levelStack[0];
+    std::string baseType = (dynamic_cast<BaseInfo *>(bottomLevel))->baseType;
+    if (baseType == TYPE_VOID)
+    {
+        return true;
+    }
+    return false;
+}
+
 bool isValidTypeExpression(const TypeExpression &typeExpr)
-{
-    // // Check if the type expression is valid
-    // Type topType = whatIsType(typeExpr);
-    // if(topType == Type::VARIABLE || topType == Type::ENUM_CONSTANT || topType == Type::ENUM) {
-    //     return true; // Valid type expression
-    // }
-    return true;
+{   
+    // Base: if there is no additional level then nothing further to check.
+    if(typeExpr.levelStack.size() <= 1)
+        return true;
+    
+    // Get current top level type.
+    Type topType = whatIsType(typeExpr);
+    
+    // Copy the type expression for accessing the below level.
+    TypeExpression belowTypeExpr = typeExpr;
+    // Attempt to pop one level; if it fails then signal error.
+    if(popALevel(belowTypeExpr))
+    {
+        std::cerr << LOC << "Error: popALevel failed\n";
+        return false;
+    }
+    Type belowType = whatIsType(belowTypeExpr);
+    
+    // Check conditions:
+    // 1. If top is FUNCTION then the below type cannot be ARRAY or FUNCTION.
+    if(topType == Type::FUNCTION)
+    {
+        if(belowType == Type::ARRAY || belowType == Type::FUNCTION)
+            return false;
+    }
+    // 2. If top is ARRAY then the below type cannot be FUNCTION.
+    if(topType == Type::ARRAY)
+    {
+        if(belowType == Type::FUNCTION)
+            return false;
+    }
+
+    // Recurse for further validation down the type expression.
+    return isValidTypeExpression(belowTypeExpr);
 }
 
 bool isConstant(const TypeExpression &typeExpr)

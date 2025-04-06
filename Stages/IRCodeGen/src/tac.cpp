@@ -9,6 +9,7 @@ std::string CAST = "cast";
 std::string LABEL = "label";
 std::string AMPERSEND = "&";
 std::string RO_DATA = ".rodata";
+std::string STACK_DATA = ".stack";
 std::string DATA = ".data";
 std::string BSS = ".bss";
 std::string PARAM = "param";
@@ -20,6 +21,7 @@ std::string GOTO_LABEL = "goto";
 std::string GOTO_EQUAL = "goto_equal";
 std::string TO_BACKPATCH = "to_backpatch";
 std::string RETURN_FUNCTION = "return";
+std::string MEM_COPY = "mem_copy";
 
 #include <iomanip>
 
@@ -88,7 +90,9 @@ std::string TAC_Quadruple::toString()
     {
         str = result + " = &" + arg1; // result = &arg1
     }
-
+    else if(op == MEM_COPY){
+        str = result + " = mem_copy " + arg1;
+    }
     else if (op == LEFT_STAR)
     {
         str = "*" + result + " = " + arg1; // *result = arg1
@@ -237,6 +241,24 @@ void TAC::printTAC(std::ofstream &file)
 
 void TAC::printTAC(std::ostringstream &oss)
 {
+
+    // Print the .rodata section
+    oss << std::setw(w) << ".rodata section" << " : " << std::setw(wcode) << std::left << std::string(wcode, '-') << std::endl;
+    for (int i = 0; i < roData.size(); i++)
+    {
+        oss << std::setw(w) << roData[i] << " " << std::setw(wcode) << std::left << std::endl;
+    }
+    oss << std::endl;
+    oss << std::string(w+wcode+6, '-') << std::endl;
+
+    oss << std::setw(w) << ".data section" << " : " << std::setw(wcode) << std::left << std::string(wcode, '-') << std::endl;
+    for (int i = 0; i < data.size(); i++)
+    {
+        oss << std::setw(w) << data[i] << " " << std::setw(wcode) << std::left << std::endl;
+    }
+    oss << std::endl;
+    oss << std::string(w+wcode+6, '-') << std::endl;
+
     oss << std::setw(w) << "CodeLineNo" << " : " << std::setw(wcode) << std::left << "TAC" << std::endl;
     oss << std::setw(w) << "----------" << " : " << std::setw(wcode) << std::left << "-------------------------------" << std::endl;
     for (int i = 0; i < code.size(); i++)

@@ -445,7 +445,7 @@ int ProcessConstants(std::string inputValue, TypeExpression &typeExpr, std::stri
                 base->baseType = TYPE_CHAR;
                 finalValue = std::string(1, c);
                 typeExpr.levelStack.push_back(base);
-                return 0;
+                return OKAY;
             }
             else
             {
@@ -463,7 +463,7 @@ int ProcessConstants(std::string inputValue, TypeExpression &typeExpr, std::stri
             base->baseType = TYPE_FLOAT;
             finalValue = std::to_string(fval);
             typeExpr.levelStack.push_back(base);
-            return 0;
+            return OKAY;
         }
 
         // ----- Floating-Point Literals (decimal point) -----
@@ -473,7 +473,7 @@ int ProcessConstants(std::string inputValue, TypeExpression &typeExpr, std::stri
             base->baseType = TYPE_DOUBLE;
             finalValue = std::to_string(dval);
             typeExpr.levelStack.push_back(base);
-            return 0;
+            return OKAY;
         }
 
         // ----- Exponent Notation -----
@@ -507,7 +507,7 @@ int ProcessConstants(std::string inputValue, TypeExpression &typeExpr, std::stri
                 finalValue = std::to_string(dval);
             }
             typeExpr.levelStack.push_back(base);
-            return 0;
+            return OKAY;
         }
 
         // ----- Binary Literals -----
@@ -542,7 +542,7 @@ int ProcessConstants(std::string inputValue, TypeExpression &typeExpr, std::stri
             }
             finalValue = std::to_string(value);
             typeExpr.levelStack.push_back(base);
-            return 0;
+            return OKAY;
         }
 
         // ----- Hexadecimal Literals -----
@@ -572,7 +572,7 @@ int ProcessConstants(std::string inputValue, TypeExpression &typeExpr, std::stri
             }
             finalValue = std::to_string(value);
             typeExpr.levelStack.push_back(base);
-            return 0;
+            return OKAY;
         }
 
         // ----- Octal Literals -----
@@ -602,7 +602,7 @@ int ProcessConstants(std::string inputValue, TypeExpression &typeExpr, std::stri
             }
             finalValue = std::to_string(value);
             typeExpr.levelStack.push_back(base);
-            return 0;
+            return OKAY;
         }
 
         // ----- Decimal Integer Literals -----
@@ -624,18 +624,18 @@ int ProcessConstants(std::string inputValue, TypeExpression &typeExpr, std::stri
             }
             finalValue = std::to_string(value);
             typeExpr.levelStack.push_back(base);
-            return 0;
+            return OKAY;
         }
     }
     catch (const std::exception &ex)
     {
         std::cerr << LOC << "Error in ProcessConstants: " << ex.what() << "\n";
         delete base;
-        return -1;
+        return FAIL;
     }
     // Should not get here.
     delete base;
-    return -1;
+    return FAIL;
 }
 
 // Needed during Space & ValueType Logics
@@ -691,13 +691,15 @@ bool isModifiableLvalue(const TypeExpression &type)
     removeTopParenthesis(temp);
 
     Type topType = whatIsType(temp);
-    std::cerr << LOC << "Top Type: " << toString(temp) << "\n";
+    std::cerr << LOC << " Top Type: " << toString(temp) << "\n";
 
     // Logic - Array or Function
     if (topType == Type::ARRAY || topType == Type::FUNCTION)
     {
         return false;
     }
+
+
 
     // Logic - Pointer with const qualifier
     if (topType == Type::POINTER)

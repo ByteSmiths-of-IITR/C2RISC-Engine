@@ -155,6 +155,113 @@ int init_declarator_H(ASTNode *node, TypeExpression inh_type, StorageClass inh_s
         PASS_THE_ERROR(decl_check);
         SYMBOL_TYPE symbolInsertedType = SYMBOL_TYPE::NONE;
 
+        // 0 First we Handle Initializer
+        if (whichProduction == P2)
+        {
+            // The inh_type must be INITIALIZABLE
+            std::string inh_varName1 = varName;
+            TypeExpression inh_type1 = type;
+
+            Type topType = whatIsType(inh_type1);
+            if (topType == Type::FUNCTION)
+            {
+                semanticError("Function cannot 🙂‍↔️ have initializer");
+                FAIL_H;
+                return FAIL;
+            }
+            else
+            {
+                TypeExpression initType;
+                std::string initVarName;
+                int initSize = -1;
+                int initl_check = initializer_H(node->children[2], initType, initVarName, initSize);
+                PASS_THE_ERROR(initl_check);
+
+                // Now we have got the initializer
+                // Check if it's a scalar initializer or not
+                Type whichType = whatIsType(inh_type1);
+                if (whichType == Type::ARRAY)
+                {
+                    // TypeCheck - Initializer is not a scalar
+                    Type initTopType = whatIsType(initType);
+                    if (initTopType != Type::ARRAY)
+                    {
+                        // SEMANTIC ERROR 🚨 : Initializer is not a scalar
+                        semanticError("Initializer \"" + initVarName + "\" is a scalar but the variable is an array");
+                        FAIL_H;
+                        return FAIL;
+                    }
+
+                    // We send the initialization code to .data section
+                    std::string initVarName2 = newTemp();
+
+                    // TO adjust initVarName2 as per size of
+
+                    std::string data = initVarName2 + " = " + initVarName;
+                    CODE_BASE.data.push_back(data);                                      // Add to data section
+                    CODE_BASE.addTAC(node, varName, MEM_COPY, initVarName2, NO_ARG); // Assign it to the variable
+                    // Change the name to the address
+                }
+                else
+                {
+
+                    // Check if the initializer is a scalar
+                    Type topType = whatIsType(initType);
+                    if (topType == Type::ARRAY)
+                    {
+                        // SEMANTIC ERROR 🚨 : Initializer is not a scalar
+                        semanticError("Initializer \"" + initVarName + "\" is not a scalar");
+                        FAIL_H;
+                        return FAIL;
+                    }
+
+                    // Check if the types are resolvable
+                    // 🆎 TypeCasting
+                    TypeExpression source = initType;
+                    TypeExpression dest = inh_type1;
+
+                    bool isNum = isNumeric(source);
+                    bool isNum2 = isNumeric(dest);
+                    if (!(isNum && isNum2))
+                    {
+                        // Check if the types are same
+                        int check = ourEquivalent(dest, source);
+                        if (check != OKAY)
+                        {
+                            // SEMANTIC ERROR 🚨 : Assignment expression's operand \"" + varName1 + "\" and \"" + varName2 + "\" are not compatible
+                            semanticError("Initialization type mismatch - Expected : \'" + toString(dest) + "\' Found : \'" + toString(source) + "\'");
+                            FAIL_H;
+                            return FAIL;
+                        }
+                    }
+                    else
+                    {
+                        // Implicit Type Casting
+                        int equal = ourEquivalent(source, dest);
+                        if (equal != OKAY)
+                        {
+                            // std::string castedVarNam = newTemp();
+                            CODE_BASE.addTAC(node, varName, CAST, toString(dest), initVarName); // Cast it
+                            // initVarName = castedVarNam;                                              // Change the name to the address
+                        }
+                    }
+                }
+            }
+        }
+
+        /*
+
+
+        */
+
+        bool isValid = isValidTypeExpression(type);
+        if (isValid == 0)
+        {
+            semanticError("😑 Invalid type expression ");
+            FAIL_H;
+            return FAIL;
+        }
+
         // 1. Create Symbol (Variable or Function or typedef)
         Type whichType = whatIsType(type);
         if (inh_storageClass == StorageClass::TYPEDEF)
@@ -165,15 +272,12 @@ int init_declarator_H(ASTNode *node, TypeExpression inh_type, StorageClass inh_s
             typedefDef->type = type;
             symbolInsertedType = SYMBOL_TYPE::TYPEDEF;
 
-            bool isValid = isValidTypeExpression(type);
-            if (isValid == 0)
-            {
-                semanticError("😑 Invalid type expression ");
-            }
-
+            
             if (whichProduction == P2)
             {
                 semanticError("typedef cannot 🙂‍↔️ have initializer");
+                FAIL_H;
+                return FAIL;
             }
 
             // Add to symbol table
@@ -184,8 +288,7 @@ int init_declarator_H(ASTNode *node, TypeExpression inh_type, StorageClass inh_s
             {
                 semanticError("Symbol \"" + varName + "\" already 🫠 present in the current scope");
                 FAIL_H;
-                ;
-                varName = PASS_ERROR;
+                return FAIL;
             }
             else
             {
@@ -207,12 +310,12 @@ int init_declarator_H(ASTNode *node, TypeExpression inh_type, StorageClass inh_s
             if (inh_storageClass == StorageClass::AUTO)
             {
                 semanticError("Function cannot 🙂‍↔️ be AUTO");
+                // No need to exit
             }
             else if (inh_storageClass == StorageClass::STATIC)
             {
                 semanticError(" ⚡️ TOO ADVANCED ⚡️ : static function not supported yet : It means that the function is only visible in the current file and not accessible outside");
             }
-
             // Add to symbol table
             GenericSymbol *sym = func;
             int insertCheck = SYM_TABLE.insert(symbolInsertedType, varName, sym);
@@ -222,15 +325,36 @@ int init_declarator_H(ASTNode *node, TypeExpression inh_type, StorageClass inh_s
                 GenericSymbol *funcFound = nullptr;
                 int lookupCheck = SYM_TABLE.lookup(varName, funcFound);
                 // We check if their signature is same
-
                 if (lookupCheck == LOOKUP_SUCCESS)
                 {
                     // Function name already exists
-                    Function *func = dynamic_cast<Function *>(funcFound);
+                    Function *funcLocated = dynamic_cast<Function *>(funcFound);
                     bool sameSignature = true;
 
                     // Check if the function signature is same
-                    // 📍📍📍📍📍📍📍📍📍 TO DO 📍📍📍📍📍📍📍
+                    LevelInfo *paramInfo = funcLocated->type.levelStack[0];
+                    std::vector<TypeExpression> prevParamType = ((ParameterInfo *)paramInfo)->paramsType;
+                    LevelInfo *currInfo = type.levelStack[0];
+                    std::vector<TypeExpression> currParamType = ((ParameterInfo *)currInfo)->paramsType;
+
+                    // We need a Exact match
+                    if (prevParamType.size() != currParamType.size())
+                    {
+                        sameSignature = false;
+                    }
+                    else
+                    {
+                        for (int i = 0; i < prevParamType.size(); i++)
+                        {
+                            Type topType1 = whatIsType(prevParamType[i]);
+                            Type topType2 = whatIsType(currParamType[i]);
+                            bool exactMatch = checkEquivalance(prevParamType[i], currParamType[i]);
+                            if(exactMatch != OKAY)
+                            {
+                                sameSignature = false;
+                            }
+                        }
+                    }
 
                     if (!sameSignature)
                     {
@@ -251,15 +375,24 @@ int init_declarator_H(ASTNode *node, TypeExpression inh_type, StorageClass inh_s
                 aptLOG("Function added ☞ \"" + varName + "\"");
             }
         }
-        else
+        else // Variable [struct, union, primtive, enum, pointer, array]
         {
-            // Variable [struct, union, primtive, enum, pointer, array]
             Variable *var = new Variable();
             var->symbolName = varName;
+
+            Type topType = whatIsType(type);
+
+            if(isVoid(type) && topType == Type::VARIABLE){
+                compilerError("Variable \"" + varName + "\" cannot be of type void");
+                FAIL_H;
+                return FAIL;
+            }
+
             var->type = type;
             var->storageClass = inh_storageClass;
             symbolInsertedType = SYMBOL_TYPE::VARIABLE;
             // [📴 Offset to be filled]
+            
 
             // Add to symbol table
             GenericSymbol *sym = var;
@@ -275,29 +408,12 @@ int init_declarator_H(ASTNode *node, TypeExpression inh_type, StorageClass inh_s
             }
         }
     }
-
-    if (whichProduction == P2)
-    {
-        // The inh_type must be INITIALIZABLE
-        std::string inh_varName1 = varName;
-        TypeExpression inh_type1 = type;
-
-        Type topType = whatIsType(inh_type1);
-        if (topType == Type::FUNCTION)
-        {
-            // SEMANTIC ERROR 🚨 : Function cannot be initialized
-            semanticLOG.push_back("Error: Function \"" + inh_varName1 + "\" cannot be initialized");
-        }
-        else
-        {
-            int initl_check = initializer_H(node->children[2], inh_type1, inh_varName1);
-            PASS_THE_ERROR(initl_check);
-        }
-    }
-
     else
     {
         // Wrong Production
+        compilerError("Wrong Production in init_declarator_H");
+        BUG_H;
+        return BUG;
     }
 
     EXIT_H
@@ -1140,7 +1256,11 @@ int enumerator_H(ASTNode *node, std::string &varName, int &explicitInitValue, bo
         int c_check = constant_expression_H(node->children[2], varName1);
         PASS_THE_ERROR(c_check);
 
-        int constValue = std::stoi(varName1);
+        int constValue = (varName1 != NOT_CONSTANT) ? std::stoi(varName1) : -1;
+        if (varName1 == NOT_CONSTANT)
+        {
+            aptLOG("Constant Expression is not a constant");
+        }
         explicitInitValue = constValue;
         isExplicityInit = true;
 
@@ -1278,8 +1398,17 @@ int direct_declarator_H(ASTNode *node, TypeExpression inh_type, std::string &var
         {
             int c_check = constant_expression_H(node->children[2], value);
             PASS_THE_ERROR(c_check);
-        }   
-        int size = std::stoi(value);
+        }
+        else{
+            semanticError("Array width must be given during declaration.");
+            FAIL_H;
+            return FAIL;
+        } 
+        int size = (value == NOT_CONSTANT) ? -1 : std::stoi(value);
+        if(value == NOT_CONSTANT)
+        {
+            aptLOG("Constant Expression is not a constant");
+        }
 
         ArrayInfo *info = new ArrayInfo();
         info->dimSize = size;
@@ -1858,7 +1987,11 @@ int direct_abstract_declarator_H(ASTNode *node, TypeExpression inh_type, TypeExp
             int cex_check = constant_expression_H(node->children[indexConstExpr], constValue);
             PASS_THE_ERROR(cex_check);
         }
-        int constValue1 = (constValue == "NULL") ? 0 : std::stoi(constValue);
+        int constValue1 = (constValue == NOT_CONSTANT) ? -1 : std::stoi(constValue);
+        if(constValue == NOT_CONSTANT)
+        {
+            aptLOG("Constant Expression is not a constant");
+        }
 
         ArrayInfo *info = new ArrayInfo();
         info->dimSize = constValue1;
@@ -1924,7 +2057,7 @@ int direct_abstract_declarator_H(ASTNode *node, TypeExpression inh_type, TypeExp
 }
 
 //---- Initializers ---------
-int initializer_H(ASTNode *node, TypeExpression inh_type, std::string inh_varName)
+int initializer_H(ASTNode *node, TypeExpression &type, std::string &varName ,int &size)
 {
     ENTRY_H;
 
@@ -1932,6 +2065,7 @@ int initializer_H(ASTNode *node, TypeExpression inh_type, std::string inh_varNam
     std::string P1 = "assignment_expression";
     std::string P2 = "LCURLY initializer_list RCURLY";
     std::string P3 = "LCURLY initializer_list COMMA RCURLY";
+
 
     if (whichProduction == P1)
     {
@@ -1950,49 +2084,37 @@ int initializer_H(ASTNode *node, TypeExpression inh_type, std::string inh_varNam
         // Logic - If Base -> If both are numeric(+enum/enumConstats) -> typecast arg to resultType and assign (IRCode Needed)
         // Logic - If Base -> If both are Record(union/struct) Object -> MUST be EXACT match else ERROR
         // Logic - If both (POINTER,FUNCTION,ARRAY) -> IGNORE BELOW LEVEL -> just assign varName and returnType = resultType
-        // 🆎 TypeCasting
-        TypeExpression source = type1;
-        TypeExpression dest = inh_type;
+        // 🆎 TypeCasting will be done by init-declarator
 
-        bool isNum = isNumeric(dest);
-        bool isNum2 = isNumeric(source);
-        if (!(isNum && isNum2))
-        {
-            // Check if the types are same
-            int check = ourEquivalent(source, type1);
-            if (check != OKAY)
-            {
-                // SEMANTIC ERROR 🚨 : Assignment expression's operand \"" + varName1 + "\" and \"" + varName2 + "\" are not compatible
-                semanticError("Assignment expression's operand \"" + inh_varName + "\" and \"" + varName1 + "\" are not compatible");
-                FAIL_H;
-                return FAIL;
-            }
-        }
-        else
-        {
-            // Implicit Type Casting
-            int equal = ourEquivalent(dest, source);
-            if (equal != OKAY)
-            {
-                std::string castedVarNam = newTemp();
-                CODE_BASE.addTAC(node, castedVarNam, CAST, toString(dest), varName1); // Cast it
-                varName1 = castedVarNam;                                              // Change the name to the address
-            }
-        }
-
-
-        // 🎉 SIDE EFFECTS 🎉
-
-        inh_varName += "$" + std::to_string(SYM_TABLE.scopeNo);
-        CODE_BASE.addTAC(node, inh_varName, "=", varName1, NO_ARG); // Assign the value to the variable
+        std::string unitValue = varName1;
 
         // 🤮 Return Value 🤮
+        varName = unitValue; // Pass the data up
+        type = type1;        // Pass the data up
+        size = 1;           // Pass the data up
+
     }
     else if (whichProduction == P2 || whichProduction == P3)
     {
-        semanticLOG.push_back("Initializer List ❌ NOT Supported");
-        BUG_H;
-        return BUG;
+        // 0. Prepare syn_data to be fetched ⬆️
+        std::string varName1 = "NULL"; // to be fetched ⬆️
+        TypeExpression type1;          // to be fetched ⬆️
+        int size1 = -1;               // to be fetched ⬆️
+
+        // 1. Call the function again to fetch the next value
+        int initl_check = initializer_list_H(node->children[1], type1, varName1,size1);
+        PASS_THE_ERROR(initl_check);
+
+        std::string unitvalue = "[ " + varName1 + " ]";
+        // 2. Pass the data up
+        varName = unitvalue; // Pass the data up
+
+        // For Type add a arrayLevel
+        ArrayInfo *info = new ArrayInfo();
+        info->dimSize = size1;
+        type1.levelStack.push_back(info);
+        type = type1; // Pass the data up
+        size = 1;
     }
     else
     {
@@ -2001,17 +2123,74 @@ int initializer_H(ASTNode *node, TypeExpression inh_type, std::string inh_varNam
         return BUG;
     }
 
+    aptLOG("⏫ varName = " + varName);   
+    aptLOG("⏫ type = " + toString(type)); 
+    aptLOG("⏫ size = " + toString(size)); 
+
     EXIT_H;
     return OKAY;
 }
 
-// int initializer_list_H(ASTNode *node)
-// {
-//      //    //     std::string whichProduction = getProduction(node);
-//     std::string P1 = "initializer";
-//     std::string P2 = "initializer_list COMMA initializer";
+int initializer_list_H(ASTNode *node, TypeExpression &type, std::string &varName ,int &size)
+{
+    ENTRY_H;
+    std::string P1 = "initializer";
+    std::string P2 = "initializer_list COMMA initializer";
 
-//     //[To be implemented] - Initializer Evaluation
+    std::string whichProduction = getProduction(node);
 
-//     return;
-// }
+    if(whichProduction == P1)
+    {
+        // 0. syn_data to fetch ⬆️
+        std::string varName1 = "NULL"; // to be fetched ⬆️
+        TypeExpression type1;          // to be fetched ⬆️
+        int size1 = -1; // to be fetched ⬆️
+
+        // 1. Call the function again to fetch the next value
+        int init_check = initializer_H(node->children[0], type1, varName1,size1);
+        PASS_THE_ERROR(init_check);
+
+        // last Name so no issue
+        std::string unitValue = varName1;
+        type = type1;
+        varName = unitValue; // Pass the data up
+        size = size1; // Pass the data up
+    }
+    else if (whichProduction == P2)
+    {
+        // 0. First child syn_data + inh_data passed ⬇️
+        std::string varName1 = "NULL"; // to be fetched ⬆️
+        TypeExpression type1;          // to be fetched ⬆️
+        int size1 = -1; // to be fetched ⬆️
+        int initl_check = initializer_list_H(node->children[0], type1, varName1,size1);
+        PASS_THE_ERROR(initl_check);
+
+        // 1. Second child syn_data to be fetched ⬆️
+        std::string varName2 = "NULL"; // to be fetched ⬆️
+        TypeExpression type2;          // to be fetched ⬆️
+
+        // TYPE RESOLUTION based TypeChecking [TODO]
+
+        // TypeChecking of Resolution
+        int size2 = -1;
+        int init_check = initializer_H(node->children[2], type2, varName2,size2);
+        PASS_THE_ERROR(init_check);
+
+        std::string unitValue = varName1 + "," + varName2;
+        type = type1;
+        varName = unitValue; // Pass the data up
+        size = size1 + size2; // Pass the data up
+    }
+    else
+    {
+        compilerError("Wrong Production in initializer_list_H");
+        BUG_H;
+    }
+
+    aptLOG("⏫ varName = " + varName);
+    aptLOG("⏫ type = " + toString(type));
+    aptLOG("⏫ size = " + toString(size));
+
+    EXIT_H;
+    return OKAY;
+}

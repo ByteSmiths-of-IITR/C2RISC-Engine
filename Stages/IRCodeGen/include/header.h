@@ -544,6 +544,7 @@ extern std::string CAST;
 extern std::string LABEL;
 extern std::string AMPERSEND;
 extern std::string RO_DATA;
+extern std::string STACK_DATA;
 extern std::string DATA;
 extern std::string BSS;
 extern std::string PARAM;
@@ -555,6 +556,10 @@ extern std::string GOTO_LABEL;
 extern std::string GOTO_EQUAL;
 extern std::string TO_BACKPATCH;
 extern std::string RETURN_FUNCTION;
+extern std::string MEM_COPY;
+
+
+
 
 class TAC_Quadruple
 {
@@ -581,6 +586,10 @@ class TAC
 {
 public:
     std::vector<TAC_Quadruple> code;
+    std::vector<std::string> roData;
+    // std::vector<std::string> stackData;
+    std::vector<std::string> bssData;
+    std::vector<std::string> data;
     const int w = 10;
     const int wcode = 30;
 
@@ -612,7 +621,7 @@ public:
 */
 
 //=====================[ TypeChecking Utilities 🅰️ ]=========================================================================================
-
+bool isVoid(const TypeExpression &typeExpr); // This will check if the type expression is void or not
 bool isValidTypeExpression(const TypeExpression &typeExpr); // This will check if the type expression is valid or not
 
 bool isIntegral(const TypeExpression &typeExpr);
@@ -790,6 +799,8 @@ extern std::vector<std::string> semanticLOG; // [declared in handler.cpp]
 
 extern std::string IN_SYNTAX_PHASE;
 
+extern std::string NOT_CONSTANT;
+
 std::string getCurrentTime();
 
 //=====================[ Main Semantic Pass Handler ]=========================================================================================
@@ -836,6 +847,7 @@ int declaration_H(ASTNode *node);
 int declaration_list_H(ASTNode *node);
 
 //----- Init Declarator Handler
+
 int init_declarator_list_H(ASTNode *node, TypeExpression inh_type, StorageClass inh_storageClass);
 int init_declarator_H(ASTNode *node, TypeExpression inh_type, StorageClass inh_storageClass);
 
@@ -883,8 +895,8 @@ int direct_abstract_declarator_H(ASTNode *node, TypeExpression inh_type, TypeExp
 extern std::string NO_ARG_NAME;
 
 //----- Initializer -----
-int initializer_H(ASTNode *node, TypeExpression inh_type, std::string inh_varName);
-// int initializer_list_H(ASTNode *node); // Not Needed
+int initializer_H(ASTNode *node, TypeExpression &type, std::string &varName ,int &size);
+int initializer_list_H(ASTNode *node, TypeExpression &type, std::string &varName ,int &size);
 
 //======================[ Expression Handlers ]=========================================================================================
 

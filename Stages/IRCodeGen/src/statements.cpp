@@ -1197,7 +1197,11 @@ int labeled_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector
         int cex_check = constant_expression_H(node->children[1], constExpr);
         RECOVER_THE_ERROR(cex_check);
 
-        // NO need to check
+        if(constExpr == NOT_CONSTANT){
+            aptLOG("Constant Expression is not constant");
+        }
+
+        // TypeCheck for constExpr
 
         if (caseMap.find(constExpr) != caseMap.end())
         {

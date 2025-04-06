@@ -6,7 +6,7 @@
 ASTNode *currentNode = nullptr;
 
 //--- Constatn Expression Handler
-
+std::string NOT_CONSTANT = "$NOT_CONSTANT$";
 // 1. constant_expression 🟢
 int constant_expression_H(ASTNode *node, std::string &value)
 {
@@ -15,6 +15,7 @@ int constant_expression_H(ASTNode *node, std::string &value)
     std::string P1 = "conditional_expression";
 
     aptLOG("inh_value = " + value);
+
     if (whichProduction == P1)
     {
         // 0. syn_data to fetch ⬆️
@@ -27,6 +28,12 @@ int constant_expression_H(ASTNode *node, std::string &value)
         PASS_THE_ERROR(c_check);
 
         // 🅱️ TypeCheck for const [📍📍📍TODO]
+        if(value1 == NOT_CONSTANT)
+        {
+            semanticError("Constant Expression is not a constant");
+            FAIL_H;
+            return FAIL;
+        }
 
         // 2. Pass the data up
         value = value1; // send syn_attr ⬆️
@@ -58,7 +65,7 @@ int expression_H(ASTNode *node, std::string inh_whereToSendString, std::string &
         return BUG;
     }
 
-    aptLOG("😵‍💫 whereToSendString = " + inh_whereToSendString);
+    aptLOG("⏬ whereToSendString = " + inh_whereToSendString);
     // aptLOG("⏬ " + toString(type));
     // aptLOG("⏬ " + toString(valueType));
     // aptLOG("⏬  " + toString(valueSpace));
@@ -116,11 +123,10 @@ int expression_H(ASTNode *node, std::string inh_whereToSendString, std::string &
         return BUG;
     }
 
-    aptLOG("😵‍💫 varName : " + varName);
-    aptLOG("😵‍💫 type :" + toString(type));
-    aptLOG("😵‍💫 valueType :" + toString(valueType));
-    aptLOG("😵‍💫 valueSpace : " + toString(valueSpace));
-    // aptLOG("😵‍💫 inh_whereToSendString = " + inh_whereToSendString);
+    aptLOG("varName = " + varName + " ⬆️");
+    aptLOG(toString(type) + " ⬆️");
+    aptLOG(toString(valueType) + " ⬆️");
+    aptLOG(toString(valueSpace) + " ⬆️");
 
     EXIT_H;
     return OKAY;
@@ -152,6 +158,7 @@ int primary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
         std::string varName1 = node->children[0]->value;
 
         TypeExpression type0; // Find Type of Identifier from Symbol Table
+        bool wasFunctionDecayed = false; // To check if the function was decayed to pointer
 
         // Look into the SymbolTable and Find it's
         GenericSymbol *symbol = nullptr;
@@ -192,6 +199,7 @@ int primary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
 
                 // Add a new pointer level
                 aptLOG("Funtion to Pointer Decay 🏴‍☠️");
+                wasFunctionDecayed = true;
                 PointerInfo *ptr = new PointerInfo();
                 type0.levelStack.push_back(ptr);
             }
@@ -209,9 +217,9 @@ int primary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
 
         SPACE val0Space = getSpace(type0); // struct/union or array 🤯
 
-        VALUE_TYPE val0Type = getValueType(type0); // Set Correctly
+        VALUE_TYPE val0Type = (wasFunctionDecayed) ? VALUE_TYPE::NM_LVALUE : getValueType(type0); // Get the value type
 
-        bool isConst = isConstant(type0);
+        bool isConst = isConstant(type0); // [REDUANDANT CODE]
         if (isConst)
         {
             val0Type = VALUE_TYPE::NM_LVALUE; // Non Modifiable LValue
@@ -313,7 +321,7 @@ int primary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
         TypeExpression type0;
         BaseInfo *base = new BaseInfo();
         base->baseType = TYPE_CHAR;
-        if (inh_whereToSendString == RO_DATA)
+        if (inh_whereToSendString != STACK_DATA)
         {
             base->typeQualifiers.push_back(TypeQualifier::CONST); // Char* are const
         }
@@ -324,7 +332,7 @@ int primary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
         type = type0;
 
         // 🟡 valueSpace -
-        valueSpace = SPACE::ADDRESS_SPACE; // String literals are in address space
+        valueSpace = SPACE::VALUE_SPACE; // String literals are in address space
 
         // 🟡 valueType
         valueType = VALUE_TYPE::NM_LVALUE; // String literals are not modifiable lvalue
@@ -332,23 +340,19 @@ int primary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
         // 🟡 varName + 🔖IRCode Gen
 
         // Check if string to be sent in .rodata or .data
-        if (inh_whereToSendString == RO_DATA)
+        if (/*inh_whereToSendString != STACK_DATA*/ true) // FORCE it to be .rodata
         {
-            // Add to .rodata
-            std::string label = CODE_BASE.newLabel();
-
-            CODE_BASE.addTAC(node, label, LABEL, strValue, NO_ARG);
-            std::string address = newTemp();
-
-            CODE_BASE.addTAC(node, address, AMPERSEND, label, NO_ARG);
-            varName = label;
+            std::string tempName = "@str" + newTemp();
+            // Remove the quotes from the string
+            std::string raw = strValue.substr(1, strValue.length() - 2);
+            std::string data = tempName + " : c\"" +raw+ "\\00\"";
+            CODE_BASE.roData.push_back(data); // Add to the rodata
+            varName = tempName;
         }
         else
         {
-            // To .data [ToThink] [TODO]
-            semanticError("String Literal in .data section is not supported");
-            FAIL_H;
-            return FAIL;
+            // Stack Data pass it as it is
+            varName = strValue;
         }
     }
     else if (whichProduction == P4)
@@ -1028,11 +1032,11 @@ int assignment_expression_H(ASTNode *node, std::string inh_whereToSendString, st
         TypeExpression source = type2;
         TypeExpression dest = type1;
 
-        bool isNum = isNumeric(type2);
-        bool isNum2 = isNumeric(type1);
+        bool isNum = isNumeric(source);
+        bool isNum2 = isNumeric(dest);
         if(!(isNum && isNum2)){
             // Check if the types are same
-            int check = ourEquivalent(type2, type1);
+            int check = ourEquivalent(source, dest);
             if (check != OKAY)
             {
                 // SEMANTIC ERROR 🚨 : Assignment expression's operand \"" + varName1 + "\" and \"" + varName2 + "\" are not compatible
@@ -1042,7 +1046,7 @@ int assignment_expression_H(ASTNode *node, std::string inh_whereToSendString, st
             }
         }else{
             // Implicit Type Casting
-            int equal = ourEquivalent(type2, type1);
+            int equal = ourEquivalent(source, dest);
             if (equal != OKAY)
             {
                 std::string castedVarNam = newTemp();
@@ -1058,7 +1062,7 @@ int assignment_expression_H(ASTNode *node, std::string inh_whereToSendString, st
 
 
         // 🎉 SIDE EFFECTS 🎉
-        int width1 = elementWidth(type1);
+        int width1 = elementWidth(dest);
         if (width1 < 0)
         {
             compilerError("Error in elementWidth");
@@ -1071,7 +1075,7 @@ int assignment_expression_H(ASTNode *node, std::string inh_whereToSendString, st
         std::string op = (assignOp == "=") ? ("=") : assignOp.substr(0, assignOp.length() - 1);
 
         //---------------------- Space 🚀Change 🔖IR Code for varName1 [🤬 Custom - During ASSIGNMENT 🥶]
-        SPACE reqSpace1 = getSpace(type1);
+        SPACE reqSpace1 = getSpace(dest);
         if (reqSpace1 == SPACE::VALUE_SPACE && valueSpace1 == SPACE::ADDRESS_SPACE)
         {
             aptLOG("🤬 ASSIGN Space🚀 Change for -" + varName1 + " Address->Value");
@@ -1120,7 +1124,7 @@ int assignment_expression_H(ASTNode *node, std::string inh_whereToSendString, st
         //-------------------------------------------------------------------
 
         // 🤮 Return Value 🤮
-        type0 = type1; // return type is of varName1
+        type0 = dest; // return type is of varName1
         valueType0 = VALUE_TYPE::RVALUE;
         valueSpace0 = reqSpace1; // return space is of varName1
 
