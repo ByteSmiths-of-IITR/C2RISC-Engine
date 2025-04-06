@@ -42,9 +42,14 @@ make compiler
 
 ## Running Tests
 To test the compiler, use the following command:
-```bash
-bash run.sh <testFolderNumber>
-```
+  ```bash
+  bash run.sh <testFolderNumber>
+  ```
+  Windows users can use:
+  ```python
+  python3 script.py <testFolderNumber>
+  ```
+
 This will execute all test cases in the specified test folder.  
 For example:
 ```bash
