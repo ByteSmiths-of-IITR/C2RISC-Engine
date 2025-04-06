@@ -17,6 +17,10 @@ std::string TYPE_CHAR = "char";
 std::string TYPE_SHORT = "short";
 std::string TYPE_LONG = "long";
 std::string TYPE_VOID = "void";
+std::string TYPE_VA_LIST = "va_list"; // This will be used for va_list
+std::string VARADIC = "*isVaradic*"; // This will be used to check if the function is varadic or not
+std::string TYPE_QUALIFIERS = "type_qualifiers"; // This will be used to check if the type is a qualifier or not
+
 std::string TYPE_LONG_LONG = "long long";
 std::string TYPE_UNSIGNED = "unsigned"; // will be used like - UNSIGNED + PRIMITIVE
 std::string TYPE_SIGNED = "signed";

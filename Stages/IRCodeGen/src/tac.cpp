@@ -135,7 +135,7 @@ std::string TAC_Quadruple::toString()
     }
     else if (op == RETURN_FUNCTION)
     {
-        str = "return " + arg1; // return arg1
+        str = "return " + (arg1 == NO_ARG ? "" : arg1); // return arg1
     }
     else
     {
@@ -219,6 +219,10 @@ int TAC::backpatch(ASTNode *currNode, const std::vector<int> &list, int labelInd
 
 void TAC::printTAC(std::ofstream &file)
 {
+
+    file << "Function Turned OFF" << std::endl;
+    return;
+
     file << std::setw(w) << "CodeLineNo" << " : " << std::setw(wcode) << std::left << "TAC" << std::endl;
     file << std::setw(w) << "----------" << " : " << std::setw(wcode) << std::left << "-------------------------------" << std::endl;
     for (int i = 0; i < code.size(); i++)
@@ -243,6 +247,7 @@ void TAC::printTAC(std::ostringstream &oss)
 {
 
     // Print the .rodata section
+    if(roData.size()>0){
     oss << std::setw(w) << ".rodata section" << " : " << std::setw(wcode) << std::left << std::string(wcode, '-') << std::endl;
     for (int i = 0; i < roData.size(); i++)
     {
@@ -250,7 +255,9 @@ void TAC::printTAC(std::ostringstream &oss)
     }
     oss << std::endl;
     oss << std::string(w+wcode+6, '-') << std::endl;
+    }
 
+    if(data.size()>0){
     oss << std::setw(w) << ".data section" << " : " << std::setw(wcode) << std::left << std::string(wcode, '-') << std::endl;
     for (int i = 0; i < data.size(); i++)
     {
@@ -258,7 +265,7 @@ void TAC::printTAC(std::ostringstream &oss)
     }
     oss << std::endl;
     oss << std::string(w+wcode+6, '-') << std::endl;
-
+    }
     oss << std::setw(w) << "CodeLineNo" << " : " << std::setw(wcode) << std::left << "TAC" << std::endl;
     oss << std::setw(w) << "----------" << " : " << std::setw(wcode) << std::left << "-------------------------------" << std::endl;
     for (int i = 0; i < code.size(); i++)
@@ -271,13 +278,13 @@ void TAC::printTAC(std::ostringstream &oss)
         }
         else if (code[i].op == FUNCTION_LABEL)
         {
+            oss << std::endl;
             oss << std::setw(w) << i << " : " << std::setw(wcode) << std::left << code[i].result << std::endl;
             continue;
         }
         else if (code[i].op == RETURN_FUNCTION)
         {
             oss << std::setw(w) << i << " : " << std::setw(wcode) << std::left << code[i].toString() << std::endl;
-            oss << std::endl;
             continue;
         }
 

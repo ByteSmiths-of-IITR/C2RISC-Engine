@@ -396,6 +396,8 @@ int argument_expression_list_H(ASTNode *node, std::vector<TypeExpression> &argTy
     std::string whichProduction = getProduction(node);
     std::string P1 = "assignment_expression";
     std::string P2 = "argument_expression_list COMMA assignment_expression";
+    std::string P3 = "type_name";
+    std::string P4 = "argument_expression_list COMMA type_name";
 
     aptLOG("⏬  " + toString(argType));
     aptLOG("⏬  " + toString(argName));
@@ -436,6 +438,62 @@ int argument_expression_list_H(ASTNode *node, std::vector<TypeExpression> &argTy
         // Pass the data up
         argType1.push_back(type2);
         argName1.push_back(varName2);
+        argType = argType1;
+        argName = argName1;
+    }
+    else if(whichProduction == P4){
+        // Call the argument_expression_list handler
+        std::vector<TypeExpression> argType1;
+        std::vector<std::string> argName1;
+
+        int a_check = argument_expression_list_H(node->children[0], argType1, argName1);
+        RECOVER_THE_ERROR(a_check);
+
+        // Call the type_
+        TypeExpression type1;
+
+        int t_check = type_name_H(node->children[2], type1);
+        PASS_THE_ERROR(t_check);
+
+        std::string typeStr = toString(type1);
+        // Create a vector
+        argName1.push_back(typeStr);
+
+        // Create a typeName type
+        TypeExpression typeName;
+        BaseInfo *base = new BaseInfo();
+        base->baseType = TYPE_QUALIFIERS;
+        typeName.levelStack.push_back(base);
+
+        argType1.push_back(typeName);
+
+        // Pass the data up
+        argType = argType1;
+        argName = argName1;
+    }
+    else if(whichProduction == P3)
+    {
+        // Call the type_
+        TypeExpression type1;
+
+        int a_check = type_name_H(node->children[0], type1);
+        PASS_THE_ERROR(a_check);
+
+        std::string typeStr = toString(type1);
+        // Create a vector
+        std::vector<std::string> argName1;
+        argName1.push_back(typeStr);
+
+        // Create a typeName type
+        TypeExpression typeName;
+        BaseInfo *base = new BaseInfo();
+        base->baseType = TYPE_QUALIFIERS;
+        std::vector<TypeExpression> argType1;
+        typeName.levelStack.push_back(base);
+        
+        argType1.push_back(typeName);
+
+        // Pass the data up
         argType = argType1;
         argName = argName1;
     }
@@ -683,6 +741,7 @@ int postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
                 {
                     // Check if the types are same
                     int check = ourEquivalent(dest, source);
+                    aptLOG("Checking " + toString(dest) + " and " + toString(source));
                     if (check != OKAY)
                     {
                         // SEMANTIC ERROR 🚨 : Assignment expression's operand \"" + varName1 + "\" and \"" + varName2 + "\" are not compatible

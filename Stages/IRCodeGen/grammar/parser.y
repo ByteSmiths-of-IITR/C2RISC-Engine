@@ -124,7 +124,7 @@ void exit_compiler(){
         std::cout << outputStream.str() << std::endl;
     }else if(compilerMode == 1){ //Output to file
         std::cout << notificationStream.str() << std::endl;
-        std::cout << "Output & ERROR Report Generated in " << output_file << std::endl;
+        std::cout << "Output MODE | IRCode & log in " << output_file << std::endl;
         std::ofstream out(output_file);
         if(out.is_open()){
             out << outputStream.str() << std::endl;
@@ -135,7 +135,7 @@ void exit_compiler(){
         }
     }else if(compilerMode == 2){ //TestMode
         std::ostringstream testStream;
-        std::cout << "Testing : " << input_file << " result appended to it" << std::endl;
+        std::cout << "Testing MODE | Results appended to " << input_file << std::endl;
         testStream << notificationStream.str() << std::endl;
         testStream << "------------------------------------------------------------------------------------" << std::endl;
         testStream << errorStream.str() << std::endl;
@@ -558,6 +558,24 @@ argument_expression_list
         $$->addChild($1);
     }
     | argument_expression_list COMMA assignment_expression 
+    { 
+        LINE
+        if(compressed){
+            $$ = $1;
+        }else{
+            $$ = new ASTNode("argument_expression_list");
+            $$->addChild($1);
+        }
+        $$->addChild($2);
+        $$->addChild($3);
+    }
+    | type_name 
+    { 
+        LINE
+        $$ = new ASTNode("argument_expression_list");
+        $$->addChild($1);
+    }
+    | argument_expression_list COMMA type_name 
     { 
         LINE
         if(compressed){

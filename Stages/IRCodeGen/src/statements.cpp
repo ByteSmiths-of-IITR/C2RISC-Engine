@@ -300,10 +300,10 @@ int expression_statement_H(ASTNode *node, std::string inh_whereToSendString, std
         return BUG;
     }
 
-    aptLOG("❣️ varName : " + varName);
-    aptLOG("❣️ type : " + toString(type));
-    aptLOG("❣️ valueType : " + toString(valueType));
-    aptLOG("❣️ valueSpace : " + toString(valueSpace));
+    aptLOG("🔵 varName : " + varName);
+    aptLOG("🔵 type : " + toString(type));
+    aptLOG("🔵 valueType : " + toString(valueType));
+    aptLOG("🔵 valueSpace : " + toString(valueSpace));
 
     EXIT_H;
     return OKAY;

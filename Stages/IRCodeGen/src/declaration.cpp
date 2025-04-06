@@ -36,7 +36,9 @@ int declaration_H(ASTNode *node)
     int check = ProcessDecSpecifiers(valueVector, inh_type, inh_storageClass);
     if (check != OKAY)
     {
-        // SEMANTIC ERROR 🚨 : Error in ProcessDecSpecifiers
+        semanticError("Declaration Specifiers are not valid");
+        FAIL_H;
+        return FAIL;
     }
 
     if (whichProduction == P1)
@@ -51,7 +53,9 @@ int declaration_H(ASTNode *node)
     }
     else
     {
-        // Wrong Production
+        compilerError("Wrong Production in declaration_H");
+        BUG_H;
+        return BUG;
     }
 
     aptLOG("inh_type = " + toString(inh_type));
@@ -85,6 +89,7 @@ int declaration_list_H(ASTNode *node)
     else
     {
         // Wrong Production
+        compilerError("Wrong production in declaration_list_H");
     }
 
     EXIT_H
@@ -123,6 +128,7 @@ int init_declarator_list_H(ASTNode *node, TypeExpression inh_type, StorageClass 
     else
     {
         // Wrong Production
+        compilerError("Wrong production in init_declarator_list_H");
     }
 
     // No SYN data to add in A_PTree
@@ -368,6 +374,8 @@ int init_declarator_H(ASTNode *node, TypeExpression inh_type, StorageClass inh_s
                 {
                     // BUG SHOULD NOT HAPPEN
                     compilerError("SYM_TABLE LookUp Failure : Function \"" + varName + "\" not found");
+                    BUG_H;
+                    return BUG;
                 }
             }
             else
@@ -377,6 +385,7 @@ int init_declarator_H(ASTNode *node, TypeExpression inh_type, StorageClass inh_s
             }
         }
         else // Variable [struct, union, primtive, enum, pointer, array]
+
         {
             Variable *var = new Variable();
             var->symbolName = varName;
@@ -384,7 +393,7 @@ int init_declarator_H(ASTNode *node, TypeExpression inh_type, StorageClass inh_s
             Type topType = whatIsType(type);
 
             if(isVoid(type) && topType == Type::VARIABLE){
-                compilerError("Variable \"" + varName + "\" cannot be of type void");
+                semanticError("Variable \"" + varName + "\" cannot be of type void");
                 FAIL_H;
                 return FAIL;
             }
@@ -561,6 +570,9 @@ int type_qualifier_list_H(ASTNode *node, std::vector<TypeQualifier> &typeQualifi
         else
         {
             // Wrong type of Type Qualifier
+            compilerError("Wrong Type qualifier");
+            BUG_H;
+            return BUG;
         }
 
         typeQualifiers.push_back(typeQualifier);
@@ -591,6 +603,9 @@ int type_qualifier_list_H(ASTNode *node, std::vector<TypeQualifier> &typeQualifi
         else
         {
             // Wrong type of Type Qualifier
+            compilerError("Wrong Type qualifier");
+            BUG_H;
+            return BUG;
         }
 
         int tyq_check2 = type_qualifier_H(node->children[2], typeQualifierStr);
@@ -600,6 +615,9 @@ int type_qualifier_list_H(ASTNode *node, std::vector<TypeQualifier> &typeQualifi
     else
     {
         // Wrong Production
+        compilerError("Wrong production in type_qualifier_list_H");
+        BUG_H;
+        return BUG;
     }
 
     aptLOG("syn_typeQualifiers = " + toString(typeQualifiers)); // 🌴 Adding syn_attr
@@ -654,6 +672,9 @@ int type_specifier_H(ASTNode *node, std::string &value)
     else
     {
         // Wrong Production
+        compilerError("Wrong Production in type_specifier_H");
+        BUG_H;
+        return BUG; 
     }
 
     aptLOG("syn_typeSpecifier = " + value); // 🌴 Adding syn_attr
@@ -665,7 +686,7 @@ int type_specifier_H(ASTNode *node, std::string &value)
 
 int specifier_qualifier_list_H(ASTNode *node, std::vector<std::string> &valueVector)
 {
-    ENTRY_H
+    ENTRY_H;
 
     std::string whichProduction = getProduction(node);
     std::string P1 = "type_specifier specifier_qualifier_list";
@@ -698,7 +719,7 @@ int specifier_qualifier_list_H(ASTNode *node, std::vector<std::string> &valueVec
 
     aptLOG("syn_value = " + toString(valueVector)); // 🌴 Adding syn_attr
 
-    EXIT_H
+    EXIT_H;
 
     return OKAY;
 }
@@ -706,7 +727,7 @@ int specifier_qualifier_list_H(ASTNode *node, std::vector<std::string> &valueVec
 // ----- STURCT & UNION -----
 int struct_or_union_specifier_H(ASTNode *node, std::string &value)
 {
-    ENTRY_H
+    ENTRY_H;
 
     std::string whichProduction = getProduction(node);
     std::string P1 = "struct_or_union IDENTIFIER LCURLY struct_declaration_list RCURLY";
@@ -795,7 +816,7 @@ int struct_or_union_specifier_H(ASTNode *node, std::string &value)
 
     aptLOG("syn_record = " + value); // 🌴 Adding syn_attr
 
-    EXIT_H
+    EXIT_H;
 
     return OKAY;
 }
@@ -851,21 +872,21 @@ int struct_declaration_list_H(ASTNode *node, std::map<std::string, TypeExpressio
     }
     else
     {
-        compilerError("struct_declaration_list_H: Wrong Production");
+        compilerError("Wrong Production in struct_declaration_list_H");
         BUG_H;
         return BUG;
     }
 
     aptLOG("syn_members = " + toString(members)); // 🌴 Adding syn_attr
 
-    EXIT_H
+    EXIT_H;
 
     return OKAY;
 }
 
 int struct_declaration_H(ASTNode *node, std::map<std::string, TypeExpression> &members)
 {
-    ENTRY_H
+    ENTRY_H;
 
     std::string whichProduction = getProduction(node);
     std::string P1 = "specifier_qualifier_list struct_declarator_list SEMI_COLON";
@@ -890,6 +911,9 @@ int struct_declaration_H(ASTNode *node, std::map<std::string, TypeExpression> &m
     if (check != OKAY)
     {
         // SEMANTIC ERROR 🚨 : Invalid TypeSpecifier
+        semanticError("Invalid type specifier");
+        FAIL_H;
+        return FAIL;
     }
 
     // Pass the inh_data ⬇️ & fetch the syn_attr(members) ⬆️
@@ -902,14 +926,14 @@ int struct_declaration_H(ASTNode *node, std::map<std::string, TypeExpression> &m
 
     aptLOG("syn_members = " + toString(members)); // 🌴 Adding syn_attr
 
-    EXIT_H
+    EXIT_H;
 
     return OKAY;
 }
 
 int struct_declarator_list_H(ASTNode *node, TypeExpression inh_type, std::map<std::string, TypeExpression> &members)
 {
-    ENTRY_H
+    ENTRY_H;
 
     std::string whichProduction = getProduction(node);
     std::string P1 = "struct_declarator";
@@ -935,8 +959,13 @@ int struct_declarator_list_H(ASTNode *node, TypeExpression inh_type, std::map<st
         if (members.count(varName))
         {
             // SEMANTIC ERROR 🚨 : Member already present
+            semanticError("Member already present.");
+            FAIL_H;
+            // return FAIL;//not needed
         }
-        members1[varName] = type;
+        else{
+            members1[varName] = type;
+        }
         // 3. Pass the members up
         members = members1; // send syn_attr ⬆️
     }
@@ -957,15 +986,24 @@ int struct_declarator_list_H(ASTNode *node, TypeExpression inh_type, std::map<st
         if (members1.count(varName))
         {
             // SEMANTIC ERROR 🚨 : Member already present
+            semanticError("Member already present.");
+            FAIL_H;
+            // return FAIL;//not needed
+
+        }
+        else{
+            members1[varName] = type; // Add the new member ➕
         }
 
-        members1[varName] = type; // Add the new member ➕
         // 3. Pass the members up
         members = members1; // send syn_attr ⬆️
     }
     else
     {
         // Wrong Production
+        compilerError("Wrong Production in struct_declarator_list_H");
+        BUG_H;
+        return BUG;
     }
 
     aptLOG("syn_members = " + toString(members)); // 🌴 Adding syn_attr
@@ -977,7 +1015,7 @@ int struct_declarator_list_H(ASTNode *node, TypeExpression inh_type, std::map<st
 
 int struct_declarator_H(ASTNode *node, TypeExpression inh_type, std::string &varName, TypeExpression &type)
 {
-    ENTRY_H
+    ENTRY_H;
 
     std::string whichProduction = getProduction(node);
     std::string P1 = "declarator";
@@ -1026,12 +1064,15 @@ int struct_declarator_H(ASTNode *node, TypeExpression inh_type, std::string &var
     else
     {
         // Wrong Production
+        compilerError("Wrong Production in struct_declarator_H");
+        BUG_H;
+        return BUG;
     }
 
     aptLOG("syn_varName = " + varName);     // 🌴 Adding syn_attr
     aptLOG("syn_type = " + toString(type)); // 🌴 Adding syn_attr
 
-    EXIT_H
+    EXIT_H;
 
     return OKAY;
 }
@@ -1039,7 +1080,7 @@ int struct_declarator_H(ASTNode *node, TypeExpression inh_type, std::string &var
 // ----- ENUM ----
 int enum_specifier_H(ASTNode *node, std::string &value)
 {
-    ENTRY_H
+    ENTRY_H;
 
     std::string whichProduction = getProduction(node);
     std::string P1 = "ENUM LCURLY enumerator_list RCURLY";
@@ -1093,6 +1134,9 @@ int enum_specifier_H(ASTNode *node, std::string &value)
         if (check == LOOKUP_FAILURE)
         {
             // SEMANTIC ERROR 🚨 : Record not found
+            semanticError("Record not found");
+            FAIL_H;
+            return FAIL;
         }
         else
         {
@@ -1101,6 +1145,7 @@ int enum_specifier_H(ASTNode *node, std::string &value)
             if (neededType != foundType)
             {
                 // SEMANTIC ERROR 🚨 : Type Mismatch
+                semanticError("Type mismatch between " + toString(neededType) + " and " + toString(foundType));
             }
             scope = std::to_string(symbol->scopeNo);
         };
@@ -1113,6 +1158,10 @@ int enum_specifier_H(ASTNode *node, std::string &value)
     else
     {
         // Wrong Production
+        compilerError("Wrong Production in enum_specifier_H");
+        BUG_H;
+        return BUG;
+
     }
 
     aptLOG("syn_value = " + value); // 🌴 Adding syn_attr
@@ -1124,7 +1173,7 @@ int enum_specifier_H(ASTNode *node, std::string &value)
 
 int enumerator_list_H(ASTNode *node, std::string recordID, int &lastInitValue)
 {
-    ENTRY_H
+    ENTRY_H;
 
     std::string whichProduction = getProduction(node);
     std::string P1 = "enumerator";
@@ -1220,17 +1269,20 @@ int enumerator_list_H(ASTNode *node, std::string recordID, int &lastInitValue)
     else
     {
         // Wrong Production
+        compilerError("Wrong Production in enumerator_list_H");
+        BUG_H;
+        return BUG;
     }
 
     aptLOG("syn_lastInitValue = " + toString(lastInitValue)); // 🌴 Adding syn_attr
 
-    EXIT_H
+    EXIT_H;
     return OKAY;
 }
 
 int enumerator_H(ASTNode *node, std::string &varName, int &explicitInitValue, bool &isExplicityInit)
 {
-    ENTRY_H
+    ENTRY_H;
 
     std::string whichProduction = getProduction(node);
     std::string P1 = "IDENTIFIER";
@@ -1271,13 +1323,16 @@ int enumerator_H(ASTNode *node, std::string &varName, int &explicitInitValue, bo
     else
     {
         // Wrong Production
+        compilerError("Wrong Production in enumerator_H");
+        BUG_H;
+        return BUG;
     }
 
     aptLOG("syn_varName = " + varName);                               // 🌴 Adding syn_attr
     aptLOG("syn_explicitInitValue = " + toString(explicitInitValue)); // 🌴 Adding syn_attr
     aptLOG("syn_isExplicityInit = " + toString(isExplicityInit));     // 🌴 Adding syn_attr
     
-    EXIT_H
+    EXIT_H;
 
     return OKAY;
 }
@@ -1285,7 +1340,7 @@ int enumerator_H(ASTNode *node, std::string &varName, int &explicitInitValue, bo
 // ----- Declarator Handlers -----
 int declarator_H(ASTNode *node, TypeExpression inh_type, std::string &varName, TypeExpression &type)
 {
-    ENTRY_H
+    ENTRY_H;
 
     std::string whichProduction = getProduction(node);
     std::string P1 = "pointer direct_declarator";
@@ -1295,7 +1350,7 @@ int declarator_H(ASTNode *node, TypeExpression inh_type, std::string &varName, T
 
     if (whichProduction == P1)
     {
-        //         // 0. Prepare syn_data to be fetched ⬆️
+        // 0. Prepare syn_data to be fetched ⬆️
         std::string varName1; // to be fetched ⬆️
         TypeExpression type1; // to be fetched ⬆️
 
@@ -1336,12 +1391,15 @@ int declarator_H(ASTNode *node, TypeExpression inh_type, std::string &varName, T
     else
     {
         // Wrong Production
+        compilerError("Wrong Production in declarator_H");
+        BUG_H;
+        return BUG;
     }
 
     aptLOG("syn_varName = " + varName);     // 🌴 Adding syn_attr
     aptLOG("syn_type = " + toString(type)); // 🌴 Adding syn_attr
 
-    EXIT_H
+    EXIT_H;
 
     return OKAY;
 }
@@ -1442,6 +1500,17 @@ int direct_declarator_H(ASTNode *node, TypeExpression inh_type, std::string &var
         }
         // Update the inh_type
         ParameterInfo *info = new ParameterInfo();
+
+        if(!varName_list.empty()){
+            if(varName_list[varName_list.size()-1] == VARADIC){
+            // we have a varadic function
+            info->isVaradic = true;
+            varName_list.pop_back();
+            // paramVector.pop_back();
+            }
+        }
+
+        
         info->paramsType = paramVector;
         info->paramsName = varName_list;
 
@@ -1461,17 +1530,23 @@ int direct_declarator_H(ASTNode *node, TypeExpression inh_type, std::string &var
     {
         // What is this doing? [🧠 ToThink]
         // MOST LIKEY - ERROR: a parameter list without types is only allowed in a function definition
+        semanticError("a function definition without a prototype is deprecated in all versions of C and is not supported in C23[-Wdeprecated - non - prototype]")
+        FAIL_H;
+        return FAIL;
     }
     else
     {
         // Wrong Production
+        compilerError("Wrong Production in direct_declarator_H");
+        BUG_H;
+        return BUG;
     }
 
     aptLOG("syn_varName = " + varName); // 🌴 Adding syn_attr
 
     aptLOG("syn_type = " + toString(type)); // 🌴 Adding syn_attr
 
-    EXIT_H
+    EXIT_H;
 
     return OKAY;
 }
@@ -1544,7 +1619,7 @@ int pointer_H(ASTNode *node, std::vector<PointerInfo *> inh_ptrInfo, std::vector
     }
     else
     {
-        compilerError("Wrong Production in type_specifier_H");
+        compilerError("Wrong Production in pointer_H");
         BUG_H;
         return BUG;
     }
@@ -1568,18 +1643,27 @@ int parameter_type_list_H(ASTNode *node, std::vector<TypeExpression> &paramVecto
     aptLOG("inh_paramVector = " + toString(paramVector));
     aptLOG("inh_varName_list = " + toString(varName_list));
 
-    if (whichProduction == P1)
+    if (whichProduction == P1 || whichProduction == P2)
     {
         // 1. Call the function again to fetch the next value
+        std::vector<TypeExpression> paramVector1;
+        std::vector<std::string> varName_list1;
 
-        int prml_check = parameter_list_H(node->children[0], paramVector, varName_list);
+        int prml_check = parameter_list_H(node->children[0], paramVector1, varName_list1);
         PASS_THE_ERROR(prml_check);
-    }
-    else if (whichProduction == P2)
-    {
-        semanticError("Parameter List with ELLIPSIS is not supported");
-        FAIL_H;
-        return FAIL;
+
+        // 2. Check if the ELLIPSIS is present
+        if (whichProduction == P2)
+        {
+            // 3. Add the ELLIPSIS to the paramVector
+            TypeExpression ellipsisType = TypeExpression();
+            varName_list1.push_back(VARADIC); // Add the ELLIPSIS to the varName_list
+        }
+
+        // 4. Pass the data up
+        paramVector = paramVector1; // send syn_attr ⬆️
+        varName_list = varName_list1; // send syn_attr ⬆️
+
     }
     else
     {
@@ -1694,12 +1778,13 @@ int parameter_declaration_H(ASTNode *node, TypeExpression &type, std::string &va
     StorageClass inh_storageClass = StorageClass::NONE;
     int check = ProcessDecSpecifiers(valueVector, inh_type, inh_storageClass);
     if (check != OKAY)
-    {
-        aptLOG("SEMANTIC ERROR 🚨 : Invalid TypeSpecifier");
+    {   
+        semanticError("Invalid TypeSpecifier : " + semanticMessage);
+      
     }
     if (inh_storageClass != StorageClass::NONE)
-    {
-        aptLOG("SEMANTIC ERROR 🚨 : TO Check if StorageClass Allowed Here or NOT");
+    {   
+        semanticError("Invalid StorageClass ");
     }
 
     if (whichProduction == P1)
@@ -1740,8 +1825,11 @@ int parameter_declaration_H(ASTNode *node, TypeExpression &type, std::string &va
 
     else
     {
-        aptLOG("Production WRONG");
+        // aptLOG("Production WRONG");
         // Wrong Production
+        compilerError("Wrong Production in parameter_declaration_H");
+        BUG_H;
+        return BUG;
     }
 
     aptLOG("syn_type = " + toString(type)); // 🌴 Adding syn_attr
@@ -1754,7 +1842,7 @@ int parameter_declaration_H(ASTNode *node, TypeExpression &type, std::string &va
 // ----- Identifier List Handlers -----
 int identifier_list_H(ASTNode *node, std::vector<std::string> &idList)
 {
-    ENTRY_H
+    ENTRY_H;
     std::string whichProduction = getProduction(node);
     std::string P1 = "IDENTIFIER";
     std::string P2 = "identifier_list COMMA IDENTIFIER";
@@ -1784,6 +1872,9 @@ int identifier_list_H(ASTNode *node, std::vector<std::string> &idList)
     else
     {
         // Wrong Production
+        compilerError("Wrong Production in identifier_list_H");
+        BUG_H;
+        return BUG;
     }
 
     aptLOG("syn_idList = " + toString(idList)); // 🌴 Adding syn_attr
@@ -2119,7 +2210,7 @@ int initializer_H(ASTNode *node, TypeExpression &type, std::string &varName ,int
     }
     else
     {
-        compilerError("Wrong Production in type_specifier_H");
+        compilerError("Wrong Production in initializer_H");
         BUG_H;
         return BUG;
     }

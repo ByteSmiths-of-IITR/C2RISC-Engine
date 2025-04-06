@@ -258,6 +258,8 @@ Type whatIsType(const TypeExpression &typeExpr)
         return Type::FUNCTION;
     }
 
+    std::cerr << LOC << "Error: Unknown LevelInfo type\n";
+
     return Type::UNKNOWN;
 }
 
@@ -835,8 +837,8 @@ int ourEquivalent(const TypeExpression &type1, const TypeExpression &type2)
     Type topType1 = whatIsType(temp1);
     Type topType2 = whatIsType(temp2);
 
-    // std::cerr << LOC  << "Top Type1: " << toString(topType1) << "\n";
-    // std::cerr << LOC  << "Top Type2: " << toString(topType2) << "\n";
+    // std::cerr << LOC  << "Top Type1: of Type1: " << toString(topType1) << "is " << toString(temp1) << "\n";
+    // std::cerr << LOC  << "Top Type2: of Type2: " << toString(topType2) << "is " << toString(temp2) << "\n";
 
     bool isPtr1 = (topType1 == Type::POINTER || topType1 == Type::ARRAY);
     bool isPtr2 = (topType2 == Type::POINTER || topType2 == Type::ARRAY);
@@ -874,6 +876,18 @@ int ourEquivalent(const TypeExpression &type1, const TypeExpression &type2)
     }
 
     // Check equivalance of base level
+
+    if(topType1 == Type::VARIABLE && topType2 == Type::VARIABLE)
+    {
+        // Both are variable
+        BaseInfo *base1 = dynamic_cast<BaseInfo *>(temp1.levelStack.back());
+        BaseInfo *base2 = dynamic_cast<BaseInfo *>(temp2.levelStack.back());
+        if (base1->baseType == base2->baseType)
+        {
+            return EQUIVALENT;
+        }
+    }
+
     bool isNumeric1 = isNumeric(type1);
     bool isNumeric2 = isNumeric(type2);
     if (isNumeric1 && isNumeric2)

@@ -86,17 +86,17 @@ compiler: all $(EXECUTABLE) $(INPUT) $(OUTPUT) $(CERR)
 # Step 1: Generate parser files from Bison
 $(PARSER_C) $(PARSER_H): $(PARSER) 
 	@echo "~~~~~~~~~~~~~~~~~~~~~ Making Parser ~~~~~~~~~~~~~~~~~"
-	$(BISON) -d $(PARSER) --output=$(PARSER_C) --header=$(PARSER_H) 
+	@$(BISON) -d $(PARSER) --output=$(PARSER_C) --header=$(PARSER_H) 
 
 # Step 2: Generate lexer file from Flex
 $(LEXER_C): $(LEXER) 
 	@echo "~~~~~~~~~~~~~~~~~~~~~ Making Lexer ~~~~~~~~~~~~~~~~~"
-	$(FLEX) -o $(LEXER_C) $(LEXER)
+	@$(FLEX) -o $(LEXER_C) $(LEXER)
 
 # Step 3: Compile everything together into an executable
 $(EXECUTABLE): $(LEXER_C) $(PARSER_C) $(PARSER_H) $(OBJ_FILES) 
 	@echo "=================== 🔨 Making C2RISC Engine 🔨 ==================="
-	$(CXX) $(CXXFLAGS) $(LEXER_C) $(PARSER_C) $(OBJ_FILES) -o $(EXECUTABLE)
+	@$(CXX) $(CXXFLAGS) $(LEXER_C) $(PARSER_C) $(OBJ_FILES) -o $(EXECUTABLE)
 
 $(CERR): | $(OUTPUT_DIR)
 	@touch $(CERR)
@@ -106,7 +106,7 @@ $(OUTPUT): | $(OUTPUT_DIR)
 
 run: all $(EXECUTABLE) $(INPUT) $(OUTPUT) $(CERR)
 	@echo "🚥 Starting C2RISC Engine 🟢 on -" $(INPUT)
-	./$(EXECUTABLE) $(INPUT) 2> $(CERR)
+	@./$(EXECUTABLE) $(INPUT) 2> $(CERR)
 
 # This will only run the parser and generate the output file [NO RESULT]
 

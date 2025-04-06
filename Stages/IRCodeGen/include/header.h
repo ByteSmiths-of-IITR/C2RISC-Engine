@@ -165,6 +165,10 @@ extern std::string ENUM_CONSTANT;
 
 extern std::string TYPE_VOID;
 
+extern std::string TYPE_VA_LIST;
+extern std::string VARADIC;
+extern std::string TYPE_QUALIFIERS;
+
 extern std::string TYPE_FLOAT;
 extern std::string TYPE_DOUBLE;
 extern std::string TYPE_LONG_DOUBLE;
@@ -668,6 +672,7 @@ std::string toString(std::vector<PointerInfo *> ptrInfo);
 std::string toString(std::vector<TypeExpression> &paramVector);
 std::string toString(SPACE space);
 std::string toString(VALUE_TYPE valueType);
+std::string toString(RecordType recordType);
 
 //====================[ Helper Functions ]=========================================================================================
 std::string getProduction(ASTNode *node);
@@ -693,6 +698,7 @@ extern std::vector<std::string> compilerLOG;
     BUG_H; // This will be used to log the errors
 
 extern std::ofstream *handlerLog; // This will be used to log the errors
+
 
 #define aptHERE   \
     if (ANNOTATE) \

@@ -134,8 +134,9 @@ std::string isPrimitive(const TypeExpression &typeExpr)
         BaseInfo *baseInfo = dynamic_cast<BaseInfo *>(typeExpr.levelStack[typeExpr.levelStack.size() - 1]);
         std::string baseType = baseInfo->baseType;
         if (baseType == TYPE_INT || baseType == TYPE_CHAR || baseType == TYPE_SHORT || baseType == TYPE_LONG || baseType == TYPE_LONG_LONG ||
-            baseType == TYPE_FLOAT || baseType == TYPE_DOUBLE || baseType == TYPE_LONG_DOUBLE)
+            baseType == TYPE_FLOAT || baseType == TYPE_DOUBLE || baseType == TYPE_LONG_DOUBLE || baseType == TYPE_VA_LIST)
         {
+            std::cerr << "🥹 [isPrimitive] Base Type: " << baseType << "\n";
             return baseType;
         }
 
@@ -167,7 +168,7 @@ bool isA_InbuiltType(std::string baseType)
     // Check if base type is primitive
     if (baseType == TYPE_INT || baseType == TYPE_CHAR || baseType == TYPE_SHORT || baseType == TYPE_LONG || baseType == TYPE_LONG_LONG ||
         baseType == TYPE_FLOAT || baseType == TYPE_DOUBLE || baseType == TYPE_LONG_DOUBLE || baseType == TYPE_VOID || baseType == TYPE_UNSIGNED ||
-        baseType == TYPE_SIGNED)
+        baseType == TYPE_SIGNED || baseType == TYPE_VA_LIST)
     {
         return true;
     }

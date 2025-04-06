@@ -193,6 +193,27 @@ std::string toString(VALUE_TYPE valueType)
     }
 }
 
+std::string toString(RecordType recordType)
+{
+    if (recordType == RecordType::STRUCT)
+    {
+        return "struct";
+    }
+    else if (recordType == RecordType::UNION)
+    {
+        return "union";
+    }
+    else if (recordType == RecordType::ENUM)
+    {
+        return "enum";
+    }
+    else
+    {
+        return "UNKNOWN_RECORD_TYPE";
+    }
+}
+
+
 //====================[ Helper Functions ]=========================================================================================
 
 StorageClass getStorageClass(const std::string &value)
@@ -368,6 +389,9 @@ int ProcessDecSpecifiers(std::vector<std::string> &valueVector, TypeExpression &
         }
     }
 
+    std::cerr << LOC << "😇 All are inbuilt types: " << allAreInbuiltType << std::endl;
+    std::cerr << LOC << "😇 Type Specifier Vector: " << toString(typeSpecifierVector) << std::endl;
+
     if (!allAreInbuiltType)
     {
         // Are are not Primtive
@@ -439,7 +463,7 @@ int ProcessDecSpecifiers(std::vector<std::string> &valueVector, TypeExpression &
     return check;
 }
 
-int add_printf_scanf(){
+int add_printf_scanf(ASTNode *node){
     TypeExpression printfType;
     TypeExpression scanfType;
     ParameterInfo *paramInfo = new ParameterInfo();
@@ -458,13 +482,13 @@ int add_printf_scanf(){
     paramInfo->isVaradic = true;
 
     // Create the Return Type (void)
-    BaseInfo *base1 = new BaseInfo();
-    base1->baseType = TYPE_VOID;
+    BaseInfo *intBase = new BaseInfo();
+    intBase->baseType = TYPE_VOID;
 
-    printfType.levelStack.push_back(base1);
+    printfType.levelStack.push_back(intBase);
     printfType.levelStack.push_back(paramInfo);
 
-    scanfType.levelStack.push_back(base1);
+    scanfType.levelStack.push_back(intBase);
     scanfType.levelStack.push_back(paramInfo);
 
     // Add these to the symbol table
@@ -497,9 +521,144 @@ int add_printf_scanf(){
     {
         return insertCheck;
     }
+
+    aptLOG("Added 🤫 printf and scanf to symbol table 🖨️ due to lib <stdio.h>");
+
+    return INSERT_SUCCESS;
+}
+
+int addVaradicLib(ASTNode *node){
+    // We define two lib function of varadics
+    // va_start & va_end | va_list
+
+    TypeExpression va_startType;
+    TypeExpression va_endType;
+
+    // Create first ArgType (va_list)
+    BaseInfo *vaBase = new BaseInfo();
+    vaBase->baseType = TYPE_VA_LIST;
+    TypeExpression vaListArg;
+    vaListArg.levelStack.push_back(vaBase);
     
-    std::cerr << "Added printf of type " << toString(printfType) << std::endl;
-    std::cerr << "Added scanf of type " << toString(scanfType) << std::endl;
+    // Create the Return Type (void)
+    BaseInfo *voidBase = new BaseInfo();
+    voidBase->baseType = TYPE_VOID;
+    // TypeExpression returnType;
+    // returnType.levelStack.push_back(voidBase);
+
+    // Create second ArgType (int)
+    BaseInfo *intBase = new BaseInfo();
+    intBase->baseType = TYPE_INT;
+    TypeExpression intArg;
+    intArg.levelStack.push_back(intBase);
+
+    BaseInfo *typeQBase = new BaseInfo();
+    typeQBase->baseType = TYPE_QUALIFIERS;
+    TypeExpression typeArg;
+    typeArg.levelStack.push_back(typeQBase);
+
+    ParameterInfo *vaStartParam = new ParameterInfo();
+    ParameterInfo *vaEndParam = new ParameterInfo();
+
+    vaStartParam->paramsType.push_back(vaListArg);
+    vaStartParam->paramsType.push_back(intArg);
+
+    vaEndParam->paramsType.push_back(vaListArg);
+
+    vaStartParam->isVariadic = false;
+    vaEndParam->isVariadic = false;
+
+    va_startType.levelStack.push_back(voidBase);
+    va_startType.levelStack.push_back(vaStartParam);
+
+    va_endType.levelStack.push_back(voidBase);
+    va_endType.levelStack.push_back(vaEndParam);
+
+    // Add these to the symbol table
+    Function *va_startFunc = new Function();
+    va_startFunc->symbolName = "va_start";
+    va_startFunc->type = va_startType;
+    va_startFunc->isDefined = true;
+    va_startFunc->location = std::make_pair(-1, -1);
+    va_startFunc->symbolType = SYMBOL_TYPE::FUNCTION;
+    va_startFunc->isDefined = true;
+
+    Function *va_endFunc = new Function();
+    va_endFunc->symbolName = "va_end";
+    va_endFunc->type = va_endType;
+    va_endFunc->isDefined = true;
+    va_endFunc->location = std::make_pair(-1, -1);
+    va_endFunc->symbolType = SYMBOL_TYPE::FUNCTION;     
+
+
+    // Add these to the symbol table
+    int insertCheck = SYM_TABLE.insert(SYMBOL_TYPE::FUNCTION, "va_start", va_startFunc);
+    if (insertCheck == INSERT_FAILURE)
+    {
+        return insertCheck;
+    }
+    insertCheck = SYM_TABLE.insert(SYMBOL_TYPE::FUNCTION, "va_end", va_endFunc);
+    if (insertCheck == INSERT_FAILURE)
+    {
+        return insertCheck;
+    }   
+
+    // Also adding va_arg or type - int (va_list, type_qualifier)
+    TypeExpression va_argType;
+
+    // BaseInfo *typeBase = new BaseInfo();
+    // typeBase->baseType = TYPE_QUALIFIERS;
+    ParameterInfo *vaArgParam = new ParameterInfo();
+    vaArgParam->paramsType.push_back(vaListArg); // first arg - va_list
+    vaArgParam->paramsType.push_back(typeArg); // second arg - type_qualifier
+    vaArgParam->isVariadic = false;
+
+    va_argType.levelStack.push_back(intBase);// return type
+    va_argType.levelStack.push_back(vaArgParam); // arg type
+
+    // Add these to the symbol table
+    Function *va_argFunc = new Function();
+    va_argFunc->symbolName = "va_arg";
+    va_argFunc->type = va_argType;
+    va_argFunc->isDefined = true;
+    va_argFunc->location = std::make_pair(-1, -1);
+    va_argFunc->symbolType = SYMBOL_TYPE::FUNCTION;
+    va_argFunc->isDefined = true;
+    insertCheck = SYM_TABLE.insert(SYMBOL_TYPE::FUNCTION, "va_arg", va_argFunc);
+    if (insertCheck == INSERT_FAILURE)
+    {
+        return insertCheck;
+    }
+    // Also adding va_copy or type - void (va_list, va_list)
+    TypeExpression va_copyType;
+    BaseInfo *voidBase1 = new BaseInfo();
+    voidBase1->baseType = TYPE_VOID;
+    ParameterInfo *vaCopyParam = new ParameterInfo();
+    vaCopyParam->paramsType.push_back(vaListArg); // first arg - va_list
+    vaCopyParam->paramsType.push_back(vaListArg); // second arg - va_list
+    vaCopyParam->isVariadic = false;
+    va_copyType.levelStack.push_back(voidBase1);// return type
+    va_copyType.levelStack.push_back(vaCopyParam); // arg type
+    // Add these to the symbol table
+    Function *va_copyFunc = new Function();
+    va_copyFunc->symbolName = "va_copy";
+    va_copyFunc->type = va_copyType;
+    va_copyFunc->isDefined = true;
+    va_copyFunc->location = std::make_pair(-1, -1);
+    va_copyFunc->symbolType = SYMBOL_TYPE::FUNCTION;
+    va_copyFunc->isDefined = true;
+    insertCheck = SYM_TABLE.insert(SYMBOL_TYPE::FUNCTION, "va_copy", va_copyFunc);
+    if (insertCheck == INSERT_FAILURE)
+    {
+        return insertCheck;
+    }
+
+    aptLOG("Added 🤫 'va_start', 'va_end', 'va_arg' and 'va_copy' functions to symbol table due to lib <stdarg.h>");
+
+    aptLOG("Type of va_start : " + toString(va_startType));
+    aptLOG("Type of va_end : " + toString(va_endType));
+    aptLOG("Type of va_arg : " + toString(va_argType));
+    aptLOG("Type of va_copy : " + toString(va_copyType));
 
     return INSERT_SUCCESS;
 }
@@ -508,7 +667,6 @@ int add_printf_scanf(){
 
 void semanticPass(ASTNode *node)
 {
-
     if (node == nullptr)
     {
         return;
@@ -530,14 +688,25 @@ void semanticPass(ASTNode *node)
     aptLOG("Scope (Global) : S" + std::to_string(globalScope) + " ⤵️"); // 🌴 Adding syn_attr
 
     // Hard Code addition of printf & scanf Definitions in SYM_TABLE 🖨️ 🖨️
-    int insertCheck = add_printf_scanf();
+    int insertCheck = add_printf_scanf(node);
     if (insertCheck == INSERT_FAILURE)
     {
         semanticError("Failed to insert printf and scanf in symbol table");
         FAIL_H; // no need to return
     }
     else{
-        aptLOG("Added 🤫 printf and scanf to symbol table 🖨️");
+        // aptLOG("Added 🤫 printf and scanf to symbol table 🖨️");
+    }
+
+    // Hard Code addition of va_start & va_end Definitions in SYM_TABLE
+    insertCheck = addVaradicLib(node);
+    if (insertCheck == INSERT_FAILURE)
+    {
+        semanticError("Failed to insert va_start and va_end in symbol table");
+        FAIL_H; // no need to return
+    }
+    else{
+        // aptLOG("Added 🤫 va_start and va_end to symbol table");
     }
 
 
