@@ -945,11 +945,60 @@ using RISCV_CODE = std::vector<std::string>;
 
 int codeGen(const TAC &irCode, RISCV_CODE &riscvCode);
 
+class PerBlockSymbolInfo{
+    public:
+    bool live_flag;
+    std::set<int> nextUse;
+    bool inMemory;
+    std::set<int> inRegNo;
+};
+
+class RegisterInfo{
+    std::map<int, std::set<std::string>> regMap; // Map of register to variable
+
+    bool isFree(int regNo); // Check if the register is free or not
+
+    bool isVarInReg(int regNo, const std::string &varName); // Check if the variable is in the register or not
+
+    int whatIsInReg(int regNo, std::set<std::string> &varName); // Check what is in the register
+
+};
+
+RegisterInfo REG_INFO;
+
 class BasicBlock
 {
 public:
     std::vector<TAC_Quadruple> irCode;  // Not using NOW
     std::vector<std::string> riscvCode; // Will be generated
+
+    std::map<std::string, PerBlockSymbolInfo> symbolInfo; // This will be used to keep track of the symbols in the block
+
+    // Basic Functions
+    int insertInfo(const std::string &key, PerBlockSymbolInfo &info);
+    int lookupInfo(const std::string &key, PerBlockSymbolInfo &info);
+
+
+    // Utility Function
+    bool isInMemory(const std::string &key); // Check if the variable(updated) is in memory or not
+    
+    int setInMemory(const std::string &key); // Set the variable as in memory
+    int setNotInMemory(const std::string &key); // Set the variable as not in memory
+
+    int setInRegNo(const std::string &key, int regNo); // Set the variable as in register
+    int removeInRegNo(const std::string &key, int regNo); // Clear the variable from register
+    int clearAllInRegNo(const std::string &key); // Clear all the registers for the variable
+
+    int setAlive(const std::string &key); // Set the variable as alive
+    int setAllAlive(); // Set all the variables as alive
+    int setDead(const std::string &key); // Set the variable as dead
+    int setAllDead(); // Set all the variables as dead
+
+    bool isAlive(const std::string &key); // Check if the variable is alive or not
+
+    int addUsage(const std::string &key, int lineNo); // Add the usage of the variable in the register
+    int removeUsage(const std::string &key, int lineNo); // Clear the usage of the variable in the register
+    int clearAllUsage(const std::string &key); // Clear all the usage of the variable in the register
 
     std::string label;                 // Label for the basic block
     // std::vector<std::string> inLinks;  // can be 1 or more
@@ -983,6 +1032,34 @@ public:
     void generateRISCVCodes(RISCV_CODE &riscvCode);
 };
 
+class SymInfo{
+    public:
+    // Information of each symbol
+    int size;
+    int offset; // relative to function-block or global-space
+    bool isGlobal;
+};
+
+class SymTable
+{
+    // This will be scope-disabled Symbol Table
+
+    public:
+    std::map<std::string, SymInfo> symTable; // This will be used to keep track of the symbols
+
+
+    int insert(const std::string &key, SymInfo &info);
+    int lookup(const std::string &key, SymInfo &info);
+
+    int remove(const std::string &key);
+
+    int getSize(const std::string &key);
+    int getOffset(const std::string &key);
+    bool isGlobal(const std::string &key);
+};
+
 int makeBasicBlocks(const TAC &irCode, CFG &cfg);
+
+
 
 #endif // !HEADER_H

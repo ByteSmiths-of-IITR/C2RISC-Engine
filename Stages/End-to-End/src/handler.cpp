@@ -923,6 +923,9 @@ int function_definition_H(ASTNode *node)
             }
         }
 
+        // 🔖IR Cdoe
+        CODE_BASE.addTAC(node, varName, FUNCTION_ENTRY, NO_ARG, NO_ARG);
+
         // Now we have list of all the prameters & their names
         if (!isAbstract)
         {
@@ -960,6 +963,11 @@ int function_definition_H(ASTNode *node)
 
                 // Add the symbol to the symbol table
                 int insertCheck = SYM_TABLE.insert(SYMBOL_TYPE::VARIABLE, paramNames[i], var);
+
+                // Need a allocate Code
+                int size = width(paramVector[i]);
+                CODE_BASE.addTAC(node, paramNames[i], ALLOCATE, std::to_string(size), NO_ARG);
+
                 if (insertCheck == INSERT_FAILURE)
                 {
                     semanticError("Parameter \"" + paramNames[i] + "\" already declared in function scope");
@@ -971,10 +979,7 @@ int function_definition_H(ASTNode *node)
                 }
             }
         }
-
-        // 🔖IR Cdoe
-
-        CODE_BASE.addTAC(node, varName, FUNCTION_ENTRY, NO_ARG, NO_ARG);
+        
 
         // Call the compound_statement handler
         // Data to be fetched

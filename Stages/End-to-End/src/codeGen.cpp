@@ -3,6 +3,9 @@
 
 //=====================[ Code Generation ]=========================================================================================
 
+SymTable symTable; // Global Symbol Table
+
+
 int codeGen(const TAC &irCode, RISCV_CODE &riscvCode)
 {
     // This will Take TAC irCode and give final riscvCode
@@ -28,8 +31,11 @@ int codeGen(const TAC &irCode, RISCV_CODE &riscvCode)
     std::cerr << LOC << " | CFG generated successfully at " << dotFileName << std::endl;
 
 
-    // Step 2. Generate RISC-V code for each basic block
+    // Step 2. Add all Symbol Needed to the Symbol Table setting it's offsets & other things
 }
+
+
+//=====================[ Basic Blocks & CFGs ]=========================================================================================
 
 std::string CFG::newBlock()
 {
@@ -380,3 +386,99 @@ int makeBasicBlocks(const TAC &irCode, CFG &cfg)
 
     return OKAY;
 }
+
+
+//=====================[ RISC-V Code Generation ]=========================================================================================
+
+int generatingRISCVCode(CFG &cfg, RISCV_CODE &riscvCode)
+{
+    // This will generate RISC-V code for each basic block
+
+    // Step 1. Add all ALLOCATE to SymTable with OFFSET & SIZE
+
+
+
+    
+    // Step 2. Generate RISC-V code for each block
+
+
+    return OKAY;
+}
+
+
+
+//======================[ Register Allocation ]=========================================================================================
+
+int getRegister(const std::vector<std::string> &varNames, std::vector<int> &regNos);
+
+//======================[ SymbTable Code ]=========================================================================================
+
+int SymTable::insert(const std::string &key, SymInfo &info)
+{
+    // This will insert the key and info in the table
+    if (symTable.find(key) != symTable.end())
+    {
+        return INSERT_FAILURE;
+    }
+
+    symTable[key] = info;
+    return INSERT_SUCCESS;
+}
+
+int SymTable::lookup(const std::string &key, SymInfo &info)
+{
+    // This will lookup the key and return the info
+    if (symTable.find(key) == symTable.end())
+    {
+        return LOOKUP_FAILURE;
+    }
+
+    info = symTable[key];
+    return LOOKUP_SUCCESS;
+}
+
+int SymTable::remove(const std::string &key)
+{
+    // This will remove the key and return the info
+    if (symTable.find(key) == symTable.end())
+    {
+        return LOOKUP_FAILURE;
+    }
+
+    symTable.erase(key);
+    return OKAY;
+}
+
+int SymTable::getSize(const std::string &key)
+{
+    // This will return the size of the key
+    if (symTable.find(key) == symTable.end())
+    {
+        return -1;
+    }
+
+    return symTable[key].size;
+}
+
+int SymTable::getOffset(const std::string &key)
+{
+    // This will return the offset of the key
+    if (symTable.find(key) == symTable.end())
+    {
+        return -1;
+    }
+
+    return symTable[key].offset;
+}
+
+bool SymTable::isGlobal(const std::string &key)
+{
+    // This will return the isGlobal of the key
+    if (symTable.find(key) == symTable.end())
+    {
+        return false;
+    }
+
+    return symTable[key].isGlobal;
+}
+
