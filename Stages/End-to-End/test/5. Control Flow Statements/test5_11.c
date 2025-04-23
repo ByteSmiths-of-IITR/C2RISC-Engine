@@ -23,7 +23,6 @@ int main()
 
 //=========================== C2RISC-Engine =========================================================//
 // Lexical Analysis 👍 | Syntax Analysis 👍 | Semantic Analysis 👍 | 🔖 IRCode Gen
-// 🌴 APTree 🌴 has been generated, can be used for debugging ❤️‍🩹 
 // 
 // ------------------------------------------------------------------------------------
 // 

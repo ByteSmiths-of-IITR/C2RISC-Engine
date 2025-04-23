@@ -1,0 +1,65 @@
+// ---------------- Shadowing Test ----------------
+
+SymbolTable table;
+GenericSymbol* sym;
+
+table.enterScope();
+table.insert("a", new Variable());  // Global 'a'
+
+table.printTable(symFile);
+
+std::string key = "a";
+if (table.lookup(key, sym) == 0) std::cout << key << " Found (Global)\n";  // a Found (Global)
+else std::cout << key << " Not Found\n";
+
+table.enterScope();  // Inner scope
+table.insert("a", new Variable());  // Shadowing
+
+table.printTable(symFile);
+
+if (table.lookup(key, sym) == 0) std::cout << key << " Found (Inner)\n";  // a Found (Inner)
+else std::cout << key << " Not Found\n";
+
+table.exitScope();  // Exit inner
+if (table.lookup(key, sym) == 0) std::cout << key << " Found (Global Restored)\n";  // a Found (Global Restored)
+else std::cout << key << " Not Found\n";
+
+table.printTable(symFile);
+
+table.exitScope();
+if (table.lookup(key, sym) == 0) std::cout << key << " Found\n";
+else std::cout << key << " Not Found\n";  // a Not Found
+
+table.printTable(symFile);
+
+// ---------------- Shadowing with different Types Test ----------------
+
+table.enterScope();  // New Global Scope
+table.insert("data", new Variable());  // Global 'data'
+
+table.printTable(symFile);
+
+table.enterScope();  // Function scope
+table.insert("data", new Function());  // Shadow as function
+
+table.printTable(symFile);
+
+key = "data";
+if (table.lookup(key, sym) == 0) std::cout << key << " Found (" << sym->scopeNo << ")\n";  // data Found (Enum)
+table.exitScope();
+
+table.printTable(symFile);
+if (table.lookup(key, sym) == 0) std::cout << key << " Found (" << sym->scopeNo << ")\n";  // data Found (Function)
+table.exitScope();
+
+table.printTable(symFile);
+
+/*
+Expected Output:
+a Found (Global)
+a Found (Inner)
+a Found (Global Restored)
+a Not Found
+data Found (2)
+data Found (1)
+*/

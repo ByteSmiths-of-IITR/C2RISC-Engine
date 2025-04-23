@@ -1,0 +1,24 @@
+// -------------------- Redeclaration Error -------------------
+
+SymbolTable table;
+table.enterScope();
+
+int res = table.insert("x", new Variable());
+if (res == 0) std::cout << "x Inserted\n";  // x Inserted
+else std::cout << "x Redefinition Error\n";
+
+table.printTable(symFile);
+
+res = table.insert("x", new Variable());
+if (res == 0) std::cout << "x Inserted again\n";
+else if (res == -1) std::cout << "x Redefined in same scope\n";  // x Redefinition Error
+table.printTable(symFile);
+
+table.exitScope();
+table.printTable(symFile);
+
+/*
+Expected Output:
+x Inserted
+x Redefined in same scope
+*/
