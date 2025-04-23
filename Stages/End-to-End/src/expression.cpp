@@ -342,7 +342,7 @@ int primary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
         // Check if string to be sent in .rodata or .data
         if (/*inh_whereToSendString != STACK_DATA*/ true) // FORCE it to be .rodata
         {
-            std::string tempName = "@str" + newTemp();
+            std::string tempName = "@str" + newTemp(); // [SPECIAL ALLOCATION] - 📍ToDo
             // Remove the quotes from the string
             std::string raw = strValue.substr(1, strValue.length() - 2);
             std::string data = tempName + " : c\"" + raw + "\\0\"";
@@ -604,6 +604,7 @@ int postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
         std::string baseAddress = varName1;
 
         std::string jump_amount = newTemp();
+        
 
         CODE_BASE.addTAC(node, jump_amount, "*", varName2, element_width_str);
 
@@ -1031,7 +1032,7 @@ int postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
         valueSpace0 = getSpace(type1);    // most likey is VALUE_SPACE
         valueType0 = getValueType(type1); // Set Correctly
         type0 = type1;                    // Set Correctly // NO change in type
-        aptLOG("Type Okay");
+        // aptLOG("Type Okay");
 
         // Pass the data up
         varName = varName0;       // Change the name to the address
