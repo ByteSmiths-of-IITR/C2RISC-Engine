@@ -68,7 +68,8 @@ std::string TAC_Quadruple::toString()
 
     else if(op == ALLOCATE)
     {
-        str = "allocate " + arg1 + " bytes" + " to " + result; // allocate p bytes to result
+        // str = "allocate " + arg1 + " bytes" + " to " + result; // allocate p bytes to result
+        str = result+" (" + arg1 + " bytes)"; // allocate p bytes to result
     }
 
     // if(op == RO_DATA){

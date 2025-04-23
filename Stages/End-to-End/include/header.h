@@ -786,6 +786,8 @@ extern const int FAIL;
         if (getSpace(type) == SPACE::VALUE_SPACE)                                                 \
         {                                                                                         \
             std::string tempName = newTemp();                                                     \
+            int size = width(type);                                                               \
+            CODE_BASE.addTAC((node), tempName, ALLOCATE, std::to_string(size), NO_ARG);           \
             CODE_BASE.addTAC((node), tempName, RIGHT_STAR, (value), NO_ARG);                      \
             value = tempName;                                                                     \
         }                                                                                         \
