@@ -501,14 +501,14 @@ int selection_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vect
             }
             else
             {
-                std::string caseIndex = "L(" + std::to_string(it.second) + ")";
+                std::string caseIndex = std::to_string(it.second);
                 CODE_BASE.addTAC(node, caseIndex, GOTO_EQUAL, varName1, it.first); // if (varName1 == it.first) goto it.second
             }
         }
 
         if (isDefault)
         {
-            std::string defaultIndex = "L(" + std::to_string(defaultJumpAddress) + ")";
+            std::string defaultIndex = std::to_string(defaultJumpAddress);
             CODE_BASE.addTAC(node, defaultIndex, GOTO_LABEL, NO_ARG, NO_ARG); // goto defaultJumpAddress
         }
 
@@ -556,7 +556,7 @@ int iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vect
     {
         // Find Loop's Start position
         int loopStart = CODE_BASE.nextIndex();
-        std::string loopStartLabel = "L(" + std::to_string(loopStart) + ")";
+        std::string loopStartLabel = std::to_string(loopStart) ;
 
         std::vector<int> E_truelist, E_falselist;
         // Get Ready to call expression
@@ -617,7 +617,7 @@ int iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vect
     {
         // Find Loop's Start position
         int loopStart = CODE_BASE.nextIndex();
-        std::string loopStartLabel = "L(" + std::to_string(loopStart) + ")";
+        std::string loopStartLabel = std::to_string(loopStart);
 
         std::vector<int> E_truelist, E_falselist;
         // Get Ready to call expression
@@ -681,7 +681,7 @@ int iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vect
         int firstSkip = CODE_BASE.addTAC(node, TO_BACKPATCH, GOTO_LABEL, NO_ARG, NO_ARG); // goto firstSkip
 
         int loopStart = CODE_BASE.nextIndex();
-        std::string loopStartLabel = "L(" + std::to_string(loopStart) + ")";
+        std::string loopStartLabel =std::to_string(loopStart);
 
         std::vector<int> E_truelist, E_falselist;
         // Get Ready to call expression
@@ -751,7 +751,7 @@ int iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vect
         RECOVER_THE_ERROR(est_check);
 
         int loopStart = CODE_BASE.nextIndex();
-        std::string loopStartLabel = "L(" + std::to_string(loopStart) + ")";
+        std::string loopStartLabel =std::to_string(loopStart) ;
 
         std::vector<int> ES2_truelist, ES2_falselist;
         // Next we evaluate the ExpressionStatement_2
@@ -816,7 +816,7 @@ int iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vect
         PASS_THE_ERROR(est_check);
 
         int loopStart = CODE_BASE.nextIndex();
-        std::string loopStartLabel = "L(" + std::to_string(loopStart) + ")";
+        std::string loopStartLabel = std::to_string(loopStart);
 
         std::vector<int> ES2_truelist, ES2_falselist;
         // Next we evaluate the ExpressionStatement_2
@@ -887,7 +887,7 @@ int iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vect
         PASS_THE_ERROR(dcl_check);
 
         int loopStart = CODE_BASE.nextIndex();
-        std::string loopStartLabel = "L(" + std::to_string(loopStart) + ")";
+        std::string loopStartLabel = std::to_string(loopStart);
 
         std::vector<int> ES2_truelist, ES2_falselist;
         // Next we evaluate the ExpressionStatement_2
@@ -1080,7 +1080,7 @@ int jump_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<in
             int equal = ourEquivalent(source, dest);
             if (equal != OKAY)
             {
-                std::string castedVarNam = newTemp(); // Allocated
+                std::string castedVarNam = newTemp(); // allocated width(dest) 
                 int castedVarSize = width(dest);
                 CODE_BASE.addTAC(node, castedVarNam, ALLOCATE, toString(castedVarSize), NO_ARG); // Allocate the space
 

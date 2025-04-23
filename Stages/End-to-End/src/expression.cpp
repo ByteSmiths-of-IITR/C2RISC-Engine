@@ -235,7 +235,9 @@ int primary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
             // If in address space we need to deal with offset
 
             // Space 🚀Change 🔖IR Code
-            std::string address = newTemp();
+            std::string address = newTemp(); // allocate 'ADDRESS_SIZE' bytes
+            CODE_BASE.addTAC(node, address, ALLOCATE, std::to_string(ADDRESS_SIZE), NO_ARG); // Allocate memory for the variable
+            
             // std::string id_offset = std::to_string(((Variable *)symbol)->offset);
             std::string id_offset = varName1 + ".offset";
 
@@ -603,14 +605,13 @@ int postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
 
         std::string baseAddress = varName1;
 
-        std::string jump_amount = newTemp(); // Allocated 'int' size
-        CODE_BASE.addTAC(node, jump_amount, ALLOCATE, std::to_string(WORD_SIZE), NO_ARG); // Allocate memory for the variable
-
+        std::string jump_amount = newTemp(); // allocated 'int' size
+        CODE_BASE.addTAC(node, jump_amount, ALLOCATE, std::to_string(ADDRESS_SIZE), NO_ARG); // Allocate memory for the variable
 
         CODE_BASE.addTAC(node, jump_amount, "*", varName2, element_width_str);
 
-        std::string finalAddress = newTemp(); // Allocated 'int' size
-        CODE_BASE.addTAC(node, finalAddress, ALLOCATE, std::to_string(WORD_SIZE), NO_ARG); // Allocate memory for the variable
+        std::string finalAddress = newTemp(); // allocated 'int' size
+        CODE_BASE.addTAC(node, finalAddress, ALLOCATE, std::to_string(ADDRESS_SIZE), NO_ARG); // Allocate memory for the variable
 
 
         CODE_BASE.addTAC(node, finalAddress, "+", baseAddress, jump_amount);
@@ -1205,7 +1206,7 @@ int assignment_expression_H(ASTNode *node, std::string inh_whereToSendString, st
             int equal = ourEquivalent(source, dest);
             if (equal != OKAY)
             {
-                std::string castedVarNam = newTemp();                                                // allocated width(dest)
+                std::string castedVarNam = newTemp();  // allocated width(dest)
                 CODE_BASE.addTAC(node, castedVarNam, ALLOCATE, std::to_string(width(dest)), NO_ARG); // Allocate memory for the variable
 
                 CODE_BASE.addTAC(node, castedVarNam, CAST, toString(dest), varName2); // Cast it
@@ -1889,7 +1890,7 @@ int multiplicative_expression_H(ASTNode *node, std::string inh_whereToSendString
 
             // Now we have both the operands in same type
             // Now we can perform the operation
-            std::string result = newTemp();
+            std::string result = newTemp(); // allocated width(widenType)
             int resSize = width(widenType);
             CODE_BASE.addTAC(node, result, ALLOCATE, std::to_string(resSize), NO_ARG); // Allocate memory for the variable
 
@@ -3306,7 +3307,7 @@ int logical_or_expression_H(ASTNode *node, std::string inh_whereToSendString, st
             TypeExpression type0;
             type0.levelStack.push_back(base);
             
-            std::string result = newTemp();
+            std::string result = newTemp(); // allocated width(type0)
             int resSize = width(type0);
             CODE_BASE.addTAC(node, result, ALLOCATE, std::to_string(resSize), NO_ARG); // Allocate memory for the variable
             

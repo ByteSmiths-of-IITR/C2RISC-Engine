@@ -3,7 +3,8 @@
 std::string NO_ARG = "#####";
 std::string RIGHT_STAR = "right_star";
 std::string LEFT_STAR = "left_star";
-std::string FUNCTION_LABEL = "function_label";
+std::string FUNCTION_ENTRY = "FUNCTION_ENTRY";
+std::string FUNCTION_EXIT = "FUNCTION_EXIT";
 // std::string BLANK = "blank";
 std::string CAST = "cast";
 std::string LABEL = "label";
@@ -61,15 +62,19 @@ std::string TAC_Quadruple::toString()
         str = "param " + arg1; // PARAM p
     }
 
-    else if (op == FUNCTION_LABEL)
+    else if (op == FUNCTION_ENTRY)
     {
-        str = result + ": "; // FUNCTION_LABEL p
+        str = result + ": ⤵️"; // FUNCTION_ENTRY p
     }
 
-    else if(op == ALLOCATE)
+    else if(op == FUNCTION_EXIT){
+        str = result + ": ↙️"; // FUNCTION_EXIT p
+    }
+
+    else if (op == ALLOCATE)
     {
-        // str = "allocate " + arg1 + " bytes" + " to " + result; // allocate p bytes to result
-        str = result+" (" + arg1 + " bytes)"; // allocate p bytes to result
+        str = "alloca " + result + ", " + arg1; // allocate var, size
+        // str = result+" (" + arg1 + " bytes)"; // var (size bytes)
     }
 
     // if(op == RO_DATA){
@@ -97,7 +102,8 @@ std::string TAC_Quadruple::toString()
     {
         str = result + " = &" + arg1; // result = &arg1
     }
-    else if(op == MEM_COPY){
+    else if (op == MEM_COPY)
+    {
         str = result + " = mem_copy " + arg1;
     }
     else if (op == LEFT_STAR)
@@ -126,19 +132,19 @@ std::string TAC_Quadruple::toString()
     }
     else if (op == IF_FALSE)
     {
-        str = "ifFalse " + arg1 + " goto " + result; // if arg1 goto arg2
+        str = "ifFalse " + arg1 + " goto L(" + result + ")"; // if arg1 == 0 goto arg2
     }
     else if (op == IF_TRUE)
     {
-        str = "if " + arg1 + " goto " + result; // if arg1 goto arg2
+        str = "if " + arg1 + " goto L(" + result + ")"; // if arg1 != 0 goto arg2
     }
     else if (op == GOTO_LABEL)
     {
-        str = "goto " + result; // goto arg1
+        str = "goto L(" + result + ")"; // goto arg1
     }
     else if (op == GOTO_EQUAL)
     {
-        str = "if " + arg1 + " == " + arg2 + " goto " + result; // if arg1 == arg2 goto result
+        str = "if " + arg1 + " == " + arg2 + " goto L(" + result + ")"; // if arg1 == arg2 goto arg3
     }
     else if (op == RETURN_FUNCTION)
     {
@@ -146,10 +152,12 @@ std::string TAC_Quadruple::toString()
     }
     else
     {
-        if(arg2 == NO_ARG){
+        if (arg2 == NO_ARG)
+        {
             str = result + " = " + op + " " + arg1; // result = op arg1
         }
-        else{
+        else
+        {
             str = result + " = " + arg1 + " " + op + " " + arg2; // result = arg1 op arg2
         }
     }
@@ -195,7 +203,7 @@ int mergeList(std::vector<int> &target, const std::vector<int> &addition)
 {
     // std::cerr << LOC << "Merging " << toString(addition) << " into " << toString(target) << std::endl;
     target.insert(target.end(), addition.begin(), addition.end());
-    std::cerr << LOC << "Merged List " << toString(target) << std::endl;
+    // std::cerr << LOC << "Merged List " << toString(target) << std::endl;
     return 0;
 }
 
@@ -225,7 +233,7 @@ int TAC::backpatch(ASTNode *currNode, const std::vector<int> &list, int labelInd
 {
     // std::cerr << LOC  << "Calling backpath with -Label=" << labelIndex << std::endl;
 
-    std::string labelStr = "L(" + std::to_string(labelIndex) + ")";
+    std::string labelStr = std::to_string(labelIndex);
     return backpatch(currNode, list, labelStr);
 }
 
@@ -245,9 +253,14 @@ void TAC::printTAC(std::ofstream &file)
             file << std::setw(w) << code[i].result << " : " << std::setw(wcode) << std::left << code[++i].toString() << std::endl;
             continue;
         }
-        else if (code[i].op == FUNCTION_LABEL)
+        else if (code[i].op == FUNCTION_ENTRY)
         {
-            file << std::setw(w) << i << " : " << std::setw(wcode) << std::left << code[i].result << std::endl;
+            file << std::setw(w) << i << " : " << std::setw(wcode) << std::left << code[i].toString() << std::endl;
+            continue;
+        }
+        else if(code[i].op == FUNCTION_EXIT)
+        {
+            file << std::setw(w) << i << " : " << std::setw(wcode) << std::left << code[i].toString() << std::endl;
             continue;
         }
 
@@ -259,49 +272,53 @@ void TAC::printTAC(std::ostringstream &oss)
 {
 
     // Print the .rodata section
-    if(roData.size()>0){
-    oss << std::setw(w) << ".rodata section" << " : " << std::setw(wcode) << std::left << std::string(wcode, '-') << std::endl;
-    for (int i = 0; i < roData.size(); i++)
+    if (roData.size() > 0)
     {
-        oss << std::setw(w) << roData[i] << " " << std::setw(wcode) << std::left << std::endl;
-    }
-    oss << std::endl;
-    oss << std::string(w+wcode+6, '-') << std::endl;
+        oss << std::setw(w) << ".rodata section" << " : " << std::setw(wcode) << std::left << std::string(wcode, '-') << std::endl;
+        for (int i = 0; i < roData.size(); i++)
+        {
+            oss << std::setw(w) << roData[i] << " " << std::setw(wcode) << std::left << std::endl;
+        }
+        oss << std::endl;
+        oss << std::string(w + wcode + 6, '-') << std::endl;
     }
 
-    if(data.size()>0){
-    oss << std::setw(w) << ".data section" << " : " << std::setw(wcode) << std::left << std::string(wcode, '-') << std::endl;
-    for (int i = 0; i < data.size(); i++)
+    if (data.size() > 0)
     {
-        oss << std::setw(w) << data[i] << " " << std::setw(wcode) << std::left << std::endl;
-    }
-    oss << std::endl;
-    oss << std::string(w+wcode+6, '-') << std::endl;
-    
+        oss << std::setw(w) << ".data section" << " : " << std::setw(wcode) << std::left << std::string(wcode, '-') << std::endl;
+        for (int i = 0; i < data.size(); i++)
+        {
+            oss << std::setw(w) << data[i] << " " << std::setw(wcode) << std::left << std::endl;
+        }
+        oss << std::endl;
+        oss << std::string(w + wcode + 6, '-') << std::endl;
     }
     oss << std::setw(w) << "CodeLineNo" << " : " << std::setw(wcode) << std::left << "TAC" << std::endl;
     oss << std::setw(w) << "----------" << " : " << std::setw(wcode) << std::left << "-------------------------------" << std::endl;
     for (int i = 0; i < code.size(); i++)
     {
-        // Special Priting for labels
+        // Special Priting for labels 
         if (code[i].op == LABEL)
         {
             oss << std::setw(w) << code[i].result << " : " << std::setw(wcode) << std::left << code[++i].toString() << std::endl;
-            continue;
         }
-        else if (code[i].op == FUNCTION_LABEL)
+        else if (code[i].op == FUNCTION_ENTRY)
         {
+            // oss << std::endl;
+            oss << std::setw(w) << i << " : " << std::setw(wcode) << std::left << code[i].toString() << std::endl;
+        }
+        else if(code[i].op == FUNCTION_EXIT)
+        {
+            oss << std::setw(w) << i << " : " << std::setw(wcode) << std::left << code[i].toString() << std::endl;
             oss << std::endl;
-            oss << std::setw(w) << i << " : " << std::setw(wcode) << std::left << code[i].result << std::endl;
-            continue;
         }
         else if (code[i].op == RETURN_FUNCTION)
         {
             oss << std::setw(w) << i << " : " << std::setw(wcode) << std::left << code[i].toString() << std::endl;
-            continue;
         }
-
-        oss << std::setw(w) << i << " : " << std::setw(wcode) << std::left << code[i].toString() << std::endl;
+        else{
+            oss << std::setw(w) << i << " : " << std::setw(wcode) << std::left << code[i].toString() << std::endl;
+        }
     }
 }
 
@@ -319,7 +336,7 @@ void TAC::printTAC(std::vector<std::string> &list)
             oss << std::setw(w) << code[i].result << " : " << std::setw(wcode) << std::left << code[++i].toString() << std::endl;
             continue;
         }
-        else if (code[i].op == FUNCTION_LABEL)
+        else if (code[i].op == FUNCTION_ENTRY)
         {
             oss << std::setw(w) << i << " : " << std::setw(wcode) << std::left << code[i].result << std::endl;
             continue;
@@ -362,7 +379,7 @@ void TAC::printTAC()
         //     std::cout << std::setw(w) << code[i].result << " : " << std::setw(wcode) << std::left << code[i++].toString() << std::endl;
         //     continue;
         // }
-        if (code[i].op == FUNCTION_LABEL)
+        if (code[i].op == FUNCTION_ENTRY)
         {
             std::cout << std::setw(w) << code[i].result << " : " << std::endl;
             continue;

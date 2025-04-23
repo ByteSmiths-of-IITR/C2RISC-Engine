@@ -431,7 +431,7 @@ std::string getSecondLastWord(const std::string &infoStr)
 
     // Extract second last word
     return infoStr.substr(secondLastSpace == std::string::npos ? 0 : secondLastSpace + 1,
-                          lastSpace - (secondLastSpace == std::string::npos ? 0 : secondLastSpace + 1));
+                        lastSpace - (secondLastSpace == std::string::npos ? 0 : secondLastSpace + 1));
 }
 
 std::string getColor(std::string infoStr)

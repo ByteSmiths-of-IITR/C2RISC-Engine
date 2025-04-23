@@ -213,7 +213,6 @@ std::string toString(RecordType recordType)
     }
 }
 
-
 //====================[ Helper Functions ]=========================================================================================
 
 StorageClass getStorageClass(const std::string &value)
@@ -463,7 +462,8 @@ int ProcessDecSpecifiers(std::vector<std::string> &valueVector, TypeExpression &
     return check;
 }
 
-int add_printf_scanf(ASTNode *node){
+int add_printf_scanf(ASTNode *node)
+{
     TypeExpression printfType;
     TypeExpression scanfType;
     ParameterInfo *paramInfo = new ParameterInfo();
@@ -499,7 +499,6 @@ int add_printf_scanf(ASTNode *node){
     printfFunc->location = std::make_pair(-1, -1);
     printfFunc->symbolType = SYMBOL_TYPE::FUNCTION;
     printfFunc->isDefined = true;
-    
 
     // Create scanf function
     Function *scanfFunc = new Function();
@@ -527,7 +526,8 @@ int add_printf_scanf(ASTNode *node){
     return INSERT_SUCCESS;
 }
 
-int addVaradicLib(ASTNode *node){
+int addVaradicLib(ASTNode *node)
+{
     // We define two lib function of varadics
     // va_start & va_end | va_list
 
@@ -539,7 +539,7 @@ int addVaradicLib(ASTNode *node){
     vaBase->baseType = TYPE_VA_LIST;
     TypeExpression vaListArg;
     vaListArg.levelStack.push_back(vaBase);
-    
+
     // Create the Return Type (void)
     BaseInfo *voidBase = new BaseInfo();
     voidBase->baseType = TYPE_VOID;
@@ -588,8 +588,7 @@ int addVaradicLib(ASTNode *node){
     va_endFunc->type = va_endType;
     va_endFunc->isDefined = true;
     va_endFunc->location = std::make_pair(-1, -1);
-    va_endFunc->symbolType = SYMBOL_TYPE::FUNCTION;     
-
+    va_endFunc->symbolType = SYMBOL_TYPE::FUNCTION;
 
     // Add these to the symbol table
     int insertCheck = SYM_TABLE.insert(SYMBOL_TYPE::FUNCTION, "va_start", va_startFunc);
@@ -601,7 +600,7 @@ int addVaradicLib(ASTNode *node){
     if (insertCheck == INSERT_FAILURE)
     {
         return insertCheck;
-    }   
+    }
 
     // Also adding va_arg or type - int (va_list, type_qualifier)
     TypeExpression va_argType;
@@ -610,10 +609,10 @@ int addVaradicLib(ASTNode *node){
     // typeBase->baseType = TYPE_QUALIFIERS;
     ParameterInfo *vaArgParam = new ParameterInfo();
     vaArgParam->paramsType.push_back(vaListArg); // first arg - va_list
-    vaArgParam->paramsType.push_back(typeArg); // second arg - type_qualifier
+    vaArgParam->paramsType.push_back(typeArg);   // second arg - type_qualifier
     vaArgParam->isVariadic = false;
 
-    va_argType.levelStack.push_back(intBase);// return type
+    va_argType.levelStack.push_back(intBase);    // return type
     va_argType.levelStack.push_back(vaArgParam); // arg type
 
     // Add these to the symbol table
@@ -637,7 +636,7 @@ int addVaradicLib(ASTNode *node){
     vaCopyParam->paramsType.push_back(vaListArg); // first arg - va_list
     vaCopyParam->paramsType.push_back(vaListArg); // second arg - va_list
     vaCopyParam->isVariadic = false;
-    va_copyType.levelStack.push_back(voidBase1);// return type
+    va_copyType.levelStack.push_back(voidBase1);   // return type
     va_copyType.levelStack.push_back(vaCopyParam); // arg type
     // Add these to the symbol table
     Function *va_copyFunc = new Function();
@@ -694,7 +693,8 @@ void semanticPass(ASTNode *node)
         semanticError("Failed to insert printf and scanf in symbol table");
         FAIL_H; // no need to return
     }
-    else{
+    else
+    {
         // aptLOG("Added 🤫 printf and scanf to symbol table 🖨️");
     }
 
@@ -705,10 +705,10 @@ void semanticPass(ASTNode *node)
         semanticError("Failed to insert va_start and va_end in symbol table");
         FAIL_H; // no need to return
     }
-    else{
+    else
+    {
         // aptLOG("Added 🤫 va_start and va_end to symbol table");
     }
-
 
     translation_unit_H(node->children[0]);
 
@@ -746,7 +746,7 @@ int translation_unit_H(ASTNode *node)
     {
         // Wrong Production
     }
-    
+
     EXIT_H
     return OKAY;
 }
@@ -943,9 +943,9 @@ int function_definition_H(ASTNode *node)
             // OPEN a NEW SCOPE
             int scopeNo = SYM_TABLE.earlyEntry(); //  [☀️ EarlyScope Entry]
 
-            std::string scopeName = varName;                                  // Function Scope Name
-            SYM_TABLE.setScopeName(scopeName);                                // Set the name of the scope
-            aptLOG("Early Scope Entry : " + scopeName + " ☀️");                // 🌴 Adding syn_attr
+            std::string scopeName = varName;                   // Function Scope Name
+            SYM_TABLE.setScopeName(scopeName);                 // Set the name of the scope
+            aptLOG("Early Scope Entry : " + scopeName + " ☀️"); // 🌴 Adding syn_attr
 
             // Add the parameters to the symbol table
 
@@ -974,7 +974,7 @@ int function_definition_H(ASTNode *node)
 
         // 🔖IR Cdoe
 
-        CODE_BASE.addTAC(node, varName, FUNCTION_LABEL, NO_ARG, NO_ARG);
+        CODE_BASE.addTAC(node, varName, FUNCTION_ENTRY, NO_ARG, NO_ARG);
 
         // Call the compound_statement handler
         // Data to be fetched
@@ -1010,26 +1010,35 @@ int function_definition_H(ASTNode *node)
 
         bool returnAbsent = (code.op != RETURN_FUNCTION);
 
-        if(returnAbsent){
+        returnAbsent = false; // [TURNED OFF]
+
+        if (returnAbsent)
+        {
             aptLOG("Return Statement not found in function \"" + varName + "\""); // 🌴 Adding syn_attr
             Type whichReturnType = whatIsType(returnTypeExpr);
-            if(whichReturnType == Type::VARIABLE){
+            if (whichReturnType == Type::VARIABLE)
+            {
                 aptLOG("Return Type is Variable"); // 🌴 Adding syn_attr
                 BaseInfo *base = (BaseInfo *)returnTypeExpr.levelStack[0];
                 std::string ret = base->baseType;
-                if(ret != TYPE_VOID){
-                    // 
+                if (ret != TYPE_VOID)
+                {
                     semanticWarning("Function \'" + varName + "\'s return type is not void but no return statement found");
                     FAIL_H;
                     return FAIL;
                 }
             }
-            else{
+            else
+            {
                 semanticWarning("Function \'" + varName + "\'s return type is not void but no return statement found");
                 FAIL_H;
                 return FAIL;
             }
         }
+
+        // Adding Function Exit TAC
+        CODE_BASE.addTAC(node, varName, FUNCTION_EXIT, NO_ARG, NO_ARG);
+
 
         // Early Entry's Exit
         int exitedScope = SYM_TABLE.earlyExit(); //  [☀️ EarlyScope Entry] [IT's POSSIBLE that the early scope entry was never used in here]

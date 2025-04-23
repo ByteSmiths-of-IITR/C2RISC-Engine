@@ -1,32 +1,58 @@
+/*
+variations of for statement
+*/
+int main()
+{
+    int i = 0;
 
+    for (; i < 5;)
+    {
+        i++;
+    }
 
-int main(){
-    int arr[3];
-    int x;
-    x = arr[1];
-    return 23;
+    for (i = 0; i < 5;)
+    {
+        i++;
+    }
+
+    for (i = 0;;)
+    {
+        i++;
+        if (i == 4)
+            break;
+    }
 }
 
 //=========================== C2RISC-Engine =========================================================//
 // Lexical Analysis 👍 | Syntax Analysis 👍 | Semantic Analysis 👍 | 🔖 IRCode Gen
-// 🌴 APTree 🌴 has been generated, can be used for debugging ❤️‍🩹 
+// RISC-V Code Generation failed 
 // 
 // ------------------------------------------------------------------------------------
 // 
 // ------------------------------------------------------------------------------------
 // CodeLineNo : TAC                           
 // ---------- : -------------------------------
+// 0          : main: ⤵️                  
+// 1          : alloca i$1, 4                 
+// 2          : i$1 = 0                       
+// 3          : alloca $0, 4                  
+// 4          : $0 = i$1 < 5                  
+// 5          : if $0 goto L(7)               
+// 6          : goto L(11)                    
+// 7          : alloca $1, 4                  
+// 8          : $1 = i$1                      
+// 9          : i$1 = i$1 + 1                 
+// 10         : goto L(3)                     
+// 11         : i$1 = 0                       
+// 12         : alloca $2, 4                  
+// 13         : $2 = i$1 < 5                  
+// 14         : if $2 goto L(16)              
+// 15         : goto L(20)                    
+// 16         : alloca $3, 4                  
+// 17         : $3 = i$1                      
+// 18         : i$1 = i$1 + 1                 
+// 19         : goto L(12)                    
+// 20         : i$1 = 0                       
+// 21         : main: ↙️                  
 // 
-// 0          : main                          
-// 1          : arr$1 (12 bytes)              
-// 2          : x$1 (4 bytes)                 
-// 3          : $0 = arr$1.offset             
-// 4          : $1 (4 bytes)                  
-// 5          : $1 = 1 * 4                    
-// 6          : $2 (4 bytes)                  
-// 7          : $2 = $0 + $1                  
-// 8          : $3 (4 bytes)                  
-// 9          : $3 = *$2                      
-// 10         : x$1 = $3                      
-// 11         : return 23                     
 // 

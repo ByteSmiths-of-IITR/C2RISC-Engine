@@ -10,11 +10,11 @@
 extern int ANNOTATE; // 0 - OFF | 1 - ON [value set by header.cpp]
 
 //================== [Architecture Variables]=========================================================================================
-#define WORD_SIZE 4     // int, float
-#define WORD_SIZEx2 8   // double, long
-#define WORD_SIZEx4 16  // long double or long long
-#define BYTE_SIZEx2 2   // short
-#define BYTE_SIZE 1     // 8 bits, char
+#define WORD_SIZE 4    // int, float
+#define WORD_SIZEx2 8  // double, long
+#define WORD_SIZEx4 16 // long double or long long
+#define BYTE_SIZEx2 2  // short
+#define BYTE_SIZE 1    // 8 bits, char
 #define ADDRESS_SIZE 8 // 64 bit address
 
 //===================[ Memory Monitoring + Debugging ]============================================================================================
@@ -144,7 +144,7 @@ public:
     bool isVaradic;
     std::vector<std::string> paramsName;
     std::vector<TypeExpression> paramsType; // This will have the type of the parameters
-    bool isVariadic; // This will be used to check if the function is variadic or not
+    bool isVariadic;                        // This will be used to check if the function is variadic or not
     ParameterInfo()
     {
         levelType = PARAMETER_LEVEL;
@@ -475,7 +475,7 @@ class Function : public GenericSymbol
 {
 public:
     TypeExpression type; // This will also hold the parameter(top) + (all below)returnType
-    bool isDefined; // To deal with forward declaration
+    bool isDefined;      // To deal with forward declaration
 
     CON_DES(Function)
 };
@@ -494,7 +494,7 @@ class UserDType : public GenericSymbol
 {
 public:
     RecordType recordType; // This will be used for struct, union, enum
-    bool isComplete; // This will be used for struct, union, enum
+    bool isComplete;       // This will be used for struct, union, enum
     // Members of the record
     std::map<std::string, TypeExpression> members; // Enum won't use this
 
@@ -542,7 +542,8 @@ int width(const UserDType &dtype); // This will return the width of the user def
 extern std::string NO_ARG;
 extern std::string RIGHT_STAR;
 extern std::string LEFT_STAR;
-extern std::string FUNCTION_LABEL;
+extern std::string FUNCTION_ENTRY;
+extern std::string FUNCTION_EXIT;
 // extern std::string BLANK;
 extern std::string CAST;
 extern std::string LABEL;
@@ -552,19 +553,19 @@ extern std::string STACK_DATA;
 extern std::string DATA;
 extern std::string BSS;
 extern std::string PARAM;
-extern std::string CALL;
+extern std::string CALL; // leader for function call
 extern std::string ASSIGN_OP;
+
+// leader for Control Flow
 extern std::string IF_FALSE;
 extern std::string IF_TRUE;
 extern std::string GOTO_LABEL;
 extern std::string GOTO_EQUAL;
+
 extern std::string TO_BACKPATCH;
 extern std::string RETURN_FUNCTION;
 extern std::string MEM_COPY;
 extern std::string ALLOCATE;
-
-
-
 
 class TAC_Quadruple
 {
@@ -626,7 +627,7 @@ public:
 */
 
 //=====================[ TypeChecking Utilities 🅰️ ]=========================================================================================
-bool isVoid(const TypeExpression &typeExpr); // This will check if the type expression is void or not
+bool isVoid(const TypeExpression &typeExpr);                // This will check if the type expression is void or not
 bool isValidTypeExpression(const TypeExpression &typeExpr); // This will check if the type expression is valid or not
 
 bool isIntegral(const TypeExpression &typeExpr);
@@ -700,7 +701,6 @@ extern std::vector<std::string> compilerLOG;
 
 extern std::ofstream *handlerLog; // This will be used to log the errors
 
-
 #define aptHERE   \
     if (ANNOTATE) \
     node->addAttribute("👌 " + std::to_string(__LINE__) + ":" + __FILE__ + " ")
@@ -739,7 +739,8 @@ extern std::string semanticMessage;
     if (ANNOTATE) node->addAttribute("😱 COMPILER BUG Exit [" + std::to_string(__LINE__) + ":" + __FILE__ + "] ✋")
 
 #define RECOVER_H \
-    if (ANNOTATE) node->addAttribute("🤕 RECOVERY from Semantic Error 🤘")
+    if (ANNOTATE) \
+    node->addAttribute("🤕 RECOVERY from Semantic Error 🤘")
 
 #define RECOVER_THE_ERROR(x) \
     if ((x) == FAIL)         \
@@ -756,7 +757,7 @@ extern std::string semanticMessage;
     if ((x) == FAIL)      \
     {                     \
         FAIL_H;           \
-        return FAIL;           \
+        return FAIL;      \
     }                     \
     else if ((x) == BUG)  \
     {                     \
@@ -904,8 +905,8 @@ int direct_abstract_declarator_H(ASTNode *node, TypeExpression inh_type, TypeExp
 extern std::string NO_ARG_NAME;
 
 //----- Initializer -----
-int initializer_H(ASTNode *node, TypeExpression &type, std::string &varName ,int &size);
-int initializer_list_H(ASTNode *node, TypeExpression &type, std::string &varName ,int &size);
+int initializer_H(ASTNode *node, TypeExpression &type, std::string &varName, int &size);
+int initializer_list_H(ASTNode *node, TypeExpression &type, std::string &varName, int &size);
 
 //======================[ Expression Handlers ]=========================================================================================
 
@@ -929,5 +930,59 @@ int conditional_expression_H(ASTNode *node, std::string inh_whereToSendString, s
 int assignment_expression_H(ASTNode *node, std::string inh_whereToSendString, std::string &varName, TypeExpression &type, VALUE_TYPE &valueType, SPACE &valueSpace);
 
 int constant_expression_H(ASTNode *node, std::string &value);
+
+/*
+
+
+                                    🧬 Code Generations 🧬
+
+
+*/
+
+//=====================[ Code Generations ]=========================================================================================
+
+using RISCV_CODE = std::vector<std::string>;
+
+int codeGen(const TAC &irCode, RISCV_CODE &riscvCode);
+
+class BasicBlock
+{
+public:
+    std::vector<TAC_Quadruple> irCode;  // Not using NOW
+    std::vector<std::string> riscvCode; // Will be generated
+
+    std::string label;                 // Label for the basic block
+    // std::vector<std::string> inLinks;  // can be 1 or more
+    // std::vector<std::string> outLinks; // <= 2
+
+    // Two Special ENTRY and EXIT blocks
+};
+
+class CFG
+{
+public:
+    std::vector<BasicBlock> blocks;
+    std::map<std::string, int> labelMap; // Map of labels to block index
+    std::vector<int> leaders;
+
+    int nextBlockIndex = 0;
+
+    std::string newBlock();
+
+    std::vector<std::pair<std::string, std::string>> edges; // Edges between blocks
+
+    CFG() = default;
+
+    // This will help find to which block any index belongs
+    int whichBlock(int index);
+
+    int addEdge(const std::string &from, const std::string &to);
+
+    int generateDOTFile(const std::string &filename); // This will generate a dot file for the CFG
+
+    void generateRISCVCodes(RISCV_CODE &riscvCode);
+};
+
+int makeBasicBlocks(const TAC &irCode, CFG &cfg);
 
 #endif // !HEADER_H

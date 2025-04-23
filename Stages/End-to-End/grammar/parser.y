@@ -2634,6 +2634,24 @@ int main(int argc, char **argv) {
     }
 
 
+
+    /*
+
+                                🅾️ FINAL PHASE + 🧬 RISC-V Code Gen
+
+    */
+    RISCV_CODE finalCode; 
+
+    int riscvCodeGenStatus = codeGen(CODE_BASE, finalCode); // Call the RISC-V code generation function
+
+    if(riscvCodeGenStatus == 0){
+        notificationStream <<  "RISC-V Code Generation completed successfully \n";
+    }
+    else{
+        notificationStream <<  "RISC-V Code Generation failed \n";
+    }
+
+
     if (yyin) fclose(yyin);  // Close the input file if opened
     exit_compiler(); // Clean up and exit
     return 0;

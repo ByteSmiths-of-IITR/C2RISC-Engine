@@ -67,7 +67,7 @@ int SymbolTable::earlyEntry()
     }
 
     // it's false // So we can set it to true
-    CERR << "Info: earlyEntry is set to true\n";
+    // CERR << "Info: earlyEntry is set to true\n";
     // call the enterScope
     int k = this->enterScope();
     this->wasEarlyEntered = true;
@@ -119,7 +119,7 @@ int SymbolTable::exitScope()
 
     // Deleting the symbols of the current scope
     int size = this->listStack.size();
-    debug << "Size: " << size << std::endl;
+    // debug << "Size: " << size << std::endl;
     int bottom;
     if (this->scopeBottom.empty())
     {

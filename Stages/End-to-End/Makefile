@@ -239,3 +239,13 @@ debugging: all $(EXECUTABLE) $(INPUT) $(OUTPUT) $(CERR)
 	@-./$(EXECUTABLE) $(INPUT) -t -d2 $(APTreeFile) 2> $(CERR)
 	@echo "🎄 APTree in - " $(APTreeSVG)
 	@-$(DOT) -Tsvg $(APTreeFile) -o $(APTreeSVG)
+
+
+CFGFile = $(BUILD_DIR)/cfg.dot
+CFGSVG = $(OUTPUT_DIR)/cfg.svg
+
+cfg: all $(EXECUTABLE) $(INPUT) $(OUTPUT) $(CERR)
+	@echo "🚥 Starting C2RISC Engine 🟢 "
+	@-./$(EXECUTABLE) $(INPUT) -t 2> $(CERR)
+	@echo "CFG in - " $(CFGSVG)
+	@-$(DOT) -Tsvg $(CFGFile) -o $(CFGSVG)

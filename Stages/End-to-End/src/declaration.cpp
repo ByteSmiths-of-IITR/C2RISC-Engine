@@ -267,7 +267,7 @@ int init_declarator_H(ASTNode *node, TypeExpression inh_type, StorageClass inh_s
                         int equal = ourEquivalent(source, dest);
                         if (equal != OKAY)
                         {
-                            std::string castedVarNam = newTemp(); // ALLOCATED Added
+                            std::string castedVarNam = newTemp(); // allocate width(dest) bytes
 
                             // Allocate memory for the casted variable
                             int castedVarSize = width(dest);
