@@ -15,7 +15,7 @@ extern int ANNOTATE; // 0 - OFF | 1 - ON [value set by header.cpp]
 #define WORD_SIZEx4 16 // long double or long long
 #define BYTE_SIZEx2 2  // short
 #define BYTE_SIZE 1    // 8 bits, char
-#define ADDRESS_SIZE 8 // 64 bit address
+#define ADDRESS_SIZE 4 // 32 bit address
 
 //===================[ Memory Monitoring + Debugging ]============================================================================================
 extern int MEMORY_MONITORING; // 0 - OFF | 1 - ON [value set by header.cpp]
@@ -546,7 +546,6 @@ extern std::string FUNCTION_ENTRY;
 extern std::string FUNCTION_EXIT;
 // extern std::string BLANK;
 extern std::string CAST;
-extern std::string LABEL;
 extern std::string AMPERSEND;
 extern std::string RO_DATA;
 extern std::string STACK_DATA;
@@ -564,7 +563,6 @@ extern std::string GOTO_EQUAL;
 
 extern std::string TO_BACKPATCH;
 extern std::string RETURN_FUNCTION;
-extern std::string MEM_COPY;
 extern std::string ALLOCATE;
 
 class TAC_Quadruple
@@ -574,7 +572,6 @@ public:
     std::string arg1;
     std::string arg2;
     std::string result;
-    // ASTNode *addedAt;
 
     CON_DES(TAC_Quadruple)
 
@@ -588,14 +585,29 @@ int mergeList(std::vector<int> &target, int addition);
 
 std::string newTemp(); // Generates a new temporary variable [compiler generated]
 
+class dataSegment
+{
+public:
+    std::string name;
+    std::string type;  // can be .word, .byte
+    std::string value; // value of the data
+};
+
+extern std::string dataByte;
+extern std::string dataHalfByte;
+extern std::string dataWord;
+extern std::string dataDouble;
+extern std::string dataString;
+extern std::string dataFloat;
+extern std::string dataZero; // Used for data-space allocation
+
 class TAC
 {
 public:
     std::vector<TAC_Quadruple> code;
-    std::vector<std::string> roData;
-    // std::vector<std::string> stackData;
-    std::vector<std::string> bssData;
-    std::vector<std::string> data;
+
+    std::map<std::string, dataSegment> dataSection;
+
     const int w = 10;
     const int wcode = 30;
 
@@ -682,7 +694,7 @@ int ProcessDecSpecifiers(std::vector<std::string> &valueVector, TypeExpression &
 
 //====================[ Globally Accessible Variables ]=========================================================================================
 extern SymbolTable SYM_TABLE; // Global Symbol Table
-extern TAC CODE_BASE;         // Global TAC Code Base
+extern TAC IR_CODE;           // Global TAC Code Base
 
 //====================[ Annotated Parse Tree ]=========================================================================================
 
@@ -716,6 +728,9 @@ extern std::ofstream *handlerLog; // This will be used to log the errors
     aptLOG("‼️ " + std::string(x));
 
 extern std::string semanticMessage;
+
+#define REACHING \
+    std::cout << "Reaching " << __LINE__ << " in " << __FILE__ << std::endl;
 
 #define aptLOG(x) \
     if (ANNOTATE) \
@@ -788,8 +803,8 @@ extern const int FAIL;
         {                                                                                         \
             std::string tempName = newTemp();                                                     \
             int size = width(type);                                                               \
-            CODE_BASE.addTAC((node), tempName, ALLOCATE, std::to_string(size), NO_ARG);           \
-            CODE_BASE.addTAC((node), tempName, RIGHT_STAR, (value), NO_ARG);                      \
+            IR_CODE.addTAC((node), tempName, ALLOCATE, std::to_string(size), NO_ARG);             \
+            IR_CODE.addTAC((node), tempName, RIGHT_STAR, (value), NO_ARG);                        \
             value = tempName;                                                                     \
         }                                                                                         \
     }                                                                                             \
@@ -817,7 +832,7 @@ std::string getCurrentTime();
 
 void semanticPass(ASTNode *node);
 // SYM_TABLE - Will be Globaly available
-// CODE_BASE - Will be Globaly available (TAC)
+// IR_CODE - Will be Globaly available (TAC)
 
 //=====================[ Starting Handlers ]=========================================================================================
 
@@ -905,8 +920,8 @@ int direct_abstract_declarator_H(ASTNode *node, TypeExpression inh_type, TypeExp
 extern std::string NO_ARG_NAME;
 
 //----- Initializer -----
-int initializer_H(ASTNode *node, TypeExpression &type, std::string &varName, int &size);
-int initializer_list_H(ASTNode *node, TypeExpression &type, std::string &varName, int &size);
+int initializer_H(ASTNode *node, TypeExpression inh_type, std::string inh_varName, SPACE inh_valueSpace, VALUE_TYPE inh_valueType);
+int initializer_list_H(ASTNode *node, TypeExpression inh_type, std::string inh_varName, int &totalInitializers);
 
 //======================[ Expression Handlers ]=========================================================================================
 
@@ -943,112 +958,188 @@ int constant_expression_H(ASTNode *node, std::string &value);
 
 using RISCV_CODE = std::vector<std::string>;
 
-int codeGen(const TAC &irCode, RISCV_CODE &riscvCode);
+int codeGen();
 
-class PerBlockSymbolInfo{
-    public:
-    bool live_flag;
-    std::set<int> nextUse;
-    bool inMemory;
-    std::set<int> inRegNo;
-};
-
-class RegisterInfo{
+class RegisterInfo
+{
+public:
     std::map<int, std::set<std::string>> regMap; // Map of register to variable
 
-    bool isFree(int regNo); // Check if the register is free or not
+    std::set<int> freeReg; // Set of free registers
 
-    bool isVarInReg(int regNo, const std::string &varName); // Check if the variable is in the register or not
-
-    int whatIsInReg(int regNo, std::set<std::string> &varName); // Check what is in the register
 
 };
 
-RegisterInfo REG_INFO;
+
+using LivelinessDS = std::map<std::string, std::pair<bool, std::set<int>>>; // This will be used to keep track of the liveliness of the variables
+
+class NEW_TAC_Quadruple : public TAC_Quadruple
+{
+    // This will a improved version of TAC_Quadruple
+public:
+    // Storing Status of Three Variables in that Instruction (<= 3)
+    LivelinessDS VarInfo;
+
+    NEW_TAC_Quadruple() = default;
+
+    NEW_TAC_Quadruple(TAC_Quadruple oldTAC){
+        this->op = oldTAC.op;
+        this->arg1 = oldTAC.arg1;
+        this->arg2 = oldTAC.arg2;
+        this->result = oldTAC.result;
+    }
+
+    int addVariable(const std::string &varName, bool islive, const std::set<int> &nextUsage);
+
+    // Check if the variable is alive or NOT (via-reference)
+    int isAlive(const std::string &varName, bool &alive);
+
+    int addLivelinessInfo(const LivelinessDS &info);
+
+    // Find the next usage of a variable
+    int nextUse(const std::string &varName, std::set<int> &usage);
+
+    int howManyNextUsage(const std::string &varName, int &total);
+
+    std::string toString();
+};
+
+
+class NEW_TAC
+{
+public:
+    std::map<int, NEW_TAC_Quadruple> code;
+
+    int addOLD_TAC(int lineNo, TAC_Quadruple oldIrCode);
+    int addVarInfo(int lineNo, const std::string  &varName, bool isAlive, const std::set<int> &nextUsage);
+
+    int addTAC(int lineNo, NEW_TAC_Quadruple q);
+
+    void printTAC(std::ostringstream &oss);
+};
 
 class BasicBlock
 {
 public:
-    std::vector<TAC_Quadruple> irCode;  // Not using NOW
+    NEW_TAC irCode;
+
+    LivelinessDS livelinessInfo; // This will be used to keep track of the liveliness of the variables
+
     std::vector<std::string> riscvCode; // Will be generated
+    int generateRISCVCode();            // This will generate the RISC-V code & store in it's element -> risvCode
 
-    std::map<std::string, PerBlockSymbolInfo> symbolInfo; // This will be used to keep track of the symbols in the block
-
-    // Basic Functions
-    int insertInfo(const std::string &key, PerBlockSymbolInfo &info);
-    int lookupInfo(const std::string &key, PerBlockSymbolInfo &info);
-
-
-    // Utility Function
-    bool isInMemory(const std::string &key); // Check if the variable(updated) is in memory or not
-    
-    int setInMemory(const std::string &key); // Set the variable as in memory
-    int setNotInMemory(const std::string &key); // Set the variable as not in memory
-
-    int setInRegNo(const std::string &key, int regNo); // Set the variable as in register
-    int removeInRegNo(const std::string &key, int regNo); // Clear the variable from register
-    int clearAllInRegNo(const std::string &key); // Clear all the registers for the variable
-
-    int setAlive(const std::string &key); // Set the variable as alive
-    int setAllAlive(); // Set all the variables as alive
-    int setDead(const std::string &key); // Set the variable as dead
-    int setAllDead(); // Set all the variables as dead
-
-    bool isAlive(const std::string &key); // Check if the variable is alive or not
-
-    int addUsage(const std::string &key, int lineNo); // Add the usage of the variable in the register
-    int removeUsage(const std::string &key, int lineNo); // Clear the usage of the variable in the register
-    int clearAllUsage(const std::string &key); // Clear all the usage of the variable in the register
-
-    std::string label;                 // Label for the basic block
-    // std::vector<std::string> inLinks;  // can be 1 or more
-    // std::vector<std::string> outLinks; // <= 2
-
-    // Two Special ENTRY and EXIT blocks
+    std::string label; // Label for the basic block
 };
 
 class CFG
 {
 public:
-    std::vector<BasicBlock> blocks;
-    std::map<std::string, int> labelMap; // Map of labels to block index
+    std::map<std::string, BasicBlock> blocks; // Direclty map leader's Index to Block
+
+    std::map<std::string, dataSegment> dataSection;
+
     std::vector<int> leaders;
+    std::map<int, std::string> leaderToBlockMap;
 
     int nextBlockIndex = 0;
 
     std::string newBlock();
 
-    std::vector<std::pair<std::string, std::string>> edges; // Edges between blocks
+    std::map<std::string, std::vector<std::string>> edges; // This will be used to keep track of the leaders
 
     CFG() = default;
 
     // This will help find to which block any index belongs
     int whichBlock(int index);
 
+    bool isALeader(int index);
+    int addLeader(int index);                        // will generate a new Name for block & set things
+    int addLeader(int index, std::string blockName); // This will set that Name
+    void sortLeaders();
+
+    // This will check who is leader and send the leader's blocksLable
+    std::string blockName(int index);
+
+    int add_NEWTAC(int irLineNo, NEW_TAC_Quadruple code);
+
     int addEdge(const std::string &from, const std::string &to);
+    int addEdge(int from, int to);
 
     int generateDOTFile(const std::string &filename); // This will generate a dot file for the CFG
 
-    void generateRISCVCodes(RISCV_CODE &riscvCode);
+    void generateRISCVCodes();
+
+    //----------- Utilities for Liveliness Checking
+    int getAllLivelinessInfo(int atLine, LivelinessDS &livelinessInfo);
+
+    int setAlive(int atLine, const std::string &key); // Set the variable as alive
+    int setAllAlive(int atLine);                    // Set all the variables as alive
+    int setDead(int atLine, const std::string &key);  // Set the variable as dead
+    int setAllDead(int atLine);                     // Set all the variables as dead
+
+    bool isAlive(int atLine, const std::string &key); // Check if the variable is alive or not
+
+    int addUsage(int atLine, const std::string &key, int usageLine);    // Add the usage of the variable in the register
+    int removeUsage(int atLine, const std::string &key, int usageLine); // Clear the usage of the variable in the register
+    int clearAllUsage(int atLine, const std::string &key);           // Clear all the usage of the variable in the register
+
+    // For Us to use Simple Functions
+
+    int assignmentAt(int atLine, const std::string &varName); // This will be used to assign the value to the variable
+    int usageAt(int atLine, const std::string &varName); // This will be used to use the variable as an operand
+
+
+    int resetLiveliness(int atLine);
 };
 
-class SymInfo{
-    public:
+class SymInfo
+{
+public:
     // Information of each symbol
+    // For Offset Calculations
     int size;
     int offset; // relative to function-block or global-space
     bool isGlobal;
+
+
+    // Will be used by getReg
+    bool inMemory;
+    std::set<int> inRegNo;
 };
+
+// Some Constant Needed
+int const activation_start_offset = 16; // 4 words
+/* Usage of last 4 Words
+- (unused)
+- Where to Store Return Value Address
+- Old Frame Pointer
+- Return Address
+*/
 
 class SymTable
 {
     // This will be scope-disabled Symbol Table
 
-    public:
+public:
     std::map<std::string, SymInfo> symTable; // This will be used to keep track of the symbols
 
+    int bss_offset;  // This will be used to keep track of the bss offset
+    int ro_offset;   // This will be used to keep track of the ro offset
+    int data_offset; // This will be used to keep track of the data offset
+
+    int stack_offset; // For Local Offset
+
+    bool inFunction;
+    std::string functionName; // This will be used to keep track of the function name
+
+    // We will also Insert functions as a variable and it's size = activation record size;
+
+
+    int enterFunction(const std::string &funcName);
+    int exitFunction();
 
     int insert(const std::string &key, SymInfo &info);
+    int insert(const std::string &key, int size); // The Offset & isGlobal Will be autoSet
     int lookup(const std::string &key, SymInfo &info);
 
     int remove(const std::string &key);
@@ -1056,10 +1147,69 @@ class SymTable
     int getSize(const std::string &key);
     int getOffset(const std::string &key);
     bool isGlobal(const std::string &key);
+
+    void printTable(std::ofstream &file);
+
+    //---------- Utility Function for getReg
+    bool isInMemory(const std::string &key); // Check if the variable(updated) is in memory or not
+
+    int setInMemory(const std::string &key);    // Set the variable as in memory
+    int setNotInMemory(const std::string &key); // Set the variable as not in memory
+
+    int addVarInReg(const std::string &key, int regNo);    // Set the variable as in register
+    int removeVarFromReg(const std::string &key, int regNo); // Clear the variable from register
+    int removeVarFromAllReg(const std::string &key);          // Clear all the registers for the variable
+
+
+    // RegDescription Table Structures
+    std::map<int, std::set<std::string>> regMap; // Map of register to variable
+
+    std::set<int> SetOfFreeReg; // Set of free registers
+
+    // Utility Functions for Register Table
+    // Check if a particular register is free or NOT
+    bool isFree(int regNo);
+
+    // Check a particular variable is in a particular register
+    bool isVarInReg(int regNo, const std::string &varName);
+
+    // Get all the variable whose value is in the arg_given register
+    int whatIsInReg(int regNo, std::set<std::string> &varName);
+
+    // Add a variable to the register
+    // int addVarToReg(int regNo, const std::string &varName); [Already Present for get_regUtilites]
+
+    // Remove a variable from the register
+    // int removeVarFromReg(int regNo, const std::string &varName); [Already Present for get_regUtilites]
+
+    int freeReg(int regNo); // Free the register
+
+    int freeAllReg(); // Free all the registers
+
+    // Get a free register (via-Reference) [Gives Smallest Free Register or -1 if none is free]
+    int getFreeReg(int &regNo);
+
+    void resetRegTable(); // Reset the register info
+
+    void printRegTable(std::ofstream &file); // Print the register info
 };
 
-int makeBasicBlocks(const TAC &irCode, CFG &cfg);
+int addSymbolsToSymTable();
 
+int makeBasicBlocks();
 
+int generatingRISCVCode();
+
+int livelinessPass();
+
+//====================[ Externed Global CodeGen Variables ]=========================================================================================
+
+extern std::string NO_BLOCK;
+
+extern CFG CFG_CODE;
+extern RegisterInfo REG_TABLE;
+extern SymTable SYM_RECORD;
+
+extern RISCV_CODE FINAL_CODE;
 
 #endif // !HEADER_H

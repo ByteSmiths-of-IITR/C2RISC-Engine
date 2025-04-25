@@ -8,7 +8,7 @@ std::vector<std::string> semanticLOG; // [extern declared in header.h]
 std::string semanticMessage;          // [extern declared in header.h]
 //====================[ Globally Accessible Variables ]=========================================================================================
 SymbolTable SYM_TABLE; // Global Symbol Table
-TAC CODE_BASE;         // Global TAC Code Base
+TAC IR_CODE;           // Global TAC Code Base
 
 //====================[ Annotated Parse Tree ]=========================================================================================
 
@@ -717,7 +717,7 @@ void semanticPass(ASTNode *node)
     aptLOG("Scope (Global) S" + std::to_string(globalScope) + " Exited ↙️"); // 🌴 Adding syn_attr
 }
 // SYM_TABLE - Will be Globaly available
-// CODE_BASE - Will be Globaly available (TAC)
+// IR_CODE - Will be Globaly available (TAC)
 
 //====================[ Starting Handlers ]=========================================================================================
 
@@ -924,7 +924,7 @@ int function_definition_H(ASTNode *node)
         }
 
         // 🔖IR Cdoe
-        CODE_BASE.addTAC(node, varName, FUNCTION_ENTRY, NO_ARG, NO_ARG);
+        IR_CODE.addTAC(node, varName, FUNCTION_ENTRY, NO_ARG, NO_ARG);
 
         // Now we have list of all the prameters & their names
         if (!isAbstract)
@@ -966,7 +966,8 @@ int function_definition_H(ASTNode *node)
 
                 // Need a allocate Code
                 int size = width(paramVector[i]);
-                CODE_BASE.addTAC(node, paramNames[i], ALLOCATE, std::to_string(size), NO_ARG);
+                std::string suffix = "$" + std::to_string(SYM_TABLE.scopeNo);
+                IR_CODE.addTAC(node, paramNames[i] + suffix, ALLOCATE, std::to_string(size), NO_ARG);
 
                 if (insertCheck == INSERT_FAILURE)
                 {
@@ -979,7 +980,6 @@ int function_definition_H(ASTNode *node)
                 }
             }
         }
-        
 
         // Call the compound_statement handler
         // Data to be fetched
@@ -990,8 +990,8 @@ int function_definition_H(ASTNode *node)
         compound_statement_H(node->children[2], S1_nextList, S1_breakList, S1_continueList, caseMap);
 
         // Backpatch the next list
-        int aLabel = CODE_BASE.nextIndex();
-        CODE_BASE.backpatch(node, S1_nextList, aLabel);
+        int aLabel = IR_CODE.nextIndex();
+        IR_CODE.backpatch(node, S1_nextList, aLabel);
 
         // TO BACKPATCH GOTO LABELS
         for (auto &pair : labelList)
@@ -1001,7 +1001,7 @@ int function_definition_H(ASTNode *node)
             if (labelMap.find(label) != labelMap.end())
             {
                 int labelIndex = labelMap[label];
-                CODE_BASE.backpatch(node, list, labelIndex);
+                IR_CODE.backpatch(node, list, labelIndex);
             }
             else
             {
@@ -1010,8 +1010,8 @@ int function_definition_H(ASTNode *node)
         }
 
         // The last Code was supposed to be a return statement
-        int returnIndex = CODE_BASE.nextIndex();
-        TAC_Quadruple code = CODE_BASE.code[returnIndex - 1];
+        int returnIndex = IR_CODE.nextIndex();
+        TAC_Quadruple code = IR_CODE.code[returnIndex - 1];
 
         bool returnAbsent = (code.op != RETURN_FUNCTION);
 
@@ -1042,8 +1042,7 @@ int function_definition_H(ASTNode *node)
         }
 
         // Adding Function Exit TAC
-        CODE_BASE.addTAC(node, varName, FUNCTION_EXIT, NO_ARG, NO_ARG);
-
+        IR_CODE.addTAC(node, varName, FUNCTION_EXIT, NO_ARG, NO_ARG);
 
         // Early Entry's Exit
         int exitedScope = SYM_TABLE.earlyExit(); //  [☀️ EarlyScope Entry] [IT's POSSIBLE that the early scope entry was never used in here]

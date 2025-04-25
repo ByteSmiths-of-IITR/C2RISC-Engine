@@ -17,8 +17,8 @@ std::string TYPE_CHAR = "char";
 std::string TYPE_SHORT = "short";
 std::string TYPE_LONG = "long";
 std::string TYPE_VOID = "void";
-std::string TYPE_VA_LIST = "va_list"; // This will be used for va_list
-std::string VARADIC = "*isVaradic*"; // This will be used to check if the function is varadic or not
+std::string TYPE_VA_LIST = "va_list";            // This will be used for va_list
+std::string VARADIC = "*isVaradic*";             // This will be used to check if the function is varadic or not
 std::string TYPE_QUALIFIERS = "type_qualifiers"; // This will be used to check if the type is a qualifier or not
 
 std::string TYPE_LONG_LONG = "long long";
@@ -26,7 +26,7 @@ std::string TYPE_UNSIGNED = "unsigned"; // will be used like - UNSIGNED + PRIMIT
 std::string TYPE_SIGNED = "signed";
 
 int const POP_SUCCESS = 0;
-int const POP_FAILURE = -1; // if 
+int const POP_FAILURE = -1; // if
 int const EQUIVALENT = 0;
 int const OKAY = 0;
 int const WARNING = -1;
@@ -40,16 +40,16 @@ int const INSERT_SUCCESS = 0;
 int const INSERT_SUCCESS_WITH_WARNING = 1;
 int const INSERT_FAILURE = -1; // Already present in the current scope
 
-int const LOOKUP_SUCCESS = 0; // Found
+int const LOOKUP_SUCCESS = 0;  // Found
 int const LOOKUP_FAILURE = -1; // Not Found
 
 std::string IN_SYNTAX_PHASE = "$IN_SYNTAX_PHASE$"; // This will be used to check if we are in syntax phase or not
-const std::string PASS_ERROR = "0000"; // This will be used to pass error in the function
-std::string lastFuncCalled = "init"; // Global variable to keep track of the last function called
+const std::string PASS_ERROR = "0000";             // This will be used to pass error in the function
+std::string lastFuncCalled = "init";               // Global variable to keep track of the last function called
 
 //=== [Global Variables] ==========================================================================================================
 // SymbolTable SYM_TABLE; // Global Symbol Table
-// TAC CODE_BASE; // Global TAC Code Base [declared in handler.cpp]
+// TAC IR_CODE; // Global TAC Code Base [declared in handler.cpp]
 
 std::string getCurrentTime()
 {
@@ -63,5 +63,5 @@ std::string getCurrentTime()
 }
 
 // GOTO Label's Declaration
-std::map<std::string, int> labelMap;                      // This will be used to keep track of the labels
+std::map<std::string, int> labelMap;               // This will be used to keep track of the labels
 std::map<std::string, std::vector<int>> labelList; // This will be used to keep track of the labels

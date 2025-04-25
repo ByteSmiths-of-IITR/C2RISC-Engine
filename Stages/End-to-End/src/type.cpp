@@ -448,6 +448,7 @@ int ProcessConstants(std::string inputValue, TypeExpression &typeExpr, std::stri
 {
     // Allocate a new BaseInfo to record the type.
     BaseInfo *base = new BaseInfo();
+    base->typeQualifiers.push_back(TypeQualifier::CONST);
     try
     {
         // ----- Character Literals -----
@@ -608,7 +609,7 @@ int ProcessConstants(std::string inputValue, TypeExpression &typeExpr, std::stri
                 base->baseType = TYPE_INT;
             }
             else if (value >= std::numeric_limits<long>::min() &&
-                     value <= std::numeric_limits<long>::max())
+                    value <= std::numeric_limits<long>::max())
             {
                 base->baseType = TYPE_LONG;
             }

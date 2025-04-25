@@ -90,7 +90,7 @@ int statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<int> &b
         // Call the declaration handler
         int dcl_check = declaration_H(node->children[0]);
         PASS_THE_ERROR(dcl_check);
-    }   
+    }
     else
     {
         compilerError("Wrong Production in statement_H");
@@ -132,8 +132,8 @@ int statement_list_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<in
         RECOVER_THE_ERROR(sl_check);
 
         // BackPatch the next list
-        int aLabel = CODE_BASE.nextIndex();
-        CODE_BASE.backpatch(node, S1_nextList, aLabel);
+        int aLabel = IR_CODE.nextIndex();
+        IR_CODE.backpatch(node, S1_nextList, aLabel);
 
         // Call the statement handler
         std::vector<int> S2_nextList;
@@ -351,15 +351,15 @@ int selection_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vect
             return FAIL;
         }
 
-        int aLabel = CODE_BASE.addTAC(node, TO_BACKPATCH, IF_TRUE, varName1, NO_ARG);  // if (varName != 0) goto aLabel
-        int bLabel = CODE_BASE.addTAC(node, TO_BACKPATCH, GOTO_LABEL, NO_ARG, NO_ARG); // goto bLabel
+        int aLabel = IR_CODE.addTAC(node, TO_BACKPATCH, IF_TRUE, varName1, NO_ARG);  // if (varName != 0) goto aLabel
+        int bLabel = IR_CODE.addTAC(node, TO_BACKPATCH, GOTO_LABEL, NO_ARG, NO_ARG); // goto bLabel
 
         mergeList(E_truelist, aLabel);
         mergeList(E_falselist, bLabel);
 
-        int nextLabel = CODE_BASE.nextIndex();
+        int nextLabel = IR_CODE.nextIndex();
 
-        int check = CODE_BASE.backpatch(node, E_truelist, nextLabel);
+        int check = IR_CODE.backpatch(node, E_truelist, nextLabel);
 
         std::vector<int> S1_nextList; // This value will be fetchec
         // Next we evaluate the statement
@@ -397,28 +397,28 @@ int selection_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vect
             return FAIL;
         }
 
-        int aLabel = CODE_BASE.addTAC(node, TO_BACKPATCH, IF_TRUE, varName1, NO_ARG);  // if (varName != 0) goto aLabel
-        int bLabel = CODE_BASE.addTAC(node, TO_BACKPATCH, GOTO_LABEL, NO_ARG, NO_ARG); // goto bLabel
+        int aLabel = IR_CODE.addTAC(node, TO_BACKPATCH, IF_TRUE, varName1, NO_ARG);  // if (varName != 0) goto aLabel
+        int bLabel = IR_CODE.addTAC(node, TO_BACKPATCH, GOTO_LABEL, NO_ARG, NO_ARG); // goto bLabel
 
         mergeList(E_truelist, aLabel);
         mergeList(E_falselist, bLabel);
 
-        int nextLabel = CODE_BASE.nextIndex();
+        int nextLabel = IR_CODE.nextIndex();
 
-        int check = CODE_BASE.backpatch(node, E_truelist, nextLabel);
+        int check = IR_CODE.backpatch(node, E_truelist, nextLabel);
 
         std::vector<int> S1_nextList; // This value will be fetchec
         // Next we evaluate the statement
         int s_check = statement_H(node->children[4], S1_nextList, breakList, continueList, caseMap);
         RECOVER_THE_ERROR(s_check);
 
-        int cLabel = CODE_BASE.addTAC(node, TO_BACKPATCH, GOTO_LABEL, NO_ARG, NO_ARG); // goto cLabel
+        int cLabel = IR_CODE.addTAC(node, TO_BACKPATCH, GOTO_LABEL, NO_ARG, NO_ARG); // goto cLabel
 
         mergeList(S_nextList, cLabel);
 
-        int d_index = CODE_BASE.nextIndex();
+        int d_index = IR_CODE.nextIndex();
 
-        int check2 = CODE_BASE.backpatch(node, E_falselist, d_index);
+        int check2 = IR_CODE.backpatch(node, E_falselist, d_index);
 
         std::vector<int> S2_nextList; // This value will be fetchec
         // Next we evaluate the statement
@@ -459,7 +459,7 @@ int selection_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vect
         // 🔖 IRCode Gen
 
         breakAllowed++;
-        int jumpToMAP = CODE_BASE.addTAC(node, TO_BACKPATCH, GOTO_LABEL, NO_ARG, NO_ARG); // goto jumpToMAP
+        int jumpToMAP = IR_CODE.addTAC(node, TO_BACKPATCH, GOTO_LABEL, NO_ARG, NO_ARG); // goto jumpToMAP
 
         std::map<std::string, int> caseMap1;
 
@@ -472,13 +472,13 @@ int selection_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vect
         RECOVER_THE_ERROR(s_check);
         caseAllowed--;
         breakAllowed--;
-        int defaultExit = CODE_BASE.addTAC(node, TO_BACKPATCH, GOTO_LABEL, NO_ARG, NO_ARG); // goto defaultExit
+        int defaultExit = IR_CODE.addTAC(node, TO_BACKPATCH, GOTO_LABEL, NO_ARG, NO_ARG); // goto defaultExit
 
         bool isDefault = false;
         int defaultJumpAddress;
 
-        int mapStart = CODE_BASE.nextIndex();
-        int check = CODE_BASE.backpatch(node, {jumpToMAP}, mapStart);
+        int mapStart = IR_CODE.nextIndex();
+        int check = IR_CODE.backpatch(node, {jumpToMAP}, mapStart);
 
         if (caseMap1.find(DEFAULT_CASE) != caseMap1.end())
         {
@@ -502,14 +502,14 @@ int selection_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vect
             else
             {
                 std::string caseIndex = std::to_string(it.second);
-                CODE_BASE.addTAC(node, caseIndex, GOTO_EQUAL, varName1, it.first); // if (varName1 == it.first) goto it.second
+                IR_CODE.addTAC(node, caseIndex, GOTO_EQUAL, varName1, it.first); // if (varName1 == it.first) goto it.second
             }
         }
 
         if (isDefault)
         {
             std::string defaultIndex = std::to_string(defaultJumpAddress);
-            CODE_BASE.addTAC(node, defaultIndex, GOTO_LABEL, NO_ARG, NO_ARG); // goto defaultJumpAddress
+            IR_CODE.addTAC(node, defaultIndex, GOTO_LABEL, NO_ARG, NO_ARG); // goto defaultJumpAddress
         }
 
         mergeList(S_nextList, S1_nextList);
@@ -555,68 +555,7 @@ int iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vect
     if (whichProduction == P1)
     {
         // Find Loop's Start position
-        int loopStart = CODE_BASE.nextIndex();
-        std::string loopStartLabel = std::to_string(loopStart) ;
-
-        std::vector<int> E_truelist, E_falselist;
-        // Get Ready to call expression
-        // Data to be fetched
-        std::string varName1 = "Just a Dummy";
-        TypeExpression type1;
-        VALUE_TYPE valueType1;
-        SPACE valueSpace1;
-        int e_check = expression_H(node->children[2], "NONE", varName1, type1, valueType1, valueSpace1);
-        RECOVER_THE_ERROR(e_check);
-
-        // 🚀 USAGE 🤫 SPACE CHANGE 🚀
-        USAGE_SPACE_CHANGE(varName1, type1, valueSpace1, node);
-
-        // while ✅(int char ptr function_name array_name float double enum_const enum_name) ❌(struct_object union_object)
-        // 🅱️ TypeChecking of Expression
-        //  Type NOT allowed - STRUCT_UNION
-        Type whichType = whatIsType(type1);
-        if (whichType == Type::STRUCT_UNION)
-        {
-            semanticError("SEMANTIC ERROR ‼️: Expression inside while statement cannot be of type STRUCT_UNION");
-            FAIL_H;
-            return FAIL;
-        }
-
-        int aLabel = CODE_BASE.addTAC(node, TO_BACKPATCH, IF_TRUE, varName1, NO_ARG);  // if (varName1 != 0) goto aLabel
-        int bLabel = CODE_BASE.addTAC(node, TO_BACKPATCH, GOTO_LABEL, NO_ARG, NO_ARG); // goto bLabel
-
-        mergeList(E_truelist, aLabel);
-        mergeList(E_falselist, bLabel);
-
-        int s_Start = CODE_BASE.nextIndex();
-
-        int check = CODE_BASE.backpatch(node, E_truelist, s_Start);
-
-        std::vector<int> S1_nextList;   // This value will be fetchec
-        std::vector<int> breakList1;    // This value will be fetchec
-        std::vector<int> continueList1; // This value will be fetchec
-        breakAllowed++;
-        continueAllowed++;
-        // Next we evaluate the statement
-        int s_check = statement_H(node->children[4], S1_nextList, breakList1, continueList1, caseMap);
-        RECOVER_THE_ERROR(s_check);
-
-        breakAllowed--;
-        continueAllowed--;
-
-        // Backpatch the S1_nextList
-        mergeList(S1_nextList, continueList1); // As S_nextList is a syn_attribute we don't send this below
-        int check2 = CODE_BASE.backpatch(node, S1_nextList, loopStart);
-
-        CODE_BASE.addTAC(node, loopStartLabel, GOTO_LABEL, NO_ARG, NO_ARG); // goto loopStart
-
-        mergeList(S_nextList, E_falselist);
-        mergeList(S_nextList, breakList1);
-    }
-    else if (whichProduction == P2)
-    {
-        // Find Loop's Start position
-        int loopStart = CODE_BASE.nextIndex();
+        int loopStart = IR_CODE.nextIndex();
         std::string loopStartLabel = std::to_string(loopStart);
 
         std::vector<int> E_truelist, E_falselist;
@@ -643,17 +582,78 @@ int iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vect
             return FAIL;
         }
 
-        int aLabel = CODE_BASE.addTAC(node, TO_BACKPATCH, IF_TRUE, varName1, NO_ARG);  // if (varName1 != 0) goto aLabel
-        int bLabel = CODE_BASE.addTAC(node, TO_BACKPATCH, GOTO_LABEL, NO_ARG, NO_ARG); // goto bLabel
+        int aLabel = IR_CODE.addTAC(node, TO_BACKPATCH, IF_TRUE, varName1, NO_ARG);  // if (varName1 != 0) goto aLabel
+        int bLabel = IR_CODE.addTAC(node, TO_BACKPATCH, GOTO_LABEL, NO_ARG, NO_ARG); // goto bLabel
+
+        mergeList(E_truelist, aLabel);
+        mergeList(E_falselist, bLabel);
+
+        int s_Start = IR_CODE.nextIndex();
+
+        int check = IR_CODE.backpatch(node, E_truelist, s_Start);
+
+        std::vector<int> S1_nextList;   // This value will be fetchec
+        std::vector<int> breakList1;    // This value will be fetchec
+        std::vector<int> continueList1; // This value will be fetchec
+        breakAllowed++;
+        continueAllowed++;
+        // Next we evaluate the statement
+        int s_check = statement_H(node->children[4], S1_nextList, breakList1, continueList1, caseMap);
+        RECOVER_THE_ERROR(s_check);
+
+        breakAllowed--;
+        continueAllowed--;
+
+        // Backpatch the S1_nextList
+        mergeList(S1_nextList, continueList1); // As S_nextList is a syn_attribute we don't send this below
+        int check2 = IR_CODE.backpatch(node, S1_nextList, loopStart);
+
+        IR_CODE.addTAC(node, loopStartLabel, GOTO_LABEL, NO_ARG, NO_ARG); // goto loopStart
+
+        mergeList(S_nextList, E_falselist);
+        mergeList(S_nextList, breakList1);
+    }
+    else if (whichProduction == P2)
+    {
+        // Find Loop's Start position
+        int loopStart = IR_CODE.nextIndex();
+        std::string loopStartLabel = std::to_string(loopStart);
+
+        std::vector<int> E_truelist, E_falselist;
+        // Get Ready to call expression
+        // Data to be fetched
+        std::string varName1 = "Just a Dummy";
+        TypeExpression type1;
+        VALUE_TYPE valueType1;
+        SPACE valueSpace1;
+        int e_check = expression_H(node->children[2], "NONE", varName1, type1, valueType1, valueSpace1);
+        RECOVER_THE_ERROR(e_check);
+
+        // 🚀 USAGE 🤫 SPACE CHANGE 🚀
+        USAGE_SPACE_CHANGE(varName1, type1, valueSpace1, node);
+
+        // while ✅(int char ptr function_name array_name float double enum_const enum_name) ❌(struct_object union_object)
+        // 🅱️ TypeChecking of Expression
+        //  Type NOT allowed - STRUCT_UNION
+        Type whichType = whatIsType(type1);
+        if (whichType == Type::STRUCT_UNION)
+        {
+            semanticError("SEMANTIC ERROR ‼️: Expression inside while statement cannot be of type STRUCT_UNION");
+            FAIL_H;
+            return FAIL;
+        }
+
+        int aLabel = IR_CODE.addTAC(node, TO_BACKPATCH, IF_TRUE, varName1, NO_ARG);  // if (varName1 != 0) goto aLabel
+        int bLabel = IR_CODE.addTAC(node, TO_BACKPATCH, GOTO_LABEL, NO_ARG, NO_ARG); // goto bLabel
 
         // SWAP of E_truelist and E_falselist [🥹🥹🥹 Relative to WHILE 🤪🤪🤪]
 
         mergeList(E_falselist, aLabel); // 🦉
         mergeList(E_truelist, bLabel);  // 😅
 
-        int s_Start = CODE_BASE.nextIndex();
+        int s_Start = IR_CODE.nextIndex();
 
-        int check = CODE_BASE.backpatch(node, E_falselist, s_Start);
+        int check = IR_CODE.backpatch(node, E_falselist, s_Start);
 
         std::vector<int> S1_nextList;   // This value will be fetchecd
         std::vector<int> breakList1;    // This value will be fetchecd
@@ -668,9 +668,9 @@ int iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vect
 
         // Backpatch the S1_nextList
         mergeList(S1_nextList, continueList1); // As S_nextList is a syn_attribute we don't send this below
-        int check2 = CODE_BASE.backpatch(node, S1_nextList, loopStart);
+        int check2 = IR_CODE.backpatch(node, S1_nextList, loopStart);
 
-        CODE_BASE.addTAC(node, loopStartLabel, GOTO_LABEL, NO_ARG, NO_ARG); // goto loopStart
+        IR_CODE.addTAC(node, loopStartLabel, GOTO_LABEL, NO_ARG, NO_ARG); // goto loopStart
 
         mergeList(S_nextList, E_truelist);
         mergeList(S_nextList, breakList1);
@@ -678,10 +678,10 @@ int iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vect
     else if (whichProduction == P3)
     {
 
-        int firstSkip = CODE_BASE.addTAC(node, TO_BACKPATCH, GOTO_LABEL, NO_ARG, NO_ARG); // goto firstSkip
+        int firstSkip = IR_CODE.addTAC(node, TO_BACKPATCH, GOTO_LABEL, NO_ARG, NO_ARG); // goto firstSkip
 
-        int loopStart = CODE_BASE.nextIndex();
-        std::string loopStartLabel =std::to_string(loopStart);
+        int loopStart = IR_CODE.nextIndex();
+        std::string loopStartLabel = std::to_string(loopStart);
 
         std::vector<int> E_truelist, E_falselist;
         // Get Ready to call expression
@@ -708,17 +708,17 @@ int iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vect
             return FAIL;
         }
 
-        int aLabel = CODE_BASE.addTAC(node, TO_BACKPATCH, IF_TRUE, varName1, NO_ARG);  // if (varName1 != 0) goto aLabel
-        int bLabel = CODE_BASE.addTAC(node, TO_BACKPATCH, GOTO_LABEL, NO_ARG, NO_ARG); // goto bLabel
+        int aLabel = IR_CODE.addTAC(node, TO_BACKPATCH, IF_TRUE, varName1, NO_ARG);  // if (varName1 != 0) goto aLabel
+        int bLabel = IR_CODE.addTAC(node, TO_BACKPATCH, GOTO_LABEL, NO_ARG, NO_ARG); // goto bLabel
 
         mergeList(E_truelist, aLabel);
         mergeList(E_falselist, bLabel);
 
         mergeList(E_truelist, firstSkip); // FIRST SKIP added to E_truelist ?
 
-        int s_Start = CODE_BASE.nextIndex();
+        int s_Start = IR_CODE.nextIndex();
 
-        int check = CODE_BASE.backpatch(node, E_truelist, s_Start);
+        int check = IR_CODE.backpatch(node, E_truelist, s_Start);
 
         std::vector<int> S1_nextList;   // This value will be fetchecd
         std::vector<int> breakList1;    // This value will be fetchecd
@@ -733,9 +733,9 @@ int iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vect
 
         // Backpatch the S1_nextList
         mergeList(S1_nextList, continueList1);
-        int check2 = CODE_BASE.backpatch(node, S1_nextList, loopStart);
+        int check2 = IR_CODE.backpatch(node, S1_nextList, loopStart);
 
-        CODE_BASE.addTAC(node, loopStartLabel, GOTO_LABEL, NO_ARG, NO_ARG); // goto loopStart
+        IR_CODE.addTAC(node, loopStartLabel, GOTO_LABEL, NO_ARG, NO_ARG); // goto loopStart
 
         mergeList(S_nextList, E_falselist);
         mergeList(S_nextList, breakList1);
@@ -750,8 +750,8 @@ int iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vect
         int est_check = expression_statement_H(node->children[2], "NONE", varName1, type1, valueType1, valueSpace1);
         RECOVER_THE_ERROR(est_check);
 
-        int loopStart = CODE_BASE.nextIndex();
-        std::string loopStartLabel =std::to_string(loopStart) ;
+        int loopStart = IR_CODE.nextIndex();
+        std::string loopStartLabel = std::to_string(loopStart);
 
         std::vector<int> ES2_truelist, ES2_falselist;
         // Next we evaluate the ExpressionStatement_2
@@ -775,15 +775,15 @@ int iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vect
         // 🚀 USAGE 🤫 SPACE CHANGE 🚀
         USAGE_SPACE_CHANGE(varName2, type2, valueSpace2, node);
 
-        int aLabel = CODE_BASE.addTAC(node, TO_BACKPATCH, IF_TRUE, varName2, NO_ARG);  // if (varName2 != 0) goto aLabel
-        int bLabel = CODE_BASE.addTAC(node, TO_BACKPATCH, GOTO_LABEL, NO_ARG, NO_ARG); // goto bLabel
+        int aLabel = IR_CODE.addTAC(node, TO_BACKPATCH, IF_TRUE, varName2, NO_ARG);  // if (varName2 != 0) goto aLabel
+        int bLabel = IR_CODE.addTAC(node, TO_BACKPATCH, GOTO_LABEL, NO_ARG, NO_ARG); // goto bLabel
 
         mergeList(ES2_truelist, aLabel);
         mergeList(ES2_falselist, bLabel);
 
-        int s_Start = CODE_BASE.nextIndex();
+        int s_Start = IR_CODE.nextIndex();
 
-        int check = CODE_BASE.backpatch(node, ES2_truelist, s_Start);
+        int check = IR_CODE.backpatch(node, ES2_truelist, s_Start);
 
         std::vector<int> S1_nextList;   // This value will be fetched
         std::vector<int> breakList1;    // This value will be fetched
@@ -798,9 +798,9 @@ int iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vect
 
         // Backpatch the S1_nextList
         mergeList(S1_nextList, continueList1); // As S_nextList is a syn_attribute we don't send this below
-        int check2 = CODE_BASE.backpatch(node, S1_nextList, loopStart);
+        int check2 = IR_CODE.backpatch(node, S1_nextList, loopStart);
 
-        CODE_BASE.addTAC(node, loopStartLabel, GOTO_LABEL, NO_ARG, NO_ARG); // goto loopStart
+        IR_CODE.addTAC(node, loopStartLabel, GOTO_LABEL, NO_ARG, NO_ARG); // goto loopStart
 
         mergeList(S_nextList, ES2_falselist);
         mergeList(S_nextList, breakList1);
@@ -815,7 +815,7 @@ int iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vect
         int est_check = expression_statement_H(node->children[2], "NONE", varName1, type1, valueType1, valueSpace1);
         PASS_THE_ERROR(est_check);
 
-        int loopStart = CODE_BASE.nextIndex();
+        int loopStart = IR_CODE.nextIndex();
         std::string loopStartLabel = std::to_string(loopStart);
 
         std::vector<int> ES2_truelist, ES2_falselist;
@@ -840,15 +840,15 @@ int iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vect
         // 🚀 USAGE 🤫 SPACE CHANGE 🚀
         USAGE_SPACE_CHANGE(varName2, type2, valueSpace2, node);
 
-        int aLabel = CODE_BASE.addTAC(node, TO_BACKPATCH, IF_TRUE, varName2, NO_ARG);  // if (varName2 != 0) goto aLabel
-        int bLabel = CODE_BASE.addTAC(node, TO_BACKPATCH, GOTO_LABEL, NO_ARG, NO_ARG); // goto bLabel
+        int aLabel = IR_CODE.addTAC(node, TO_BACKPATCH, IF_TRUE, varName2, NO_ARG);  // if (varName2 != 0) goto aLabel
+        int bLabel = IR_CODE.addTAC(node, TO_BACKPATCH, GOTO_LABEL, NO_ARG, NO_ARG); // goto bLabel
 
         mergeList(ES2_truelist, aLabel);
         mergeList(ES2_falselist, bLabel);
 
-        int s_Start = CODE_BASE.nextIndex();
+        int s_Start = IR_CODE.nextIndex();
 
-        int check = CODE_BASE.backpatch(node, ES2_truelist, s_Start);
+        int check = IR_CODE.backpatch(node, ES2_truelist, s_Start);
 
         std::vector<int> S1_nextList;   // This value will be fetched
         std::vector<int> breakList1;    // This value will be fetched
@@ -863,8 +863,8 @@ int iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vect
 
         // Backpatch the S1_nextList
         mergeList(S1_nextList, continueList1); // As S_nextList is a syn_attribute we don't send this below
-        int nextAddress = CODE_BASE.nextIndex();
-        int check2 = CODE_BASE.backpatch(node, S1_nextList, nextAddress);
+        int nextAddress = IR_CODE.nextIndex();
+        int check2 = IR_CODE.backpatch(node, S1_nextList, nextAddress);
 
         // Call the third Expression_3
         std::string varName3 = "Just a Dummy";
@@ -874,7 +874,7 @@ int iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vect
         int e_check = expression_H(node->children[4], "NONE", varName3, type3, valueType3, valueSpace3);
         PASS_THE_ERROR(e_check);
 
-        CODE_BASE.addTAC(node, loopStartLabel, GOTO_LABEL, NO_ARG, NO_ARG); // goto loopStart
+        IR_CODE.addTAC(node, loopStartLabel, GOTO_LABEL, NO_ARG, NO_ARG); // goto loopStart
 
         mergeList(S_nextList, ES2_falselist);
         mergeList(S_nextList, breakList1);
@@ -886,7 +886,7 @@ int iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vect
         int dcl_check = declaration_H(node->children[2]);
         PASS_THE_ERROR(dcl_check);
 
-        int loopStart = CODE_BASE.nextIndex();
+        int loopStart = IR_CODE.nextIndex();
         std::string loopStartLabel = std::to_string(loopStart);
 
         std::vector<int> ES2_truelist, ES2_falselist;
@@ -911,15 +911,15 @@ int iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vect
         // 🚀 USAGE 🤫 SPACE CHANGE 🚀
         USAGE_SPACE_CHANGE(varName2, type2, valueSpace2, node);
 
-        int aLabel = CODE_BASE.addTAC(node, TO_BACKPATCH, IF_TRUE, varName2, NO_ARG);  // if (varName2 != 0) goto aLabel
-        int bLabel = CODE_BASE.addTAC(node, TO_BACKPATCH, GOTO_LABEL, NO_ARG, NO_ARG); // goto bLabel
+        int aLabel = IR_CODE.addTAC(node, TO_BACKPATCH, IF_TRUE, varName2, NO_ARG);  // if (varName2 != 0) goto aLabel
+        int bLabel = IR_CODE.addTAC(node, TO_BACKPATCH, GOTO_LABEL, NO_ARG, NO_ARG); // goto bLabel
 
         mergeList(ES2_truelist, aLabel);
         mergeList(ES2_falselist, bLabel);
 
-        int s_Start = CODE_BASE.nextIndex();
+        int s_Start = IR_CODE.nextIndex();
 
-        int check = CODE_BASE.backpatch(node, ES2_truelist, s_Start);
+        int check = IR_CODE.backpatch(node, ES2_truelist, s_Start);
 
         std::vector<int> S1_nextList;   // This value will be fetched
         std::vector<int> breakList1;    // This value will be fetched
@@ -933,8 +933,8 @@ int iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vect
 
         // Backpatch the S1_nextList
         mergeList(S1_nextList, continueList1);
-        int nextAddress = CODE_BASE.nextIndex();
-        int check2 = CODE_BASE.backpatch(node, S1_nextList, nextAddress);
+        int nextAddress = IR_CODE.nextIndex();
+        int check2 = IR_CODE.backpatch(node, S1_nextList, nextAddress);
 
         // Call the third Expression_3
         std::string varName3 = "Just a Dummy";
@@ -943,7 +943,7 @@ int iteration_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vect
         SPACE valueSpace3 = SPACE::UNKNOWN_SPACE;
         int e_check = expression_H(node->children[4], "NONE", varName3, type3, valueType3, valueSpace3);
         PASS_THE_ERROR(e_check);
-        CODE_BASE.addTAC(node, loopStartLabel, GOTO_LABEL, NO_ARG, NO_ARG); // goto loopStart
+        IR_CODE.addTAC(node, loopStartLabel, GOTO_LABEL, NO_ARG, NO_ARG); // goto loopStart
 
         mergeList(S_nextList, ES2_falselist);
         mergeList(S_nextList, breakList1);
@@ -984,7 +984,7 @@ int jump_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<in
     if (whichProduction == P1)
     {
         std::string labelUsed = node->children[1]->value;
-        int index = CODE_BASE.addTAC(node, TO_BACKPATCH, GOTO_LABEL, NO_ARG, NO_ARG); // goto labelUsed
+        int index = IR_CODE.addTAC(node, TO_BACKPATCH, GOTO_LABEL, NO_ARG, NO_ARG); // goto labelUsed
         if (labelList.find(labelUsed) == labelList.end())
         {
             std::vector<int> perLabelList = {index};
@@ -1000,10 +1000,10 @@ int jump_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<in
         if (continueAllowed <= 0)
         {
             semanticError("\'continue\' statement not 😅 in loop statement");
-            FAIL_H; 
+            FAIL_H;
             return FAIL;
         }
-        int aLabel = CODE_BASE.addTAC(node, TO_BACKPATCH, GOTO_LABEL, NO_ARG, NO_ARG); // goto aLabel
+        int aLabel = IR_CODE.addTAC(node, TO_BACKPATCH, GOTO_LABEL, NO_ARG, NO_ARG); // goto aLabel
 
         mergeList(continueList, aLabel);
     }
@@ -1015,7 +1015,7 @@ int jump_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<in
             FAIL_H;
             return FAIL;
         }
-        int aLabel = CODE_BASE.addTAC(node, TO_BACKPATCH, GOTO_LABEL, NO_ARG, NO_ARG); // goto aLabel
+        int aLabel = IR_CODE.addTAC(node, TO_BACKPATCH, GOTO_LABEL, NO_ARG, NO_ARG); // goto aLabel
 
         mergeList(breakList, aLabel);
     }
@@ -1080,16 +1080,16 @@ int jump_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<in
             int equal = ourEquivalent(source, dest);
             if (equal != OKAY)
             {
-                std::string castedVarNam = newTemp(); // allocated width(dest) 
+                std::string castedVarNam = newTemp(); // allocated width(dest)
                 int castedVarSize = width(dest);
-                CODE_BASE.addTAC(node, castedVarNam, ALLOCATE, toString(castedVarSize), NO_ARG); // Allocate the space
+                IR_CODE.addTAC(node, castedVarNam, ALLOCATE, toString(castedVarSize), NO_ARG); // Allocate the space
 
-                CODE_BASE.addTAC(node, castedVarNam, CAST, toString(dest), varName1); // Cast it
-                varName1 = castedVarNam;                                              // Change the name to the address
+                IR_CODE.addTAC(node, castedVarNam, CAST, toString(dest), varName1); // Cast it
+                varName1 = castedVarNam;                                            // Change the name to the address
             }
         }
 
-        CODE_BASE.addTAC(node, NO_ARG, RETURN_FUNCTION, varName1, NO_ARG); // return varName1
+        IR_CODE.addTAC(node, NO_ARG, RETURN_FUNCTION, varName1, NO_ARG); // return varName1
     }
     else if (whichProduction == P5)
     {
@@ -1118,7 +1118,8 @@ int jump_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<in
         aptLOG("Return Type : " + toString(returnTypeExpr));
 
         Type whichType = whatIsType(returnTypeExpr);
-        if(whichType != Type::VARIABLE){
+        if (whichType != Type::VARIABLE)
+        {
             semanticError("Return type mismatch - Expected : \'" + toString(returnTypeExpr) + "\' Found : \'void\'");
             FAIL_H;
             return FAIL;
@@ -1136,7 +1137,7 @@ int jump_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<in
             return FAIL;
         }
 
-        CODE_BASE.addTAC(node, NO_ARG, RETURN_FUNCTION, NO_ARG, NO_ARG); // return varName1
+        IR_CODE.addTAC(node, NO_ARG, RETURN_FUNCTION, NO_ARG, NO_ARG); // return varName1
     }
     else
     {
@@ -1163,7 +1164,7 @@ int labeled_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector
 
     if (whichProduction == P1)
     {
-        int labelIndex = CODE_BASE.nextIndex();
+        int labelIndex = IR_CODE.nextIndex();
         std::string label = node->children[0]->value;
         if (labelMap.find(label) != labelMap.end())
         {
@@ -1190,7 +1191,7 @@ int labeled_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector
         if (caseAllowed <= 0)
         {
             semanticError("\'case\' statement not in any switch 😅 statement");
-            FAIL_H; 
+            FAIL_H;
             return FAIL;
         }
 
@@ -1199,9 +1200,11 @@ int labeled_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector
         int cex_check = constant_expression_H(node->children[1], constExpr);
         RECOVER_THE_ERROR(cex_check);
 
-        if(constExpr == NOT_CONSTANT){
+        if (constExpr == NOT_CONSTANT)
+        {
             semanticError("case - \'" + constExpr + "\' is not a constant 😔 expression");
-            FAIL_H; return FAIL;
+            FAIL_H;
+            return FAIL;
         }
 
         // TypeCheck for constExpr
@@ -1209,9 +1212,10 @@ int labeled_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector
         if (caseMap.find(constExpr) != caseMap.end())
         {
             semanticError("case - \'" + constExpr + "\' already 🫠 exists");
-            FAIL_H; return FAIL;
+            FAIL_H;
+            return FAIL;
         }
-        int caseIndex = CODE_BASE.nextIndex();
+        int caseIndex = IR_CODE.nextIndex();
         caseMap[constExpr] = caseIndex;
 
         // Call the statement
@@ -1223,7 +1227,8 @@ int labeled_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector
         if (caseAllowed <= 0)
         {
             semanticError("\'default\' statement not in any switch 😅 statement");
-            FAIL_H; return FAIL;
+            FAIL_H;
+            return FAIL;
         }
 
         aptHERE;
@@ -1233,9 +1238,10 @@ int labeled_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector
         if (caseMap.find(constExpr) != caseMap.end())
         {
             semanticError("default already  exists");
-            FAIL_H; return FAIL;
+            FAIL_H;
+            return FAIL;
         }
-        int defaultIndex = CODE_BASE.nextIndex();
+        int defaultIndex = IR_CODE.nextIndex();
         caseMap[constExpr] = defaultIndex;
         aptHERE;
         // Call the statement

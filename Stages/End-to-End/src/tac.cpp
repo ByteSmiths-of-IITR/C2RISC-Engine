@@ -1,29 +1,45 @@
 #include "header.h"
 
 std::string NO_ARG = "#####";
-std::string RIGHT_STAR = "right_star";
-std::string LEFT_STAR = "left_star";
-std::string FUNCTION_ENTRY = "FUNCTION_ENTRY";
-std::string FUNCTION_EXIT = "FUNCTION_EXIT";
+
+// Special TAC Operators (OP)
+std::string RIGHT_STAR = "right_star"; // result = *arg1
+std::string LEFT_STAR = "left_star"; // *result = arg1
+std::string AMPERSEND = "&"; // result = &arg1
+
+std::string FUNCTION_ENTRY = "FUNCTION_ENTRY"; // function entry
+std::string FUNCTION_EXIT = "FUNCTION_EXIT"; // function exit
 // std::string BLANK = "blank";
-std::string CAST = "cast";
-std::string LABEL = "label";
-std::string AMPERSEND = "&";
+std::string CAST = "cast"; // result = (arg1)arg2
+
+std::string ALLOCATE = "alloca"; // allocate arg1, arg2
+
+std::string PARAM = "param"; // param arg1
+std::string CALL = "call"; // result = call arg1, arg2
+std::string RETURN_FUNCTION = "return"; // return arg1 
+
+std::string ASSIGN_OP = "="; // result = arg1
+
+std::string IF_FALSE = "if_false"; // if arg1 == 0 goto result
+std::string IF_TRUE = "if"; // if arg1 != 0 goto result
+std::string GOTO_LABEL = "goto"; // goto result
+std::string GOTO_EQUAL = "goto_equal"; // if arg1 == arg2 goto result
+
+std::string TO_BACKPATCH = "to_backpatch"; // This is used to backpatch the list with the label index
+
 std::string RO_DATA = ".rodata";
 std::string STACK_DATA = ".stack";
 std::string DATA = ".data";
 std::string BSS = ".bss";
-std::string PARAM = "param";
-std::string CALL = "call";
-std::string ASSIGN_OP = "=";
-std::string IF_FALSE = "if_false";
-std::string IF_TRUE = "if";
-std::string GOTO_LABEL = "goto";
-std::string GOTO_EQUAL = "goto_equal";
-std::string TO_BACKPATCH = "to_backpatch";
-std::string RETURN_FUNCTION = "return";
-std::string MEM_COPY = "mem_copy";
-std::string ALLOCATE = "alloca";
+
+// Type of Data in Data Section
+std::string dataByte = ".byte";
+std::string dataHalfByte = ".half";
+std::string dataWord = ".word";
+std::string dataDouble = ".double";
+std::string dataString = ".string";
+std::string dataFloat = ".float";
+std::string dataZero = ".zero";
 
 #include <iomanip>
 
@@ -67,7 +83,8 @@ std::string TAC_Quadruple::toString()
         str = result + ": ⤵️"; // FUNCTION_ENTRY p
     }
 
-    else if(op == FUNCTION_EXIT){
+    else if (op == FUNCTION_EXIT)
+    {
         str = result + ": ↙️"; // FUNCTION_EXIT p
     }
 
@@ -89,23 +106,11 @@ std::string TAC_Quadruple::toString()
     //     str = arg1 + ": " + arg2; // BSS p, n
     // }
 
-    else if (op == LABEL)
-    {
-        str = "L-" + result + ": "; // LABEL p
-        if (arg1 != NO_ARG)
-        {
-            str += arg1;
-        }
-    }
-
     else if (op == AMPERSEND)
     {
         str = result + " = &" + arg1; // result = &arg1
     }
-    else if (op == MEM_COPY)
-    {
-        str = result + " = mem_copy " + arg1;
-    }
+    
     else if (op == LEFT_STAR)
     {
         str = "*" + result + " = " + arg1; // *result = arg1
@@ -190,7 +195,7 @@ int TAC::addTAC(TAC_Quadruple q)
 
 int TAC::getLastInserted()
 {
-    return (CODE_BASE.code.size() - 1); // this will give 0-based index
+    return (IR_CODE.code.size() - 1); // this will give 0-based index
 }
 
 int mergeList(std::vector<int> &target, int addition)
@@ -248,17 +253,12 @@ void TAC::printTAC(std::ofstream &file)
     for (int i = 0; i < code.size(); i++)
     {
         // Special Priting for labels
-        if (code[i].op == LABEL)
-        {
-            file << std::setw(w) << code[i].result << " : " << std::setw(wcode) << std::left << code[++i].toString() << std::endl;
-            continue;
-        }
-        else if (code[i].op == FUNCTION_ENTRY)
+        if (code[i].op == FUNCTION_ENTRY)
         {
             file << std::setw(w) << i << " : " << std::setw(wcode) << std::left << code[i].toString() << std::endl;
             continue;
         }
-        else if(code[i].op == FUNCTION_EXIT)
+        else if (code[i].op == FUNCTION_EXIT)
         {
             file << std::setw(w) << i << " : " << std::setw(wcode) << std::left << code[i].toString() << std::endl;
             continue;
@@ -270,44 +270,29 @@ void TAC::printTAC(std::ofstream &file)
 
 void TAC::printTAC(std::ostringstream &oss)
 {
-
     // Print the .rodata section
-    if (roData.size() > 0)
-    {
-        oss << std::setw(w) << ".rodata section" << " : " << std::setw(wcode) << std::left << std::string(wcode, '-') << std::endl;
-        for (int i = 0; i < roData.size(); i++)
+    // oss << std::endl;
+    if(dataSection.size()!=0){
+        oss << std::left << std::setw(w) << ".data" << " : " << std::setw(wcode) << std::left << std::string(wcode, '-') << std::endl;
+        // int gap = 2;
+        for (auto it : dataSection)
         {
-            oss << std::setw(w) << roData[i] << " " << std::setw(wcode) << std::left << std::endl;
+            auto unit = it.second;
+            oss << std::left << std::setw(w) << " " << " : " << std::setw(10) << unit.name + ":" << std::setw(10) << std::left << unit.type << " " << std::setw(10) << std::left << unit.value << std::endl;
         }
-        oss << std::endl;
-        oss << std::string(w + wcode + 6, '-') << std::endl;
     }
 
-    if (data.size() > 0)
-    {
-        oss << std::setw(w) << ".data section" << " : " << std::setw(wcode) << std::left << std::string(wcode, '-') << std::endl;
-        for (int i = 0; i < data.size(); i++)
-        {
-            oss << std::setw(w) << data[i] << " " << std::setw(wcode) << std::left << std::endl;
-        }
-        oss << std::endl;
-        oss << std::string(w + wcode + 6, '-') << std::endl;
-    }
-    oss << std::setw(w) << "CodeLineNo" << " : " << std::setw(wcode) << std::left << "TAC" << std::endl;
-    oss << std::setw(w) << "----------" << " : " << std::setw(wcode) << std::left << "-------------------------------" << std::endl;
+    // oss << std::endl;
+    oss << std::left << std::setw(w) << ".text" << " : " << std::setw(wcode) << std::left << std::string(wcode, '-') << std::endl;
     for (int i = 0; i < code.size(); i++)
     {
-        // Special Priting for labels 
-        if (code[i].op == LABEL)
-        {
-            oss << std::setw(w) << code[i].result << " : " << std::setw(wcode) << std::left << code[++i].toString() << std::endl;
-        }
-        else if (code[i].op == FUNCTION_ENTRY)
+        // Special Priting for labels
+        if (code[i].op == FUNCTION_ENTRY)
         {
             // oss << std::endl;
             oss << std::setw(w) << i << " : " << std::setw(wcode) << std::left << code[i].toString() << std::endl;
         }
-        else if(code[i].op == FUNCTION_EXIT)
+        else if (code[i].op == FUNCTION_EXIT)
         {
             oss << std::setw(w) << i << " : " << std::setw(wcode) << std::left << code[i].toString() << std::endl;
             oss << std::endl;
@@ -316,10 +301,14 @@ void TAC::printTAC(std::ostringstream &oss)
         {
             oss << std::setw(w) << i << " : " << std::setw(wcode) << std::left << code[i].toString() << std::endl;
         }
-        else{
+        else
+        {
             oss << std::setw(w) << i << " : " << std::setw(wcode) << std::left << code[i].toString() << std::endl;
         }
     }
+
+    oss << std::string(100, '-') << std::endl;
+
 }
 
 void TAC::printTAC(std::vector<std::string> &list)
@@ -331,12 +320,7 @@ void TAC::printTAC(std::vector<std::string> &list)
     for (int i = 0; i < code.size(); i++)
     {
         // Special Priting for labels
-        if (code[i].op == LABEL)
-        {
-            oss << std::setw(w) << code[i].result << " : " << std::setw(wcode) << std::left << code[++i].toString() << std::endl;
-            continue;
-        }
-        else if (code[i].op == FUNCTION_ENTRY)
+        if (code[i].op == FUNCTION_ENTRY)
         {
             oss << std::setw(w) << i << " : " << std::setw(wcode) << std::left << code[i].result << std::endl;
             continue;
@@ -373,12 +357,7 @@ void TAC::printTAC()
 
     for (int i = 0; i < code.size(); i++)
     {
-        // Special Priting for labels
-        // if (code[i].op == LABEL)
-        // {
-        //     std::cout << std::setw(w) << code[i].result << " : " << std::setw(wcode) << std::left << code[i++].toString() << std::endl;
-        //     continue;
-        // }
+        // Special Priting for label
         if (code[i].op == FUNCTION_ENTRY)
         {
             std::cout << std::setw(w) << code[i].result << " : " << std::endl;
@@ -386,4 +365,109 @@ void TAC::printTAC()
         }
         std::cout << std::setw(w) << i << " : " << std::setw(wcode) << std::left << code[i].toString() << std::endl;
     }
+}
+
+//=====================[ NEW_TAC Quadraple Code ]=========================================================================================
+
+int NEW_TAC_Quadruple::addVariable(const std::string &varName, bool islive, const std::set<int> &nextUsage)
+{
+    // Check if the variable is already present
+    auto it = VarInfo.find(varName);
+    if (it != VarInfo.end())
+    {
+        // Update the existing entry
+        it->second.first = islive;
+        it->second.second.insert(nextUsage.begin(), nextUsage.end());
+    }
+    else
+    {
+        // Add a new entry
+        VarInfo[varName] = std::make_pair(islive, nextUsage);
+    }
+    return OKAY;
+}
+
+int NEW_TAC_Quadruple::isAlive(const std::string &varName, bool &alive)
+{
+    auto it = VarInfo.find(varName);
+    if (it != VarInfo.end())
+    {
+        alive = it->second.first;
+        return OKAY;
+    }
+    return FAIL; // Variable not found
+}
+
+int NEW_TAC_Quadruple::nextUse(const std::string &varName, std::set<int> &usage)
+{
+    auto it = VarInfo.find(varName);
+    if (it != VarInfo.end())
+    {
+        usage = it->second.second;
+        return OKAY;
+    }
+    return FAIL; // Variable not found
+}
+
+int NEW_TAC_Quadruple::howManyNextUsage(const std::string &varName, int &total)
+{
+    auto it = VarInfo.find(varName);
+    if (it != VarInfo.end())
+    {
+        total = it->second.second.size();
+        return OKAY;
+    }
+    return FAIL; // Variable not found
+}
+
+std::string NEW_TAC_Quadruple::toString()
+{
+    std::string oldContent = TAC_Quadruple::toString();
+
+    std::string newContent = "";
+    for (auto it : VarInfo)
+    {
+        newContent += "| ";
+        newContent += it.first;
+        newContent += it.second.first ? " isLive" : " notLive";
+        newContent += " nextUse at -";
+        for (auto j : it.second.second)
+        {
+            newContent += " " + j;
+        }
+        newContent += " |";
+    }
+
+    std::string finalStr = oldContent + newContent;
+}
+
+int NEW_TAC_Quadruple::addLivelinessInfo(const std::map<std::string, std::pair<bool, std::set<int>>> &info){
+    // This will add the liveliness info to the variable
+    for (auto it : info)
+    {
+        this->VarInfo[it.first] = it.second;
+    }
+    return OKAY;
+}
+
+//=====================[ NEW_TAC Code ]=========================================================================================
+
+int NEW_TAC::addTAC(int atLineNo, NEW_TAC_Quadruple q)
+{
+    // This will add the new TAC code to the new TAC code
+    this->code[atLineNo] = q;
+    return OKAY;
+}
+
+int NEW_TAC::addOLD_TAC(int lineNo, TAC_Quadruple oldIrCode)
+{
+    // This will add the old TAC code to the new TAC code
+    this->code[lineNo] = NEW_TAC_Quadruple(oldIrCode);
+    return OKAY;
+}
+
+int NEW_TAC::addVarInfo(int lineNo, const std::string &varName, bool isAlive, const std::set<int> &nextUsage)
+{
+    // This will add the variable info to the new TAC code
+    return this->code[lineNo].addVariable(varName, isAlive, nextUsage);
 }

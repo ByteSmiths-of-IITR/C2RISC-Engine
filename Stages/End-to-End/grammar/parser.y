@@ -111,7 +111,7 @@ bool compressed = false; // Default is PTree, if AST is needed, change it to fal
 
 //========================= SEMANTIC + IRCode Gen Phase =========================
 // SymbolTable SYM_TABLE;
-// TAC CODE_BASE; [Are declared in handler.cpp]
+// TAC IR_CODE; [Are declared in handler.cpp]
 
 void exit_compiler(){
     // std::cerr << "Compiler Mode: " << compilerMode << std::endl;
@@ -137,9 +137,9 @@ void exit_compiler(){
         std::ostringstream testStream;
         std::cout << "Testing MODE | Results appended to " << input_file << std::endl;
         testStream << notificationStream.str() << std::endl;
-        testStream << "------------------------------------------------------------------------------------" << std::endl;
+        testStream << std::string(100, '-') << std::endl;
         testStream << errorStream.str() << std::endl;
-        testStream << "------------------------------------------------------------------------------------" << std::endl;
+        testStream << std::string(100, '-') << std::endl;
         testStream << outputStream.str() << std::endl;
         insertAfterMarker(input_file,MARKER,testStream);
     }
@@ -2601,7 +2601,7 @@ int main(int argc, char **argv) {
 
     */
 
-    //SYM_TABLE & CODE_BASE are globaly defined
+    //SYM_TABLE & IR_CODE are globaly defined
 
 
     /* std::cout << "\n\U0001F170\U0000FE0F ---- Starting Semantic Analysis Phase ---- \U0001F170\U0000FE0F\n"; */
@@ -2626,7 +2626,7 @@ int main(int argc, char **argv) {
 
 
     // Print the IR code
-    CODE_BASE.printTAC(outputStream);
+    IR_CODE.printTAC(outputStream);
 
     // Print the Annotated Parse Tree
     if(Aptree){
@@ -2642,7 +2642,7 @@ int main(int argc, char **argv) {
     */
     RISCV_CODE finalCode; 
 
-    int riscvCodeGenStatus = codeGen(CODE_BASE, finalCode); // Call the RISC-V code generation function
+    int riscvCodeGenStatus = codeGen(); // Call the RISC-V code generation function
 
     if(riscvCodeGenStatus == 0){
         notificationStream <<  "RISC-V Code Generation completed successfully \n";
