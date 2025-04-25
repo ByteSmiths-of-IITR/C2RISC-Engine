@@ -1191,6 +1191,9 @@ int SymTable::setNotInMemory(const std::string &key)
 }
 
 
+//======================[ CFG's Data Section Code ]=========================================================================================
 
+int getReg(NEW_TAC_Quadruple &code, std::vector<int> &regList){
 
-
+    return OKAY;
+}

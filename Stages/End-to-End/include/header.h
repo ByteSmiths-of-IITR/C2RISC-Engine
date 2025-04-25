@@ -1216,6 +1216,8 @@ int generatingRISCVCode();
 
 int livelinessPass();
 
+int getReg(NEW_TAC_Quadruple &code, std::vector<int> &regList);
+
 //====================[ Externed Global CodeGen Variables ]=========================================================================================
 
 extern std::string NO_BLOCK;

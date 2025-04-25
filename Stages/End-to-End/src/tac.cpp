@@ -450,7 +450,7 @@ std::string NEW_TAC_Quadruple::toString()
         unitContent += (totalNextUsage > 0) ? " )" : "";
         
         // Adding padding
-        int padding = 20 - unitContent.length();
+        int padding = 22 - unitContent.length();
         if (padding > 0)
         {
             unitContent += std::string(padding, ' ');
@@ -462,8 +462,8 @@ std::string NEW_TAC_Quadruple::toString()
 
     if(VarInfo.size() == 0)
     {
-        newContent += "No Variable ";
-        int padding = 20 - newContent.length();
+        newContent += "Default ";
+        int padding = 22 - newContent.length();
         if (padding > 0)
         {
             newContent += std::string(padding, ' ');
