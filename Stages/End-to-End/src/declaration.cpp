@@ -2174,6 +2174,8 @@ int initializer_H(ASTNode *node, TypeExpression inh_type, std::string inh_varNam
         int aex_check = assignment_expression_H(node->children[0], "NONE", varName1, type1, valueType1, valueSpace1);
         PASS_THE_ERROR(aex_check);
 
+        std::string irVarName = inh_varName+"$"+std::to_string(SYM_TABLE.scopeNo);
+
         // First we check TypeChecking for operation
         TypeExpression left = inh_type;
         TypeExpression right = type1;
@@ -2184,7 +2186,6 @@ int initializer_H(ASTNode *node, TypeExpression inh_type, std::string inh_varNam
         // Special Case Handling for Global Initializations
         bool isGlobal = (SYM_TABLE.scopeNo == SYM_TABLE.globalScope);
         if(isGlobal){
-            std::string irVarName = inh_varName+"$"+std::to_string(SYM_TABLE.scopeNo);
 
             // Just need to check if it's a constant value or constant variable
 
@@ -2324,7 +2325,7 @@ int initializer_H(ASTNode *node, TypeExpression inh_type, std::string inh_varNam
                     std::string castedVarNam = newTemp();                                              // allocated width(dest)
                     IR_CODE.addTAC(node, castedVarNam, ALLOCATE, std::to_string(width(dest)), NO_ARG); // Allocate memory for the variable
 
-                    IR_CODE.addTAC(node, castedVarNam, CAST, toString(dest), varName1); // Cast it
+                    IR_CODE.addTAC(node, castedVarNam, CAST, toString(dest), irVarName); // Cast it
                     varName1 = castedVarNam;                                            // Change the name to the address
                 }
             }
@@ -2336,13 +2337,13 @@ int initializer_H(ASTNode *node, TypeExpression inh_type, std::string inh_varNam
                 aptLOG("🤬 Initiazliation Space🚀 Change for -" + varName1 + " Address->Value");
 
                 // Simple Assignment
-                IR_CODE.addTAC(node, inh_varName, LEFT_STAR, varName1, NO_ARG); // *inh_varName = varName
+                IR_CODE.addTAC(node, irVarName, LEFT_STAR, varName1, NO_ARG); // *inh_varName = varName
                 
             }
             else if (reqSpace1 == valueSpace1)
             {
                 // Simple Assignment
-                IR_CODE.addTAC(node, inh_varName, ASSIGN_OP, varName1, NO_ARG); // inh_varName = varName 
+                IR_CODE.addTAC(node, irVarName, ASSIGN_OP, varName1, NO_ARG); // inh_varName = varName 
                 
             }
             else

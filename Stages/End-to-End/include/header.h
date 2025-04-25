@@ -789,7 +789,7 @@ extern const int FAIL;
 #define HERE std::cerr << "[" << __LINE__ << " in " << __FILE__ << "] " << std::endl
 
 #define H_HERE *handlerLog << "[" << __FILE__ << " : " << __LINE__ << "] ";
-#define CERR std::cerr << "[ 🐛 " << __FILE__ << " : " << __LINE__ << "]"
+#define CERR std::cerr << "[ 🐛 " << __FILE__ << " : " << __LINE__ << "] "
 
 #define REPORT std::cerr << "[" << __FILE__ << " : " << __LINE__ << "] "
 
@@ -956,6 +956,8 @@ int constant_expression_H(ASTNode *node, std::string &value);
 
 //=====================[ Code Generations ]=========================================================================================
 
+bool isASymbol(const std::string &varName); // This will check if the variable is a symbol or not
+
 using RISCV_CODE = std::vector<std::string>;
 
 int codeGen();
@@ -1029,6 +1031,10 @@ public:
     int generateRISCVCode();            // This will generate the RISC-V code & store in it's element -> risvCode
 
     std::string label; // Label for the basic block
+
+    void printCode(std::ostringstream &oss);
+
+    void logLivelinessInfo();
 };
 
 class CFG
@@ -1037,6 +1043,8 @@ public:
     std::map<std::string, BasicBlock> blocks; // Direclty map leader's Index to Block
 
     std::map<std::string, dataSegment> dataSection;
+
+    void printCode(std::ostringstream &oss);
 
     std::vector<int> leaders;
     std::map<int, std::string> leaderToBlockMap;
@@ -1072,6 +1080,8 @@ public:
     //----------- Utilities for Liveliness Checking
     int getAllLivelinessInfo(int atLine, LivelinessDS &livelinessInfo);
 
+    int attachLiveInfoToLine(int atLine);
+
     int setAlive(int atLine, const std::string &key); // Set the variable as alive
     int setAllAlive(int atLine);                    // Set all the variables as alive
     int setDead(int atLine, const std::string &key);  // Set the variable as dead
@@ -1083,13 +1093,16 @@ public:
     int removeUsage(int atLine, const std::string &key, int usageLine); // Clear the usage of the variable in the register
     int clearAllUsage(int atLine, const std::string &key);           // Clear all the usage of the variable in the register
 
+    int removeLifeInfo(int atLine, const std::string &key); // Remove the liveliness info of the variable
+
     // For Us to use Simple Functions
 
     int assignmentAt(int atLine, const std::string &varName); // This will be used to assign the value to the variable
     int usageAt(int atLine, const std::string &varName); // This will be used to use the variable as an operand
 
-
     int resetLiveliness(int atLine);
+
+
 };
 
 class SymInfo
@@ -1137,6 +1150,7 @@ public:
 
     int enterFunction(const std::string &funcName);
     int exitFunction();
+
 
     int insert(const std::string &key, SymInfo &info);
     int insert(const std::string &key, int size); // The Offset & isGlobal Will be autoSet

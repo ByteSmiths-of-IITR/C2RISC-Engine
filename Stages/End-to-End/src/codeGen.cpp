@@ -18,7 +18,7 @@ int codeGen()
     int check = addSymbolsToSymTable();
     if (check != OKAY)
     {
-        std::cerr << LOC << "Error in adding symbols to symbol table" << std::endl;
+        CERR << "Error in adding symbols to symbol table" << std::endl;
         return check;
     }
 
@@ -26,37 +26,38 @@ int codeGen()
     std::ofstream symTableFile("output/symRecord.txt");
     SYM_RECORD.printTable(symTableFile);
     symTableFile.close();
-    std::cerr << LOC << " | Symbol Table generated successfully at output/symRecord.txt" << std::endl;
+    CERR << " | Symbol Table generated successfully at output/symRecord.txt" << std::endl;
 
     // Step 2. Identify basic blocks & control flow +
 
     check = makeBasicBlocks();
     if (check != OKAY)
     {
-        std::cerr << LOC << "Error in making basic blocks" << std::endl;
+        CERR << "Error in making basic blocks" << std::endl;
         return check;
     }
 
 
     // Step 3. Liveliness Analysis + CodeTransfer
 
-    // check = livelinessPass();
+    check = livelinessPass();
     if (check != OKAY)
     {
-        std::cerr << LOC << "Error in liveliness pass" << std::endl;
+        CERR << "Error in liveliness pass" << std::endl;
         return check;
     }
 
     // Step 3#. Try to visualize the CFG
     std::string dotFileName = "build/cfg.dot";
+    REACHING;
     check = CFG_CODE.generateDOTFile(dotFileName);
+    REACHING;
     if (check != OKAY)
     {
-        std::cerr << LOC << "Error in generating dot file" << std::endl;
+        CERR << "Error in generating dot file" << std::endl;
         return check;
     }
-    std::cerr << LOC << " | CFG generated successfully at " << dotFileName << std::endl;
-
+    CERR << " | CFG generated successfully at " << dotFileName << std::endl;
     // Step 4. PerBlock RISC-V CODEGEN
 }
 
@@ -79,7 +80,7 @@ int addSymbolsToSymTable()
             int check = SYM_RECORD.enterFunction(funcName);
             if (check != OKAY)
             {
-                std::cerr << LOC << "Error in entering function" << std::endl;
+                CERR << "Error in entering function" << std::endl;
                 return check;
             }
         }
@@ -89,7 +90,7 @@ int addSymbolsToSymTable()
             int check = SYM_RECORD.exitFunction();
             if (check != OKAY)
             {
-                std::cerr << LOC << "Error in exiting function" << std::endl;
+                CERR << "Error in exiting function" << std::endl;
                 return check;
             }
         }
@@ -101,13 +102,50 @@ int addSymbolsToSymTable()
             int check = SYM_RECORD.insert(varName, size);
             if (check != INSERT_SUCCESS)
             {
-                std::cerr << LOC << "Error in inserting variable" << std::endl;
+                CERR << "Error in inserting variable" << std::endl;
                 return check;
             }
         }
     }
 
     return OKAY;
+}
+
+//=====================[ Basic Block Class Functions ]=========================================================================================
+
+void BasicBlock::logLivelinessInfo()
+{
+    std::cerr << "----- Liveliness Info for Block --------" << label << std::endl;
+    for (auto it : livelinessInfo)
+    {
+        std::cerr << "Variable " << it.first << " : ";
+        if (it.second.first)
+        {
+            std::cerr << "isLive";
+        }
+        else
+        {
+            std::cerr << "notLive";
+        }
+
+        std::cerr << " nextUse at -";
+        for (auto j : it.second.second)
+        {
+            std::cerr << " " << j;
+        }
+        std::cerr << std::endl;
+    }
+    std::cerr << "--------------------------------" << std::endl;
+}
+
+void BasicBlock::printCode(std::ostringstream &oss)
+{
+    oss << label << " : " << std::endl;
+    for (auto it : irCode.code)
+    {
+        oss << std::string(2, ' ') << std::setw(3) << std::to_string(it.first) << " : " << it.second.toString() << std::endl;
+    }
+    // oss << std::endl;
 }
 
 //=====================[ CFGs Class Functions ]=========================================================================================
@@ -125,7 +163,7 @@ int CFG::add_NEWTAC(int irLineNo, NEW_TAC_Quadruple code)
     if (blocks.find(name) == blocks.end())
     {
         // The block must already exist
-        std::cerr << LOC << "Error in adding new TAC - Block not found" << std::endl;
+        CERR << "Error in adding new TAC - Block not found" << std::endl;
         return FAIL;
     }
     blocks[name].irCode.addTAC(irLineNo, code);
@@ -142,7 +180,7 @@ int CFG::addEdge(const std::string &from, const std::string &to)
 
     // if (itFrom == labelMap.end() || itTo == labelMap.end())
     // {
-    //     std::cerr << LOC << "Error in adding edge - Block not found" << std::endl;
+    //     CERR << "Error in adding edge - Block not found" << std::endl;
     //     return FAIL;
     // }
 
@@ -164,25 +202,23 @@ int CFG::generateDOTFile(const std::string &filename)
     std::ofstream dotFile(filename);
     if (!dotFile.is_open())
     {
-        std::cerr << LOC << "Error in opening file" << std::endl;
+        CERR << "Error in opening file" << std::endl;
         return FAIL;
     }
 
     dotFile << "digraph G {" << std::endl;
-
     // Add nodes
     for (auto block : blocks)
     {
-        dotFile << block.second.label;
+        dotFile << block.first;
         dotFile << " [label=<\n";
         dotFile << "<table border=\"0\" cellborder=\"1\" cellspacing=\"1\">\n";
 
         // Heading with larger font
         std::string headerColor = "blue3";
-        dotFile << "  <tr><td><FONT COLOR=\"" << headerColor << "\"><font point-size=\"12\"><b>" << block.second.label << "</b></font></FONT></td></tr>\n";
+        dotFile << "  <tr><td><FONT COLOR=\"" << headerColor << "\"><font point-size=\"12\"><b>" << block.first << "</b></font></FONT></td></tr>\n";
 
         // Extra info with smaller font
-        int whichBlock = labelMap[block.second.label];
         for (auto it : block.second.irCode.code)
         {
             std::string info = it.second.toString();
@@ -190,11 +226,11 @@ int CFG::generateDOTFile(const std::string &filename)
             info = std::to_string(it.first) + " : " + info;
             dotFile << "  <tr><td><FONT COLOR=\"brown1\"><font point-size=\"10\">" << info << "</font></FONT></td></tr>\n";
         }
-
         dotFile << "</table>\n";
         dotFile << ">, shape=box];" << std::endl;
     }
 
+    
     // Add edges
     for (auto edge : edges)
     {
@@ -271,6 +307,47 @@ int CFG::addEdge(int from,int to){
 }
 
 std::string NO_BLOCK = "NO_BLOCK";
+
+void CFG::printCode(std::ostringstream &oss)
+{
+    std::string currBlock = "ENTRY";
+    oss << "====================== [ CFG Code ] ======================" << std::endl;
+    oss << ".data" << std::endl;
+    for (auto it : dataSection)
+    {
+        dataSegment currData = it.second;
+        oss << std::string(4, ' ') << currData.name << " : " << std::setw(20) << currData.type << " " << std::setw(20) << currData.value << std::endl;
+    }
+    oss << std::endl;
+
+    oss << ".text" << std::endl;
+    // We would like to print block code in order of control flow
+    std::queue<std::string> order;
+    std::map<std::string, bool> visited;
+    order.push("ENTRY");
+    while (!order.empty())
+    {
+        std::string currBlock = order.front();
+        order.pop();
+        if (visited.find(currBlock) != visited.end())
+        {
+            continue;
+        }
+        visited[currBlock] = true;
+
+        // This will print the code for the current block
+        CFG_CODE.blocks[currBlock].printCode(oss);
+
+        // Add the edges to the queue
+        if (edges.find(currBlock) != edges.end())
+        {
+            for (auto it : edges[currBlock])
+            {
+                order.push(it);
+            }
+        }
+    }
+}
 
 //=====================[ Basic Blocks]=========================================================================================
 
@@ -448,7 +525,7 @@ int makeBasicBlocks()
             std::string toBlock = IR_CODE.code[i].arg1;
 
             CFG_CODE.addEdge(fromBlock, toBlock);
-            CERR << "FCall Edge " << fromBlock << " -> " << toBlock << std::endl;
+            CERR<< "FCall Edge " << fromBlock << " -> " << toBlock << std::endl;
 
             int returnIndex = CFG_CODE.whichBlock(i + 1);
             std::cerr << "Func called from " << fromIndex << " return block " << returnIndex << std::endl;
@@ -460,13 +537,13 @@ int makeBasicBlocks()
                 for (auto it : returnPoints)
                 {
                     CFG_CODE.addEdge(it, returnBlock);
-                    CERR << "FCall Edge " << returnBlock << " -> " << it << std::endl;
+                    CERR<< "FCall Edge " << returnBlock << " -> " << it << std::endl;
                 }
             }
             else
             {
                 CFG_CODE.addEdge(returnBlock, "EXIT");
-                CERR << "FCall Edge " << returnBlock << " -> EXIT" << std::endl;
+                CERR<< "FCall Edge " << returnBlock << " -> EXIT" << std::endl;
             }
         }
         else
@@ -488,7 +565,7 @@ int makeBasicBlocks()
     for (auto it : functionReturnFrom["main"])
     {
         CFG_CODE.addEdge(it, "EXIT");
-        CERR << "Main Edge " << it << " -> EXIT" << std::endl;
+        CERR<< "Main Edge " << it << " -> EXIT" << std::endl;
     }
 
     // REACHING;
@@ -501,12 +578,26 @@ int makeBasicBlocks()
 int livelinessPass(){
     // This will Perform Liveliness Scan & Also add irCode to CFG_CODE;
 
+    // Check Leaders
+    // for(auto k:CFG_CODE.leaderToBlockMap){
+    //     std::cerr << "Leader " << k.first << " - " << k.second << std::endl;
+    // }
+
     // We would need a bottom up scan perblock
     int n = IR_CODE.code.size();
     bool isNewBlock = true;
     for (int i = n - 1; i >= 0; i--)
     {
+
+        std::string op = IR_CODE.code[i].op;
+        std::string result = IR_CODE.code[i].result;
+        std::string arg1 = IR_CODE.code[i].arg1;
+        std::string arg2 = IR_CODE.code[i].arg2;
+
+        std::cerr << "Scanning " << i << " - " << op << std::endl;
+
         if(isNewBlock){
+            std::cerr << "New Block's Bottom at " << i << std::endl;
             CFG_CODE.resetLiveliness(i);
         }
 
@@ -518,7 +609,7 @@ int livelinessPass(){
         LivelinessDS info;
         int check = CFG_CODE.getAllLivelinessInfo(i, info);
         if(check != OKAY){
-            std::cerr << LOC << "Error in getting liveliness info from SYM_TABLE" << std::endl;
+            CERR << "Error in getting liveliness info from SYM_TABLE" << std::endl;
             return check;
         }
 
@@ -535,26 +626,80 @@ int livelinessPass(){
         */
 
         // First we identify OP that have Assigment Actions on results
-        std::string op = IR_CODE.code[i].op;
-        std::string result = IR_CODE.code[i].result;
-        std::string arg1 = IR_CODE.code[i].arg1;
-        std::string arg2 = IR_CODE.code[i].arg2;
+        
 
         if(op == CALL || op == LEFT_STAR || 
             op == GOTO_EQUAL || op == GOTO_LABEL || op == IF_TRUE || op == IF_FALSE){
             // Those in which result is used & not assigned
+
+
+            if(isASymbol(result)){
+                // If it's a symbol
+                if(CFG_CODE.usageAt(i, result) != OKAY){
+                    CERR << "Error in adding usage at " << i << "for result=" << result << std::endl;
+                    return FAIL;
+                }
+            }
+            if(isASymbol(arg1)){
+                // If it's a symbol
+                if(CFG_CODE.usageAt(i, arg1) != OKAY){
+                    CERR << "Error in adding usage at " << i << "for arg1=" << arg1 << std::endl;
+                    return FAIL;
+                }
+            }
+            if(isASymbol(arg2)){
+                // If it's a symbol
+                if(CFG_CODE.usageAt(i, arg2) != OKAY){
+                    CERR << "Error in adding usage at " << i << "for arg2=" << arg2 << std::endl;
+                    return FAIL;
+                }
+            }
+
         }
         else if(op == FUNCTION_ENTRY || op == FUNCTION_EXIT || op == ALLOCATE){
             // Those to be Ignored
+
+            if(op == ALLOCATE){
+                std::string varName = result;
+                int check = CFG_CODE.removeLifeInfo(i, varName);
+                if(check != OKAY){
+                    CERR << "Error in removing liveliness info from SYM_TABLE" << std::endl;
+                    return check;
+                }
+            }
+
         }
         else{
             // Normal Operator's Type Operations + Special OP with assignment to result
             // Includes -> ASSIGN_OP, RIGHT_STAR, AMPERSEND, CAST {assignment to result}
             // Include -> PARAM, RETURN_FUNCTION {NO result variable}
+
+            if(isASymbol(result)){
+                // If it's a symbol
+                if(CFG_CODE.assignmentAt(i, result) != OKAY){
+                    CERR << "Error in adding assignment at " << i << "for result=" << result << std::endl;
+                    return FAIL;
+                }
+            }
+
+            if(isASymbol(arg1)){
+                // If it's a symbol
+                if(CFG_CODE.usageAt(i, arg1) != OKAY){
+                    CERR << "Error in adding usage at " << i << "for arg1=" << arg1 << std::endl;
+                    return FAIL;
+                }
+            }
+
+            if(isASymbol(arg2)){
+                // If it's a symbol
+                if(CFG_CODE.usageAt(i, arg2) != OKAY){
+                    CERR << "Error in adding usage at " << i << "for arg2=" << arg2 << std::endl;
+                    return FAIL;
+                }
+            }
+            
+
         }
-
-
-
 
         // Step 3. Tracking when a new block is starting
         // This will ensure when we are about to enter a new Block
@@ -565,6 +710,7 @@ int livelinessPass(){
         else{
             isNewBlock = false;
         }
+
     }
 
     // The LiveLinees Tracker will be kept in symbolRecord Itself - as it's a temporary datastructure;
@@ -578,6 +724,17 @@ int livelinessPass(){
 
 
 //======================[ SymbTable Offset+Function Code ]=========================================================================================
+
+bool isASymbol(const std::string &name)
+{
+    // std::cerr << "Checking if " << name << " is a symbol" << std::endl;
+    if(SYM_RECORD.symTable.find(name) != SYM_RECORD.symTable.end()){
+        return true;
+    }
+    std::cerr << "Not a symbol" << std::endl;
+    return false;
+}
+
 
 int SymTable::insert(const std::string &key, SymInfo &info)
 {
@@ -653,7 +810,7 @@ int SymTable::enterFunction(const std::string &funcName)
     // This will enter the function and set the offset
     if (inFunction)
     {
-        std::cerr << LOC << "Error in entering function - already in function" << std::endl;
+        CERR << "Error in entering function - already in function" << std::endl;
         return FAIL;
     }
 
@@ -669,7 +826,7 @@ int SymTable::exitFunction()
     // This will exit the function and set the offset
     if (!inFunction)
     {
-        std::cerr << LOC << "Error in exiting function - not in function" << std::endl;
+        CERR << "Error in exiting function - not in function" << std::endl;
         return FAIL;
     }
 
@@ -681,7 +838,7 @@ int SymTable::exitFunction()
     int check = this->insert(functionName, funcSymbol); // Insert the function in the table
     if (check != INSERT_SUCCESS)
     {
-        std::cerr << LOC << "Error in inserting function at exit - already present" << std::endl;
+        CERR << "Error in inserting function at exit - already present" << std::endl;
         return FAIL;
     }
 
@@ -727,7 +884,7 @@ bool CFG::isAlive(int atLine, const std::string &varName)
     if (blocks.find(name) == blocks.end())
     {
         // Should Not Happen
-        std::cerr << LOC << "Error in isAlive - Block not found" << std::endl;
+        CERR << "Error in isAlive - Block not found" << std::endl;
         return false;
     }
     auto it = blocks[name].livelinessInfo.find(varName);
@@ -736,7 +893,7 @@ bool CFG::isAlive(int atLine, const std::string &varName)
         // If variable is not found - then custom logic [add it to the map]
         // If it's Compiler Temp - then notLive
         // Else - a local variable - then live
-        std::cerr << LOC << "Var Not Found - Adding New Variable" << std::endl;
+        CERR << "Var Not Found - Adding New Variable" << std::endl;
         std::pair<bool, std::set<int>> newInfo;
 
         bool isCompilerTemp = varName[0] == '$';
@@ -757,19 +914,21 @@ int CFG::setAlive(int atLine, const std::string &varName)
     if (blocks.find(name) == blocks.end())
     {
         // Should Not Happen
-        std::cerr << LOC << "Error in setAlive - Block not found" << std::endl;
+        CERR << "Error in setAlive - Block not found" << std::endl;
         return FAIL;
     }
+
     auto it = blocks[name].livelinessInfo.find(varName);
     if (it == blocks[name].livelinessInfo.end())
     {
         // Variable not found - add the variable
-        std::cerr << LOC << "Var Not Found - Adding New Variable" << std::endl;
+        CERR << "Var " << varName << " Not Found - Adding New Variable" << std::endl;
         std::pair<bool, std::set<int>> newInfo;
         newInfo.first = true;
         newInfo.second = std::set<int>();
         newInfo.second.insert(atLine);
         blocks[name].livelinessInfo[varName] = newInfo;
+
         return OKAY;
     }
 
@@ -783,19 +942,21 @@ int CFG::setDead(int atLine, const std::string &varName)
     if (blocks.find(name) == blocks.end())
     {
         // Should Not Happen
-        std::cerr << LOC << "Error in setDead - Block not found" << std::endl;
+        CERR << "Error in setDead - Block not found" << std::endl;
         return FAIL;
     }
     auto it = blocks[name].livelinessInfo.find(varName);
     if (it == blocks[name].livelinessInfo.end())
     {
         // Variable not found - add the variable
-        std::cerr << LOC << "Var Not Found - Adding New Variable" << std::endl;
+        CERR << "Var " << varName << " Not Found - Adding New Variable" << std::endl;
         std::pair<bool, std::set<int>> newInfo;
         newInfo.first = false;
         newInfo.second = std::set<int>();
         newInfo.second.insert(atLine);
         blocks[name].livelinessInfo[varName] = newInfo;
+
+
         return OKAY;
     }
     it->second.first = false;
@@ -808,7 +969,7 @@ int CFG::setAllAlive(int atLine)
     if (blocks.find(name) == blocks.end())
     {
         // Should Not Happen
-        std::cerr << LOC << "Error in setAllAlive - Block not found" << std::endl;
+        CERR << "Error in setAllAlive - Block not found" << std::endl;
         return FAIL;
     }
     for (auto it : blocks[name].livelinessInfo)
@@ -824,7 +985,7 @@ int CFG::setAllDead(int atLine)
     if (blocks.find(name) == blocks.end())
     {
         // Should Not Happen
-        std::cerr << LOC << "Error in setAllDead - Block not found" << std::endl;
+        CERR << "Error in setAllDead - Block not found" << std::endl;
         return FAIL;
     }
     for (auto it : blocks[name].livelinessInfo)
@@ -840,14 +1001,14 @@ int CFG::addUsage(int atLine, const std::string &key, int usageLine)
     if (blocks.find(name) == blocks.end())
     {
         // Should Not Happen
-        std::cerr << LOC << "Error in addUsage - Block not found" << std::endl;
+        CERR << "Error in addUsage - Block not found" << std::endl;
         return FAIL;
     }
     auto it = blocks[name].livelinessInfo.find(key);
     if (it == blocks[name].livelinessInfo.end())
     {
         // Variable not found - add the variable
-        std::cerr << LOC << "Var Not Found - Adding New Variable" << std::endl;
+        CERR << "Var " << key << " Not Found - Adding New Variable" << std::endl;
         std::pair<bool, std::set<int>> newInfo;
         newInfo.first = true;
         newInfo.second = std::set<int>();
@@ -866,7 +1027,7 @@ int CFG::clearAllUsage(int atLine, const std::string &key)
     if (blocks.find(name) == blocks.end())
     {
         // Should Not Happen
-        std::cerr << LOC << "Error in clearAllUsage - Block not found" << std::endl;
+        CERR << "Error in clearAllUsage - Block not found" << std::endl;
         return FAIL;
     }
 
@@ -874,7 +1035,7 @@ int CFG::clearAllUsage(int atLine, const std::string &key)
     if (it == blocks[name].livelinessInfo.end())
     {
         // Variable not found - add the variable
-        std::cerr << LOC << "Var Not Found - Clear Usage Failed" << std::endl;
+        CERR << "Var Not Found - Clear Usage Failed" << std::endl;
         return FAIL;
     }
     it->second.second.clear();
@@ -888,13 +1049,13 @@ int CFG::assignmentAt(int atLine, const std::string &key)
     int check = setDead(atLine, key);
     if (check != OKAY)
     {
-        std::cerr << LOC << "Error in assignmentAt - setDead failed" << std::endl;
+        CERR << "Error in assignmentAt - setDead failed" << std::endl;
         return check;
     }
     check = clearAllUsage(atLine, key);
     if (check != OKAY)
     {
-        std::cerr << LOC << "Error in assignmentAt - clearAllUsage failed" << std::endl;
+        CERR << "Error in assignmentAt - clearAllUsage failed" << std::endl;
         return check;
     }
     // Now we will set the variable as dead
@@ -908,13 +1069,13 @@ int CFG::usageAt(int atLine, const std::string &key)
     int check = setAlive(atLine, key);
     if (check != OKAY)
     {
-        std::cerr << LOC << "Error in usageAt - setAlive failed" << std::endl;
+        CERR << "Error in usageAt - setAlive failed" << std::endl;
         return check;
     }
     check = addUsage(atLine, key, atLine);
     if (check != OKAY)
     {
-        std::cerr << LOC << "Error in usageAt - addUsage failed" << std::endl;
+        CERR << "Error in usageAt - addUsage failed" << std::endl;
         return check;
     }
     // Now we will set the variable as alive
@@ -923,15 +1084,15 @@ int CFG::usageAt(int atLine, const std::string &key)
 
 int CFG::resetLiveliness(int atLine)
 {
-    // This will reset the liveliness of the block
+    // Remove all the liveliness info of the block
     std::string name = blockName(atLine);
     if (blocks.find(name) == blocks.end())
     {
         // Should Not Happen
-        std::cerr << LOC << "Error in resetLiveliness - Block not found" << std::endl;
+        CERR << "Error in resetLiveliness - Block not found" << std::endl;
         return FAIL;
     }
-    blocks[name].livelinessInfo.clear();
+    blocks[name].livelinessInfo = LivelinessDS();
     return OKAY;
 }
 
@@ -942,12 +1103,55 @@ int CFG::getAllLivelinessInfo(int atLine, LivelinessDS &info)
     if (blocks.find(name) == blocks.end())
     {
         // Should Not Happen
-        std::cerr << LOC << "Error in getAllLivelinessInfo - Block not found" << std::endl;
+        CERR << "Error in getAllLivelinessInfo - Block not found" << std::endl;
         return FAIL;
     }
     info = blocks[name].livelinessInfo;
     return OKAY;
 }
+
+int CFG::removeLifeInfo(int atLine, const std::string &key)
+{
+    // This will remove the liveliness info of the variable
+    std::string name = blockName(atLine);
+    if (blocks.find(name) == blocks.end())
+    {
+        // Should Not Happen
+        CERR << "Error during removal of var" << key << " - Block not found" << std::endl;
+        return FAIL;
+    }
+    auto it = blocks[name].livelinessInfo.find(key);
+    if (it == blocks[name].livelinessInfo.end())
+    {
+        // Variable not found - add the variable
+        // Not needed to remove
+        return OKAY;
+    }
+    blocks[name].livelinessInfo.erase(it);
+    return OKAY;
+}
+
+int CFG::attachLiveInfoToLine(int atLine){
+    // This will attach current liveliness info to the block's ir or that line
+    std::string name = blockName(atLine);
+    if (blocks.find(name) == blocks.end())
+    {
+        // Should Not Happen
+        CERR << "Error in attachLiveInfoToLine - Block not found" << std::endl;
+        return FAIL;
+    }
+    LivelinessDS info = blocks[name].livelinessInfo;
+
+    // Attach this to irCode of that line
+    auto it = blocks[name].irCode.code.find(atLine);
+    if(it == blocks[name].irCode.code.end()){
+        CERR << "Error in attachLiveInfoToLine - atLine not found" << std::endl;
+        return FAIL;
+    }
+    it->second.VarInfo = info;
+    return OKAY;
+}
+
 
 //======================[ SymbTable RegUtilites Code ]=========================================================================================
 

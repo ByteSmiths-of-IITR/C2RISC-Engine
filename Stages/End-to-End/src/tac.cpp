@@ -80,12 +80,12 @@ std::string TAC_Quadruple::toString()
 
     else if (op == FUNCTION_ENTRY)
     {
-        str = result + ": ⤵️"; // FUNCTION_ENTRY p
+        str = result + ": Func ENTER"; // FUNCTION_ENTRY p
     }
 
     else if (op == FUNCTION_EXIT)
     {
-        str = result + ": ↙️"; // FUNCTION_EXIT p
+        str = result + ": Func EXIT"; // FUNCTION_EXIT p
     }
 
     else if (op == ALLOCATE)
@@ -424,21 +424,54 @@ std::string NEW_TAC_Quadruple::toString()
 {
     std::string oldContent = TAC_Quadruple::toString();
 
-    std::string newContent = "";
-    for (auto it : VarInfo)
+    int maxWidthOld = 25;
+    int leftWidth = maxWidthOld - oldContent.length();
+
+    if (leftWidth > 0)
     {
-        newContent += "| ";
-        newContent += it.first;
-        newContent += it.second.first ? " isLive" : " notLive";
-        newContent += " nextUse at -";
-        for (auto j : it.second.second)
-        {
-            newContent += " " + j;
-        }
-        newContent += " |";
+        oldContent += std::string(leftWidth, ' ');
     }
 
+    std::string newContent = "";
+    newContent += " | ";
+    std::string unitContent = "";
+    for (auto it : VarInfo)
+    {
+        unitContent += it.first;
+        unitContent += it.second.first ? "" : " ☠️";
+
+        int totalNextUsage = it.second.second.size();
+        unitContent += (totalNextUsage > 0) ? " ⬇️ (" : "";
+
+        for (auto j : it.second.second)
+        {
+            unitContent += " " + std::to_string(j);
+        }
+        unitContent += (totalNextUsage > 0) ? " )" : "";
+        
+        // Adding padding
+        int padding = 20 - unitContent.length();
+        if (padding > 0)
+        {
+            unitContent += std::string(padding, ' ');
+        }
+        newContent += unitContent;
+        newContent += " | ";
+        unitContent = "";
+    }
+
+    if(VarInfo.size() == 0)
+    {
+        newContent += "No Variable ";
+        int padding = 20 - newContent.length();
+        if (padding > 0)
+        {
+            newContent += std::string(padding, ' ');
+        }
+        newContent += "| ";
+    }
     std::string finalStr = oldContent + newContent;
+    return finalStr;
 }
 
 int NEW_TAC_Quadruple::addLivelinessInfo(const std::map<std::string, std::pair<bool, std::set<int>>> &info){

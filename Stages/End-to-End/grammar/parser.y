@@ -2651,6 +2651,9 @@ int main(int argc, char **argv) {
         notificationStream <<  "RISC-V Code Generation failed \n";
     }
 
+    // Print the CFG_CODE
+    CFG_CODE.printCode(outputStream);
+
 
     if (yyin) fclose(yyin);  // Close the input file if opened
     exit_compiler(); // Clean up and exit
