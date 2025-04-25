@@ -2626,7 +2626,7 @@ int main(int argc, char **argv) {
 
 
     // Print the IR code
-    IR_CODE.printTAC(outputStream);
+    /* IR_CODE.printTAC(outputStream); */
 
     // Print the Annotated Parse Tree
     if(Aptree){
@@ -2653,6 +2653,10 @@ int main(int argc, char **argv) {
 
     // Print the CFG_CODE
     CFG_CODE.printCode(outputStream);
+
+
+    // Print the RISC-V code
+    FINAL_CODE.printCode(outputStream);
 
 
     if (yyin) fclose(yyin);  // Close the input file if opened

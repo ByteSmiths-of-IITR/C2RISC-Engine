@@ -27,6 +27,7 @@ std::string GOTO_EQUAL = "goto_equal"; // if arg1 == arg2 goto result
 
 std::string TO_BACKPATCH = "to_backpatch"; // This is used to backpatch the list with the label index
 
+
 std::string RO_DATA = ".rodata";
 std::string STACK_DATA = ".stack";
 std::string DATA = ".data";
@@ -85,7 +86,7 @@ std::string TAC_Quadruple::toString()
 
     else if (op == FUNCTION_EXIT)
     {
-        str = result + ": Func EXIT"; // FUNCTION_EXIT p
+        str = result + " ret(" + arg1 + "): EXIT"; // FUNCTION_EXIT p, n 
     }
 
     else if (op == ALLOCATE)
@@ -514,9 +515,25 @@ void RISCV_CODE::addDataSection(const std::map<std::string, dataSegment> &dataSe
 }
 
 void RISCV_CODE::addCode(std::string code){
+    code = std::string(4, ' ') + code;
     this->code.push_back(code);
     return;
 }
+
+void RISCV_CODE::addLabel(std::string label)
+{
+    // label = std::string(4, ' ') + label;
+    this->code.push_back(label);
+    return;
+}
+
+void RISCV_CODE::addComment(std::string comment)
+{
+    comment = std::string(4, ' ') + "# " + comment;
+    this->code.push_back(comment);
+    return;
+}
+
 
 void RISCV_CODE::printCode(std::ostringstream &oss)
 {
@@ -536,3 +553,12 @@ void RISCV_CODE::printCode(std::ostringstream &oss)
     oss << std::endl;
     
 }   
+
+//Utility Function for RISC-V Code
+
+std::string indentOP(std::string op)
+{
+    int paddedsize = 6;
+    op = op + std::string(paddedsize - op.size(), ' ');
+    return op;
+}

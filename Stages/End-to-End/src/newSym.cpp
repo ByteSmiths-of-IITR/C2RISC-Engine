@@ -111,7 +111,8 @@ int SymTable::exitFunction()
     // We also need to create a Symbol with name of function
     SymInfo funcSymbol;
     funcSymbol.size = stack_offset;
-    funcSymbol.offset = 0;                              // Function Offset NOT NEEDED IG;
+
+    // Set offset as size of return value
     funcSymbol.isGlobal = true;                         // Function is Global
     int check = this->insert(functionName, funcSymbol); // Insert the function in the table
     if (check != INSERT_SUCCESS)

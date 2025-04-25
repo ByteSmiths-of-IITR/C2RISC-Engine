@@ -963,6 +963,8 @@ bool isASymbol(const std::string &varName); // This will check if the variable i
 
 // using RISCV_CODE = std::vector<std::string>;
 
+std::string indentOP(std::string op);
+
 class RISCV_CODE{
     std::vector<std::string> code;
     std::map<std::string, dataSegment> data;
@@ -973,19 +975,13 @@ public:
     void addCode(std::string code);
 
     void printCode(std::ostringstream &oss);
+
+    void addLabel(std::string label);
+
+    void addComment(std::string comment);
 };
 
 int codeGen();
-
-class RegisterInfo
-{
-public:
-    std::map<int, std::set<std::string>> regMap; // Map of register to variable
-
-    std::set<int> freeReg; // Set of free registers
-
-
-};
 
 
 using LivelinessDS = std::map<std::string, std::pair<bool, std::set<int>>>; // This will be used to keep track of the liveliness of the variables
@@ -1226,7 +1222,7 @@ int addSymbolsToSymTable();
 
 int makeBasicBlocks();
 
-int generatingRISCVCode();
+int riscvCodeGen();
 
 int livelinessPass();
 
@@ -1239,7 +1235,6 @@ int getReg(NEW_TAC_Quadruple &code, std::vector<int> &regList);
 extern std::string NO_BLOCK;
 
 extern CFG CFG_CODE;
-extern RegisterInfo REG_TABLE;
 extern SymTable SYM_RECORD;
 
 extern RISCV_CODE FINAL_CODE;

@@ -1041,8 +1041,10 @@ int function_definition_H(ASTNode *node)
             }
         }
 
+        int returnSize = width(returnTypeExpr);
+
         // Adding Function Exit TAC
-        IR_CODE.addTAC(node, varName, FUNCTION_EXIT, NO_ARG, NO_ARG);
+        IR_CODE.addTAC(node, varName, FUNCTION_EXIT, std::to_string(returnSize), NO_ARG);
 
         // Early Entry's Exit
         int exitedScope = SYM_TABLE.earlyExit(); //  [☀️ EarlyScope Entry] [IT's POSSIBLE that the early scope entry was never used in here]

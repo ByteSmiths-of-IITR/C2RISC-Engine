@@ -4,7 +4,6 @@
 //=====================[ Code Generation ]=========================================================================================
 
 SymTable SYM_RECORD; // Global Symbol Table [offset + liveliness + getRegUtilities]
-RegisterInfo REG_TABLE;
 
 // We have access to IRCode via -> IR_CODE
 CFG CFG_CODE;          // This will be the control flow graph
@@ -58,7 +57,17 @@ int codeGen()
         return check;
     }
     CERR << " | CFG generated successfully at " << dotFileName << std::endl;
-    // Step 4. PerBlock RISC-V CODEGEN
+
+    // Step 4. Generate RISC-V code (final Code)
+    check = riscvCodeGen();
+
+    if (check != OKAY)
+    {
+        CERR << "Error in generating RISC-V code" << std::endl;
+        return check;
+    }
+
+
 }
 
 //======================[ Offset Calculation with SymTable ]=========================================================================================
@@ -481,7 +490,219 @@ int livelinessPass(){
 
 //=====================[ RISC-V Code Generation ]=========================================================================================
 
+int riscvCodeGen(){
+    // Now we will generate the RISC-V code from the CFG_CODE (block by block in breadth first manner)
 
+    std::queue<std::string> parameterQueue;
+
+    std::queue<std::string> blockOrder;
+    std::map<std::string ,bool> visitedBlocks;
+    blockOrder.push("ENTRY");
+    while (!blockOrder.empty())
+    {
+        std::string currBlock = blockOrder.front();
+        blockOrder.pop();
+        if(visitedBlocks.find(currBlock) != visitedBlocks.end()){
+            continue;
+        }
+        visitedBlocks[currBlock] = true;
+
+        // Now PerBlock Code Generation
+        BasicBlock &block = CFG_CODE.blocks[currBlock];
+        std::string riscCode;
+
+
+        // add block label
+        if(currBlock != "ENTRY" && currBlock != "EXIT"){
+            riscCode = currBlock + ":";
+            FINAL_CODE.addLabel(riscCode);
+        }
+
+        for(auto it : block.irCode.code){
+            NEW_TAC_Quadruple &currIR = it.second;
+
+            // Now we have got the IR Code each
+            std::string op = currIR.op;
+
+
+            // Function Entry & Exit [Activation Record]
+            if(op == FUNCTION_ENTRY){
+
+                
+                std::string funcName = currIR.result;
+                
+                int stackSize = SYM_RECORD.getSize(funcName);
+
+                // Adding Comment
+                FINAL_CODE.addComment("ENTRY Activation (start) - " + funcName);
+
+                // Allocate Stack Space
+                riscCode = indentOP("add")+"sp, sp, -" + std::to_string(stackSize); 
+                FINAL_CODE.addCode(riscCode);
+
+                // Store return address for PC
+                int loc = stackSize - 4;
+                riscCode = indentOP("sw")+"ra, " + std::to_string(loc) + "(sp)";
+
+                // Store old frame pointer
+                loc = stackSize - 8;
+                riscCode = indentOP("sw")+"s0, " + std::to_string(loc) + "(sp)";
+                FINAL_CODE.addCode(riscCode);
+
+                // Set new frame pointer
+                riscCode = indentOP("add") + "s0, sp," + std::to_string(stackSize);
+                FINAL_CODE.addCode(riscCode);
+
+                // Argument Storing Code will be done by Caller Itself 
+                // The Callee will assume the arguments are already in place
+                FINAL_CODE.addComment("ENTRY Activation (end) - " + funcName);
+
+                // Done
+            }
+            else if(op == FUNCTION_EXIT){
+                std::string funcName = currIR.result;
+                int stackSize = SYM_RECORD.getSize(funcName);
+                std::string riscCode;
+
+                // Comment
+                FINAL_CODE.addComment("EXIT Activation (start) - " + funcName);
+
+                // fetch the address where the return value must be stored [in the caller's Stack]
+                int loc = 12; // 3rd Last Word
+                riscCode = indentOP("lw")+"a1, " + std::to_string(loc) + "(s0)"; // load value stored at (sp + loc) to a0
+                FINAL_CODE.addCode(riscCode);
+
+                // Store the return value at this address (but will depend on size of return value)
+                // Assuming the return value's address is stored in `a0` (explicit address)
+                int returnSize = std::stoi(currIR.arg1);
+
+                // Now depending on the size of return we need to call multiple store instructions
+                int destLoc = 0; // w.r.t `a1` register;
+                int srcLoc = 0;  // w.r.t `a0` register;
+
+                // If return size = -1 // denotes 'void' type
+
+                while(returnSize > 0){
+                    //load the data in a temp register
+
+                    int sizeOfData = returnSize > 4 ? 4 : returnSize;
+
+                    std::string sl_type;
+                    if(sizeOfData == 1){
+                        sl_type = "b";
+                    }
+                    else if(sizeOfData == 2){
+                        sl_type = "h";
+                    }
+                    else{
+                        sl_type = "w";
+                    }
+
+                    riscCode = indentOP("l" + sl_type) + "a2, " + std::to_string(srcLoc) + "(a0)";
+                    FINAL_CODE.addCode(riscCode);
+
+                    // Store the data in the destination
+                    riscCode = indentOP("s" + sl_type) + "a2, " + std::to_string(destLoc) + "(a1)";
+                    FINAL_CODE.addCode(riscCode);
+                    returnSize -= 4;
+                    destLoc += 4;
+                    srcLoc += 4;
+                }
+
+                // Restore the old return PC
+                loc = stackSize - 4;
+                riscCode = indentOP("lw") + "ra, " + std::to_string(loc) + "(sp)";
+                FINAL_CODE.addCode(riscCode);
+
+                // Restore the old frame pointer
+                loc = stackSize - 8;
+                riscCode = indentOP("lw")+"s0, " + std::to_string(loc) + "(sp)";
+                FINAL_CODE.addCode(riscCode);
+
+                // Restore the stack pointer
+                riscCode = indentOP("addi")+"sp, sp, " + std::to_string(stackSize);
+                FINAL_CODE.addCode(riscCode);
+
+                // Jump to the return address
+                riscCode = indentOP("jr")+"ra";
+                FINAL_CODE.addCode(riscCode);
+
+                FINAL_CODE.addComment("EXIT Activation (end) - " + funcName);
+                
+                // Done
+            }
+            // AssignOP
+            else if(op == ASSIGN_OP){
+
+            }
+            else if(op == LEFT_STAR){
+
+            }
+            else if(op == RIGHT_STAR){
+
+            }
+            else if(op == AMPERSEND){
+
+            }
+
+            // Cast Operations
+            else if(op == CAST){
+
+            }
+
+            // Param + Function Call + Return 
+            else if(op == PARAM){
+
+            }
+            else if(op == CALL){
+                
+            }
+            else if(op == RETURN_FUNCTION){
+
+                // This will store address(explicit address) of return value in `a0` register
+            }
+
+            // Jump Operations
+            else if(op == GOTO_EQUAL){
+
+            }
+            else if(op == GOTO_LABEL){
+
+            }
+            else if(op == IF_TRUE){
+
+            }
+            else if(op == IF_FALSE){
+
+            }
+
+
+            // Instruction to Ignore
+            else if(op == ALLOCATE){
+                // TO Ignore
+            }
+
+
+
+            // Other Operation Based Insturctions
+            else{
+                
+            }
+
+
+
+        }
+    
+    
+        // After genereating the code for this block, we will add the edges to the queue
+        for(auto it : CFG_CODE.edges[currBlock]){
+            blockOrder.push(it);
+        }
+
+    }
+
+    return OKAY;
+}
 
 //======================[ Register Allocation ]=========================================================================================
 
