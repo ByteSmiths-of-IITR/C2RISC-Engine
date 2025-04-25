@@ -750,8 +750,11 @@ extern std::string semanticMessage;
 
 #define LOC std::to_string(__LINE__) + " :" + __FILE__
 
-#define BUG_H \                                                                                        
-    if (ANNOTATE) node->addAttribute("😱 COMPILER BUG Exit [" + std::to_string(__LINE__) + ":" + __FILE__ + "] ✋")
+#define BUG_H do { \
+    if (ANNOTATE) { \
+        node->addAttribute("😱 COMPILER BUG Exit [" + std::to_string(__LINE__) + ":" + std::string(__FILE__) + "] ✋"); \
+    } \
+} while(0)
 
 #define RECOVER_H \
     if (ANNOTATE) \
