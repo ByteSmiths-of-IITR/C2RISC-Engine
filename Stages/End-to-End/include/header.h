@@ -1232,6 +1232,8 @@ int livelinessPass();
 
 int getReg(NEW_TAC_Quadruple &code, std::vector<int> &regList);
 
+
+
 //====================[ Externed Global CodeGen Variables ]=========================================================================================
 
 extern std::string NO_BLOCK;
@@ -1241,5 +1243,10 @@ extern RegisterInfo REG_TABLE;
 extern SymTable SYM_RECORD;
 
 extern RISCV_CODE FINAL_CODE;
+
+
+//======================[ Code Optimization ]=========================================================================================
+
+int constantFolding();
 
 #endif // !HEADER_H
