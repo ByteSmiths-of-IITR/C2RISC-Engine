@@ -961,7 +961,19 @@ int constant_expression_H(ASTNode *node, std::string &value);
 
 bool isASymbol(const std::string &varName); // This will check if the variable is a symbol or not
 
-using RISCV_CODE = std::vector<std::string>;
+// using RISCV_CODE = std::vector<std::string>;
+
+class RISCV_CODE{
+    std::vector<std::string> code;
+    std::map<std::string, dataSegment> data;
+
+public:
+    void addDataSection(const std::map<std::string, dataSegment> &dataSection);
+
+    void addCode(std::string code);
+
+    void printCode(std::ostringstream &oss);
+};
 
 int codeGen();
 
@@ -1030,7 +1042,6 @@ public:
 
     LivelinessDS livelinessInfo; // This will be used to keep track of the liveliness of the variables
 
-    std::vector<std::string> riscvCode; // Will be generated
     int generateRISCVCode();            // This will generate the RISC-V code & store in it's element -> risvCode
 
     std::string label; // Label for the basic block

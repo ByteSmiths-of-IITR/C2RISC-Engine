@@ -504,3 +504,35 @@ int NEW_TAC::addVarInfo(int lineNo, const std::string &varName, bool isAlive, co
     // This will add the variable info to the new TAC code
     return this->code[lineNo].addVariable(varName, isAlive, nextUsage);
 }
+
+//=====================[ RISC-V Code ]=========================================================================================
+
+void RISCV_CODE::addDataSection(const std::map<std::string, dataSegment> &dataSection)
+{
+    this->data = dataSection;
+    return;
+}
+
+void RISCV_CODE::addCode(std::string code){
+    this->code.push_back(code);
+    return;
+}
+
+void RISCV_CODE::printCode(std::ostringstream &oss)
+{
+    oss << ".data" << std::endl;
+    for (auto it : data)
+    {
+        dataSegment currData = it.second;
+        oss << std::string(4, ' ') << currData.name << " : " << std::setw(20) << currData.type << " " << std::setw(20) << currData.value << std::endl;
+    }
+    oss << std::endl;
+
+    oss << ".text" << std::endl;
+    for (auto it : code)
+    {
+        oss << std::string(4, ' ') << it << std::endl;
+    }
+    oss << std::endl;
+    
+}   
