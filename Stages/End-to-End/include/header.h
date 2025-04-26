@@ -1298,6 +1298,10 @@ int getManyReg(std::set<std::string> varName, LivelinessDS livelinessInfo, std::
 
 std::string store_load_Type(int size);
 
+int getRISC_Instruction(std::string op, bool isFloat, std::string &risc_op);
+
+int isImmInstPossible(std::string op, int &whichCase);
+
 //====================[ Externed Global CodeGen Variables ]=========================================================================================
 
 extern std::string NO_BLOCK;
@@ -1306,7 +1310,6 @@ extern CFG CFG_CODE;
 extern SymTable SYM_RECORD;
 
 extern RISCV_CODE FINAL_CODE;
-
 
 //======================[ Code Optimization ]=========================================================================================
 

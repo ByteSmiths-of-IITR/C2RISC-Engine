@@ -1835,3 +1835,21 @@ std::string store_load_Type(int size){
     
     return sl_type;
 }
+
+int getRISC_Instruction(std::string op, bool isFloat, std::string &risc_op){
+
+
+
+
+
+    return OKAY;
+}
+
+int isImmInstPossible(std::string op, int &whichCase){
+
+
+
+
+    
+    return OKAY;
+}
