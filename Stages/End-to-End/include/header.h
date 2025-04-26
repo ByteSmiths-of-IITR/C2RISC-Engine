@@ -829,16 +829,27 @@ extern const int FAIL;
             IR_CODE.addTAC((node), tempName, ALLOCATE, std::to_string(size), NO_ARG);             \
             IR_CODE.addTAC((node), tempName, RIGHT_STAR, (value), std::to_string(size));          \
             value = tempName;                                                                     \
+            (node)->attributes.push_back("🌋 Space Change from ADDRESS to VALUE 💥 ");             \
         }                                                                                         \
     }                                                                                             \
-    else if ((space) != SPACE::VALUE_SPACE)                                                       \
+    else if ((space) == SPACE::VALUE_SPACE)                                                       \
+    {                                                                                             \
+        if (getSpace(type) == SPACE::ADDRESS_SPACE)                                               \
+        {                                                                                         \
+            std::string offset = newTemp();                                                       \
+            int size = width(type);                                                               \
+            IR_CODE.addTAC((node), offset, ALLOCATE, std::to_string(size), NO_ARG);               \
+            IR_CODE.addTAC((node), offset, OFFSET_LOAD, (value), NO_ARG);                         \
+            value = offset;                                                                       \
+            (node)->attributes.push_back("🌋 Space Change from VALUE to ADDRESS 💥 ");             \
+        }                                                                                         \
+    }                                                                                             \
+    else                                                                                          \
     {                                                                                             \
         (node)->attributes.push_back("🌋 Something Wrong in Space 💥 Change Code [" + LOC + "]"); \
         BUG_H;                                                                                    \
         return BUG;                                                                               \
     }
-
-
 
 extern const std::string PASS_ERROR;
 

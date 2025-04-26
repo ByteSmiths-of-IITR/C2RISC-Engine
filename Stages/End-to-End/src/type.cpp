@@ -673,10 +673,10 @@ SPACE getSpace(const TypeExpression &typeExpr)
     {
         return SPACE::ADDRESS_SPACE;
     }
-    if(whichType == Type::FUNCTION){
-        // Function is also in Address Space
-        return SPACE::ADDRESS_SPACE;
-    }
+    // if(whichType == Type::FUNCTION){
+    //     // Function is also in Address Space
+    //     return SPACE::ADDRESS_SPACE;
+    // }
 
     return SPACE::VALUE_SPACE;
 }
