@@ -807,7 +807,7 @@ extern const int FAIL;
             std::string tempName = newTemp();                                                     \
             int size = width(type);                                                               \
             IR_CODE.addTAC((node), tempName, ALLOCATE, std::to_string(size), NO_ARG);             \
-            IR_CODE.addTAC((node), tempName, RIGHT_STAR, (value), NO_ARG);                        \
+            IR_CODE.addTAC((node), tempName, RIGHT_STAR, (value), std::to_string(size));          \
             value = tempName;                                                                     \
         }                                                                                         \
     }                                                                                             \
@@ -959,6 +959,7 @@ int constant_expression_H(ASTNode *node, std::string &value);
 
 //=====================[ Code Generations ]=========================================================================================
 
+bool isALabel(const std::string &varName); // This will check if the variable is a label or not
 bool isASymbol(const std::string &varName); // This will check if the variable is a symbol or not
 
 // using RISCV_CODE = std::vector<std::string>;
@@ -993,6 +994,8 @@ public:
     // Storing Status of Three Variables in that Instruction (<= 3)
     LivelinessDS VarInfo;
 
+    int lineNo; // [TODO - Add Support for this]
+
     NEW_TAC_Quadruple() = default;
 
     NEW_TAC_Quadruple(TAC_Quadruple oldTAC){
@@ -1005,7 +1008,7 @@ public:
     int addVariable(const std::string &varName, bool islive, const std::set<int> &nextUsage);
 
     // Check if the variable is alive or NOT (via-reference)
-    int isAlive(const std::string &varName, bool &alive);
+    bool isAlive(const std::string &varName);
 
     int addLivelinessInfo(const LivelinessDS &info);
 
@@ -1070,6 +1073,7 @@ public:
     // This will help find to which block any index belongs
     int whichBlock(int index);
 
+
     bool isALeader(int index);
     int addLeader(int index);                        // will generate a new Name for block & set things
     int addLeader(int index, std::string blockName); // This will set that Name
@@ -1102,6 +1106,7 @@ public:
     int addUsage(int atLine, const std::string &key, int usageLine);    // Add the usage of the variable in the register
     int removeUsage(int atLine, const std::string &key, int usageLine); // Clear the usage of the variable in the register
     int clearAllUsage(int atLine, const std::string &key);           // Clear all the usage of the variable in the register
+
 
     int removeLifeInfo(int atLine, const std::string &key); // Remove the liveliness info of the variable
 
@@ -1139,6 +1144,9 @@ int const activation_start_offset = 16; // 4 words
 - Return Address
 */
 
+extern int MIN_REGNO;
+extern int MAX_REGNO;
+
 class SymTable
 {
     // This will be scope-disabled Symbol Table
@@ -1157,6 +1165,17 @@ public:
 
     // We will also Insert functions as a variable and it's size = activation record size;
 
+    SymTable(){
+        bss_offset = 0;
+        ro_offset = 0;
+        data_offset = 0;
+        stack_offset = 0;
+
+        inFunction = false;
+        functionName = "";
+
+        resetRegTable();
+    }
 
     int enterFunction(const std::string &funcName);
     int exitFunction();
@@ -1180,15 +1199,23 @@ public:
     int setInMemory(const std::string &key);    // Set the variable as in memory
     int setNotInMemory(const std::string &key); // Set the variable as not in memory
 
+    int varStoredInWhichReg(const std::string &key); // Check if the variable is stored in register or not
+    int varStoreInHowManyReg(const std::string &key); // Check how many registers the variable is stored in
+
+    int ex_varStoredInWhichReg(const std::string &key); // Check if  variable EXCLUSIVLY is stored in register or not
+
     int addVarInReg(const std::string &key, int regNo);    // Set the variable as in register
     int removeVarFromReg(const std::string &key, int regNo); // Clear the variable from register
     int removeVarFromAllReg(const std::string &key);          // Clear all the registers for the variable
 
+    int variableRest(const std::string &key); // Reset the variable's info
 
     // RegDescription Table Structures
     std::map<int, std::set<std::string>> regMap; // Map of register to variable
 
     std::set<int> SetOfFreeReg; // Set of free registers
+
+    void resetRegTable(); // Initialize the register table
 
     // Utility Functions for Register Table
     // Check if a particular register is free or NOT
@@ -1200,20 +1227,24 @@ public:
     // Get all the variable whose value is in the arg_given register
     int whatIsInReg(int regNo, std::set<std::string> &varName);
 
+    int howManyVarInReg(int regNo); // Get the number of variables in the register
+
     // Add a variable to the register
     // int addVarToReg(int regNo, const std::string &varName); [Already Present for get_regUtilites]
 
     // Remove a variable from the register
     // int removeVarFromReg(int regNo, const std::string &varName); [Already Present for get_regUtilites]
 
-    int freeReg(int regNo); // Free the register
+    int freeGivenReg(int regNo); // Free the register
 
     int freeAllReg(); // Free all the registers
 
     // Get a free register (via-Reference) [Gives Smallest Free Register or -1 if none is free]
-    int getFreeReg(int &regNo);
+    int getFreeReg();
 
-    void resetRegTable(); // Reset the register info
+    // void resetRegTable(); // Reset the register info
+
+    // int findRegToEvict(); // Find a register to evict & return the register number
 
     void printRegTable(std::ofstream &file); // Print the register info
 };
@@ -1226,7 +1257,7 @@ int riscvCodeGen();
 
 int livelinessPass();
 
-int getReg(NEW_TAC_Quadruple &code, std::vector<int> &regList);
+int getReg(NEW_TAC_Quadruple &code, std::map<std::string, int> &retMap);
 
 
 
@@ -1243,5 +1274,11 @@ extern RISCV_CODE FINAL_CODE;
 //======================[ Code Optimization ]=========================================================================================
 
 int constantFolding();
+
+
+//======================[ Code Generation Utilies ]=========================================================================================
+
+std::string makeLoadInstruction(const std::string &varName, int regNo);
+std::string makeStoreInstruction(const std::string &varName, int regNo);
 
 #endif // !HEADER_H

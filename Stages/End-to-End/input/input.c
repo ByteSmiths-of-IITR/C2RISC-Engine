@@ -1,43 +1,26 @@
 int main(){
-    char *str = "int a; int *p; if (a) a = 1; else a = 2;";
+    int a = 4.3;
+    float b = 34;
 }
 
-
 //=========================== C2RISC-Engine =========================================================//
+// 🌴 APTree 🌴 has been generated, can be used for debugging ❤️‍🩹 
 // Lexical Analysis 👍 | Syntax Analysis 👍 | Semantic Analysis 👍 | 🔖 IRCode Gen
-// RISC-V Code Generation completed successfully 
+// 😊 Thanku for using our "C2RISC-Engine" (Till IR Phase) 
 // 
 // ----------------------------------------------------------------------------------------------------
 // 
+// .text      : ------------------------------
+// 0          : main: Func ENTER              
+// 1          : alloca a$1, 4                 
+// 2          : alloca $0, 4                  
+// 3          : $0 = (int)a$1                 
+// 4          : a$1 = $0                      
+// 5          : alloca b$1, 4                 
+// 6          : alloca $1, 4                  
+// 7          : $1 = (float)b$1               
+// 8          : b$1 = $1                      
+// 9          : main ret(4): EXIT             
+// 
 // ----------------------------------------------------------------------------------------------------
-// ====================== [ CFG Code ] ======================
-// .data
-// 
-// .text
-// ENTRY : 
-// main : 
-//     0 : main: Func ENTER          | Default            | 
-//     1 : alloca str$1, 4           | str$1 ☠️           | 
-//     2 : str$1 = @str$0            | Default            | 
-//     3 : main ret(4): EXIT         | Default            | 
-// EXIT : 
-// .data
-// 
-// .text
-//     main:
-//         # ENTRY Activation (start) - main
-//         add   sp, sp, -20
-//         sw    s0, 12(sp)
-//         add   s0, sp,20
-//         # ENTRY Activation (end) - main
-//         # EXIT Activation (start) - main
-//         lw    a1, 12(s0)
-//         lw    a2, 0(a0)
-//         sw    a2, 0(a1)
-//         lw    ra, 16(sp)
-//         lw    s0, 12(sp)
-//         addi  sp, sp, 20
-//         jr    ra
-//         # EXIT Activation (end) - main
-// 
 // 

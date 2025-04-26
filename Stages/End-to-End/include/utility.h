@@ -5,6 +5,7 @@
 #include <vector>
 #include <string>
 #include <map>
+#include <queue>
 #include <fstream>
 #include <stdexcept>
 #include <numeric>

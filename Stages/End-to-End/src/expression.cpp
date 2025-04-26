@@ -1020,13 +1020,14 @@ int postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
             int valNewSize = width(type1);
             IR_CODE.addTAC(node, valNew, ALLOCATE, std::to_string(valNewSize), NO_ARG); // Allocate memory for the variable
 
-            IR_CODE.addTAC(node, valNew, RIGHT_STAR, varName1, NO_ARG);                  // Load it
+            int element_width = width(type1);
+            std::cout << "Adding arg2 to RIGHT_STAR " << element_width << std::endl;
+            IR_CODE.addTAC(node, valNew, RIGHT_STAR, varName1, std::to_string(element_width)); // Load it
             std::string valNew2 = newTemp();                                             // allocated width(type1)
             IR_CODE.addTAC(node, valNew2, ALLOCATE, std::to_string(valNewSize), NO_ARG); // Allocate memory for the variable
 
             IR_CODE.addTAC(node, valNew2, op, valNew, inc_decBY); // Increment it
-
-            IR_CODE.addTAC(node, varName1, LEFT_STAR, valNew2, NO_ARG); // Store it
+            IR_CODE.addTAC(node, varName1, LEFT_STAR, valNew2, std::to_string(element_width)); // Store it
 
             varName0 = valNew; // Old varName before inc/dec
         }
@@ -1152,6 +1153,8 @@ int assignment_expression_H(ASTNode *node, std::string inh_whereToSendString, st
         Type t1 = whatIsType(left);
         Type t2 = whatIsType(right);
 
+        
+
         std::string assOP = node->children[1]->value;
         if (assOP == "+=" || assOP == "-=")
         {
@@ -1271,8 +1274,8 @@ int assignment_expression_H(ASTNode *node, std::string inh_whereToSendString, st
                     std::string castedVarNam = newTemp();                                              // allocated width(dest)
                     IR_CODE.addTAC(node, castedVarNam, ALLOCATE, std::to_string(width(dest)), NO_ARG); // Allocate memory for the variable
 
-                    IR_CODE.addTAC(node, castedVarNam, CAST, toString(dest), varName1); // Cast it
-                    varName1 = castedVarNam;                                            // Change the name to the address
+                    IR_CODE.addTAC(node, castedVarNam, CAST, toString(dest), varName2); // Cast it
+                    varName2 = castedVarNam;                                            // Change the name to the address
                 }
             }
         }
@@ -1304,14 +1307,16 @@ int assignment_expression_H(ASTNode *node, std::string inh_whereToSendString, st
 
                 IR_CODE.addTAC(node, resName, op, varName2, std::to_string(width1)); // resName = varName2 op width1
 
-                IR_CODE.addTAC(node, varName1, LEFT_STAR, resName, NO_ARG); // *varName1 = resName
+                int element_width = width(dest);
+                IR_CODE.addTAC(node, varName1, LEFT_STAR, resName, std::to_string(element_width)); // *varName1 = resName
 
                 varName0 = resName;
             }
             else
             {
                 // Simple Assignment
-                IR_CODE.addTAC(node, varName1, LEFT_STAR, varName2, NO_ARG); // *varName1 = varName2
+                int element_width = width(dest);
+                IR_CODE.addTAC(node, varName1, LEFT_STAR, varName2, std::to_string(element_width)); // *varName1 = varName2
                 varName0 = varName2;                                         //
             }
         }
@@ -1448,13 +1453,16 @@ int unary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::st
         if (valueSpace1 == SPACE::ADDRESS_SPACE)
         {
             // Load the value from address
-            IR_CODE.addTAC(node, resName, RIGHT_STAR, varName1, NO_ARG); // resName = *varName1
+            int element_width = width(type1);
+            std::cout << "Adding arg2 to RIGHT_STAR " << element_width << std::endl;
+            IR_CODE.addTAC(node, resName, RIGHT_STAR, varName1, std::to_string(element_width)); // Load it
 
             // Perform the operation
             IR_CODE.addTAC(node, resName, op, resName, std::to_string(width1)); // resName = resName op width1
 
             // Store the value back to address
-            IR_CODE.addTAC(node, varName1, LEFT_STAR, resName, NO_ARG); // *varName1 = resName
+
+            IR_CODE.addTAC(node, varName1, LEFT_STAR, resName, std::to_string(element_width)); // *varName1 = resName
 
             varName = resName; // Change the name to the address
         }

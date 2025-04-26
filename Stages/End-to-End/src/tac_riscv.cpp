@@ -114,12 +114,12 @@ std::string TAC_Quadruple::toString()
     
     else if (op == LEFT_STAR)
     {
-        str = "*" + result + " = " + arg1; // *result = arg1
+        str = "("+arg2+")*" + result + " = " + arg1; // *result = arg1
     }
 
     else if (op == RIGHT_STAR)
     {
-        str = result + " = *" + arg1; // result = *arg1
+        str = result + " = ("+arg2+")*" + arg1; // result = *arg1
     }
 
     else if (op == CAST)
@@ -388,15 +388,20 @@ int NEW_TAC_Quadruple::addVariable(const std::string &varName, bool islive, cons
     return OKAY;
 }
 
-int NEW_TAC_Quadruple::isAlive(const std::string &varName, bool &alive)
+
+bool NEW_TAC_Quadruple::isAlive(const std::string &varName)
 {
     auto it = VarInfo.find(varName);
     if (it != VarInfo.end())
     {
-        alive = it->second.first;
-        return OKAY;
+        return it->second.first;
     }
-    return FAIL; // Variable not found
+
+    // If variable is Not found, it means it's default answer;
+
+    // If it's Compiler Temp - then notLive
+    bool isCompilerTemp = varName[0] == '$';
+    return ((isCompilerTemp) ? false : true);
 }
 
 int NEW_TAC_Quadruple::nextUse(const std::string &varName, std::set<int> &usage)
@@ -407,7 +412,12 @@ int NEW_TAC_Quadruple::nextUse(const std::string &varName, std::set<int> &usage)
         usage = it->second.second;
         return OKAY;
     }
-    return FAIL; // Variable not found
+    
+    // If variable is Not found, it means it's default answer;
+    // If it's Compiler Temp - then notLive
+    bool isCompilerTemp = varName[0] == '$';
+    usage = (isCompilerTemp) ? std::set<int>() : std::set<int>{INT_MAX}; // Default value for not found
+    return OKAY; // Variable not found - used default logic
 }
 
 int NEW_TAC_Quadruple::howManyNextUsage(const std::string &varName, int &total)
@@ -418,8 +428,14 @@ int NEW_TAC_Quadruple::howManyNextUsage(const std::string &varName, int &total)
         total = it->second.second.size();
         return OKAY;
     }
-    return FAIL; // Variable not found
+    
+    // If variable is Not found, it means it's default answer;
+    // If it's Compiler Temp - then notLive
+    bool isCompilerTemp = varName[0] == '$';
+    total = (isCompilerTemp) ? 0 : 1; // Default value for not found
+    return OKAY; // Variable not found - used default logic
 }
+
 
 std::string NEW_TAC_Quadruple::toString()
 {

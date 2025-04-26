@@ -184,6 +184,7 @@ bool CFG::isALeader(int index)
     return false;
 }
 
+
 int CFG::addLeader(int leader, std::string blockName)
 {
     leaderToBlockMap[leader] = blockName;

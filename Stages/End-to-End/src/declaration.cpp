@@ -2337,14 +2337,13 @@ int initializer_H(ASTNode *node, TypeExpression inh_type, std::string inh_varNam
                 aptLOG("🤬 Initiazliation Space🚀 Change for -" + varName1 + " Address->Value");
 
                 // Simple Assignment
-                IR_CODE.addTAC(node, irVarName, LEFT_STAR, varName1, NO_ARG); // *inh_varName = varName
-                
+                int elemWidth = width(inh_type);
+                IR_CODE.addTAC(node, irVarName, LEFT_STAR, varName1, std::to_string(elemWidth)); // *inh_varName = varName
             }
             else if (reqSpace1 == valueSpace1)
             {
                 // Simple Assignment
                 IR_CODE.addTAC(node, irVarName, ASSIGN_OP, varName1, NO_ARG); // inh_varName = varName 
-                
             }
             else
             {
