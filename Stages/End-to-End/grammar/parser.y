@@ -105,6 +105,8 @@ std::ostringstream errorStream;
 bool ptree = false;
 bool Aptree = false;
 std::string dot_file;
+bool stopAtIR = false; // If true, stop at IR code generation
+bool cfg_code = false; // If true, generate CFG code
 
 //How to view the ParseTree
 bool compressed = false; // Default is PTree, if AST is needed, change it to false
@@ -124,7 +126,7 @@ void exit_compiler(){
         std::cout << outputStream.str() << std::endl;
     }else if(compilerMode == 1){ //Output to file
         std::cout << notificationStream.str() << std::endl;
-        std::cout << "Output MODE | IRCode & log in " << output_file << std::endl;
+        std::cout << "Output MODE | Result Stored in " << output_file << std::endl;
         std::ofstream out(output_file);
         if(out.is_open()){
             out << outputStream.str() << std::endl;
@@ -139,7 +141,10 @@ void exit_compiler(){
         testStream << notificationStream.str() << std::endl;
         testStream << std::string(100, '-') << std::endl;
         testStream << errorStream.str() << std::endl;
-        testStream << std::string(100, '-') << std::endl;
+        int errorSize = errorStream.str().size();
+        if(errorSize > 0){
+            testStream << std::string(100, '-') << std::endl;
+        }
         testStream << outputStream.str() << std::endl;
         insertAfterMarker(input_file,MARKER,testStream);
     }
@@ -2442,6 +2447,7 @@ int main(int argc, char **argv) {
         inputInstructions += "----------Debugging Options----------\n";
         inputInstructions += " -d1 <dot_file>      : Print PTree to <dot_file>\n";
         inputInstructions += " -d2 <dot_file>      : Print Annotated PTree to <dot_file>\n";
+        inputInstructions += " -ir                 : Stop at IR Phase Only \n";
         
         if(argc < 2){
 
@@ -2451,13 +2457,15 @@ int main(int argc, char **argv) {
 
         input_file = argv[1];
         compilerMode = 0; // Default mode
-        // take base name of input file
-        std::string base_name = input_file.substr(input_file.find_last_of("/\\") + 1);
-        output_file = base_name + ".txt"; // Default output file name
+        // take base name of input file by removing .c extentino
+        size_t dotPos = input_file.find_last_of('.');
+        std::string baseName = (dotPos == std::string::npos) ? input_file : input_file.substr(0, dotPos);
+        output_file = baseName + ".s";
 
         ptree = false;
         Aptree = false;
         dot_file = "graph.dot"; // Default dot file name
+        bool cfg_code = false;
 
 
         // Open default output file
@@ -2488,13 +2496,17 @@ int main(int argc, char **argv) {
                 }
             } else if (strcmp(argv[i], "-d2") == 0) {
                 Aptree = true;
+                cfg_code = true;
                 if(i + 1 < argc) {
                     dot_file = argv[++i];
                 } else {
                     std::cerr << "Error: No output file specified for -d2 option\n";
                     return 1;
                 }
-            } else {
+            }else if(strcmp(argv[i], "-ir")==0){
+                stopAtIR = true;
+            }
+            else {
                 std::cerr << "Error: Unknown option " << argv[i] << "\n";
                 return 1;
             }
@@ -2621,19 +2633,24 @@ int main(int argc, char **argv) {
         errorStream <<  LOGFOOTER << std::endl;
     }
     else{
-        notificationStream <<  "Lexical Analysis 👍 | Syntax Analysis 👍 | Semantic Analysis 👍 | 🔖 IRCode Gen" << std::endl;
     }
 
 
     // Print the IR code
-    /* IR_CODE.printTAC(outputStream); */
 
     // Print the Annotated Parse Tree
     if(Aptree){
         notificationStream <<  "🌴 APTree 🌴 has been generated, can be used for debugging ❤️‍🩹 \n";
     }
 
-
+    if(stopAtIR){
+        IR_CODE.printTAC(outputStream);
+        notificationStream <<  "Lexical Analysis 👍 | Syntax Analysis 👍 | Semantic Analysis 👍 | 🔖 IRCode Gen" << std::endl;
+        notificationStream <<  "😊 Thanku for using our \"C2RISC-Engine\" (Till IR Phase) " << std::endl;
+        if(yyin) fclose(yyin);  // Close the input file
+        exit_compiler(); // Clean up and exit
+        return 0;
+    }
 
     /*
 
@@ -2644,20 +2661,34 @@ int main(int argc, char **argv) {
 
     int riscvCodeGenStatus = codeGen(); // Call the RISC-V code generation function
 
-    if(riscvCodeGenStatus == 0){
-        notificationStream <<  "RISC-V Code Generation completed successfully \n";
-    }
-    else{
-        notificationStream <<  "RISC-V Code Generation failed \n";
+    if(riscvCodeGenStatus != 0){
+        notificationStream <<  "Lexical Analysis 👍 | Syntax Analysis 👍 | Semantic Analysis 👍 | RISC-V Code Generation ❌\n";
+        errorStream <<  "RISC-V Code Generation failed with error code: " << riscvCodeGenStatus << std::endl;
+        notificationStream <<  "😊 Thanku for using our \"C2RISC-Engine\" (Till RISC-V Phase) " << std::endl;
+        if(yyin) fclose(yyin);  // Close the input file
+        exit_compiler(); // Clean up and exit
+        return 0;
     }
 
     // Print the CFG_CODE
+    if(cfg_code){
+    outputStream << "\n\U0001F3A8 CFG Code Generation completed successfully \U0001F3A8\n";
+    notificationStream << " 📈 CFG Code Generation in progress \n";
+    outputStream << "#-------------------------------------------------------------------------\n";
     CFG_CODE.printCode(outputStream);
+    outputStream << "#-------------------------------------------------------------------------\n";
+    outputStream << std::endl << std::endl;
+    }
 
+    notificationStream <<  "Lexical Analysis 👍 | Syntax Analysis 👍 | Semantic Analysis 👍 | RISC-V Code Generation 👍\n";
+    outputStream << "#-------- \U0001F3A8 RISC-V Code Generation using C2RISC-Engine \U0001F3A8 -------\n";
+    /* outputStream << "#-------------------------------------------------------------------------\n"; */
+    outputStream << std::endl;
 
     // Print the RISC-V code
     FINAL_CODE.printCode(outputStream);
-
+    outputStream << "#-------------------------------------------------------------------------\n";
+    notificationStream <<  "😊 Thanku for using our \"C2RISC-Engine\" (Till RISC-V CodeGen Phase) " << std::endl;
 
     if (yyin) fclose(yyin);  // Close the input file if opened
     exit_compiler(); // Clean up and exit

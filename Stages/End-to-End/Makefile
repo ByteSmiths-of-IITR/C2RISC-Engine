@@ -235,7 +235,7 @@ testing: all $(EXECUTABLE) $(INPUT) $(OUTPUT) $(CERR)
 	@echo "Testing Over"
 
 debugging: all $(EXECUTABLE) $(INPUT) $(OUTPUT) $(CERR)
-	@echo "🚥 Starting C2RISC Engine 🟢 "
+	@echo "🚥 Starting C2RISC Engine 🟢 (DEBUG-MODE 🐞)"
 	@-./$(EXECUTABLE) $(INPUT) -t -d2 $(APTreeFile) 2> $(CERR)
 	@echo "🎄 APTree in - " $(APTreeSVG)
 	@-$(DOT) -Tsvg $(APTreeFile) -o $(APTreeSVG)
@@ -244,8 +244,27 @@ debugging: all $(EXECUTABLE) $(INPUT) $(OUTPUT) $(CERR)
 CFGFile = $(BUILD_DIR)/cfg.dot
 CFGSVG = $(OUTPUT_DIR)/cfg.svg
 
-cfg: all $(EXECUTABLE) $(INPUT) $(OUTPUT) $(CERR)
-	@echo "🚥 Starting C2RISC Engine 🟢 "
-	@-./$(EXECUTABLE) $(INPUT) -t 2> $(CERR)
-	@echo "CFG in - " $(CFGSVG)
+# same name as input with .s extension
+RISCVOut = "input.s"
+
+codeGen: all $(EXECUTABLE) $(INPUT) $(OUTPUT) $(CERR)
+	@echo "🚥 Starting C2RISC Engine 🟢 (Output Mode)"
+	@-./$(EXECUTABLE) $(INPUT) -o 2> $(CERR)
+
+codeGenDebug: all $(EXECUTABLE) $(INPUT) $(OUTPUT) $(CERR)
+	@echo "🚥 Starting C2RISC Engine 🟢 (Output Mode) + (DEBUG-MODE 🐞)"
+	@-./$(EXECUTABLE) $(INPUT) -o -d2 $(APTreeFile) 2> $(CERR)
 	@-$(DOT) -Tsvg $(CFGFile) -o $(CFGSVG)
+	@echo "CFG in - " $(CFGSVG)
+
+irGen: all $(EXECUTABLE) $(INPUT) $(OUTPUT) $(CERR)
+	@echo "🚥 Starting C2RISC Engine 🟢 (Till IR)"
+	@-./$(EXECUTABLE) $(INPUT) -t -ir 2> $(CERR)
+
+irDebug: all $(EXECUTABLE) $(INPUT) $(OUTPUT) $(CERR)
+	@echo "🚥 Starting C2RISC Engine 🟢 (Till IR) + (DEBUG-MODE 🐞)" 
+	@-./$(EXECUTABLE) $(INPUT) -t -d2 $(APTreeFile) -ir 2> $(CERR)
+	@echo "🎄 APTree in - " $(APTreeSVG)
+	@-$(DOT) -Tsvg $(APTreeFile) -o $(APTreeSVG)	
+
+	
