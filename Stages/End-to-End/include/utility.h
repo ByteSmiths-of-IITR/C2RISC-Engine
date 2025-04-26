@@ -6,6 +6,7 @@
 #include <string>
 #include <map>
 #include <queue>
+#include <climits>
 #include <fstream>
 #include <stdexcept>
 #include <numeric>

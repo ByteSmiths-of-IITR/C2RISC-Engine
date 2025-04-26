@@ -630,6 +630,15 @@ public:
 
     int backpatch(ASTNode *currNode, const std::vector<int> &list, std::string lable);
     int backpatch(ASTNode *currNode, const std::vector<int> &list, int labelIndex); // This will be used to backpatch the list with the label index
+
+    // Overload =operator
+    TAC &operator=(const TAC &other)
+    {
+        this->code = other.code;
+        this->dataSection = other.dataSection;
+        return *this;
+    }
+
 };
 
 /*
@@ -826,6 +835,8 @@ extern const int FAIL;
         BUG_H;                                                                                    \
         return BUG;                                                                               \
     }
+
+
 
 extern const std::string PASS_ERROR;
 

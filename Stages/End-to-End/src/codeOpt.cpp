@@ -112,7 +112,9 @@ int constantFolding(){ // TODO: unary operators left to implement
         }
     }
 
-    
+    // Assign the new IR code
+    IR_CODE = newIR;
+    return OKAY;
 }
 
 int machineIndependentOptimization(){
@@ -120,7 +122,7 @@ int machineIndependentOptimization(){
     int check = OKAY;
     
     // 1. Constant Folding
-    // check = constantFolding();
+    check = constantFolding();
     if(check != OKAY){
         CERR << "Error in constant folding" << std::endl;
         return check;

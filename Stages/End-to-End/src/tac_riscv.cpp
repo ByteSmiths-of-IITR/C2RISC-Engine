@@ -256,6 +256,8 @@ int TAC::backpatch(ASTNode *currNode, const std::vector<int> &list, int labelInd
     return backpatch(currNode, list, labelStr);
 }
 
+
+
 void TAC::printTAC(std::ofstream &file)
 {
 
