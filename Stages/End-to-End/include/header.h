@@ -566,6 +566,7 @@ extern std::string TO_BACKPATCH;
 extern std::string RETURN_FUNCTION;
 extern std::string ALLOCATE;
 extern std::string GLOBAL_VAR; // This is used to identify the global variable
+extern std::string ADDRESS_VAR; // This is used to identify the address variable
 
 class TAC_Quadruple
 {
@@ -593,6 +594,7 @@ public:
     std::string name;
     std::string type;  // can be .word, .byte
     std::string value; // value of the data
+    bool inAddressSpace; // This will be used to check if the data is in address space or not
 };
 
 extern std::string dataByte;
@@ -1156,6 +1158,7 @@ public:
     int size;
     int offset; // relative to function-block or global-space
     bool isGlobal;
+    bool inAddressSpace; // This will be used to check if the variable is in address space or not
 
     std::string whichFunction;
 
@@ -1211,8 +1214,8 @@ public:
 
 
     int insert(const std::string &key, SymInfo &info);
-    int insert(const std::string &key, int size); // The Offset & isGlobal Will be autoSet
-    int insertGlobal(const std::string &key, int size); // This will be used to insert the global variable
+    int insert(const std::string &key, int size, bool space); // The Offset & isGlobal Will be autoSet
+    int insertGlobal(const std::string &key, int size, bool space); // This will be used to insert the global variable
     
     int lookup(const std::string &key, SymInfo &info);
 
@@ -1221,6 +1224,7 @@ public:
     int getSize(const std::string &key);
     int getOffset(const std::string &key);
     bool isGlobal(const std::string &key);
+    bool isInAddressSpace(const std::string &key);
 
     void printTable(std::ofstream &file);
 
@@ -1291,6 +1295,8 @@ int livelinessPass();
 int getReg(NEW_TAC_Quadruple &code, std::map<std::string, int> &retMap);
 
 int getManyReg(std::set<std::string> varName, LivelinessDS livelinessInfo, std::map<std::string, int> &retMap);
+
+std::string store_load_Type(int size);
 
 //====================[ Externed Global CodeGen Variables ]=========================================================================================
 

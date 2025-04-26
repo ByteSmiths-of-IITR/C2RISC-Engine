@@ -158,7 +158,6 @@ int primary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
         std::string varName1 = node->children[0]->value;
 
         TypeExpression type0;            // Find Type of Identifier from Symbol Table
-        bool wasFunctionDecayed = false; // To check if the function was decayed to pointer
 
         // Look into the SymbolTable and Find it's
         GenericSymbol *symbol = nullptr;
@@ -216,9 +215,12 @@ int primary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
 
         Type whichType = whatIsType(type0); // This tell me about TypeExpression
 
-        SPACE val0Space = getSpace(type0); // struct/union or array 🤯
+        SPACE val0Space = SPACE::VALUE_SPACE; // Initially all Variable will be in value space
+        // The Space Change will happen when TRANSFER_SPACE_CHANGE is called
 
-        VALUE_TYPE val0Type = (wasFunctionDecayed) ? VALUE_TYPE::NM_LVALUE : getValueType(type0); // Get the value type
+        // struct/union or array 🤯
+
+        VALUE_TYPE val0Type = getValueType(type0); // Get the value type
 
         bool isConst = isConstant(type0); // [REDUANDANT CODE]
         if (isConst)
@@ -230,6 +232,7 @@ int primary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
                 val0Type = VALUE_TYPE::RVALUE; // Read Only Value
             }
         }
+
 
         if (val0Space == SPACE::ADDRESS_SPACE)
         {
@@ -322,7 +325,7 @@ int primary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
         Type whichType = whatIsType(type0);
 
         // 🟡 valueSpace
-        SPACE val0Space = getSpace(type0);
+        SPACE val0Space = SPACE::VALUE_SPACE; // Constant are in value space
 
         VALUE_TYPE val0Type = VALUE_TYPE::RVALUE;
 
@@ -954,12 +957,12 @@ int postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
         // 🔖 IRCode Gen
 
         // valueSpace must be address space
-        if (valueSpace1 != SPACE::ADDRESS_SPACE)
-        {
-            compilerError("Member Access was on a value space variable. SCOPE FAIL LOGIC");
-            BUG_H;
-            return BUG;
-        }
+        // if (valueSpace1 != SPACE::ADDRESS_SPACE)
+        // {
+        //     compilerError("Member Access was on a value space variable. SCOPE FAIL LOGIC");
+        //     BUG_H;
+        //     return BUG;
+        // }
 
         // Get the offset of the member
         std::string offset = std::to_string(memberOffset);
@@ -1346,7 +1349,7 @@ int assignment_expression_H(ASTNode *node, std::string inh_whereToSendString, st
                 varName0 = varName2;                                         //
             }
         }
-        else if (reqSpace1 == valueSpace1)
+        else
         {
             // No space change Code
             if (op != "=")
@@ -1364,12 +1367,13 @@ int assignment_expression_H(ASTNode *node, std::string inh_whereToSendString, st
                 varName0 = varName1;                                         //
             }
         }
-        else
-        {
-            compilerError("Something Wrong in Space Change");
-            BUG_H;
-            return BUG; // SetUp Dummy Data
-        }
+        
+        // else
+        // {
+        //     compilerError("Something Wrong in Space Change");
+        //     BUG_H;
+        //     return BUG; // SetUp Dummy Data
+        // }
         //-------------------------------------------------------------------
 
         // 🤮 Return Value 🤮

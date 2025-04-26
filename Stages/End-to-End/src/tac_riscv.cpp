@@ -2,6 +2,7 @@
 
 std::string NO_ARG = "#####";
 
+
 // Special TAC Operators (OP)
 std::string RIGHT_STAR = "right_star"; // result = *arg1
 std::string LEFT_STAR = "left_star"; // *result = arg1
@@ -15,6 +16,7 @@ std::string CAST = "cast"; // result = (arg1)arg2
 std::string OFFSET_LOAD = ".offset"; // result = arg1.offset
 std::string ALLOCATE = "alloca"; // allocate arg1, arg2
 std::string GLOBAL_VAR = "isGlobal"; // This is used to identify the global variable
+std::string ADDRESS_VAR = "SPACE::ADDRESS_SPACE";
 
 std::string PARAM = "param"; // param arg1
 std::string CALL = "call"; // result = call arg1, arg2

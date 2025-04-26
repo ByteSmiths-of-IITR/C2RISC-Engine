@@ -116,7 +116,8 @@ int addSymbolsToSymTable()
         }
 
         // Add the symbol to the symbol table
-        int check = SYM_RECORD.insertGlobal(varName, size);
+        bool space = obj.inAddressSpace; // This will be used to check if the data is in address space or not
+        int check = SYM_RECORD.insertGlobal(varName, size, space);
         if (check != INSERT_SUCCESS)
         {
             CERR << "Error in inserting symbol to symbol table" << std::endl;
@@ -155,8 +156,10 @@ int addSymbolsToSymTable()
             // This is a variable allocation
             std::string varName = currIR.result;
             int size = std::stoi(currIR.arg1);
-            // Check if it's a global variable
-            int check = SYM_RECORD.insert(varName, size);
+            
+            bool space = (currIR.arg2 == ADDRESS_VAR) ? true : false; // This will be used to check if the data is in address space or not
+
+            int check = SYM_RECORD.insert(varName, size,space);
             if (check != INSERT_SUCCESS)
             {
                 CERR << "Error in inserting variable" << std::endl;
@@ -700,19 +703,7 @@ int riscvCodeGen()
 
                         int sizeOfData = returnSize > 4 ? 4 : returnSize;
 
-                        std::string sl_type;
-                        if (sizeOfData == 1)
-                        {
-                            sl_type = "b";
-                        }
-                        else if (sizeOfData == 2)
-                        {
-                            sl_type = "h";
-                        }
-                        else
-                        {
-                            sl_type = "w";
-                        }
+                        std::string sl_type = store_load_Type(sizeOfData);
 
                         riscCode = indentOP("l" + sl_type) + "a2, " + std::to_string(srcLoc) + "(a0)";
                         FINAL_CODE.addCode(riscCode, "Load return value");
@@ -829,20 +820,8 @@ int riscvCodeGen()
                     FINAL_CODE.addCode(riscCode, "Load constant - " + src + " into t0");
 
                     int size = std::stoi(currIR.arg2);
-                    std::string sl_type;
-                    if (size == 1)
-                    {
-                        sl_type = "b";
-                    }
-                    else if (size == 2)
-                    {
-                        sl_type = "h";
-                    }
-                    else
-                    {
-                        sl_type = "w";
-                    }
-
+                    std::string sl_type = store_load_Type(size);
+                    
                     std::string srcReg = "t0";
                     // Load x[srcReg] in address of x[destReg]
                     riscCode = indentOP("s" + sl_type) + srcReg + ", 0(" + destReg + ")";
@@ -854,19 +833,7 @@ int riscvCodeGen()
                     std::string srcReg = "x" + std::to_string(regMap[src]);
 
                     int size = std::stoi(currIR.arg2);
-                    std::string sl_type;
-                    if (size == 1)
-                    {
-                        sl_type = "b";
-                    }
-                    else if (size == 2)
-                    {
-                        sl_type = "h";
-                    }
-                    else
-                    {
-                        sl_type = "w";
-                    }
+                    std::string sl_type = store_load_Type(size);
 
                     // Load x[srcReg] in address of x[destReg]
                     riscCode = indentOP("s" + sl_type) + srcReg + ", 0(" + destReg + ")";
@@ -900,19 +867,7 @@ int riscvCodeGen()
                 // std::cout << "stoi on " << currIR.arg2 << std::endl;
                 // std::cout << "code - " << currIR.toString() << std::endl;
                 int size = std::stoi(currIR.arg2);
-                std::string sl_type;
-                if (size == 1)
-                {
-                    sl_type = "b";
-                }
-                else if (size == 2)
-                {
-                    sl_type = "h";
-                }
-                else
-                {
-                    sl_type = "w";
-                }
+                std::string sl_type = store_load_Type(size);
 
                 // Load x[srcReg] in address of x[destReg]
                 riscCode = indentOP("l" + sl_type) + destReg + ", 0(" + srcReg + ")";
@@ -1777,40 +1732,47 @@ void RISCV_CODE::addLoadInst(const std::string &varName, int regNo)
     std::string riscCode;
     int sizeOfVar = SYM_RECORD.getSize(varName);
 
-    std::string sl_type;
-    if (sizeOfVar == 1)
-    {
-        sl_type = "b";
-    }
-    else if (sizeOfVar == 2)
-    {
-        sl_type = "h";
-    }
-    else
-    {
-        sl_type = "w";
-    }
+    std::string sl_type = store_load_Type(sizeOfVar);
 
     // The Variable to Store in global we don't have it's offset first we need to load the address of the variable
     bool isGlobal = SYM_RECORD.isGlobal(varName);
 
-    if (isGlobal)
-    {
-        // We need to load the address of the variable in a register
-        std::string addrReg = "t0";
-        riscCode = indentOP("la") + addrReg + ", " + varName;
-        this->addCode(riscCode, "Loading Address of Global Variable - " + varName);
+    bool inAddrSpace = SYM_RECORD.isInAddressSpace(varName);
 
-        // Now we can store the value in the memory
-        riscCode = indentOP("l" + sl_type) + "x" + std::to_string(regNo) + ", 0(" + addrReg + ")";
-        this->addCode(riscCode, "Load Global Var - " + varName + " via " + addrReg + " in x" + std::to_string(regNo));
+    if(inAddrSpace){
+        if(isGlobal){
+            
+            // We need to load the address of this Global Variable in the given register
+            std::string addrReg = "x" + std::to_string(regNo);
+            riscCode = indentOP("la") + addrReg + ", " + varName;
+            this->addCode(riscCode, "Loading Address of Global Variable(address Space) - " + varName + " in x" + std::to_string(regNo));
+            }
+        else{
+            // Else it's a local variable - we need its offset
+            int loc = SYM_RECORD.getOffset(varName); // [This Offset is w.r.t fp]
+            riscCode = indentOP("addi") + "x" + std::to_string(regNo) + ", fp, -" + std::to_string(loc); // w.r.t frame pointer(fp)
+            this->addCode(riscCode, "Loading Offset of Local Variable(address Space) - " + varName + " in x" + std::to_string(regNo));
+        }
     }
-    else
-    {
-        // Else it's a local variable - we need its offset
-        int loc = SYM_RECORD.getOffset(varName);                                                                 // [This Offset is w.r.t fp]
-        riscCode = indentOP("l" + sl_type) + "x" + std::to_string(regNo) + ", -" + std::to_string(loc) + "(fp)"; // w.r.t frame pointer(fp)
-        this->addCode(riscCode, "Load Local Var - " + varName + " via fp in x" + std::to_string(regNo));
+    else{
+        if (isGlobal)
+        {
+            // We need to load the address of the variable in a register
+            std::string addrReg = "t0";
+            riscCode = indentOP("la") + addrReg + ", " + varName;
+            this->addCode(riscCode, "Loading Address of Global Variable - " + varName);
+
+            // Now we can store the value in the memory
+            riscCode = indentOP("l" + sl_type) + "x" + std::to_string(regNo) + ", 0(" + addrReg + ")";
+            this->addCode(riscCode, "Load Global Var - " + varName + " via " + addrReg + " in x" + std::to_string(regNo));
+        }
+        else
+        {
+            // Else it's a local variable - we need its offset
+            int loc = SYM_RECORD.getOffset(varName);                                                                 // [This Offset is w.r.t fp]
+            riscCode = indentOP("l" + sl_type) + "x" + std::to_string(regNo) + ", -" + std::to_string(loc) + "(fp)"; // w.r.t frame pointer(fp)
+            this->addCode(riscCode, "Load Local Var - " + varName + " via fp in x" + std::to_string(regNo));
+        }
     }
     return;
 }
@@ -1822,20 +1784,8 @@ void RISCV_CODE::addStoreInst(const std::string &varName, int regNo)
     std::string riscCode;
     int sizeOfVar = SYM_RECORD.getSize(varName);
     
-    std::string sl_type;
-    if (sizeOfVar == 1)
-    {
-        sl_type = "b";
-    }
-    else if (sizeOfVar == 2)
-    {
-        sl_type = "h";
-    }
-    else
-    {
-        sl_type = "w";
-    }
-    
+    std::string sl_type = store_load_Type(sizeOfVar);
+
     // The Variable to Store in global we don't have it's offset first we need to load the address of the variable
     bool isGlobal = SYM_RECORD.isGlobal(varName);
     
@@ -1857,4 +1807,31 @@ void RISCV_CODE::addStoreInst(const std::string &varName, int regNo)
     }
 
     return;
+}
+
+std::string store_load_Type(int size){
+    // This will return the type of store/load instruction
+    std::string sl_type;
+    if (size == 1)
+    {
+        sl_type = "b";
+    }
+    else if (size == 2)
+    {
+        sl_type = "h";
+    }
+    else if(size == 4)
+    {
+        sl_type = "w";
+    }
+    else if(size == 8)
+    {
+        sl_type = "d";
+    }
+    else{
+        CERR << "Error - Invalid Size for Store/Load Instruction" << std::endl;
+        sl_type = "- WRONG -";
+    }
+    
+    return sl_type;
 }

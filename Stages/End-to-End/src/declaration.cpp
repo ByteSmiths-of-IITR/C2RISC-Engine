@@ -177,7 +177,8 @@ int init_declarator_H(ASTNode *node, TypeExpression inh_type, StorageClass inh_s
         std::string IRvarName = varName + appendToName;
         if(!isGlobal){
             int varSize = width(type);
-            IR_CODE.addTAC(node, IRvarName, ALLOCATE, std::to_string(varSize), NO_ARG); // Allocate memory for the variable
+            std::string varSpace = (getSpace(type) == SPACE::VALUE_SPACE) ? NO_ARG : ADDRESS_VAR;
+            IR_CODE.addTAC(node, IRvarName, ALLOCATE, std::to_string(varSize), ADDRESS_VAR); // Allocate memory for the variable
         }
         else{
             // int varSize = width(type);
@@ -189,6 +190,7 @@ int init_declarator_H(ASTNode *node, TypeExpression inh_type, StorageClass inh_s
                 obj.name = IRvarName;
                 obj.type = dataZero;
                 obj.value = std::to_string(width(type));
+                obj.inAddressSpace = (getSpace(type) == SPACE::ADDRESS_SPACE);
                 IR_CODE.dataSection[IRvarName] = obj;
             }
         }
@@ -209,7 +211,7 @@ int init_declarator_H(ASTNode *node, TypeExpression inh_type, StorageClass inh_s
             }
             else
             {
-                SPACE inh_valueSpace = getSpace(inh_type1);
+                SPACE inh_valueSpace = SPACE::VALUE_SPACE;
                 VALUE_TYPE inh_valueType = getValueType(inh_type1);
                 int initl_check = initializer_H(node->children[2], inh_type1, inh_varName1, inh_valueSpace, inh_valueType);
                 RECOVER_THE_ERROR(initl_check);
@@ -2166,6 +2168,8 @@ int initializer_H(ASTNode *node, TypeExpression inh_type, std::string inh_varNam
 
     aptLOG("inh_type = " + toString(inh_type));
     aptLOG("inh_varName = " + inh_varName);
+    aptLOG("inh_valueSpace = " + toString(inh_valueSpace));
+    aptLOG("inh_valueType = " + toString(inh_valueType));
 
     if (whichProduction == P1)
     {
@@ -2346,7 +2350,7 @@ int initializer_H(ASTNode *node, TypeExpression inh_type, std::string inh_varNam
 
             //---------------------- Space 🚀Change 🔖IR Code for varName1 [🤬 Custom - During Initialization 🥶]
             SPACE reqSpace1 = getSpace(dest);
-            if (reqSpace1 == SPACE::VALUE_SPACE && valueSpace1 == SPACE::ADDRESS_SPACE)
+            if (reqSpace1 == SPACE::VALUE_SPACE && inh_valueSpace == SPACE::ADDRESS_SPACE)
             {
                 aptLOG("🤬 Initiazliation Space🚀 Change for -" + varName1 + " Address->Value");
 
@@ -2354,17 +2358,17 @@ int initializer_H(ASTNode *node, TypeExpression inh_type, std::string inh_varNam
                 int elemWidth = width(inh_type);
                 IR_CODE.addTAC(node, irVarName, LEFT_STAR, varName1, std::to_string(elemWidth)); // *inh_varName = varName
             }
-            else if (reqSpace1 == valueSpace1)
+            else
             {
                 // Simple Assignment
                 IR_CODE.addTAC(node, irVarName, ASSIGN_OP, varName1, NO_ARG); // inh_varName = varName 
             }
-            else
-            {
-                compilerError("Something Wrong in Space Change");
-                BUG_H;
-                return BUG; // SetUp Dummy Data
-            }
+            // else
+            // {
+            //     compilerError("Something Wrong in Space Change");
+            //     BUG_H;
+            //     return BUG; // SetUp Dummy Data
+            // }
             //-------------------------------------------------------------------
         }
     }

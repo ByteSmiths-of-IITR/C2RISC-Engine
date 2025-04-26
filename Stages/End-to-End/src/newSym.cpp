@@ -101,6 +101,17 @@ bool SymTable::isGlobal(const std::string &key)
     return symTable[key].isGlobal;
 }
 
+bool SymTable::isInAddressSpace(const std::string &key)
+{
+    // This will return the isGlobal of the key
+    if (symTable.find(key) == symTable.end())
+    {
+        return false;
+    }
+
+    return symTable[key].inAddressSpace;
+}
+
 int SymTable::enterFunction(const std::string &funcName)
 {
     // This will enter the function and set the offset
@@ -169,7 +180,7 @@ int SymTable::exitFunction()
     return OKAY;
 }
 
-int SymTable::insert(const std::string &key, int size)
+int SymTable::insert(const std::string &key, int size, bool space)
 {
     // We are only give size
 
@@ -180,6 +191,7 @@ int SymTable::insert(const std::string &key, int size)
 
     SymInfo info;
     info.size = size;
+    info.inAddressSpace = space; // This will be used to set the address space
     stack_offset += size;       // This will set the offset of the function
     info.whichFunction = functionName; // This will set the function name
     info.offset = stack_offset; // This will set the offset of the function
@@ -197,7 +209,7 @@ int SymTable::insert(const std::string &key, int size)
     return insert(key, info);
 }
 
-int SymTable::insertGlobal(const std::string &key, int size)
+int SymTable::insertGlobal(const std::string &key, int size, bool space)
 {
     // This will insert the key and info in the table
     if (symTable.find(key) != symTable.end())
@@ -209,6 +221,7 @@ int SymTable::insertGlobal(const std::string &key, int size)
     SymInfo info;
     info.whichFunction = functionName;
     info.size = size;
+    info.inAddressSpace = space; // This will be used to set the address space
     info.offset = -1; // no offset for global variables
     info.isGlobal = true;      // Function is Global
     
