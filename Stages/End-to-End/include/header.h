@@ -566,7 +566,7 @@ extern std::string TO_BACKPATCH;
 extern std::string RETURN_FUNCTION;
 extern std::string ALLOCATE;
 extern std::string GLOBAL_VAR; // This is used to identify the global variable
-extern std::string ADDRESS_VAR; // This is used to identify the address variable
+// extern std::string ADDRESS_VAR; // This is used to identify the address variable
 
 class TAC_Quadruple
 {
@@ -1026,7 +1026,7 @@ int constant_expression_H(ASTNode *node, std::string &value);
 
 bool isALabel(const std::string &varName); // This will check if the variable is a label or not
 bool isAValueSymbol(const std::string &varName); // This will check if the variable is a symbol or not
-bool isAddressSymbol(const std::string &varName); // This will check if the variable is a address symbol or not
+// bool isAddressSymbol(const std::string &varName); // This will check if the variable is a address symbol or not
 // using RISCV_CODE = std::vector<std::string>;
 
 std::string indentOP(std::string op);

@@ -140,7 +140,7 @@ int CFG::whichBlock(int index)
 {
     // Find the just smaller leader than index
     int foundLeader = -1;
-    for (int i = 0; i < leaders.size(); i++)
+    for (size_t i = 0; i < leaders.size(); i++)
     {
         if (leaders[i] <= index)
         {

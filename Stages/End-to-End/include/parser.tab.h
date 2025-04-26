@@ -150,8 +150,8 @@ union YYSTYPE
 {
 #line 215 "grammar/parser.y"
 
-    struct TokenAttribute* tokenAtr;
-    struct ASTNode* astNode;
+    class TokenAttribute* tokenAtr;
+    class ASTNode* astNode;
 
 #line 157 "include/parser.tab.h"
 

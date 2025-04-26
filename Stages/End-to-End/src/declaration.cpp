@@ -177,8 +177,7 @@ int init_declarator_H(ASTNode *node, TypeExpression inh_type, StorageClass inh_s
         std::string IRvarName = varName + appendToName;
         if(!isGlobal){
             int varSize = width(type);
-            std::string varSpace = (getSpace(type) == SPACE::VALUE_SPACE) ? NO_ARG : ADDRESS_VAR;
-            IR_CODE.addTAC(node, IRvarName, ALLOCATE, std::to_string(varSize), ADDRESS_VAR); // Allocate memory for the variable
+            IR_CODE.addTAC(node, IRvarName, ALLOCATE, std::to_string(varSize), NO_ARG); // Allocate memory for the variable
         }
         else{
             // int varSize = width(type);
@@ -1987,7 +1986,7 @@ int abstract_declarator_H(ASTNode *node, TypeExpression inh_type, TypeExpression
         std::vector<PointerInfo *> ptrInfo = std::vector<PointerInfo *>();
         int p_check = pointer_H(node->children[0], ptrInfo, ptrInfo);
         PASS_THE_ERROR(p_check);
-        for (int i = 0; i < ptrInfo.size(); i++)
+        for (size_t i = 0; i < ptrInfo.size(); i++)
         {
             PointerInfo *info = ptrInfo[i];
             type1.levelStack.push_back(info);
@@ -2015,7 +2014,7 @@ int abstract_declarator_H(ASTNode *node, TypeExpression inh_type, TypeExpression
         std::vector<PointerInfo *> ptrInfo = std::vector<PointerInfo *>();
         int p_check = pointer_H(node->children[0], ptrInfo, ptrInfo);
         PASS_THE_ERROR(p_check);
-        for (int i = 0; i < ptrInfo.size(); i++)
+        for (size_t i = 0; i < ptrInfo.size(); i++)
         {
             PointerInfo *info = ptrInfo[i];
             PointerInfo *infoPtr = info;

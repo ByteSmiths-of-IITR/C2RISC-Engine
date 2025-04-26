@@ -12,7 +12,8 @@ GRAMMAR_DIR = grammar
 # Compiler and flags
 CXX = g++ -std=c++17 # Added Latest Version [Some error due to old compiler]
 CC = gcc
-CXXFLAGS = -w -lm -I $(INCLUDE_DIR)
+CXXFLAGS = -Wall -Wextra -Wpedantic -lm -I $(INCLUDE_DIR)
+
 
 # Directories
 REQUIRED_DIRS = build bin object output

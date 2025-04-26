@@ -37,17 +37,6 @@ bool isAValueSymbol(const std::string &name)
     return res;
 }
 
-bool isAddressSymbol(const std::string &name)
-{
-    if(SYM_RECORD.symTable.find(name) != SYM_RECORD.symTable.end()){
-        if(SYM_RECORD.symTable[name].inAddressSpace == true){
-            CERR << "Variable " << name << " is a Address Space Variable" << std::endl;
-            return true;
-        }
-    }
-    CERR << "Variable " << name << " is NOT a Address Space Variable" << std::endl;
-    return false;
-}
 
 
 

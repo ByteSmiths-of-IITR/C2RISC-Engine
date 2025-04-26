@@ -889,7 +889,9 @@ int postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
 
         // 🚀 USAGE 🤫 SPACE CHANGE 🚀
         USAGE_SPACE_CHANGE(varName1, type1, valueSpace1, node);
-        USAGE_SPACE_CHANGE(varName2, type0, valueSpace0, node);
+
+        // 2nd part is simply a variable
+        // USAGE_SPACE_CHANGE(varName2, type2, valueSpace2, node);
 
         // 👻 Existance Check on member of record
         BaseInfo *base = (BaseInfo *)type1.levelStack[type1.levelStack.size() - 1];

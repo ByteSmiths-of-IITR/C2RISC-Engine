@@ -125,7 +125,7 @@ int addSymbolsToSymTable()
         }
     }
 
-    for (int i = 0; i < IR_CODE.code.size(); i++)
+    for (size_t i = 0; i < IR_CODE.code.size(); i++)
     {
         TAC_Quadruple currIR = IR_CODE.code[i];
         std::string op = currIR.op;
@@ -157,9 +157,9 @@ int addSymbolsToSymTable()
             std::string varName = currIR.result;
             int size = std::stoi(currIR.arg1);
             
-            bool space = (currIR.arg2 == ADDRESS_VAR) ? true : false; // This will be used to check if the data is in address space or not
+            // bool space = (currIR.arg2 == ADDRESS_VAR) ? true : false; // This will be used to check if the data is in address space or not
 
-            int check = SYM_RECORD.insert(varName, size,space);
+            int check = SYM_RECORD.insert(varName, size, false);
             if (check != INSERT_SUCCESS)
             {
                 CERR << "Error in inserting variable" << std::endl;
@@ -181,7 +181,7 @@ int makeBasicBlocks()
     // All those instruction with operation GOTO_LABEL, IF_TRUE, IF_FALSE, FUNCTION_ENTRY, GOTO_EQUAL, CALL
 
     // Assign Name to each Block & Fill indexToBlockMap
-    for (int i = 0; i < IR_CODE.code.size(); i++)
+    for (size_t i = 0; i < IR_CODE.code.size(); i++)
     {
         std::string op = IR_CODE.code[i].op;
 
@@ -227,7 +227,7 @@ int makeBasicBlocks()
     // Step 2. Change Lables in jump instructions
 
     // Change jump (lineNo) -> (block labels)
-    for (int i = 0; i < IR_CODE.code.size(); i++)
+    for (size_t i = 0; i < IR_CODE.code.size(); i++)
     {
 
         std::string op = IR_CODE.code[i].op;
@@ -285,7 +285,7 @@ int makeBasicBlocks()
     // Return From Points in Functions [Needed for Function Control Flow Connections]
     std::map<std::string, std::vector<std::string>> functionReturnFrom;
     std::string currFunction = "NULL";
-    for (int i = 0; i < IR_CODE.code.size(); i++)
+    for (size_t i = 0; i < IR_CODE.code.size(); i++)
     {
         std::string op = IR_CODE.code[i].op;
 
@@ -330,7 +330,7 @@ int makeBasicBlocks()
 
     //
     // Now we will add edges to all the blocks
-    for (int i = 0; i < IR_CODE.code.size(); i++)
+    for (size_t i = 0; i < IR_CODE.code.size(); i++)
     {
         std::string op = IR_CODE.code[i].op;
         if (op == IF_FALSE || op == IF_TRUE || op == GOTO_LABEL || op == GOTO_EQUAL)
@@ -785,15 +785,6 @@ int riscvCodeGen()
                     // src is a variable - No Need to load    
                     FINAL_CODE.addComment(" 🔄 Automatic copy - of " + src + " into " + destReg);
                 }
-                else if(isAddressSymbol(src)){
-                    // Two Possibilites - if dest in address space or not
-                    if(isAddressSymbol(dest)){
-                        // NEED a MEMCOPY
-                    }
-                    else{
-                        // NEED to load src's address in destReg
-                    }
-                }
                 else{
                     // src is a constant
                     destReg = "x" + std::to_string(regMap[dest]);
@@ -820,10 +811,8 @@ int riscvCodeGen()
                 }
 
                 std::string destReg = "x" + std::to_string(regMap[dest]);
-                if(isAddressSymbol(src)){
-                    // [TODO]
-                }
-                else if(isAValueSymbol(src))
+                
+                if(isAValueSymbol(src))
                 {
                     // src is a variable
                     std::string srcReg = "x" + std::to_string(regMap[src]);
@@ -931,6 +920,10 @@ int riscvCodeGen()
             // Cast Operations
             else if (op == CAST)
             {
+            }
+
+            else if(op == OFFSET_LOAD){
+                
             }
 
             // Param + Function Call + Return
@@ -1169,6 +1162,11 @@ int getReg(NEW_TAC_Quadruple &code, std::map<std::string, int> &regMap)
         if (op == AMPERSEND)
         {
             usageVar1 = "NULL"; // since it would be loaded from memory
+        }
+
+        if(op == OFFSET_LOAD){
+            // We don't need register for 2nd operand
+            usageVar2 = "NULL"; // since it would be loaded from memory
         }
 
         std::set<int> justUsedReg;
@@ -1846,7 +1844,7 @@ void RISCV_CODE::addStoreInst(const std::string &varName, int regNo)
    // The Variable to Store in global we don't have it's offset first we need to load the address of the variable
     bool isGlobal = SYM_RECORD.isGlobal(varName);
 
-    bool inAddrSpace = SYM_RECORD.isInAddressSpace(varName);
+    bool inAddrSpace = SYM_RECORD.isInAddressSpace(varName); // Will be false
     if(inAddrSpace){
         if(isGlobal){
             // First we find address of the variable
@@ -1924,5 +1922,5 @@ std::string store_load_Type(int size){
 }
 
 int generateSimpleExpCode(NEW_TAC_Quadruple code){
-
+    return OKAY;
 }

@@ -213,8 +213,8 @@ void signalHandler(int signum) {
 %}
 
 %union{
-    struct TokenAttribute* tokenAtr;
-    struct ASTNode* astNode;
+    class TokenAttribute* tokenAtr;
+    class ASTNode* astNode;
 }
 
 %token <tokenAtr> IDENTIFIER CONSTANT STRING_LITERAL SIZEOF
@@ -2595,7 +2595,7 @@ int main(int argc, char **argv) {
     // Early exit if we are in debugging mode and to print pTree Only
     if(ptree){
         // We are in debugging mode and exit after parsing stage
-        notificationStream <<  "\U0001F53A Parser Tree generated can be used for debugging\n";
+        notificationStream <<  " 🌲 Parser Tree generated can be used for debugging\n";
         notificationStream << "Lexical Analysis 👍 | Syntax Analysis 👍\n";
         
         notificationStream <<  "😊 Thanku for using our \"C2RISC-Engine\" (Till Syntax Phase) " << std::endl << std::endl;
@@ -2616,7 +2616,6 @@ int main(int argc, char **argv) {
     //SYM_TABLE & IR_CODE are globaly defined
 
 
-    /* std::cout << "\n\U0001F170\U0000FE0F ---- Starting Semantic Analysis Phase ---- \U0001F170\U0000FE0F\n"; */
 
     
 
@@ -2649,12 +2648,15 @@ int main(int argc, char **argv) {
 
     /* TAC oldTAC = IR_CODE; // Save the old TAC for later use */
     if(stopAtIR){
-        outputStream << "\n\U0001F170\U0000FE0F ---- IR Code Before Machine Independent Optimization \U0001F170\U0000FE0F\n";
+        outputStream << "\n ---- IR Code Before Machine Independent Optimization ---- \n";
         IR_CODE.printTAC(outputStream);
     }
 
     int optStatus = OKAY;
+
     optStatus = machineIndependentOptimization();
+
+
     if(optStatus != OKAY){
         notificationStream <<  "Lexical Analysis 👍 | Syntax Analysis 👍 | Semantic Analysis 👍 | Machine Independent Optimization ❌\n";
         errorStream <<  "Machine Independent Optimization failed with error code: " << optStatus << std::endl;
@@ -2666,7 +2668,7 @@ int main(int argc, char **argv) {
 
 
     if(stopAtIR){
-        outputStream << "\n\U0001F170\U0000FE0F ---- IR Code After Machine Independent Optimization \U0001F170\U0000FE0F\n";
+        outputStream << "\n ---- IR Code After Machine Independent Optimization ---- \n";
         IR_CODE.printTAC(outputStream);
         notificationStream <<  "Lexical Analysis 👍 | Syntax Analysis 👍 | Semantic Analysis 👍 | Machine Independent Optimization 👍 |  🔖 IRCode Gen" << std::endl;
         notificationStream <<  "😊 Thanku for using our \"C2RISC-Engine\" (Till IR Phase) " << std::endl;
@@ -2705,7 +2707,7 @@ int main(int argc, char **argv) {
 
     notificationStream <<  "Lexical Analysis 👍 | Syntax Analysis 👍 | Semantic Analysis 👍 | RISC-V Code Generation 👍\n";
     std::string Time = getCurrentTime();
-    outputStream << "#-------- \U0001F3A8 RISC-V Code Gen using C2RISC-Engine Time(" << Time << ") \U0001F3A8 ---------\n";
+    outputStream << "#-------- 🎨 RISC-V Code Gen using C2RISC-Engine Time(" << Time << ") 🎨 ---------\n";
     /* outputStream << "#-------------------------------------------------------------------------\n"; */
     outputStream << std::endl;
 
