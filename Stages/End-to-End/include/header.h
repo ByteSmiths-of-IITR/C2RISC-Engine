@@ -565,6 +565,7 @@ extern std::string GOTO_EQUAL;
 extern std::string TO_BACKPATCH;
 extern std::string RETURN_FUNCTION;
 extern std::string ALLOCATE;
+extern std::string GLOBAL_VAR; // This is used to identify the global variable
 
 class TAC_Quadruple
 {
@@ -1018,6 +1019,8 @@ public:
 
     int howManyNextUsage(const std::string &varName, int &total);
 
+    std::string toBaseString();
+
     std::string toString();
 };
 
@@ -1184,6 +1187,8 @@ public:
 
     int insert(const std::string &key, SymInfo &info);
     int insert(const std::string &key, int size); // The Offset & isGlobal Will be autoSet
+    int insertGlobal(const std::string &key, int size); // This will be used to insert the global variable
+    
     int lookup(const std::string &key, SymInfo &info);
 
     int remove(const std::string &key);

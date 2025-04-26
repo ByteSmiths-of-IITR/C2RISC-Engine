@@ -180,6 +180,9 @@ int init_declarator_H(ASTNode *node, TypeExpression inh_type, StorageClass inh_s
             IR_CODE.addTAC(node, IRvarName, ALLOCATE, std::to_string(varSize), NO_ARG); // Allocate memory for the variable
         }
         else{
+            // int varSize = width(type);
+            // IR_CODE.addTAC(node, IRvarName, ALLOCATE, std::to_string(varSize), GLOBAL_VAR); // Allocate memory for the variable
+
             if(whichProduction == P1){
                 // Global Variable without initializer - assume it to be 0
                 dataSegment obj;

@@ -15,6 +15,7 @@ bool isALabel(const std::string &label)
 bool isASymbol(const std::string &name)
 {
     // std::cerr << "Checking if " << name << " is a symbol" << std::endl;
+    bool res = false;
     if (SYM_RECORD.symTable.find(name) != SYM_RECORD.symTable.end())
     {
         // Search if $ is present
@@ -23,14 +24,12 @@ bool isASymbol(const std::string &name)
             if (name[i] == '$')
             {
                 // It's A Variable (local, global, or compilerTemp)
-                return true;
+                res = true;
             }
         }
-
-        return false; // It's a function Name (would be a label) [would need special care]
     }
-    std::cerr << "Not a symbol" << std::endl;
-    return false;
+    CERR << "Variable " << name << (res ? " is a symbol 👌 " : " is NOT a symbol ❌") << std::endl;
+    return res;
 }
 
 int SymTable::insert(const std::string &key, SymInfo &info)
@@ -150,10 +149,29 @@ int SymTable::insert(const std::string &key, int size)
     // We are only give size
     SymInfo info;
     info.size = size;
-    info.offset = stack_offset; // This will set the offset of the function
-    info.isGlobal = false;      // Function is Global
     stack_offset += size;       // This will set the offset of the function
+
+    info.offset = stack_offset; // This will set the offset of the function
+    
+    info.isGlobal = false;      // Function is Global
     return insert(key, info);
+}
+
+int SymTable::insertGlobal(const std::string &key, int size)
+{
+    // This will insert the key and info in the table
+    if (symTable.find(key) != symTable.end())
+    {
+        return INSERT_FAILURE;
+    }
+
+    SymInfo info;
+    info.size = size;
+    info.offset = 0; // no offset for global variables
+    info.isGlobal = true;      // Function is Global
+    
+    symTable[key] = info;
+    return INSERT_SUCCESS;
 }
 
 void SymTable::printTable(std::ofstream &file)

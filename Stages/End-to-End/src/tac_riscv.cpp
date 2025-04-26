@@ -14,6 +14,7 @@ std::string CAST = "cast"; // result = (arg1)arg2
 
 std::string OFFSET_LOAD = ".offset"; // result = arg1.offset
 std::string ALLOCATE = "alloca"; // allocate arg1, arg2
+std::string GLOBAL_VAR = "isGlobal"; // This is used to identify the global variable
 
 std::string PARAM = "param"; // param arg1
 std::string CALL = "call"; // result = call arg1, arg2
@@ -85,6 +86,7 @@ std::string TAC_Quadruple::toString()
         str = result + ": Func ENTER"; // FUNCTION_ENTRY p
     }
 
+
     else if (op == FUNCTION_EXIT)
     {
         str = result + " ret(" + arg1 + "): EXIT"; // FUNCTION_EXIT p, n 
@@ -92,7 +94,14 @@ std::string TAC_Quadruple::toString()
 
     else if (op == ALLOCATE)
     {
-        str = "alloca " + result + ", " + arg1; // allocate var, size
+        if(arg2 == GLOBAL_VAR)
+        {
+            str = "(global)alloca " + result + ", " + arg1; // allocate var, size
+        }
+        else
+        {
+            str = "alloca " + result + ", " + arg1; // allocate var, size
+        }
         // str = result+" (" + arg1 + " bytes)"; // var (size bytes)
     }
 
@@ -493,6 +502,12 @@ std::string NEW_TAC_Quadruple::toString()
     }
     std::string finalStr = oldContent + newContent;
     return finalStr;
+}
+
+std::string NEW_TAC_Quadruple::toBaseString()
+{
+    std::string oldContent = TAC_Quadruple::toString();
+    return oldContent;
 }
 
 int NEW_TAC_Quadruple::addLivelinessInfo(const std::map<std::string, std::pair<bool, std::set<int>>> &info){

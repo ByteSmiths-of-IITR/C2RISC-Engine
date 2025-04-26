@@ -44,6 +44,7 @@ int codeGen()
         CERR << "Error in liveliness pass" << std::endl;
         return check;
     }
+    CERR << " | Liveliness Pass completed successfully" << std::endl;
 
     // Step 3#. Try to visualize the CFG
     std::string dotFileName = "build/cfg.dot";
@@ -65,6 +66,7 @@ int codeGen()
         CERR << "Error in generating RISC-V code" << std::endl;
         return check;
     }
+    CERR << " | RISC-V code generated successfully" << std::endl;
 
     return OKAY;
 }
@@ -75,6 +77,52 @@ int addSymbolsToSymTable()
 {
     // This will add all the symbols to the symbol table
     // We will use the IR_CODE to get the symbols
+
+    // Scan the IR_CODE dataSection
+    for(auto it : IR_CODE.dataSection)
+    {
+        std::string varName = it.first;
+        dataSegment obj = it.second;
+
+        int size;
+        if(obj.type == dataByte)
+        {
+            size = 1;
+        }
+        else if(obj.type == dataHalfByte)
+        {
+            size = 2;
+        }
+        else if(obj.type == dataWord)
+        {
+            size = 4;
+        }
+        else if(obj.type == dataFloat)
+        {
+            size = 4;
+        }
+        else if(obj.type == dataDouble)
+        {
+            size = 8;
+        }
+        else if(obj.type == dataString)
+        {
+            size = obj.value.size();
+        }
+        else
+        {
+            CERR << "Error in data section type" << std::endl;
+            return FAIL;
+        }
+
+        // Add the symbol to the symbol table
+        int check = SYM_RECORD.insertGlobal(varName, size);
+        if (check != INSERT_SUCCESS)
+        {
+            CERR << "Error in inserting symbol to symbol table" << std::endl;
+            return check;
+        }
+    }
 
     for (int i = 0; i < IR_CODE.code.size(); i++)
     {
@@ -107,7 +155,8 @@ int addSymbolsToSymTable()
             // This is a variable allocation
             std::string varName = currIR.result;
             int size = std::stoi(currIR.arg1);
-            int check = SYM_RECORD.insert(varName, size);
+            // Check if it's a global variable
+            int check= SYM_RECORD.insert(varName, size);
             if (check != INSERT_SUCCESS)
             {
                 CERR << "Error in inserting variable" << std::endl;
@@ -365,7 +414,7 @@ int livelinessPass()
         std::string arg1 = IR_CODE.code[i].arg1;
         std::string arg2 = IR_CODE.code[i].arg2;
 
-        std::cerr << "Scanning " << i << " - " << op << std::endl;
+        CERR << "Scanning " << i << " - " << op << std::endl;
 
         if (isNewBlock)
         {
@@ -712,7 +761,7 @@ int riscvCodeGen()
             // AssignOP
             else if (op == ASSIGN_OP)
             {
-
+                FINAL_CODE.addComment(" ~~ Assign OP - " + currIR.toBaseString());
                 // This will store address(explicit address) of return value in `a0` register
                 std::string dest = currIR.result;
                 std::string src = currIR.arg1;
@@ -753,6 +802,7 @@ int riscvCodeGen()
             }
             else if (op == LEFT_STAR)
             {
+                FINAL_CODE.addComment(" ~~ Left Star - " + currIR.toBaseString());
                 // src can't be label -> variable or constant
                 // dest can be a label or constant -> only variable
 
@@ -824,7 +874,7 @@ int riscvCodeGen()
             }
             else if (op == RIGHT_STAR)
             {
-
+                FINAL_CODE.addComment(" ~~ Right Star - " + currIR.toBaseString());
                 // src can't be a label or constant -> only variable
                 // dest can be a label or constant -> only variable
                 std::string dest = currIR.result;
@@ -871,15 +921,40 @@ int riscvCodeGen()
             }
             else if (op == AMPERSEND)
             {
+                FINAL_CODE.addComment(" ~~ Ampersend (&) - " + currIR.toBaseString());
                 std::string dest = currIR.result;
                 std::string src = currIR.arg1;
                 // src can't be constant -> variable or label
                 // dest can be a label or constant -> only variable
 
-                
+                bool isLabel = isALabel(src);
+                bool isGlobal = SYM_RECORD.isGlobal(src);
 
+                std::map<std::string, int> regMap;
+                int check = getReg(currIR, regMap);
+                if (check != OKAY)
+                {
+                    CERR << "Error in getReg()" << std::endl;
+                    return check;
+                }
 
+                std::string destReg = "x" + std::to_string(regMap[dest]);
+                if(isLabel || isGlobal){
+                    // src is a label or global variable
 
+                    // Load the address of the label in a register (temporary) (t0)
+                    riscCode = indentOP("la") + destReg + ", " + src; // la destReg, src(label)
+                    FINAL_CODE.addCode(riscCode);
+                }
+                else{
+                    // src is a variable (local)
+
+                    int offset_src = SYM_RECORD.getOffset(src);
+                    std::string imm = "-" + std::to_string(offset_src); // Negative offset
+                    // Store this offset (w.r.t s0(frame pointer)) in destReg
+                    riscCode = indentOP("addi") + destReg + ", s0, " + imm;
+                    FINAL_CODE.addCode(riscCode);
+                }
             }
 
             // Cast Operations
@@ -1471,6 +1546,19 @@ int getReg(NEW_TAC_Quadruple &code, std::map<std::string, int> &regMap)
         }
     }
 
+    // At the End of GetReg, 
+    FINAL_CODE.addComment(" ## GetReg() - " + code.toBaseString());
+    for(auto it : regMap)
+    {
+        std::string varName = it.first;
+        int regNo = it.second;
+
+        // We need to update the SYM_RECORD
+        FINAL_CODE.addComment("   == " + varName + " is given `x" + std::to_string(regNo) + "` reg ==");
+    }
+
+
+
     return OKAY;
 }
 
@@ -1480,7 +1568,10 @@ std::string makeLoadInstruction(const std::string &varName, int regNo)
 {
     std::string riscCode;
     int sizeOfVar = SYM_RECORD.getSize(varName);
-    int loc = SYM_RECORD.getOffset(varName) + sizeOfVar; // [IMP]
+    int loc = SYM_RECORD.getOffset(varName); // [IMP]
+
+    // Need to Change -> if Symbol is Globl [TODO]
+
     std::string sl_type;
     if (sizeOfVar == 1)
     {
@@ -1505,6 +1596,10 @@ std::string makeStoreInstruction(const std::string &varName, int regNo)
     std::string riscCode;
     int sizeOfVar = SYM_RECORD.getSize(varName);
     int loc = SYM_RECORD.getOffset(varName) + sizeOfVar; // [IMP]
+
+    // Need to Change -> if Symbol is Globl [TODO]
+
+
     std::string sl_type;
     if (sizeOfVar == 1)
     {
