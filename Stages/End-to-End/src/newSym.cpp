@@ -12,12 +12,17 @@ bool isALabel(const std::string &label)
     return false;
 }
 
-bool isASymbol(const std::string &name)
+bool isAValueSymbol(const std::string &name)
 {
     // std::cerr << "Checking if " << name << " is a symbol" << std::endl;
     bool res = false;
-    if (SYM_RECORD.symTable.find(name) != SYM_RECORD.symTable.end())
+    auto it = SYM_RECORD.symTable.find(name);
+    if (it != SYM_RECORD.symTable.end())
     {
+        if(it->second.inAddressSpace == true){
+            return false; // Is a Address Space Variable
+        }
+
         // Search if $ is present
         for (int i = 0; i < name.size(); i++)
         {
@@ -28,9 +33,23 @@ bool isASymbol(const std::string &name)
             }
         }
     }
-    CERR << "Variable " << name << (res ? " is a symbol 👌 " : " is NOT a symbol ❌") << std::endl;
+    CERR << "Variable " << name << (res ? " is a value symbol 👌 " : " is NOT a value symbol ❌") << std::endl;
     return res;
 }
+
+bool isAddressSymbol(const std::string &name)
+{
+    if(SYM_RECORD.symTable.find(name) != SYM_RECORD.symTable.end()){
+        if(SYM_RECORD.symTable[name].inAddressSpace == true){
+            CERR << "Variable " << name << " is a Address Space Variable" << std::endl;
+            return true;
+        }
+    }
+    CERR << "Variable " << name << " is NOT a Address Space Variable" << std::endl;
+    return false;
+}
+
+
 
 int SymTable::insert(const std::string &key, SymInfo &info)
 {

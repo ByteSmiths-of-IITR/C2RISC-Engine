@@ -457,7 +457,7 @@ int livelinessPass()
         {
             // Those in which result is used & not assigned
 
-            if (isASymbol(result))
+            if (isAValueSymbol(result))
             {
                 // If it's a symbol
                 if (CFG_CODE.usageAt(i, result) != OKAY)
@@ -466,7 +466,7 @@ int livelinessPass()
                     return FAIL;
                 }
             }
-            if (isASymbol(arg1))
+            if (isAValueSymbol(arg1))
             {
                 // If it's a symbol
                 if (CFG_CODE.usageAt(i, arg1) != OKAY)
@@ -475,7 +475,7 @@ int livelinessPass()
                     return FAIL;
                 }
             }
-            if (isASymbol(arg2))
+            if (isAValueSymbol(arg2))
             {
                 // If it's a symbol
                 if (CFG_CODE.usageAt(i, arg2) != OKAY)
@@ -508,7 +508,7 @@ int livelinessPass()
 
             // Special Case of AMPERSEND -> does not use Value of arg1 (just address)
 
-            if (isASymbol(result))
+            if (isAValueSymbol(result))
             {
                 // If it's a symbol
                 if (CFG_CODE.assignmentAt(i, result) != OKAY)
@@ -518,7 +518,7 @@ int livelinessPass()
                 }
             }
 
-            if (isASymbol(arg1) && op != AMPERSEND)
+            if (isAValueSymbol(arg1) && op != AMPERSEND)
             {
                 // If it's a symbol
 
@@ -529,7 +529,7 @@ int livelinessPass()
                 }
             }
 
-            if (isASymbol(arg2))
+            if (isAValueSymbol(arg2))
             {
                 // If it's a symbol
                 if (CFG_CODE.usageAt(i, arg2) != OKAY)
@@ -768,7 +768,7 @@ int riscvCodeGen()
                 // NOW since dest is assigned, we need to update the SYM_RECORD
                 SYM_RECORD.variableRest(dest); // update the variable assigned
 
-                std::string destReg = "x" + std::to_string(regMap[dest]);
+                std::string destReg;
                 // SYM_RECORD.freeGivenReg(regMap[dest]); // free the register (exclusive access)
                 SYM_RECORD.addVarInReg(dest, regMap[dest]); // add the variable to the register
 
@@ -776,20 +776,30 @@ int riscvCodeGen()
                 if (isALabel(src))
                 {
                     // src is a label
+                    destReg = "x" + std::to_string(regMap[dest]);
                     riscCode = indentOP("la") + destReg + ", " + src;
                     FINAL_CODE.addCode(riscCode, "Load address of label - " + src + " into " + destReg);
                 }
-                else if (!isASymbol(src))
+                else if (isAValueSymbol(src))
                 {
+                    // src is a variable - No Need to load    
+                    FINAL_CODE.addComment(" 🔄 Automatic copy - of " + src + " into " + destReg);
+                }
+                else if(isAddressSymbol(src)){
+                    // Two Possibilites - if dest in address space or not
+                    if(isAddressSymbol(dest)){
+                        // NEED a MEMCOPY
+                    }
+                    else{
+                        // NEED to load src's address in destReg
+                    }
+                }
+                else{
                     // src is a constant
+                    destReg = "x" + std::to_string(regMap[dest]);
+                    // Load the constant in a register (temporary) (t0)
                     riscCode = indentOP("li") + destReg + ", " + src;
                     FINAL_CODE.addCode(riscCode, "Load constant - " + src + " into " + destReg);
-                }
-                else
-                {
-                    // src is a variable
-                    // NO NEED to create a code, just update DS;
-                    FINAL_CODE.addComment(" 🔄 Automatically Assigned - " + src + " into " + dest);
                 }
             }
             else if (op == LEFT_STAR)
@@ -810,8 +820,22 @@ int riscvCodeGen()
                 }
 
                 std::string destReg = "x" + std::to_string(regMap[dest]);
+                if(isAddressSymbol(src)){
+                    // [TODO]
+                }
+                else if(isAValueSymbol(src))
+                {
+                    // src is a variable
+                    std::string srcReg = "x" + std::to_string(regMap[src]);
 
-                if (!isASymbol(src))
+                    int size = std::stoi(currIR.arg2);
+                    std::string sl_type = store_load_Type(size);
+
+                    // Load x[srcReg] in address of x[destReg]
+                    riscCode = indentOP("s" + sl_type) + srcReg + ", 0(" + destReg + ")";
+                    FINAL_CODE.addCode(riscCode, "Store variable of reg " + srcReg + " at address pointed by " + destReg);
+                }
+                else
                 {
                     // src is a constant
 
@@ -827,18 +851,7 @@ int riscvCodeGen()
                     riscCode = indentOP("s" + sl_type) + srcReg + ", 0(" + destReg + ")";
                     FINAL_CODE.addCode(riscCode, "Store constant of reg " + srcReg + " at address pointed by " + destReg);
                 }
-                else
-                {
-                    // src is a variable
-                    std::string srcReg = "x" + std::to_string(regMap[src]);
-
-                    int size = std::stoi(currIR.arg2);
-                    std::string sl_type = store_load_Type(size);
-
-                    // Load x[srcReg] in address of x[destReg]
-                    riscCode = indentOP("s" + sl_type) + srcReg + ", 0(" + destReg + ")";
-                    FINAL_CODE.addCode(riscCode , "Store variable of reg " + srcReg + " at address pointed by " + destReg);
-                }
+                
             }
             else if (op == RIGHT_STAR)
             {
@@ -1065,24 +1078,27 @@ int getReg(NEW_TAC_Quadruple &code, std::map<std::string, int> &regMap)
     std::string arg1 = code.arg1;
     std::string arg2 = code.arg2;
 
+    // We would never allocate a register to a address type variables
+
     // Step 1. Dividing things into usage & assignment Type
     if (op == CALL || op == LEFT_STAR ||
         op == GOTO_EQUAL || op == GOTO_LABEL || op == IF_TRUE || op == IF_FALSE)
     {
         // Those in which result is used & not assigned
 
-        if (isASymbol(result))
+        if (isAValueSymbol(result))
         {
             usageType.push_back(result);
         }
-        if (isASymbol(arg1))
+        if (isAValueSymbol(arg1))
         {
             usageType.push_back(arg1);
         }
-        if (isASymbol(arg2))
+        if (isAValueSymbol(arg2))
         {
             usageType.push_back(arg2);
         }
+
     }
     else if (op == FUNCTION_ENTRY || op == FUNCTION_EXIT || op == ALLOCATE)
     {
@@ -1094,19 +1110,21 @@ int getReg(NEW_TAC_Quadruple &code, std::map<std::string, int> &regMap)
         // Includes -> ASSIGN_OP, RIGHT_STAR, AMPERSEND, CAST {assignment to result}
         // Include -> PARAM, RETURN_FUNCTION {NO result variable}
 
-        if (isASymbol(result))
+        if (isAValueSymbol(result))
         {
             assignmentType.push_back(result);
         }
 
-        if (isASymbol(arg1))
+        if (isAValueSymbol(arg1))
         {
-            usageType.push_back(arg1);
+            // If it's a symbol
+            assignmentType.push_back(arg1);
         }
 
-        if (isASymbol(arg2))
+        if (isAValueSymbol(arg2))
         {
-            usageType.push_back(arg2);
+            // If it's a symbol
+            assignmentType.push_back(arg2);
         }
     }
 
@@ -1720,14 +1738,47 @@ int getManyReg(std::set<std::string> varNames, LivelinessDS liveInfo, std::map<s
 
 
 void RISCV_CODE::addCopyInst(std::string variable, int size, int srcImm, std::string src_wrtReg, int destImm, std::string dest_wrtReg){
-    // We will be copying the variable (srcImm + src_wrtReg) to (destImm + dest_wrtReg) with size
+    
+    // We need to copy the value from one location to another
+    FINAL_CODE.addComment(" ~~ Copy Instruction for " + variable + " of size " + std::to_string(size) + " from (" + src_wrtReg + ", " + std::to_string(srcImm) + ") to (" + dest_wrtReg + ", " + std::to_string(destImm) + ")");
 
+    // We would be considering this offset in +ve
 
+    std::string riscCode;
+    // We do things in chunks of 4 bytes
+    int noOfChunks = size / 4;
+    int remainingBytes = size % 4;
+    for(int i = 0; i < noOfChunks; i++){
+        // We need to copy the value from one location to another
+        riscCode = indentOP("lw") + "t0, " + std::to_string(srcImm + (i * 4)) + "(" + src_wrtReg + ")";
+        this->addCode(riscCode, "Copying value from (" + src_wrtReg + ", " + std::to_string(srcImm + (i * 4)) + ") to t0");
+        
+        riscCode = indentOP("sw") + "t0, " + std::to_string(destImm + (i * 4)) + "(" + dest_wrtReg + ")";
+        this->addCode(riscCode, "Copying value from t0 to (" + dest_wrtReg + ", " + std::to_string(destImm + (i * 4)) + ")");
+    }
+
+    if(remainingBytes > 0){
+        std::string sl_type = store_load_Type(remainingBytes);
+        // We need to copy the value from one location to another
+        riscCode = indentOP("l" + sl_type) + "t0, " + std::to_string(srcImm + (noOfChunks * 4)) + "(" + src_wrtReg + ")";
+        this->addCode(riscCode, "Copying value from (" + src_wrtReg + ", " + std::to_string(srcImm + (noOfChunks * 4)) + ") to t0");
+
+        riscCode = indentOP("s" + sl_type) + "t0, " + std::to_string(destImm + (noOfChunks * 4)) + "(" + dest_wrtReg + ")";
+        this->addCode(riscCode, "Copying value from t0 to (" + dest_wrtReg + ", " + std::to_string(destImm + (noOfChunks * 4)) + ")");
+    }
 }
 
 void RISCV_CODE::addLoadInst(const std::string &varName, int regNo)
 {
-    // Write Code to Load This Variable from Memory
+    /*
+    Logic
+    - For VALUE_SPACE variables - we load the exact value of the variable at the address given by SYM_RECORD
+        - For Global - we load address from label THEN it's value
+        - For Local - we directly load the value from the offset
+    - For ADDRESS_SPACE variables - we load the address of the variable in a register
+        - For Global - we load address from label
+        - For Local - we load the offset using fp - this will be exact address (NOT w.r.t fp)
+    */
 
     std::string riscCode;
     int sizeOfVar = SYM_RECORD.getSize(varName);
@@ -1741,7 +1792,6 @@ void RISCV_CODE::addLoadInst(const std::string &varName, int regNo)
 
     if(inAddrSpace){
         if(isGlobal){
-            
             // We need to load the address of this Global Variable in the given register
             std::string addrReg = "x" + std::to_string(regNo);
             riscCode = indentOP("la") + addrReg + ", " + varName;
@@ -1779,31 +1829,68 @@ void RISCV_CODE::addLoadInst(const std::string &varName, int regNo)
 
 void RISCV_CODE::addStoreInst(const std::string &varName, int regNo)
 {
-    // Write Code to Store This Variable in Memory
-
+    /*
+    Logic
+    - For VALUE_SPACE variables - we store the exact value of the variable at the address given by SYM_RECORD
+        - For Global - we store address from label THEN it's value
+        - For Local - we directly store the value from the offset
+    - For ADDRESS_SPACE variables - 
+        - For Global - we will need to store the data pointed by reg to the address of the variable
+        - For Local - we will need to store the data pointed by reg to - the variable
+    */
     std::string riscCode;
     int sizeOfVar = SYM_RECORD.getSize(varName);
-    
+
     std::string sl_type = store_load_Type(sizeOfVar);
 
-    // The Variable to Store in global we don't have it's offset first we need to load the address of the variable
+   // The Variable to Store in global we don't have it's offset first we need to load the address of the variable
     bool isGlobal = SYM_RECORD.isGlobal(varName);
-    
-    if(isGlobal){
-        // We need to load the address of the variable in a register
-        std::string addrReg = "t0";
-        riscCode = indentOP("la") + addrReg + ", " + varName;
-        this->addCode(riscCode, "Loading Address of Global Variable - " + varName);
 
-        // Now we can store the value in the memory
-        riscCode = indentOP("s" + sl_type) + "x" + std::to_string(regNo) + ", 0(" + addrReg + ")";
-        this->addCode(riscCode, "Store Global Var - " + varName + " via " + addrReg + " in x" + std::to_string(regNo));
+    bool inAddrSpace = SYM_RECORD.isInAddressSpace(varName);
+    if(inAddrSpace){
+        if(isGlobal){
+            // First we find address of the variable
+            std::string addrReg = "t1";
+            riscCode = indentOP("la") + addrReg + ", " + varName;
+            this->addCode(riscCode, "Loading Address of Global Variable(address Space) - " + varName + " in " + addrReg);
+
+            // Now we need to copy value at (regNo.value + 0) to (t1.value + 0)
+            std::string var = varName;
+            int srcImm = 0, destImm = 0;
+            std::string src_wrtReg = "x" + std::to_string(regNo), dest_wrtReg = addrReg;
+            FINAL_CODE.addCopyInst(var, sizeOfVar, srcImm, src_wrtReg, destImm, dest_wrtReg);
+        }
+        else{
+            // First we find address of the variable
+            int loc = SYM_RECORD.getOffset(varName); // [This Offset is w.r.t fp]
+            std::string addrReg = "t1";
+            riscCode = indentOP("addi") + addrReg + ", fp, -" + std::to_string(loc); // w.r.t frame pointer(fp)
+            this->addCode(riscCode, "Loading Offset of Local Variable(address Space) - " + varName + " in " + addrReg);
+
+            // Now we need to copy value at (regNo.value + 0) to (t1.value + 0)
+            std::string var = varName;
+            int srcImm = 0, destImm = 0;
+            std::string src_wrtReg = "x" + std::to_string(regNo), dest_wrtReg = addrReg;
+            FINAL_CODE.addCopyInst(var, sizeOfVar, srcImm, src_wrtReg, destImm, dest_wrtReg);
+        }
     }
     else{
-        // Else it's a local variable - we need its offset
-        int loc = SYM_RECORD.getOffset(varName); // [This Offset is w.r.t fp]
-        riscCode = indentOP("s" + sl_type) + "x" + std::to_string(regNo) + ", -" + std::to_string(loc) + "(fp)"; // w.r.t frame pointer(fp)
-        this->addCode(riscCode, "Store Local Var - " + varName + " via fp in x" + std::to_string(regNo));
+        if(isGlobal){
+            // We need to load the address of the variable in a register
+            std::string addrReg = "t0";
+            riscCode = indentOP("la") + addrReg + ", " + varName;
+            this->addCode(riscCode, "Loading Address of Global Variable - " + varName);
+
+            // Now we can store the value in the memory
+            riscCode = indentOP("s" + sl_type) + "x" + std::to_string(regNo) + ", 0(" + addrReg + ")";
+            this->addCode(riscCode, "Store Global Var - " + varName + " via " + addrReg + " in x" + std::to_string(regNo));
+        }
+        else{
+            // Else it's a local variable - we need its offset
+            int loc = SYM_RECORD.getOffset(varName); // [This Offset is w.r.t fp]
+            riscCode = indentOP("s" + sl_type) + "x" + std::to_string(regNo) + ", -" + std::to_string(loc) + "(fp)"; // w.r.t frame pointer(fp)
+            this->addCode(riscCode, "Store Local Var - " + varName + " via fp in x" + std::to_string(regNo));
+        }
     }
 
     return;
@@ -1836,20 +1923,6 @@ std::string store_load_Type(int size){
     return sl_type;
 }
 
-int getRISC_Instruction(std::string op, bool isFloat, std::string &risc_op){
+int generateSimpleExpCode(NEW_TAC_Quadruple code){
 
-
-
-
-
-    return OKAY;
-}
-
-int isImmInstPossible(std::string op, int &whichCase){
-
-
-
-
-    
-    return OKAY;
 }

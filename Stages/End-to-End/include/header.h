@@ -982,8 +982,8 @@ int constant_expression_H(ASTNode *node, std::string &value);
 //=====================[ Code Generations ]=========================================================================================
 
 bool isALabel(const std::string &varName); // This will check if the variable is a label or not
-bool isASymbol(const std::string &varName); // This will check if the variable is a symbol or not
-
+bool isAValueSymbol(const std::string &varName); // This will check if the variable is a symbol or not
+bool isAddressSymbol(const std::string &varName); // This will check if the variable is a address symbol or not
 // using RISCV_CODE = std::vector<std::string>;
 
 std::string indentOP(std::string op);
@@ -1298,9 +1298,7 @@ int getManyReg(std::set<std::string> varName, LivelinessDS livelinessInfo, std::
 
 std::string store_load_Type(int size);
 
-int getRISC_Instruction(std::string op, bool isFloat, std::string &risc_op);
-
-int isImmInstPossible(std::string op, int &whichCase);
+int generateSimpleExpCode(NEW_TAC_Quadruple code);
 
 //====================[ Externed Global CodeGen Variables ]=========================================================================================
 
