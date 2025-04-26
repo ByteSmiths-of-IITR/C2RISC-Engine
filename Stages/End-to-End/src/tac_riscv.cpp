@@ -12,6 +12,7 @@ std::string FUNCTION_EXIT = "FUNCTION_EXIT"; // function exit
 // std::string BLANK = "blank";
 std::string CAST = "cast"; // result = (arg1)arg2
 
+std::string OFFSET_LOAD = ".offset"; // result = arg1.offset
 std::string ALLOCATE = "alloca"; // allocate arg1, arg2
 
 std::string PARAM = "param"; // param arg1
@@ -106,6 +107,9 @@ std::string TAC_Quadruple::toString()
     // if(op == BSS){
     //     str = arg1 + ": " + arg2; // BSS p, n
     // }
+    else if(op == OFFSET_LOAD){
+        str = result + " = " + arg1 + ".offset"; // result = arg1.offset
+    }
 
     else if (op == AMPERSEND)
     {
@@ -553,6 +557,7 @@ void RISCV_CODE::addComment(std::string comment)
 
 void RISCV_CODE::printCode(std::ostringstream &oss)
 {
+
     oss << ".data" << std::endl;
     for (auto it : data)
     {

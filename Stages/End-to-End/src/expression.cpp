@@ -198,10 +198,11 @@ int primary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
                 // If type is a variable cast it to a poniter
 
                 // Add a new pointer level
-                aptLOG("Funtion to Pointer Decay 🏴‍☠️");
-                wasFunctionDecayed = true;
-                PointerInfo *ptr = new PointerInfo();
-                type0.levelStack.push_back(ptr);
+                // aptLOG("Funtion to Pointer Decay 🏴‍☠️"); [Function Pointer Decay OFF]
+                aptLOG("No Function Pointer Decay ❌");
+                // wasFunctionDecayed = true;
+                // PointerInfo *ptr = new PointerInfo();
+                // type0.levelStack.push_back(ptr);
             }
             else
             {
@@ -234,16 +235,25 @@ int primary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
         {
             // If in address space we need to deal with offset
 
-            // Space 🚀Change 🔖IR Code
-            std::string address = newTemp();                                               // allocate 'ADDRESS_SIZE' bytes
-            IR_CODE.addTAC(node, address, ALLOCATE, std::to_string(ADDRESS_SIZE), NO_ARG); // Allocate memory for the variable
-
+            
             // std::string id_offset = std::to_string(((Variable *)symbol)->offset);
-            std::string id_offset = varName1 + ".offset";
+            bool isVariableGlobal = (symbol->scopeNo == SYM_TABLE.globalScope);
+            if (isVariableGlobal)
+            {
+                // If not global, it would be used as a label [which would be handled by ]
+                // No need to load offset
+            }
+            else{
+                // Space 🚀Change 🔖IR Code
+                std::string address = newTemp();                                               // allocate 'ADDRESS_SIZE' bytes
+                IR_CODE.addTAC(node, address, ALLOCATE, std::to_string(ADDRESS_SIZE), NO_ARG); // Allocate memory for the variable
 
-            IR_CODE.addTAC(node, address, "=", id_offset, NO_ARG);
+                // IF not global we would need to have offset 
+                std::string id_offset = varName1;
+                IR_CODE.addTAC(node, address, OFFSET_LOAD, id_offset, NO_ARG);
+                varName1 = address; // Change the name to the address
+            }
 
-            varName1 = address; // Change the name to the address
         }
         else if (val0Space == SPACE::VALUE_SPACE)
         {
@@ -663,7 +673,7 @@ int postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
 
         if (whichType1 == Type::POINTER)
         {
-            aptHERE;
+            // aptHERE;
             // First we remove the top level with is
             if (popALevel(type1) != POP_SUCCESS)
             {
@@ -671,8 +681,7 @@ int postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
                 BUG_H;
                 return BUG;
             }
-            aptHERE;
-            returnType = type1; // reset the returnType
+            // aptHERE;
             Type isFunctionPtr = whatIsType(type1);
             if (isFunctionPtr != Type::FUNCTION)
             {
@@ -682,21 +691,38 @@ int postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
             }
 
             wasVaradic = ((ParameterInfo *)type1.levelStack[type1.levelStack.size() - 1])->isVaradic;
-            aptHERE;
+            // aptHERE;
             // Find ParameterInfo
             aptLOG("Type : " + toString(type1));
             paramTypes = ((ParameterInfo *)type1.levelStack[type1.levelStack.size() - 1])->paramsType;
-            aptHERE;
+            // aptHERE;
             // Find Return Type
-            aptLOG("Return Type : " + toString(returnType));
+            returnType = type1; // reset the returnType
             if (popALevel(returnType) != POP_SUCCESS)
             {
                 compilerError("Error in popALevel");
                 BUG_H;
                 return BUG;
             }
+            aptLOG("Return Type : " + toString(returnType));
 
             // Will check function sign later
+        }
+        else if(whichType1 == Type::FUNCTION)
+        {
+            // We have a function
+            wasVaradic = ((ParameterInfo *)type1.levelStack[type1.levelStack.size() - 1])->isVaradic;
+            paramTypes = ((ParameterInfo *)type1.levelStack[type1.levelStack.size() - 1])->paramsType;
+            aptHERE;
+            // Find Return Type
+            returnType = type1; // reset the returnType
+            if (popALevel(returnType) != POP_SUCCESS)
+            {
+                compilerError("Error in popALevel");
+                BUG_H;
+                return BUG;
+            }
+            aptLOG("Return Type : " + toString(returnType));
         }
         else
         {
@@ -1524,11 +1550,15 @@ int unary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::st
             if (valueSpace1 == SPACE::ADDRESS_SPACE)
             {
                 // Load the value from address
-                IR_CODE.addTAC(node, temp, ASSIGN_OP, varName1, NO_ARG); // varName = *varName1
+                // NO NEED TO LOAD THE VALUE -> already in address space
+                aptLOG("Already in Address Space - Ignore & operate on it");
+                // IR_CODE.addTAC(node, temp, ASSIGN_OP, varName1, NO_ARG); // varName = varName1  [No need of extra code]
+                temp = varName1; // Change the name to the address
+                
             }
             else if (valueSpace1 == SPACE::VALUE_SPACE)
             {
-                IR_CODE.addTAC(node, temp, AMPERSEND, varName1, NO_ARG); // varName = varName1
+                IR_CODE.addTAC(node, temp, AMPERSEND, varName1, NO_ARG); // varName = &varName1
             }
             else
             {

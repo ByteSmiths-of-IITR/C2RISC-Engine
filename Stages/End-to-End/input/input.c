@@ -1,6 +1,18 @@
+int func(){
+    return 0;
+}
+
+#include <stdio.h>
+
 int main(){
-    int a = 4.3;
-    float b = 34;
+    int (*ptr)() = &func;
+
+    // printf("address of func = %p\n", func);
+    // printf("value of ptr = %p\n", ptr);
+    // printf("address of func + 1 = %p\n", func + 1);
+
+    // int arr[4];
+    // int *p = &arr[2];
 }
 
 //=========================== C2RISC-Engine =========================================================//
@@ -11,16 +23,15 @@ int main(){
 // ----------------------------------------------------------------------------------------------------
 // 
 // .text      : ------------------------------
-// 0          : main: Func ENTER              
-// 1          : alloca a$1, 4                 
-// 2          : alloca $0, 4                  
-// 3          : $0 = (int)a$1                 
-// 4          : a$1 = $0                      
-// 5          : alloca b$1, 4                 
-// 6          : alloca $1, 4                  
-// 7          : $1 = (float)b$1               
-// 8          : b$1 = $1                      
-// 9          : main ret(4): EXIT             
+// 0          : func: Func ENTER              
+// 1          : return 0                      
+// 2          : func ret(4): EXIT             
+// 
+// 3          : main: Func ENTER              
+// 4          : alloca ptr$2, 4               
+// 5          : alloca $0, 4                  
+// 6          : ptr$2 = func                  
+// 7          : main ret(4): EXIT             
 // 
 // ----------------------------------------------------------------------------------------------------
 // 

@@ -545,6 +545,7 @@ extern std::string LEFT_STAR;
 extern std::string FUNCTION_ENTRY;
 extern std::string FUNCTION_EXIT;
 // extern std::string BLANK;
+extern std::string OFFSET_LOAD;
 extern std::string CAST;
 extern std::string AMPERSEND;
 extern std::string RO_DATA;

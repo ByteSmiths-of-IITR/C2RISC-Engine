@@ -2174,6 +2174,7 @@ int initializer_H(ASTNode *node, TypeExpression inh_type, std::string inh_varNam
         int aex_check = assignment_expression_H(node->children[0], "NONE", varName1, type1, valueType1, valueSpace1);
         PASS_THE_ERROR(aex_check);
 
+
         std::string irVarName = inh_varName+"$"+std::to_string(SYM_TABLE.scopeNo);
 
         // First we check TypeChecking for operation
@@ -2198,7 +2199,7 @@ int initializer_H(ASTNode *node, TypeExpression inh_type, std::string inh_varNam
 
             dataSegment obj;
             obj.name = irVarName;
-            obj.value = varName1;
+            
 
             // Type Checking
             bool isNum = isNumeric(source);
@@ -2225,13 +2226,17 @@ int initializer_H(ASTNode *node, TypeExpression inh_type, std::string inh_varNam
                     bool destFloat = isFloatingPoint(dest);
                     if(srcFloat && !destFloat){
                         // trucate the value after .
+                        // CERR << "Implicit TypeCasting - " << toString(source) << " to " << toString(dest) << std::endl;
+                        // CERR << "trucating value - " << varName1 << std::endl;
                         std::string trucatedValue = varName1.substr(0, varName1.find("."));
                         varName1 = trucatedValue;
+                        // CERR << "trucatedValue = " << varName1 << std::endl;
                     }
-                    
                 
                 }
             }
+
+            obj.value = varName1;
 
             // For size we need to check it's type & find size
             int size = width(dest); // Need to find format to check for float
@@ -2271,10 +2276,12 @@ int initializer_H(ASTNode *node, TypeExpression inh_type, std::string inh_varNam
             // Add the object to the data segment
             if(IR_CODE.dataSection.find(irVarName) == IR_CODE.dataSection.end()){
                 IR_CODE.dataSection[irVarName] = obj;
+                // CERR << "Adding to data section - " << irVarName << " with value - " << IR_CODE.dataSection[irVarName].value << std::endl;
             }
             else{
                 // This might be due to initializer list
                 IR_CODE.dataSection[irVarName].value += "," + varName1;
+                // CERR << "Already present in data section - " << irVarName << "with value - " << IR_CODE.dataSection[irVarName].value << std::endl;
             }
         }
         else{
@@ -2322,10 +2329,14 @@ int initializer_H(ASTNode *node, TypeExpression inh_type, std::string inh_varNam
                 int equal = ourEquivalent(source, dest);
                 if (equal != OKAY)
                 {
+                    // CERR << "Implicit TypeCasting - " << toString(source) << " to " << toString(dest) << std::endl;
+                    
                     std::string castedVarNam = newTemp();                                              // allocated width(dest)
                     IR_CODE.addTAC(node, castedVarNam, ALLOCATE, std::to_string(width(dest)), NO_ARG); // Allocate memory for the variable
-
-                    IR_CODE.addTAC(node, castedVarNam, CAST, toString(dest), irVarName); // Cast it
+                    
+                    // CERR << "castedVarNam = " << castedVarNam << std::endl;
+                    // CERR << "toBeCasted = " << varName1 << std::endl;
+                    IR_CODE.addTAC(node, castedVarNam, CAST, toString(dest), varName1); // Cast it
                     varName1 = castedVarNam;                                            // Change the name to the address
                 }
             }
@@ -2472,7 +2483,7 @@ int initializer_list_H(ASTNode *node, TypeExpression inh_type, std::string inh_v
             // 🤔🤔🤔🤔🤔🤔 IMP LOGIC 🤔🤔🤔🤔🤔
             TypeExpression inh_type1 = elementType;             // Set Correctly
             VALUE_TYPE inh_valueType1 = getValueType(inh_type1); // Set Correctly
-            // std::cerr << LOC << "Type : " << toString(type) << std::endl;
+            // CERR << LOC << "Type : " << toString(type) << std::endl;
 
             // Now we call Initializer
             int child = (whichProduction == P1) ? 0 : 2;

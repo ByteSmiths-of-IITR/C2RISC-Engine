@@ -871,6 +871,15 @@ int riscvCodeGen()
             }
             else if (op == AMPERSEND)
             {
+                std::string dest = currIR.result;
+                std::string src = currIR.arg1;
+                // src can't be constant -> variable or label
+                // dest can be a label or constant -> only variable
+
+                
+
+
+
             }
 
             // Cast Operations

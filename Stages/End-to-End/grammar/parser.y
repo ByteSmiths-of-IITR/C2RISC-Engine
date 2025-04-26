@@ -2681,7 +2681,8 @@ int main(int argc, char **argv) {
     }
 
     notificationStream <<  "Lexical Analysis 👍 | Syntax Analysis 👍 | Semantic Analysis 👍 | RISC-V Code Generation 👍\n";
-    outputStream << "#-------- \U0001F3A8 RISC-V Code Generation using C2RISC-Engine \U0001F3A8 -------\n";
+    std::string Time = getCurrentTime();
+    outputStream << "#-------- \U0001F3A8 RISC-V Code Gen using C2RISC-Engine Time(" << Time << ") \U0001F3A8 ---------\n";
     /* outputStream << "#-------------------------------------------------------------------------\n"; */
     outputStream << std::endl;
 
