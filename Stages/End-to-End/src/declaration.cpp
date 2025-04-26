@@ -2294,12 +2294,14 @@ int initializer_H(ASTNode *node, TypeExpression inh_type, std::string inh_varNam
         }
         else{
 
-            
+            bool bothinValueSpace = (valueSpace1 == SPACE::VALUE_SPACE && inh_valueSpace == SPACE::VALUE_SPACE);
+            if(!bothinValueSpace){
             USAGE_SPACE_CHANGE(varName1, type1, valueSpace1, node)
 
             SPACE addSpace = SPACE::ADDRESS_SPACE;
             // This will help to add offset if needed
             TO_GIVEN_SPACE_CHANGE(inh_varName, inh_valueSpace, addSpace, inh_type, node);
+            }
 
             // 🅰️ TypeChecking for varName1
             // Rule - valueType - {M_LVALUE, NM_LVALUE, RVALUE} Allowed

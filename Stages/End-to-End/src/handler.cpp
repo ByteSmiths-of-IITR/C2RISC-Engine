@@ -1015,7 +1015,7 @@ int function_definition_H(ASTNode *node)
 
         bool returnAbsent = (code.op != RETURN_FUNCTION);
 
-        returnAbsent = false; // [TURNED OFF]
+        // returnAbsent = false; // [TURNED ON] [ERROR SUPPRESSION]
 
         if (returnAbsent)
         {
@@ -1028,16 +1028,24 @@ int function_definition_H(ASTNode *node)
                 std::string ret = base->baseType;
                 if (ret != TYPE_VOID)
                 {
-                    semanticWarning("Function \'" + varName + "\'s return type is not void but no return statement found");
-                    FAIL_H;
-                    return FAIL;
+
+                    // Add a return statement
+                    IR_CODE.addTAC(node, NO_ARG, RETURN_FUNCTION, NO_ARG, NO_ARG);
+
+                    // semanticWarning("Function \'" + varName + "\'s return type is not void but no return statement found");
+                    // FAIL_H;
+                    // return FAIL;
                 }
             }
             else
             {
-                semanticWarning("Function \'" + varName + "\'s return type is not void but no return statement found");
-                FAIL_H;
-                return FAIL;
+
+                // Add a return statement
+                IR_CODE.addTAC(node, NO_ARG, RETURN_FUNCTION, NO_ARG, NO_ARG);
+
+                // semanticWarning("Function \'" + varName + "\'s return type is not void but no return statement found");
+                // FAIL_H;
+                // return FAIL;
             }
         }
 

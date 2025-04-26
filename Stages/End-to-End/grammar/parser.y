@@ -2465,7 +2465,7 @@ int main(int argc, char **argv) {
         ptree = false;
         Aptree = false;
         dot_file = "graph.dot"; // Default dot file name
-        bool cfg_code = false;
+        cfg_code = false;
 
 
         // Open default output file
@@ -2652,10 +2652,13 @@ int main(int argc, char **argv) {
         IR_CODE.printTAC(outputStream);
     }
 
+    
+
+    
+
     int optStatus = OKAY;
 
     optStatus = machineIndependentOptimization();
-
 
     if(optStatus != OKAY){
         notificationStream <<  "Lexical Analysis 👍 | Syntax Analysis 👍 | Semantic Analysis 👍 | Machine Independent Optimization ❌\n";
@@ -2704,7 +2707,7 @@ int main(int argc, char **argv) {
     outputStream << "#-------------------------------------------------------------------------\n";
     outputStream << std::endl << std::endl;
     }
-
+    
     notificationStream <<  "Lexical Analysis 👍 | Syntax Analysis 👍 | Semantic Analysis 👍 | RISC-V Code Generation 👍\n";
     std::string Time = getCurrentTime();
     outputStream << "#-------- 🎨 RISC-V Code Gen using C2RISC-Engine Time(" << Time << ") 🎨 ---------\n";

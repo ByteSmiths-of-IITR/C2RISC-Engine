@@ -12,7 +12,7 @@ GRAMMAR_DIR = grammar
 # Compiler and flags
 CXX = g++ -std=c++17 # Added Latest Version [Some error due to old compiler]
 CC = gcc
-CXXFLAGS = -Wall -Wextra -Wpedantic -lm -I $(INCLUDE_DIR)
+CXXFLAGS = -w -lm -I $(INCLUDE_DIR)
 
 
 # Directories
@@ -254,7 +254,7 @@ codeGen: all $(EXECUTABLE) $(INPUT) $(OUTPUT) $(CERR)
 
 codeGenDebug: all $(EXECUTABLE) $(INPUT) $(OUTPUT) $(CERR)
 	@echo "🚥 Starting C2RISC Engine 🟢 (Output Mode) + (DEBUG-MODE 🐞)"
-	@-./$(EXECUTABLE) $(INPUT) -o -d2 $(APTreeFile) 2> $(CERR)
+	@-./$(EXECUTABLE) $(INPUT) -d2 $(APTreeFile) -o 2> $(CERR)
 	@-$(DOT) -Tsvg $(CFGFile) -o $(CFGSVG)
 	@echo "CFG in - " $(CFGSVG)
 

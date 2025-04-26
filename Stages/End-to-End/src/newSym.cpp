@@ -143,16 +143,16 @@ int SymTable::enterFunction(const std::string &funcName)
 
     std::string funcFP = funcName + "$FP(fp)"; // This will be used to set the frame pointer
     std::string funcRA = funcName + "$RA(ra)"; // This will be used to set the return address
-    funcSymbol.offset = 12; // offset of fp
+    funcSymbol.offset = 8; // offset of fp
     symTable[funcFP] = funcSymbol;
-    funcSymbol.offset = 8; // offset of ra
+    funcSymbol.offset = 4; // offset of ra
     symTable[funcRA] = funcSymbol; // This will set the return address
 
     std::string addressOfRetValue = funcName + "$RET_VAL_ADDR"; // This will be used to set the return address
-    funcSymbol.offset = 16; // offset of return value address
+    funcSymbol.offset = 12; // offset of return value address
     symTable[addressOfRetValue] = funcSymbol; // This will set the return address
 
-    funcSymbol.offset = 4; // offset of return value
+    funcSymbol.offset = 16; // offset of return value
     symTable[funcName+"(un-used)"] = funcSymbol; // This will set the return address
 
     

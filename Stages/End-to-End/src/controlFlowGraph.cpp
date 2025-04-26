@@ -168,6 +168,11 @@ std::string CFG::blockName(int index)
 int CFG::addLeader(int leader)
 {
     // This will create a Leader
+    if(leaderToBlockMap.find(leader) != leaderToBlockMap.end())
+    {
+        // Leader already exists
+        return OKAY; // Already Exists
+    }
     std::string newBLockName = newBlock();
     leaderToBlockMap[leader] = newBLockName;
     leaders.push_back(leader);
@@ -187,6 +192,11 @@ bool CFG::isALeader(int index)
 
 int CFG::addLeader(int leader, std::string blockName)
 {
+    if(leaderToBlockMap.find(leader) != leaderToBlockMap.end())
+    {
+        // Leader already exists
+        return OKAY; // Already Exists
+    }
     leaderToBlockMap[leader] = blockName;
     leaders.push_back(leader);
     return OKAY;
