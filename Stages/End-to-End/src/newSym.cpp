@@ -110,10 +110,33 @@ int SymTable::enterFunction(const std::string &funcName)
         return FAIL;
     }
 
-    // This will set the offset of the function
-    stack_offset = activation_start_offset; // This will set the offset of the function
+    // We have Entered a function, so we need to set the offset
     inFunction = true;
     functionName = funcName;
+    stack_offset = activation_start_offset; // This will set the offset of the function
+
+    // Create a Symbol to be used for adding activation record [storage Details]
+    SymInfo funcSymbol;
+    funcSymbol.size = 4;
+    funcSymbol.isGlobal = false; // Function is Global
+    funcSymbol.whichFunction = this->functionName; // This will set the function name
+    funcSymbol.offset; // to be set
+
+    std::string funcFP = funcName + "$FP(fp)"; // This will be used to set the frame pointer
+    std::string funcRA = funcName + "$RA(ra)"; // This will be used to set the return address
+    funcSymbol.offset = 12; // offset of fp
+    symTable[funcFP] = funcSymbol;
+    funcSymbol.offset = 8; // offset of ra
+    symTable[funcRA] = funcSymbol; // This will set the return address
+
+    std::string addressOfRetValue = funcName + "$RET_VAL_ADDR"; // This will be used to set the return address
+    funcSymbol.offset = 16; // offset of return value address
+    symTable[addressOfRetValue] = funcSymbol; // This will set the return address
+
+    funcSymbol.offset = 4; // offset of return value
+    symTable[funcName+"(un-used)"] = funcSymbol; // This will set the return address
+
+    
     return OKAY;
 }
 
@@ -125,34 +148,51 @@ int SymTable::exitFunction()
         CERR << "Error in exiting function - not in function" << std::endl;
         return FAIL;
     }
+    this->inFunction = false;
+    std::string oldName = this->functionName;
+    this->functionName = "GLOBAL";
 
     // We also need to create a Symbol with name of function
     SymInfo funcSymbol;
     funcSymbol.size = stack_offset;
-
+    funcSymbol.whichFunction = this->functionName; // This will set the function name
+    funcSymbol.offset = -1; // offset of return value
     // Set offset as size of return value
     funcSymbol.isGlobal = true;                         // Function is Global
-    int check = this->insert(functionName, funcSymbol); // Insert the function in the table
+    int check = this->insert(oldName, funcSymbol); // Insert the function in the table
     if (check != INSERT_SUCCESS)
     {
         CERR << "Error in inserting function at exit - already present" << std::endl;
         return FAIL;
     }
 
-    inFunction = false;
-    functionName = "NULL";
     return OKAY;
 }
 
 int SymTable::insert(const std::string &key, int size)
 {
     // We are only give size
+
+
+    // Allignment Logic -> TURNED OFF
+    FEATURE_OFF("Alignment Logic");
+    // int padding = std::max(0, (4 - size % 4) % 4); // This will be used to set the padding
+
     SymInfo info;
     info.size = size;
     stack_offset += size;       // This will set the offset of the function
-
+    info.whichFunction = functionName; // This will set the function name
     info.offset = stack_offset; // This will set the offset of the function
     
+    // if(padding != 0){
+    //     stack_offset += padding;
+    //     SymInfo paddingInfo;
+    //     paddingInfo.size = padding;
+    //     paddingInfo.whichFunction = functionName; // This will set the function name
+    //     paddingInfo.offset = stack_offset; // This will set the offset of the function
+    //     SYM_RECORD.insert(key+"(padding)", paddingInfo);
+    // }
+
     info.isGlobal = false;      // Function is Global
     return insert(key, info);
 }
@@ -165,9 +205,11 @@ int SymTable::insertGlobal(const std::string &key, int size)
         return INSERT_FAILURE;
     }
 
+
     SymInfo info;
+    info.whichFunction = functionName;
     info.size = size;
-    info.offset = 0; // no offset for global variables
+    info.offset = -1; // no offset for global variables
     info.isGlobal = true;      // Function is Global
     
     symTable[key] = info;
@@ -176,20 +218,60 @@ int SymTable::insertGlobal(const std::string &key, int size)
 
 void SymTable::printTable(std::ofstream &file)
 {
-    // Use setw() for formatting - left aligned
+    std::map<std::string, std::vector<std::pair<int,std::string>>> sortedSymTable;
     int maxSize = 20;
     int minSize = 10;
-    file << "======================[ Symbol Table ]=========================================================================================" << std::endl;
-    file << std::left << std::setw(maxSize) << "Name" << std::setw(maxSize) << "Size" << std::setw(maxSize) << "Offset" << std::setw(maxSize) << "isGlobal" << std::endl;
-    file << "-------------------------------------------------------------------------------------------------------------------------" << std::endl;
-    for (auto it : symTable)
+    
+    std::string heading = "[ Symbol Table ]";
+    file << std::string(20, '=') << heading << std::string(70-heading.size(), '=') << std::endl;
+    file << std::string(4, ' ') << std::left << std::setw(maxSize) << "Name" << std::setw(minSize) << "Size" << std::setw(maxSize) << "Offset(w.r.t(fp))" << std::setw(minSize) << "isGlobal" << std::endl;
+    
+    for(auto it : symTable)
     {
-        file << std::left << std::setw(maxSize) << it.first << std::setw(maxSize) << it.second.size << std::setw(maxSize) << (it.second.offset) << std::setw(maxSize) << (it.second.isGlobal ? "YES" : "NO") << std::endl;
+        std::string func = it.second.whichFunction;
+        int offset = it.second.offset;
+        std::string toPrint;
+        std::ostringstream ss;
+        std::string offset_str = (it.second.offset == -1) ? "N/A" : ("-"+std::to_string(it.second.offset));
+        ss << std::left << std::setw(maxSize) << it.first << std::setw(minSize) << it.second.size << std::setw(maxSize) << offset_str << std::setw(minSize) << (it.second.isGlobal ? "YES" : "NO") << std::endl;
+        toPrint = ss.str();
+
+        // Check if the function is already present
+        if(sortedSymTable.find(func) == sortedSymTable.end()){
+            // This is the first time we are seeing this function
+            sortedSymTable[func] = std::vector<std::pair<int,std::string>>();
+        }
+        // Add the symbol to the function
+        sortedSymTable[func].push_back(std::make_pair(offset, toPrint));
     }
-    file << "-------------------------------------------------------------------------------------------------------------------------" << std::endl;
-    file << "Total Symbols : " << symTable.size() << std::endl;
-    file << "-------------------------------------------------------------------------------------------------------------------------" << std::endl;
-    return;
+
+    // Now sort the symbols in the function
+    for(auto it : sortedSymTable){
+        std::string func = it.first;
+        std::vector<std::pair<int,std::string>> symbols = it.second;
+
+        // Sort the symbols in the function
+        std::sort(symbols.begin(), symbols.end(), [](const std::pair<int,std::string> &a, const std::pair<int,std::string> &b){
+            return a.first > b.first;
+        });
+
+        // Print the function name
+        if(func != "GLOBAL"){
+            file << "Activation Record of Function - " << func << std::endl;
+        }
+        else{
+            file << "Global Variables" << std::endl;
+        }
+        file << std::string(80, '-') << std::endl;
+        
+        // Print the symbols in the function
+        for(auto jt : symbols){
+            file << std::string(4, ' ') << jt.second;
+        }
+        file << std::string(80, '-') << std::endl;
+    }
+
+    file << std::string(90, '=') << std::endl;
 }
 
 //======================[ SymbTable RegUtilites Code ]=========================================================================================

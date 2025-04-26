@@ -79,33 +79,33 @@ int addSymbolsToSymTable()
     // We will use the IR_CODE to get the symbols
 
     // Scan the IR_CODE dataSection
-    for(auto it : IR_CODE.dataSection)
+    for (auto it : IR_CODE.dataSection)
     {
         std::string varName = it.first;
         dataSegment obj = it.second;
 
         int size;
-        if(obj.type == dataByte)
+        if (obj.type == dataByte)
         {
             size = 1;
         }
-        else if(obj.type == dataHalfByte)
+        else if (obj.type == dataHalfByte)
         {
             size = 2;
         }
-        else if(obj.type == dataWord)
+        else if (obj.type == dataWord)
         {
             size = 4;
         }
-        else if(obj.type == dataFloat)
+        else if (obj.type == dataFloat)
         {
             size = 4;
         }
-        else if(obj.type == dataDouble)
+        else if (obj.type == dataDouble)
         {
             size = 8;
         }
-        else if(obj.type == dataString)
+        else if (obj.type == dataString)
         {
             size = obj.value.size();
         }
@@ -156,7 +156,7 @@ int addSymbolsToSymTable()
             std::string varName = currIR.result;
             int size = std::stoi(currIR.arg1);
             // Check if it's a global variable
-            int check= SYM_RECORD.insert(varName, size);
+            int check = SYM_RECORD.insert(varName, size);
             if (check != INSERT_SUCCESS)
             {
                 CERR << "Error in inserting variable" << std::endl;
@@ -618,25 +618,24 @@ int riscvCodeGen()
 
                 // Allocate Stack Space
                 riscCode = indentOP("addi") + "sp, sp, -" + std::to_string(stackSize);
-                FINAL_CODE.addCode(riscCode);
+                FINAL_CODE.addCode(riscCode, "Allocating Stack Space");
 
                 // Store return address for PC
                 int loc = stackSize - 4;
                 riscCode = indentOP("sw") + "ra, " + std::to_string(loc) + "(sp)";
-                FINAL_CODE.addCode(riscCode);
+                FINAL_CODE.addCode(riscCode, "Store return address (PC)");
 
                 // Store old frame pointer
                 loc = stackSize - 8;
-                riscCode = indentOP("sw") + "s0, " + std::to_string(loc) + "(sp)";
-                FINAL_CODE.addCode(riscCode);
+                riscCode = indentOP("sw") + "fp, " + std::to_string(loc) + "(sp)";
+                FINAL_CODE.addCode(riscCode, "Store old frame pointer");
 
                 // Set new frame pointer
-                riscCode = indentOP("addi") + "s0, sp," + std::to_string(stackSize);
-                FINAL_CODE.addCode(riscCode);
+                riscCode = indentOP("addi") + "fp, sp," + std::to_string(stackSize);
+                FINAL_CODE.addCode(riscCode, "Set new frame pointer");
 
                 // Argument Storing Code will be done by Caller Itself
                 // The Callee will assume the arguments are already in place
-                FINAL_CODE.addComment(" -- ENTRY Activation (end) - " + funcName);
 
                 // Done
             }
@@ -662,8 +661,7 @@ int riscvCodeGen()
                         {
                             continue; // already in memory
                         }
-                        std::string storeCode = makeStoreInstruction(var, regNo);
-                        FINAL_CODE.addCode(storeCode);
+                        FINAL_CODE.addStoreInst(var, regNo); // store the variable in the memory
                         SYM_RECORD.setInMemory(var); // set the variable in memory
                     }
 
@@ -678,24 +676,24 @@ int riscvCodeGen()
 
                 FINAL_CODE.addComment("   ~~ Finished Variable Spilling Code");
                 // Comment
+                int loc;
 
-                // fetch the address where the return value must be stored [in the caller's Stack]
-                int loc = stackSize - 12;
-                riscCode = indentOP("lw") + "a1, -" + std::to_string(loc) + "(sp)"; // load value stored at (sp + loc) to a0
-                FINAL_CODE.addCode(riscCode);
-
-                // Store the return value at this address (but will depend on size of return value)
-                // Assuming the return value's address is stored in `a0` (explicit address)
-                int returnSize = std::stoi(currIR.arg1);
-
-                // Now depending on the size of return we need to call multiple store instructions
-                int destLoc = 0; // w.r.t `a1` register;
-                int srcLoc = 0;  // w.r.t `a0` register;
-
-                // If return size = -1 // denotes 'void' type
-
+                // Decide OnHow to return the value
                 if (!returnValueViaRegister)
                 {
+                    // Store the return value at this address (but will depend on size of return value)
+                    // Assuming the return value's address is stored in `a0` (explicit address)
+                    int returnSize = std::stoi(currIR.arg1);
+                    
+                    // Now depending on the size of return we need to call multiple store instructions
+                    int destLoc = 0; // w.r.t `a1` register;
+                    int srcLoc = 0;  // w.r.t `a0` register;
+                    
+                    // If return size = -1 // denotes 'void' type
+                    // fetch the address where the return value must be stored [in the caller's Stack]
+                    int loc = stackSize - 12;
+                    riscCode = indentOP("lw") + "a1, " + std::to_string(loc) + "(sp)"; // load value stored at (sp + loc) to a0
+                    FINAL_CODE.addCode(riscCode, "Load return value's address from old_sp(-12)");
                     while (returnSize > 0)
                     {
                         // load the data in a temp register
@@ -717,11 +715,11 @@ int riscvCodeGen()
                         }
 
                         riscCode = indentOP("l" + sl_type) + "a2, " + std::to_string(srcLoc) + "(a0)";
-                        FINAL_CODE.addCode(riscCode);
+                        FINAL_CODE.addCode(riscCode, "Load return value");
 
                         // Store the data in the destination
                         riscCode = indentOP("s" + sl_type) + "a2, " + std::to_string(destLoc) + "(a1)";
-                        FINAL_CODE.addCode(riscCode);
+                        FINAL_CODE.addCode(riscCode, "Store return value");
                         returnSize -= 4;
                         destLoc += 4;
                         srcLoc += 4;
@@ -733,26 +731,28 @@ int riscvCodeGen()
 
                     // We just need to move the value to the destination
                     riscCode = indentOP("mv") + "a0, a5";
-                    FINAL_CODE.addCode(riscCode);
+                    FINAL_CODE.addCode(riscCode, "Move return value to a0");
                     // Now store the value in the destination
                 }
+                
+                
                 // Restore the old return PC
                 loc = stackSize - 4;
                 riscCode = indentOP("lw") + "ra, " + std::to_string(loc) + "(sp)";
-                FINAL_CODE.addCode(riscCode);
+                FINAL_CODE.addCode(riscCode, "Restore return address (PC)");
 
                 // Restore the old frame pointer
                 loc = stackSize - 8;
-                riscCode = indentOP("lw") + "s0, " + std::to_string(loc) + "(sp)";
-                FINAL_CODE.addCode(riscCode);
+                riscCode = indentOP("lw") + "fp, " + std::to_string(loc) + "(sp)";
+                FINAL_CODE.addCode(riscCode, "Restore old frame pointer");
 
                 // Restore the stack pointer
                 riscCode = indentOP("addi") + "sp, sp, " + std::to_string(stackSize);
-                FINAL_CODE.addCode(riscCode);
+                FINAL_CODE.addCode(riscCode, "Restore stack pointer");
 
                 // Jump to the return address
                 riscCode = indentOP("jr") + "ra";
-                FINAL_CODE.addCode(riscCode);
+                FINAL_CODE.addCode(riscCode, "Jump to return address(back to caller)");
 
                 FINAL_CODE.addComment(" -- EXIT Activation (end) - " + funcName);
 
@@ -761,7 +761,7 @@ int riscvCodeGen()
             // AssignOP
             else if (op == ASSIGN_OP)
             {
-                FINAL_CODE.addComment(" ~~ Assign OP - " + currIR.toBaseString());
+                FINAL_CODE.addComment(" ~~ Assign OP 🟰 - " + currIR.toBaseString());
                 // This will store address(explicit address) of return value in `a0` register
                 std::string dest = currIR.result;
                 std::string src = currIR.arg1;
@@ -786,23 +786,24 @@ int riscvCodeGen()
                 {
                     // src is a label
                     riscCode = indentOP("la") + destReg + ", " + src;
-                    FINAL_CODE.addCode(riscCode);
+                    FINAL_CODE.addCode(riscCode, "Load address of label - " + src + " into " + destReg);
                 }
                 else if (!isASymbol(src))
                 {
                     // src is a constant
                     riscCode = indentOP("li") + destReg + ", " + src;
-                    FINAL_CODE.addCode(riscCode);
+                    FINAL_CODE.addCode(riscCode, "Load constant - " + src + " into " + destReg);
                 }
                 else
                 {
                     // src is a variable
                     // NO NEED to create a code, just update DS;
+                    FINAL_CODE.addComment(" 🔄 Automatically Assigned - " + src + " into " + dest);
                 }
             }
             else if (op == LEFT_STAR)
             {
-                FINAL_CODE.addComment(" ~~ Left Star - " + currIR.toBaseString());
+                FINAL_CODE.addComment(" ~~ Left Star 🌟 - " + currIR.toBaseString());
                 // src can't be label -> variable or constant
                 // dest can be a label or constant -> only variable
 
@@ -825,7 +826,7 @@ int riscvCodeGen()
 
                     // Load the constant in a register (temporary) (t0)
                     riscCode = indentOP("li") + "t0, " + src;
-                    FINAL_CODE.addCode(riscCode);
+                    FINAL_CODE.addCode(riscCode, "Load constant - " + src + " into t0");
 
                     int size = std::stoi(currIR.arg2);
                     std::string sl_type;
@@ -845,7 +846,7 @@ int riscvCodeGen()
                     std::string srcReg = "t0";
                     // Load x[srcReg] in address of x[destReg]
                     riscCode = indentOP("s" + sl_type) + srcReg + ", 0(" + destReg + ")";
-                    FINAL_CODE.addCode(riscCode);
+                    FINAL_CODE.addCode(riscCode, "Store constant of reg " + srcReg + " at address pointed by " + destReg);
                 }
                 else
                 {
@@ -869,12 +870,12 @@ int riscvCodeGen()
 
                     // Load x[srcReg] in address of x[destReg]
                     riscCode = indentOP("s" + sl_type) + srcReg + ", 0(" + destReg + ")";
-                    FINAL_CODE.addCode(riscCode);
+                    FINAL_CODE.addCode(riscCode , "Store variable of reg " + srcReg + " at address pointed by " + destReg);
                 }
             }
             else if (op == RIGHT_STAR)
             {
-                FINAL_CODE.addComment(" ~~ Right Star - " + currIR.toBaseString());
+                FINAL_CODE.addComment(" ~~ Right Star ✨ - " + currIR.toBaseString());
                 // src can't be a label or constant -> only variable
                 // dest can be a label or constant -> only variable
                 std::string dest = currIR.result;
@@ -896,8 +897,8 @@ int riscvCodeGen()
                 std::string srcReg = "x" + std::to_string(regMap[src]);
 
                 // Write a load instruction
-                std::cout << "stoi on " << currIR.arg2 << std::endl;
-                std::cout << "code - " << currIR.toString() << std::endl;
+                // std::cout << "stoi on " << currIR.arg2 << std::endl;
+                // std::cout << "code - " << currIR.toString() << std::endl;
                 int size = std::stoi(currIR.arg2);
                 std::string sl_type;
                 if (size == 1)
@@ -915,13 +916,13 @@ int riscvCodeGen()
 
                 // Load x[srcReg] in address of x[destReg]
                 riscCode = indentOP("l" + sl_type) + destReg + ", 0(" + srcReg + ")";
-                FINAL_CODE.addCode(riscCode);
+                FINAL_CODE.addCode(riscCode, "Load reg " + srcReg + " with value at address pointed by " + destReg);
 
                 // SYM_RECORD already updated
             }
             else if (op == AMPERSEND)
             {
-                FINAL_CODE.addComment(" ~~ Ampersend (&) - " + currIR.toBaseString());
+                FINAL_CODE.addComment(" ~~  Ampersend (&) - " + currIR.toBaseString());
                 std::string dest = currIR.result;
                 std::string src = currIR.arg1;
                 // src can't be constant -> variable or label
@@ -939,21 +940,23 @@ int riscvCodeGen()
                 }
 
                 std::string destReg = "x" + std::to_string(regMap[dest]);
-                if(isLabel || isGlobal){
+                if (isLabel || isGlobal)
+                {
                     // src is a label or global variable
 
                     // Load the address of the label in a register (temporary) (t0)
                     riscCode = indentOP("la") + destReg + ", " + src; // la destReg, src(label)
-                    FINAL_CODE.addCode(riscCode);
+                    FINAL_CODE.addCode(riscCode, "Load address of label - " + src + " into " + destReg);
                 }
-                else{
+                else
+                {
                     // src is a variable (local)
 
                     int offset_src = SYM_RECORD.getOffset(src);
                     std::string imm = "-" + std::to_string(offset_src); // Negative offset
-                    // Store this offset (w.r.t s0(frame pointer)) in destReg
-                    riscCode = indentOP("addi") + destReg + ", s0, " + imm;
-                    FINAL_CODE.addCode(riscCode);
+                    // Store this offset (w.r.t fp(frame pointer)) in destReg
+                    riscCode = indentOP("addi") + destReg + ", fp, " + imm;
+                    FINAL_CODE.addCode(riscCode , "Load address of variable (via fp) - " + src + " into " + destReg);
                 }
             }
 
@@ -965,9 +968,59 @@ int riscvCodeGen()
             // Param + Function Call + Return
             else if (op == PARAM)
             {
+
+                // Only one argument
+                std::string funcArg = currIR.arg1;
+                
+                // We need to push the argument in the queue
+                parameterQueue.push(funcArg); // Rest will be done by `CALL` instruction
+                FINAL_CODE.addComment("Adding " + funcArg + " to parameter queue");
+
+                // NO Code Generation
             }
             else if (op == CALL)
             {
+
+                int noOfArg = std::stoi(currIR.arg2);
+                std::string result = currIR.result;
+                std::string funcName = currIR.arg1;
+
+                // Find all the required params;
+                std::vector<std::string> args;
+                std::set<std::string> usedVars;
+
+                bool isFunctionALabel = isALabel(funcName);
+
+                if(!isFunctionALabel){
+                    // We are calling a variable (func Pointer) - we would need to find it's value
+                    usedVars.insert(funcName); 
+                }
+
+                for (int i = 0; i < noOfArg; i++)
+                {
+                    if (parameterQueue.empty())
+                    {
+                        CERR << "Error - Not enough parameters in queue" << std::endl;
+                        return FAIL;
+                    }
+                    std::string arg = parameterQueue.front();
+                    parameterQueue.pop();
+                    args.push_back(arg);
+                    usedVars.insert(arg);
+                }
+
+                LivelinessDS info = currIR.VarInfo; // Copy the liveliness info
+                
+                // NOW we would NEED to send all these arguments to the calle function's Stack
+                for (int i = 0; i < noOfArg;i++){
+
+                    // Now we need to store this register's value at the address of the caller's stack
+                    int offset = SYM_RECORD.getOffset(args[i]);
+                    int size = SYM_RECORD.getSize(args[i]);
+
+                    
+
+                }
             }
             else if (op == RETURN_FUNCTION)
             {
@@ -1016,8 +1069,7 @@ int riscvCodeGen()
                 {
                     continue; // already in memory
                 }
-                std::string storeCode = makeStoreInstruction(var, regNo);
-                FINAL_CODE.addCode(storeCode);
+                FINAL_CODE.addStoreInst(var, regNo); // store the variable in the memory
                 SYM_RECORD.setInMemory(var); // set the variable in memory
             }
 
@@ -1173,8 +1225,7 @@ int getReg(NEW_TAC_Quadruple &code, std::map<std::string, int> &regMap)
                     SYM_RECORD.addVarInReg(usageVar, anyFree);
 
                     // Generate Load Instruction
-                    std::string loadInstruction = makeLoadInstruction(usageVar, anyFree);
-                    FINAL_CODE.addCode(loadInstruction);
+                    FINAL_CODE.addLoadInst(usageVar, anyFree);
                 }
                 else
                 {
@@ -1238,8 +1289,7 @@ int getReg(NEW_TAC_Quadruple &code, std::map<std::string, int> &regMap)
                             // This is not in memory, so we need to store it
 
                             // We would need a store instruction
-                            std::string storeInstruction = makeStoreInstruction(v, bestReg);
-                            FINAL_CODE.addCode(storeInstruction);
+                            FINAL_CODE.addStoreInst(v, bestReg);
 
                             SYM_RECORD.setInMemory(v);
                         }
@@ -1266,8 +1316,7 @@ int getReg(NEW_TAC_Quadruple &code, std::map<std::string, int> &regMap)
 
                     SYM_RECORD.addVarInReg(usageVar, bestReg);
                     // Generate Load Instruction
-                    std::string loadInstruction = makeLoadInstruction(usageVar, bestReg);
-                    FINAL_CODE.addCode(loadInstruction);
+                    FINAL_CODE.addLoadInst(usageVar, bestReg);
                     // Now we can use this register
                 }
             }
@@ -1299,8 +1348,7 @@ int getReg(NEW_TAC_Quadruple &code, std::map<std::string, int> &regMap)
                     SYM_RECORD.addVarInReg(usageVar, anyFree);
 
                     // Generate Load Instruction
-                    std::string loadInstruction = makeLoadInstruction(usageVar, anyFree);
-                    FINAL_CODE.addCode(loadInstruction);
+                    FINAL_CODE.addLoadInst(usageVar, anyFree);
                 }
                 else
                 {
@@ -1364,8 +1412,7 @@ int getReg(NEW_TAC_Quadruple &code, std::map<std::string, int> &regMap)
                             // This is not in memory, so we need to store it
 
                             // We would need a store instruction
-                            std::string storeInstruction = makeStoreInstruction(v, bestReg);
-                            FINAL_CODE.addCode(storeInstruction);
+                            FINAL_CODE.addStoreInst(v, bestReg);
 
                             SYM_RECORD.setInMemory(v);
                         }
@@ -1392,11 +1439,12 @@ int getReg(NEW_TAC_Quadruple &code, std::map<std::string, int> &regMap)
 
                     SYM_RECORD.addVarInReg(usageVar, bestReg);
                     // Generate Load Instruction
-                    std::string loadInstruction = makeLoadInstruction(usageVar, bestReg);
-                    FINAL_CODE.addCode(loadInstruction);
+                    FINAL_CODE.addLoadInst(usageVar, bestReg);
+                
                     // Now we can use this register
                 }
             }
+        
         }
 
         if (assignVar != "NULL")
@@ -1513,8 +1561,8 @@ int getReg(NEW_TAC_Quadruple &code, std::map<std::string, int> &regMap)
                                     // This is not in memory, so we need to store it
 
                                     // We would need a store instruction
-                                    std::string storeInstruction = makeStoreInstruction(v, bestReg);
-                                    FINAL_CODE.addCode(storeInstruction);
+                                    FINAL_CODE.addStoreInst(v, bestReg); // store the variable in the memory
+                                    
 
                                     SYM_RECORD.setInMemory(v);
                                 }
@@ -1546,59 +1594,188 @@ int getReg(NEW_TAC_Quadruple &code, std::map<std::string, int> &regMap)
         }
     }
 
-    // At the End of GetReg, 
-    FINAL_CODE.addComment(" ## GetReg() - " + code.toBaseString());
-    for(auto it : regMap)
+    // At the End of GetReg,
+    std::string getRegResult = "";
+    getRegResult += " 🙋🏼 GetReg() for " + code.toBaseString();
+    for (auto it : regMap)
     {
         std::string varName = it.first;
         int regNo = it.second;
 
         // We need to update the SYM_RECORD
-        FINAL_CODE.addComment("   == " + varName + " is given `x" + std::to_string(regNo) + "` reg ==");
+        getRegResult += " | 🤝 `x" + std::to_string(regNo) + "` reg ➜ " + varName;
+    }
+    getRegResult += " |";
+
+    FINAL_CODE.addComment(getRegResult);
+
+    return OKAY;
+}
+
+int getManyReg(std::set<std::string> varNames, LivelinessDS liveInfo, std::map<std::string, int> &regMap)
+{
+    // All the variable will be of usageType
+
+    // We have a set of variables - Even if multiple variables are used in the same line - there won't be any issue
+
+    std::set<int> justUsedReg;
+
+    for(auto usageVar : varNames){
+
+        int presentIn = SYM_RECORD.varStoredInWhichReg(usageVar);
+        if (presentIn != -1)
+        {
+            // This is already in register
+            regMap[usageVar] = presentIn;
+            justUsedReg.insert(presentIn);
+        }
+        else
+        {
+            // Not present in any register
+            int anyFree = SYM_RECORD.getFreeReg();
+            if (anyFree != -1)
+            {
+                // Give this register to the variable
+                regMap[usageVar] = anyFree;
+                justUsedReg.insert(anyFree);
+
+                // Update the SYM_RECORD
+                SYM_RECORD.addVarInReg(usageVar, anyFree);
+
+                // Generate Load Instruction
+                FINAL_CODE.addLoadInst(usageVar, anyFree);
+            }
+            else
+            {
+                // No free register exits
+                int bestScore = INT_MAX;
+                int bestReg = -1;
+                for (auto it : SYM_RECORD.regMap)
+                {
+
+                    int chosenReg = it.first;
+
+                    if (justUsedReg.find(chosenReg) != justUsedReg.end())
+                    {
+                        // This is already used
+                        continue;
+                    }
+
+                    std::set<std::string> storeVars = it.second;
+
+                    // Find score over all the variables
+                    int score = 0;
+                    for (auto v : storeVars)
+                    {
+                        int isPresentInMem = SYM_RECORD.isInMemory(v);
+                        bool isLive = liveInfo[v].first;
+                        bool noNextUsage = (isLive == false);
+
+                        if (isPresentInMem == true|| noNextUsage)
+                        {
+                            // Nothing to do
+                        }
+                        else
+                        {
+                            // Else, we need to spill this variable
+                            score++;
+                        }
+                    }
+
+                    if (score < bestScore)
+                    {
+                        bestScore = score;
+                        bestReg = chosenReg;
+                    }
+                }
+
+                // Now we have the best register
+                if (bestReg == -1)
+                {
+                    CERR << "Error in finding best register" << std::endl;
+                    return FAIL;
+                }
+
+                // Let's Spill the variables in the bestReg
+                std::set<std::string> storeVars = SYM_RECORD.regMap[bestReg];
+                for (auto v : storeVars)
+                {
+                    int isPresentSomeWhereElse = SYM_RECORD.isInMemory(v);
+                    isPresentSomeWhereElse = isPresentSomeWhereElse || (SYM_RECORD.varStoreInHowManyReg(v) > 1);
+
+                    if (isPresentSomeWhereElse == false)
+                    {
+                        // This is not in memory, so we need to store it
+
+                        // We would need a store instruction
+                        FINAL_CODE.addStoreInst(v, bestReg);
+
+                        SYM_RECORD.setInMemory(v);
+                    }
+                    else
+                    {
+                        // Okay is present somewhere else
+                    }
+
+                    // Update the SYM_RECORD
+                    SYM_RECORD.removeVarFromReg(v, bestReg);
+                }
+                SYM_RECORD.freeGivenReg(bestReg); // free the register (exclusive access)
+
+                // Now we can use this register
+                bool justChecking = SYM_RECORD.isFree(bestReg);
+                if (justChecking == false)
+                {
+                    CERR << "Error - Register is still held by someone else" << std::endl;
+                    return FAIL;
+                }
+
+                regMap[usageVar] = bestReg;
+                justUsedReg.insert(bestReg);
+
+                SYM_RECORD.addVarInReg(usageVar, bestReg);
+                // Generate Load Instruction
+                FINAL_CODE.addLoadInst(usageVar, bestReg);
+
+                // Now we can use this register
+            }
+        }
     }
 
 
+    // At the End of GetReg,
+    std::string getRegResult = "";
+    getRegResult += " 🙋🏼‍♀️ GetManyReg() for multiple variables";
+    for (auto it : regMap)
+    {
+        std::string varName = it.first;
+        int regNo = it.second;
+
+        // We need to update the SYM_RECORD
+        getRegResult += " | 🤝 `x" + std::to_string(regNo) + "` reg ➜ " + varName;
+    }
+
+    getRegResult += " |";
+    FINAL_CODE.addComment(getRegResult);
 
     return OKAY;
 }
 
 //======================[ RISC-V Code Generation Utilities ]=========================================================================================
 
-std::string makeLoadInstruction(const std::string &varName, int regNo)
-{
-    std::string riscCode;
-    int sizeOfVar = SYM_RECORD.getSize(varName);
-    int loc = SYM_RECORD.getOffset(varName); // [IMP]
 
-    // Need to Change -> if Symbol is Globl [TODO]
+void RISCV_CODE::addCopyInst(std::string variable, int size, int srcImm, std::string src_wrtReg, int destImm, std::string dest_wrtReg){
+    // We will be copying the variable (srcImm + src_wrtReg) to (destImm + dest_wrtReg) with size
 
-    std::string sl_type;
-    if (sizeOfVar == 1)
-    {
-        sl_type = "b";
-    }
-    else if (sizeOfVar == 2)
-    {
-        sl_type = "h";
-    }
-    else
-    {
-        sl_type = "w";
-    }
 
-    riscCode = indentOP("l" + sl_type) + "x" + std::to_string(regNo) + ", -" + std::to_string(loc) + "(s0)"; // w.r.t frame pointer(s0)
-
-    return riscCode;
 }
 
-std::string makeStoreInstruction(const std::string &varName, int regNo)
+void RISCV_CODE::addLoadInst(const std::string &varName, int regNo)
 {
+    // Write Code to Load This Variable from Memory
+
     std::string riscCode;
     int sizeOfVar = SYM_RECORD.getSize(varName);
-    int loc = SYM_RECORD.getOffset(varName) + sizeOfVar; // [IMP]
-
-    // Need to Change -> if Symbol is Globl [TODO]
-
 
     std::string sl_type;
     if (sizeOfVar == 1)
@@ -1614,7 +1791,70 @@ std::string makeStoreInstruction(const std::string &varName, int regNo)
         sl_type = "w";
     }
 
-    riscCode = indentOP("s" + sl_type) + "x" + std::to_string(regNo) + ", -" + std::to_string(loc) + "(s0)"; // w.r.t frame pointer(s0)
+    // The Variable to Store in global we don't have it's offset first we need to load the address of the variable
+    bool isGlobal = SYM_RECORD.isGlobal(varName);
 
-    return riscCode;
+    if (isGlobal)
+    {
+        // We need to load the address of the variable in a register
+        std::string addrReg = "t0";
+        riscCode = indentOP("la") + addrReg + ", " + varName;
+        this->addCode(riscCode, "Loading Address of Global Variable - " + varName);
+
+        // Now we can store the value in the memory
+        riscCode = indentOP("l" + sl_type) + "x" + std::to_string(regNo) + ", 0(" + addrReg + ")";
+        this->addCode(riscCode, "Load Global Var - " + varName + " via " + addrReg + " in x" + std::to_string(regNo));
+    }
+    else
+    {
+        // Else it's a local variable - we need its offset
+        int loc = SYM_RECORD.getOffset(varName);                                                                 // [This Offset is w.r.t fp]
+        riscCode = indentOP("l" + sl_type) + "x" + std::to_string(regNo) + ", -" + std::to_string(loc) + "(fp)"; // w.r.t frame pointer(fp)
+        this->addCode(riscCode, "Load Local Var - " + varName + " via fp in x" + std::to_string(regNo));
+    }
+    return;
+}
+
+void RISCV_CODE::addStoreInst(const std::string &varName, int regNo)
+{
+    // Write Code to Store This Variable in Memory
+
+    std::string riscCode;
+    int sizeOfVar = SYM_RECORD.getSize(varName);
+    
+    std::string sl_type;
+    if (sizeOfVar == 1)
+    {
+        sl_type = "b";
+    }
+    else if (sizeOfVar == 2)
+    {
+        sl_type = "h";
+    }
+    else
+    {
+        sl_type = "w";
+    }
+    
+    // The Variable to Store in global we don't have it's offset first we need to load the address of the variable
+    bool isGlobal = SYM_RECORD.isGlobal(varName);
+    
+    if(isGlobal){
+        // We need to load the address of the variable in a register
+        std::string addrReg = "t0";
+        riscCode = indentOP("la") + addrReg + ", " + varName;
+        this->addCode(riscCode, "Loading Address of Global Variable - " + varName);
+
+        // Now we can store the value in the memory
+        riscCode = indentOP("s" + sl_type) + "x" + std::to_string(regNo) + ", 0(" + addrReg + ")";
+        this->addCode(riscCode, "Store Global Var - " + varName + " via " + addrReg + " in x" + std::to_string(regNo));
+    }
+    else{
+        // Else it's a local variable - we need its offset
+        int loc = SYM_RECORD.getOffset(varName); // [This Offset is w.r.t fp]
+        riscCode = indentOP("s" + sl_type) + "x" + std::to_string(regNo) + ", -" + std::to_string(loc) + "(fp)"; // w.r.t frame pointer(fp)
+        this->addCode(riscCode, "Store Local Var - " + varName + " via fp in x" + std::to_string(regNo));
+    }
+
+    return;
 }

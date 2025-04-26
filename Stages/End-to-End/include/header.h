@@ -719,6 +719,13 @@ extern std::ofstream *handlerLog; // This will be used to log the errors
     if (ANNOTATE) \
     node->addAttribute("👌 " + std::to_string(__LINE__) + ":" + __FILE__ + " ")
 
+#define STRINGIFY(x) #x
+#define TOSTRING(x) STRINGIFY(x)
+
+#define TODO(x) _Pragma(TOSTRING(message("TODO: " x)))
+
+#define FEATURE_OFF(x) _Pragma(TOSTRING(message("FEATURE OFF: " x)))
+
 #define semanticWarning(x)                                           \
     semanticLOG.push_back("SEMANTIC Warning ❗️: " + std::string(x)); \
     aptLOG("❗️ " + std::string(x));
@@ -976,13 +983,19 @@ public:
     void addDataSection(const std::map<std::string, dataSegment> &dataSection);
 
     void addCode(std::string code);
+    void addCode(std::string code, std::string info);
 
     void printCode(std::ostringstream &oss);
 
     void addLabel(std::string label);
 
     void addComment(std::string comment);
-};
+
+    void addCopyInst(std::string variable, int size, int srcImm, std::string src_wrtReg, int destImm, std::string dest_wrtReg);
+
+    void addLoadInst(const std::string &varName, int regNo);
+    void addStoreInst(const std::string &varName, int regNo);
+    };
 
 int codeGen();
 
@@ -1133,6 +1146,7 @@ public:
     int offset; // relative to function-block or global-space
     bool isGlobal;
 
+    std::string whichFunction;
 
     // Will be used by getReg
     bool inMemory;
@@ -1165,7 +1179,7 @@ public:
     int stack_offset; // For Local Offset
 
     bool inFunction;
-    std::string functionName; // This will be used to keep track of the function name
+    std::string functionName = "GLOBAL"; // This will be used to keep track of the function name
 
     // We will also Insert functions as a variable and it's size = activation record size;
 
@@ -1176,7 +1190,7 @@ public:
         stack_offset = 0;
 
         inFunction = false;
-        functionName = "";
+        functionName = "GLOBAL"; // This will be used to keep track of the function name
 
         resetRegTable();
     }
@@ -1265,7 +1279,7 @@ int livelinessPass();
 
 int getReg(NEW_TAC_Quadruple &code, std::map<std::string, int> &retMap);
 
-
+int getManyReg(std::set<std::string> varName, LivelinessDS livelinessInfo, std::map<std::string, int> &retMap);
 
 //====================[ Externed Global CodeGen Variables ]=========================================================================================
 
@@ -1281,10 +1295,8 @@ extern RISCV_CODE FINAL_CODE;
 
 int constantFolding();
 
+int machineIndependentOptimization();
 
 //======================[ Code Generation Utilies ]=========================================================================================
-
-std::string makeLoadInstruction(const std::string &varName, int regNo);
-std::string makeStoreInstruction(const std::string &varName, int regNo);
 
 #endif // !HEADER_H

@@ -114,3 +114,19 @@ int constantFolding(){ // TODO: unary operators left to implement
 
     
 }
+
+int machineIndependentOptimization(){
+    // This will perform the machine independent optimization
+    int check = OKAY;
+    
+    // 1. Constant Folding
+    // check = constantFolding();
+    if(check != OKAY){
+        CERR << "Error in constant folding" << std::endl;
+        return check;
+    }
+
+
+
+    return OKAY;
+}

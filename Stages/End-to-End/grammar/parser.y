@@ -2643,9 +2643,32 @@ int main(int argc, char **argv) {
         notificationStream <<  "🌴 APTree 🌴 has been generated, can be used for debugging ❤️‍🩹 \n";
     }
 
+    /*
+                                🅾️ MachineIndependent Optimization
+    */
+
+    /* TAC oldTAC = IR_CODE; // Save the old TAC for later use */
     if(stopAtIR){
+        outputStream << "\n\U0001F170\U0000FE0F ---- IR Code Before Machine Independent Optimization \U0001F170\U0000FE0F\n";
         IR_CODE.printTAC(outputStream);
-        notificationStream <<  "Lexical Analysis 👍 | Syntax Analysis 👍 | Semantic Analysis 👍 | 🔖 IRCode Gen" << std::endl;
+    }
+
+    int optStatus = OKAY;
+    optStatus = machineIndependentOptimization();
+    if(optStatus != OKAY){
+        notificationStream <<  "Lexical Analysis 👍 | Syntax Analysis 👍 | Semantic Analysis 👍 | Machine Independent Optimization ❌\n";
+        errorStream <<  "Machine Independent Optimization failed with error code: " << optStatus << std::endl;
+        notificationStream <<  "😊 Thanku for using our \"C2RISC-Engine\" (Till IR Phase) " << std::endl;
+        if(yyin) fclose(yyin);  // Close the input file
+        exit_compiler(); // Clean up and exit
+        return 0;
+    }
+
+
+    if(stopAtIR){
+        outputStream << "\n\U0001F170\U0000FE0F ---- IR Code After Machine Independent Optimization \U0001F170\U0000FE0F\n";
+        IR_CODE.printTAC(outputStream);
+        notificationStream <<  "Lexical Analysis 👍 | Syntax Analysis 👍 | Semantic Analysis 👍 | Machine Independent Optimization 👍 |  🔖 IRCode Gen" << std::endl;
         notificationStream <<  "😊 Thanku for using our \"C2RISC-Engine\" (Till IR Phase) " << std::endl;
         if(yyin) fclose(yyin);  // Close the input file
         exit_compiler(); // Clean up and exit

@@ -555,6 +555,19 @@ void RISCV_CODE::addCode(std::string code){
     return;
 }
 
+void RISCV_CODE::addCode(std::string code, std::string info)
+{
+    code = std::string(4, ' ') + code;
+    int padding = 26 - code.length();
+    if (padding > 0)
+    {
+        code += std::string(padding, ' ');
+    }
+    code += " # " + info;
+    this->code.push_back(code);
+    return;
+}
+
 void RISCV_CODE::addLabel(std::string label)
 {
     // label = std::string(4, ' ') + label;
