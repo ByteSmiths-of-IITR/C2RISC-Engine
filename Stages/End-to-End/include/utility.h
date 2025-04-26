@@ -42,6 +42,7 @@
 #include <unordered_set>
 #include <cmath>
 #include <cstdint>
+#include <queue>
 
 // Forward declaration
 class TokenAttribute;
