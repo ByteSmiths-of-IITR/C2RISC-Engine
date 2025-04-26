@@ -2182,6 +2182,8 @@ int initializer_H(ASTNode *node, TypeExpression inh_type, std::string inh_varNam
         PASS_THE_ERROR(aex_check);
 
 
+
+
         std::string irVarName = inh_varName+"$"+std::to_string(SYM_TABLE.scopeNo);
 
         // First we check TypeChecking for operation
@@ -2293,8 +2295,12 @@ int initializer_H(ASTNode *node, TypeExpression inh_type, std::string inh_varNam
         }
         else{
 
-            // 🚀 USAGE 🤫 SPACE CHANGE 🚀
-            USAGE_SPACE_CHANGE(varName1, type1, valueSpace1, node);
+            
+            USAGE_SPACE_CHANGE(varName1, type1, valueSpace1, node)
+
+            SPACE addSpace = SPACE::ADDRESS_SPACE;
+            // This will help to add offset if needed
+            TO_GIVEN_SPACE_CHANGE(inh_varName, inh_valueSpace, addSpace, inh_type, node);
 
             // 🅰️ TypeChecking for varName1
             // Rule - valueType - {M_LVALUE, NM_LVALUE, RVALUE} Allowed

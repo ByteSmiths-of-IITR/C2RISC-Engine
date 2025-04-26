@@ -1147,6 +1147,10 @@ int assignment_expression_H(ASTNode *node, std::string inh_whereToSendString, st
         //---------------------- Space 🚀Change 🔖IR Code for varName2 [🤫 General Space Before USAGE]
         USAGE_SPACE_CHANGE(varName2, type2, valueSpace2, node);
 
+        SPACE addSpace = SPACE::ADDRESS_SPACE;
+        // This will help to add offset if needed
+        TO_GIVEN_SPACE_CHANGE(varName1, valueSpace1, addSpace, type1, node);
+
         // 🅰️ TypeChecking for varName2
         // Rule - valueType - {M_LVALUE, NM_LVALUE, RVALUE} Allowed
 
