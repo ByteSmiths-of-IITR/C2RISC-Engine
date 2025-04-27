@@ -586,7 +586,7 @@ int riscvCodeGen()
     std::queue<std::string> blockOrder;
     std::map<std::string, bool> visitedBlocks;
 
-    bool returnValueViaRegister = true;
+    bool returnValueViaRegister = true; //[FOR Simple Things - OKAY]
 
     blockOrder.push("ENTRY");
     while (!blockOrder.empty())
@@ -667,8 +667,8 @@ int riscvCodeGen()
                 std::string funcName = currIR.result;
                 FINAL_CODE.addComment(" -- EXIT Activation (start) - " + funcName);
 
-            
-            //-- Spilling Code
+        
+            //-- EARLY Spilling Code - Since we are at block END
                 // At the End of the block, we need to store all the registers into the memory
                 FINAL_CODE.addComment("   ~~ At End of Funcion Spilling Code - " + currBlock);
                 // We need to store all the variables in the registers -> memory
@@ -1373,8 +1373,14 @@ int getReg(NEW_TAC_Quadruple &code, std::map<std::string, int> &regMap)
 
     std::string usageVar1 = (usageType.size() > 0) ? usageType[0] : "NULL";
     std::string usageVar2 = (usageType.size() > 1) ? usageType[1] : "NULL";
-
     std::string assignVar = (assignmentType.size() > 0) ? assignmentType[0] : "NULL";
+
+    
+    // CERR << "Debugging getReg() - " << std::endl;
+    // CERR << "Given TAC - " << code.toBaseString() << std::endl;
+    // CERR << "Usage Variables - " << usageVar1 << " " << usageVar2 << std::endl;
+    // CERR << "Assignment Variables - " << assignVar << std::endl;
+
 
     if (usageType.size() > 2)
     {
@@ -1388,7 +1394,7 @@ int getReg(NEW_TAC_Quadruple &code, std::map<std::string, int> &regMap)
     }
 
     // Function Entry & Exit [Activation Record]
-    if (op == FUNCTION_ENTRY || op == ALLOCATE || op == RETURN_FUNCTION)
+    if (op == FUNCTION_ENTRY || op == ALLOCATE || op == FUNCTION_EXIT)
     {
         // Would never call getReg()
     }

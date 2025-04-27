@@ -1,4 +1,4 @@
-#-------- 🎨 RISC-V Code Gen using C2RISC-Engine Time(2025-04-27 - 20:27:47) 🎨 ---------
+#-------- 🎨 RISC-V Code Gen using C2RISC-Engine Time(2025-04-27 - 21:05:07) 🎨 ---------
 
 .data
 
@@ -13,8 +13,8 @@
         #  🙋🏼 GetReg() for $0 = 4 | 🤝 `x12` reg ➜ $0 | 🤝 `x0` reg ➜ NULL |
         li    x12, 4           # Load constant - 4 into x12
         #  ~TAC~ Return Statements - return $0
-        #  🙋🏼 GetReg() for return $0 |
-        mv    a0, x0           # Move return value's reg - x0 to a0
+        #  🙋🏼 GetReg() for return $0 | 🤝 `x12` reg ➜ $0 |
+        mv    a0, x12          # Move return value's reg - x12 to a0
         #  -- EXIT Activation (start) - foo
         #    ~~ At End of Funcion Spilling Code - foo
         sw    x12, -20(fp)     # Store Local Var - $0 via fp in x12

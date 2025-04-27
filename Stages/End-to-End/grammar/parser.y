@@ -2654,8 +2654,6 @@ int main(int argc, char **argv) {
 
     
 
-    
-
     int optStatus = OKAY;
 
     optStatus = machineIndependentOptimization();
