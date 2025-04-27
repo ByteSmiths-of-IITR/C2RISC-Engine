@@ -302,7 +302,7 @@ int CFG::setAlive(int atLine, const std::string &varName)
     if (it == blocks[name].livelinessInfo.end())
     {
         // Variable not found - add the variable
-        CERR << "Var " << varName << " Not Found - Adding New Variable" << std::endl;
+        // CERR << "Var " << varName << " Not Found - Adding New Variable" << std::endl;
         std::pair<bool, std::set<int>> newInfo;
         newInfo.first = true;
         newInfo.second = std::set<int>();

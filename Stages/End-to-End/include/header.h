@@ -811,8 +811,15 @@ extern const int FAIL;
 
 #define HERE std::cerr << "[" << __LINE__ << " in " << __FILE__ << "] " << std::endl
 
-#define H_HERE *handlerLog << "[" << __FILE__ << " : " << __LINE__ << "] ";
+// #define H_HERE *handlerLog << "[" << __FILE__ << " : " << __LINE__ << "] ";
+
+#ifdef NDEBUG
+#define CERR   \
+    if (false) \
+    std::cerr
+#else
 #define CERR std::cerr << "[ 🐛 " << __FILE__ << " : " << __LINE__ << "] "
+#endif
 
 #define REPORT std::cerr << "[" << __FILE__ << " : " << __LINE__ << "] "
 
@@ -1034,8 +1041,8 @@ std::string indentOP(std::string op);
 class RISCV_CODE{
     std::vector<std::string> code;
     std::map<std::string, dataSegment> data;
-
-public:
+    
+    public:
     void addDataSection(const std::map<std::string, dataSegment> &dataSection);
 
     void addCode(std::string code);

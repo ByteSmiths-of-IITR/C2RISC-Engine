@@ -25,7 +25,7 @@ int codeGen()
     std::ofstream symTableFile("output/symRecord.txt");
     SYM_RECORD.printTable(symTableFile);
     symTableFile.close();
-    CERR << " | Symbol Table generated successfully at output/symRecord.txt" << std::endl;
+    // CERR << " | Symbol Table generated successfully at output/symRecord.txt" << std::endl;
 
 
     // Step 2. Identify basic blocks & control flow -> CFG Link Formed
@@ -435,11 +435,11 @@ int livelinessPass()
         std::string arg1 = IR_CODE.code[i].arg1;
         std::string arg2 = IR_CODE.code[i].arg2;
 
-        CERR << "Scanning " << i << " - " << op << std::endl;
+        // CERR << "Scanning " << i << " - " << op << std::endl;
 
         if (isNewBlock)
         {
-            std::cerr << "New Block's Bottom at " << i << std::endl;
+            CERR << "New Block's Bottom at " << i << std::endl;
             CFG_CODE.resetLiveliness(i);
         }
 
@@ -580,6 +580,10 @@ int livelinessPass()
 int riscvCodeGen()
 {
     // Now we will generate the RISC-V code from the CFG_CODE (block by block in breadth first manner)
+
+    // Copying the Data Section from IR_CODE to FINAL_CODE
+    FINAL_CODE.addDataSection(IR_CODE.dataSection);
+
 
     std::stack<std::string> parameterStack;
 

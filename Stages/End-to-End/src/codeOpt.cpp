@@ -80,6 +80,7 @@ int constantFolding(){ // TODO: unary operators left to implement
     int size = IR_CODE.code.size();
 
     TAC newIR;
+    newIR.dataSection = IR_CODE.dataSection; // Copy the data section
     std::vector<bool> toBeRemoved(size, false);
     std::map<std::string, std::string> newValues;
 

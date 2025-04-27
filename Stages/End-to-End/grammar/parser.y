@@ -97,6 +97,7 @@ std::string input_file;
 
 int compilerMode = 0; // 0-Output to Terminal, 1-output_file, 2-TestMode (send to inputFile itself)
 std::string output_file;
+std::string error_file;
 std::ostringstream outputStream;
 std::ostringstream notificationStream;
 std::ostringstream errorStream;
@@ -121,12 +122,12 @@ void exit_compiler(){
     // std::cerr << "Debugging Mode d2: " << (Aptree ? "ON" : "OFF") << std::endl;
     // First we print output depending on the mode
     if(compilerMode == 0){ //Terminal
-        std::cout << notificationStream.str() << std::endl;
-        std::cout << errorStream.str() << std::endl;
         std::cout << outputStream.str() << std::endl;
+        // std::cout << errorStream.str() << std::endl; [NO NEED TO REPORT ERROR IN TERMINAL]
+        std::cout << notificationStream.str() << std::endl;
     }else if(compilerMode == 1){ //Output to file
         std::cout << notificationStream.str() << std::endl;
-        std::cout << "Output MODE | Result Stored in " << output_file << std::endl;
+        std::cout << "Output MODE | Result in " << output_file << " & Error in " << error_file << std::endl;
         std::ofstream out(output_file);
         if(out.is_open()){
             out << outputStream.str() << std::endl;
@@ -135,9 +136,17 @@ void exit_compiler(){
         }else{
             std::cerr << "Error opening file: " << output_file << std::endl;
         }
+        std::ofstream errFile(error_file);
+        if(errFile.is_open()){
+            errFile << errorStream.str() << std::endl;
+            errFile.close();
+        }else{
+            std::cerr << "Error opening file: error.log" << std::endl;
+        }
+
     }else if(compilerMode == 2){ //TestMode
         std::ostringstream testStream;
-        std::cout << "Testing MODE | Results appended to " << input_file << std::endl;
+        std::cout << "Testing MODE | Results + Error appended to " << input_file << std::endl;
         testStream << notificationStream.str() << std::endl;
         testStream << std::string(100, '-') << std::endl;
         testStream << errorStream.str() << std::endl;
@@ -2442,7 +2451,7 @@ int main(int argc, char **argv) {
 
         inputInstructions += "----------Compiler Options----------\n";
         inputInstructions += "  No Arguments       : Send output to stdout(terminal)\n";
-        inputInstructions += "  -o [<output_file>] : Send output to a file to <output_file> else same name as input create a output file\n";
+        inputInstructions += "  -o [<output_file>] : Send output to a file to <output_file> else same name as input create a output file base + (.s)\n";
         inputInstructions += "  -t                 : TestingMode - Append output to <input_file> \n";
         inputInstructions += "----------Debugging Options----------\n";
         inputInstructions += " -d1 <dot_file>      : Print PTree to <dot_file>\n";
@@ -2461,6 +2470,7 @@ int main(int argc, char **argv) {
         size_t dotPos = input_file.find_last_of('.');
         std::string baseName = (dotPos == std::string::npos) ? input_file : input_file.substr(0, dotPos);
         output_file = baseName + ".s";
+        error_file = baseName + ".log";
 
         ptree = false;
         Aptree = false;
@@ -2625,6 +2635,7 @@ int main(int argc, char **argv) {
     bool semanticFailed = (semanticLOG.size() > 0);
     if(semanticFailed){
         notificationStream <<  "Lexical Analysis 👍 | Syntax Analysis 👍 | Semantic Analysis ❌" << std::endl;
+        notificationStream <<  "🥺 Sorry for the inconvenience, please try again later with next release \n";
         errorStream <<  SEMANTICLOGHEADER << std::endl;
         for(auto log : semanticLOG){
             errorStream <<  log << std::endl;
@@ -2661,7 +2672,7 @@ int main(int argc, char **argv) {
     if(optStatus != OKAY){
         notificationStream <<  "Lexical Analysis 👍 | Syntax Analysis 👍 | Semantic Analysis 👍 | Machine Independent Optimization ❌\n";
         errorStream <<  "Machine Independent Optimization failed with error code: " << optStatus << std::endl;
-        notificationStream <<  "😊 Thanku for using our \"C2RISC-Engine\" (Till IR Phase) " << std::endl;
+        notificationStream <<  "🥺 Sorry for the inconvenience, please try again later with next release \n";
         if(yyin) fclose(yyin);  // Close the input file
         exit_compiler(); // Clean up and exit
         return 0;
@@ -2688,9 +2699,9 @@ int main(int argc, char **argv) {
     int riscvCodeGenStatus = codeGen(); // Call the RISC-V code generation function
 
     if(riscvCodeGenStatus != 0){
-        notificationStream <<  "Lexical Analysis 👍 | Syntax Analysis 👍 | Semantic Analysis 👍 | RISC-V Code Generation ❌\n";
+        notificationStream <<  "Lexical 👍 | Syntax 👍 | Semantic 👍 | Machine Indepenent Opt 👍 | RISC-V Code Generation ❌\n";
         errorStream <<  "RISC-V Code Generation failed with error code: " << riscvCodeGenStatus << std::endl;
-        notificationStream <<  "😊 Thanku for using our \"C2RISC-Engine\" (Till RISC-V Phase) " << std::endl;
+        notificationStream <<  "🥺 Sorry for the inconvenience, please try again later with next release \n";
         if(yyin) fclose(yyin);  // Close the input file
         exit_compiler(); // Clean up and exit
         return 0;
@@ -2706,7 +2717,7 @@ int main(int argc, char **argv) {
     outputStream << std::endl << std::endl;
     }
     
-    notificationStream <<  "Lexical Analysis 👍 | Syntax Analysis 👍 | Semantic Analysis 👍 | RISC-V Code Generation 👍\n";
+    notificationStream <<  "Lexical 👍 | Syntax 👍 | Semantic 👍 | Machine Indepenent Opt 👍 | RISC-V Code Generation 👍\n";
     std::string Time = getCurrentTime();
     outputStream << "#-------- 🎨 RISC-V Code Gen using C2RISC-Engine Time(" << Time << ") 🎨 ---------\n";
     /* outputStream << "#-------------------------------------------------------------------------\n"; */
