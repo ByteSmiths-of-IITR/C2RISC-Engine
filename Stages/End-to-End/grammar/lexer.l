@@ -130,6 +130,7 @@ COMMENT2   "/*"([^*]|\*+[^*/])*\*+"/"
 "]"                             { TOKEN(RSQUARE)  }
 "."                             { TOKEN(DOT)  }
 ","                             { TOKEN(COMMA)  }
+
 "&"                             { TOKEN(BIT_AND)  }
 "*"                             { TOKEN(STAR)  }
 "+"                             { TOKEN(PLUS)  }

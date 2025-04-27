@@ -1268,6 +1268,7 @@ public:
     int getOffset(const std::string &key);
     bool isGlobal(const std::string &key);
     bool isInAddressSpace(const std::string &key);
+    bool isFloat(const std::string &key);
 
     void printTable(std::ofstream &file);
 
@@ -1337,6 +1338,8 @@ int livelinessPass();
 
 int getReg(NEW_TAC_Quadruple &code, std::map<std::string, int> &retMap);
 
+int getFloatReg(NEW_TAC_Quadruple &code, std::map<std::string, int> &retMap);
+
 int getManyReg(std::set<std::string> varName, LivelinessDS livelinessInfo, std::map<std::string, int> &retMap);
 
 std::string store_load_Type(int size);
@@ -1353,6 +1356,9 @@ extern SymTable SYM_RECORD;
 extern RISCV_CODE FINAL_CODE;
 
 //======================[ Code Optimization ]=========================================================================================
+
+bool isInt(const std::string &value);
+bool isFloat(const std::string &value);
 
 int constantFolding();
 

@@ -172,7 +172,7 @@ semantic: all $(EXECUTABLE) $(INPUT) $(OUTPUT)
 
 execute: all $(INPUT)
 	$(CC) $(INPUT) -o $(BIN_DIR)/input_exec
-	@./$(BIN_DIR)/input_exec
+	./$(BIN_DIR)/input_exec
 
 sem_ptree: all $(EXECUTABLE) $(INPUT) $(OUTPUT)  $(CERR)
 	@echo "---------------------------------------GCC Compilation---------------------------------------"

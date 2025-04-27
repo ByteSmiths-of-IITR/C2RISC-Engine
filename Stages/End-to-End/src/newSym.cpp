@@ -18,10 +18,7 @@ bool isAValueSymbol(const std::string &name)
     bool res = false;
     auto it = SYM_RECORD.symTable.find(name);
     if (it != SYM_RECORD.symTable.end())
-    {
-        if(it->second.inAddressSpace == true){
-            return false; // Is a Address Space Variable
-        }
+    { 
 
         // Search if $ is present
         for (int i = 0; i < name.size(); i++)
@@ -33,11 +30,9 @@ bool isAValueSymbol(const std::string &name)
             }
         }
     }
-    CERR << "Variable " << name << (res ? " is a value symbol 👌 " : " is NOT a value symbol ❌") << std::endl;
+    // CERR << "Variable " << name << (res ? " is a value symbol 👌 " : " is NOT a value symbol ❌") << std::endl;
     return res;
 }
-
-
 
 
 int SymTable::insert(const std::string &key, SymInfo &info)
@@ -118,6 +113,12 @@ bool SymTable::isInAddressSpace(const std::string &key)
     }
 
     return symTable[key].inAddressSpace;
+}
+
+bool SymTable::isFloat(const std::string &key)
+{
+    // TODO
+    return false;
 }
 
 int SymTable::enterFunction(const std::string &funcName)
