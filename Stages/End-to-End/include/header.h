@@ -409,7 +409,7 @@ public:
         MEM("SymbolTable Constructor");
     }
 
-    ~SymbolTable();
+    ~SymbolTable() = default;
 
     int enterScope(); // This will create a new scope and return the scope number
     int exitScope();  // Will return the ScopeNo that has been exited.
