@@ -14,13 +14,13 @@ union Data {
 int main() {
     union Data data;        // Declare a union variable
     data.i = 10;           // Assign an integer value to the union
-    printf("data.i: %d\n", data.i); // Access the integer value
+    // printf("data.i: %d\n", data.i); // Access the integer value
 
     data.f = 220.5;        // Assign a float value to the union
-    printf("data.f: %f\n", data.f); // Access the float value
+    // printf("data.f: %f\n", data.f); // Access the float value
 
     data.c = 'A';         // Assign a char value to the union
-    printf("data.c: %c\n", data.c); // Access the char value
+    // printf("data.c: %c\n", data.c); // Access the char value
 
     return 0;
 }

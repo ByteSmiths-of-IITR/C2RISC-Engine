@@ -4,15 +4,17 @@
 
 int main() {
     int i = 0;
+    int a = 0;
     switch (i) {
         case 0:
-            printf("Case 0\n");
+            a = 1;
             break;
         case 1:
-            printf("Case 1\n");
+            a = 2;
             break;
         default:
-            printf("Default case\n");
+            a = 3;
+            break;
     }
     return 0;
 }

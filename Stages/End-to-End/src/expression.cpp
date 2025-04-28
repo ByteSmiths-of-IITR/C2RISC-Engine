@@ -178,6 +178,7 @@ int primary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
             {
                 // It's a variable Symbol
                 type0 = ((Variable *)symbol)->type;
+                // CERR << "Variable Type : " << toString(type0) << std::endl;
                 bool isStatic = (((Variable *)symbol)->storageClass == StorageClass::STATIC);
                 bool isGlobal = (symbol->scopeNo == SYM_TABLE.globalScope);
                 std::string suffix = (isGlobal) ? "" : "$" + std::to_string(symbol->scopeNo);
@@ -226,7 +227,10 @@ int primary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
 
         VALUE_TYPE val0Type = getValueType(type0); // Get the value type
 
+        // CERR << "Type of Variable: " << varName1 << " is " << toString(type0) << std::endl;
         bool isConst = isConstant(type0); // [REDUANDANT CODE]
+
+
         if (isConst)
         {
             val0Type = VALUE_TYPE::NM_LVALUE; // Non Modifiable LValue

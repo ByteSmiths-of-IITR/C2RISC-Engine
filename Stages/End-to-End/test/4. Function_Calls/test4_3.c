@@ -10,6 +10,6 @@ int foo(int b) {
 }
 int main() {
     int result = foo(5); // Change this value to test with different inputs
-    printf("Result is %d\n", result);
+    // printf("Result is %d\n", result);
     return 0;
 }

@@ -96,6 +96,11 @@ bool isConstant(const TypeExpression &typeExpr)
             }
         }
     }
+    else if (topType == Type::ENUM)
+    {
+        return true; // Enum is treated as constant
+    }
+    return false;
 }
 
 bool isFloatingPoint(std::string baseType)

@@ -5,10 +5,10 @@
 
 int main() {
     int i = 0;
-    until (i >= 10) {
-        printf("%d ", i);
+    until (i >= 10){
+        // printVar(i);
         i++;
     }
-    printf("\n");
+    // printf("\n");
     return 0;
 }

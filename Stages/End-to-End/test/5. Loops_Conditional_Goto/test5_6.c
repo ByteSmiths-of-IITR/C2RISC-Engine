@@ -7,10 +7,10 @@ int main() {
     int i = 0;
     loop_start:
         if (i < 10) {
-            printf("%d ", i);
+            
             i++;
             goto loop_start; // jump to the start of the loop
         }
-    printf("\n");
+    // printf("\n");
     return 0;
 }

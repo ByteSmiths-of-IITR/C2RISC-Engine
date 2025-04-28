@@ -9,6 +9,6 @@ int (*funcPtr)(int, int); // function pointer declaration
 int main() {
     funcPtr = add; // function pointer assignment
     int result = funcPtr(5, 10); // function pointer call
-    printf("Result: %d\n", result); // print the result
+    // printf("Result: %d\n", result); // print the result
     return 0;
 }

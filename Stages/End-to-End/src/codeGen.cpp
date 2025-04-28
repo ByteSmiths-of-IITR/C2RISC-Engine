@@ -1007,6 +1007,14 @@ int riscvCodeGen()
                 }
 
                 // Mostly cast happens b/w variables
+
+                bool isF_src = SYM_RECORD.isFloat(src);
+                bool isF_dest = SYM_RECORD.isFloat(dest);
+
+                
+
+
+
             }
 
             else if (op == OFFSET_LOAD)
@@ -2667,7 +2675,7 @@ int generateSimpleExpCode(NEW_TAC_Quadruple code)
         // Update the SYM_RECORD
         SYM_RECORD.variableRest(assignVar); // This variable is
         SYM_RECORD.addVarInReg(assignVar, regMap[assignVar]);
-        
+
 
         // Arithmetic OP
         if (op == "+")
@@ -2725,7 +2733,9 @@ int addPrint_ScanLib()
 {
     // This will add the print and scan library to the code
 
-    if(!stdio_lib){
+    stdio_lib = true;
+    if (!stdio_lib)
+    {
         FINAL_CODE.addComment("#define <stdio.h> NOT INCLUDED");
         return OKAY;
     }

@@ -12,8 +12,8 @@ int main() {
     int a = 5;
     int b = 10;
     enum Color c = GREEN;
-    a =a + b;
+    a = a + b;
     a = a / c;
-    // printf("Result: %d\n", a);
+    // printVar(a);
     return 0;
 }

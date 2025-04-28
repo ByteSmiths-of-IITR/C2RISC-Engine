@@ -24,7 +24,7 @@ int main()
     a.b = 2.0f;
     b.a = 3;
     b.b = 4.0f;
-    printf("%d %f\n", a.a, a.b);
-    printf("%d %f\n", b.a, b.b);
+    // printf("%d %f\n", a.a, a.b);
+    // printf("%d %f\n", b.a, b.b);
     return 0;
 }

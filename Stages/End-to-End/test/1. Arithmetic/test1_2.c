@@ -6,6 +6,6 @@ int main(){
     int a = 5;
     int b = 3;
     int res = a & b;
-    printf("The result of %d & %d is %d\n", a, b, res);
+    printVar(res);
     return 0;
 }

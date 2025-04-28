@@ -4,9 +4,9 @@
 #include <stdio.h>
 
 int main() {
-    int a = 5;
+    float a = 5;
     float b = 3.2;
     float sum = a + b;
-    printf("The sum of %d and %f is %f\n", a, b, sum);
+    // printVar(sum);
     return 0;
 }

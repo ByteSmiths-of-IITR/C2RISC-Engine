@@ -14,6 +14,6 @@ int fibonacci(int n) {
 int main() {
     int n = 6; // Change this value to test with different inputs
     int result = fibonacci(n);
-    printf("Fibonacci of %d is %d\n", n, result);
+    // printf("Fibonacci of %d is %d\n", n, result);
     return 0;
 }
