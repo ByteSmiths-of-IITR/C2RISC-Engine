@@ -598,11 +598,15 @@ int riscvCodeGen()
     bool returnValueViaRegister = true; //[FOR Simple Things - OKAY]
     bool argByRegister = true;   //[FOR Simple Things - OKAY]
 
+    std::vector<int> blockLeaderOrder = CFG_CODE.leaders;
+
     blockOrder.push("ENTRY");
-    while (!blockOrder.empty())
+    // while (!blockOrder.empty())
+    for(int i = 0; i < blockLeaderOrder.size(); i++)
     {
-        std::string currBlock = blockOrder.front();
-        blockOrder.pop();
+        int leaderIndex = blockLeaderOrder[i];
+        std::string currBlock = CFG_CODE.blockName(leaderIndex);
+        
         if (visitedBlocks.find(currBlock) != visitedBlocks.end())
         {
             continue;
