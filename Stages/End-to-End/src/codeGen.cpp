@@ -2566,7 +2566,7 @@ int addPrint_ScanLib()
 
     addScanVar(); // Signature - int scanVar();
 
-    addScanString(); // Signature - char *scanString(int size);
+    // addScanString(); // Signature - char *scanString(int size);
 
     FINAL_CODE.addComment(" ==== End of Print and Scan Library ==== ");
     FINAL_CODE.addComment(" ");

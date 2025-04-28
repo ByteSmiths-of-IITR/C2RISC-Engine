@@ -1230,8 +1230,8 @@ int const activation_start_offset = 16; // 4 words
 - Return Address
 */
 
-std::pair<int, int> intRegLimit;
-std::pair<int, int> floatRegLimit; // This will be the limit of float registers
+extern std::pair<int, int> intRegLimit;
+extern std::pair<int, int> floatRegLimit; // This will be the limit of float registers
 
 class SymTable
 {
@@ -1349,6 +1349,8 @@ int livelinessPass();
 void spillingCode();
 
 int getReg(NEW_TAC_Quadruple &code, std::map<std::string, int> &regMap);
+
+int getRegLimit(NEW_TAC_Quadruple &code, std::map<std::string, int> &regMap, std::pair<int, int> regLimit);
 
 int getFloatReg(NEW_TAC_Quadruple &code, std::map<std::string, int> &regMap);
 

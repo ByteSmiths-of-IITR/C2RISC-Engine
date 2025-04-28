@@ -178,7 +178,7 @@ int SymTable::exitFunction()
     return OKAY;
 }
 
-int SymTable::insert(const std::string &key, int size,bool isFloat=false)
+int SymTable::insert(const std::string &key, int size,bool isFloat)
 {
     // We are only give size
 
@@ -205,7 +205,7 @@ int SymTable::insert(const std::string &key, int size,bool isFloat=false)
     return insert(key, info);
 }
 
-int SymTable::insertGlobal(const std::string &key, int size, bool isF=false)
+int SymTable::insertGlobal(const std::string &key, int size, bool isFloat)
 {
     // This will insert the key and info in the table
     if (symTable.find(key) != symTable.end())
@@ -218,7 +218,7 @@ int SymTable::insertGlobal(const std::string &key, int size, bool isF=false)
     info.size = size;
     info.offset = -1;     // no offset for global variables
     info.isGlobal = true; // Function is Global
-    info.isFloat = isF;  // This will set the isFloat of the function
+    info.isFloat = isFloat;  // This will set the isFloat of the function
 
     symTable[key] = info;
     return INSERT_SUCCESS;
@@ -461,15 +461,15 @@ int SymTable::variableRest(const std::string &key)
     return OKAY;
 }
 
-std::pair<int, int> intRegLimit = std::make_pair(12, 31);             // This will be the limit of integer registers
-std::pair<int, int> floatRegLimit = std::make_pair(32 + 12, 32 + 31); // This will be the limit of float registers
+std::pair<int,int> intRegLimit = std::make_pair(12, 31);             // This will be the limit of integer registers
+std::pair<int,int> floatRegLimit = std::make_pair(32 + 12, 32 + 31); // This will be the limit of float registers
 
 std::string getRegName(int regNo)
 {
     // This will return the register name
     if (regNo >= intRegLimit.first && regNo <= intRegLimit.second)
     {
-        return getRegName(regNo);
+        return "x" + std::to_string(regNo - 12);
     }
     else if (regNo >= floatRegLimit.first && regNo <= floatRegLimit.second)
     {

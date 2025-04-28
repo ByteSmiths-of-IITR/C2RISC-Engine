@@ -15,7 +15,7 @@ EXIT :
 #-------------------------------------------------------------------------
 
 
-#-------- 🎨 RISC-V Code Gen using C2RISC-Engine Time(2025-04-28 - 16:39:43) 🎨 ---------
+#-------- 🎨 RISC-V Code Gen using C2RISC-Engine Time(2025-04-28 - 18:56:56) 🎨 ---------
 
 .data
         a_s_1:      .zero          4
@@ -28,14 +28,14 @@ EXIT :
         sw    fp, 8(sp)        # Store old frame pointer
         addi  fp, sp,16        # Set new frame pointer
         #  ~TAC~ ➔ Assign OP 🟰 - a_s_1 = 10
-        #  🙋🏼 GetReg() for a_s_1 = 10 | 🤝 `x0` reg ➜ NULL | 🤝 `x12` reg ➜ a_s_1 |
-        li    x12, 10          # Load constant - 10 into x12(a_s_1)
+        #  🙋🏼 GetReg() for a_s_1 = 10 | 🤝 INVALID` reg ➜ NULL | 🤝 x0` reg ➜ a_s_1 |
+        li    x0, 10           # Load constant - 10 into x0(a_s_1)
         #  ~TAC~ ➔ Return Statements - return 
         mv    a1, x0           # Move return value's reg - x0 to a1
         #  -- EXIT Activation (start) - main
         #  ~~ Spilling Code ~~ 
         la    t0, a_s_1        # Loading Address of Global Variable - a_s_1
-        sw    x12, 0(t0)       # Store Global Var - a_s_1 via t0 in x12
+        sw    x0, 0(t0)        # Store Global Var - a_s_1 via t0 in x12
         #  ~~ Finished Spilling Code ~~ 
         mv    a0, a1           # Move return value stored by return statement into a1 to a0(default return reg)
         lw    ra, 12(sp)       # Restore return address (PC)
