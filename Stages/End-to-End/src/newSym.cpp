@@ -18,22 +18,22 @@ bool isAValueSymbol(const std::string &name)
     bool res = false;
     auto it = SYM_RECORD.symTable.find(name);
     if (it != SYM_RECORD.symTable.end())
-    { 
-
-        // Search if $ is present
-        for (int i = 0; i < name.size(); i++)
+    {
+        bool isLabel = isALabel(name);
+        if (isLabel)
         {
-            if (name[i] == '$')
-            {
-                // It's A Variable (local, global, or compilerTemp)
-                res = true;
-            }
+            // This is a label
+            res = false;
+        }
+        else
+        {
+            // This is a symbol
+            res = true;
         }
     }
     // CERR << "Variable " << name << (res ? " is a value symbol 👌 " : " is NOT a value symbol ❌") << std::endl;
     return res;
 }
-
 
 int SymTable::insert(const std::string &key, SymInfo &info)
 {

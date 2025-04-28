@@ -594,7 +594,7 @@ void RISCV_CODE::printCode(std::ostringstream &oss)
     for (auto it : data)
     {
         dataSegment currData = it.second;
-        oss << std::string(8, ' ') << currData.name << " : " << std::setw(10) << currData.type << " " << std::setw(10) << currData.value << std::endl;
+        oss << std::string(8, ' ') << currData.name << ": " << std::setw(10) << currData.type << " " << std::setw(10) << currData.value << std::endl;
     }
     oss << std::endl;
 

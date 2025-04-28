@@ -1209,6 +1209,7 @@ public:
     int offset; // relative to function-block or global-space
     bool isGlobal;
     bool inAddressSpace; // This will be used to check if the variable is in address space or not
+    bool isFloat;
 
     std::string whichFunction;
 

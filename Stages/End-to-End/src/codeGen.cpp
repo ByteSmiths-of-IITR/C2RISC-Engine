@@ -27,7 +27,6 @@ int codeGen()
     symTableFile.close();
     // CERR << " | Symbol Table generated successfully at output/symRecord.txt" << std::endl;
 
-
     // Step 2. Identify basic blocks & control flow -> CFG Link Formed
     check = makeBasicBlocks();
     if (check != OKAY)
@@ -293,56 +292,56 @@ int makeBasicBlocks()
     std::string lastBlock = CFG_CODE.blockName(IR_CODE.code.size() - 1);
     CFG_CODE.addEdge(lastBlock, "EXIT");
 
-/* [TURNED OFF] -> Function call's as block
-// ------ Considering Function Calls to be a Block End
-    // Return From Points in Functions [Needed for Function Control Flow Connections]
-    std::map<std::string, std::vector<std::string>> functionReturnFrom;
-    std::string currFunction = "NULL";
-    for (size_t i = 0; i < IR_CODE.code.size(); i++)
-    {
-        std::string op = IR_CODE.code[i].op;
-
-        if (op == FUNCTION_ENTRY)
+    /* [TURNED OFF] -> Function call's as block
+    // ------ Considering Function Calls to be a Block End
+        // Return From Points in Functions [Needed for Function Control Flow Connections]
+        std::map<std::string, std::vector<std::string>> functionReturnFrom;
+        std::string currFunction = "NULL";
+        for (size_t i = 0; i < IR_CODE.code.size(); i++)
         {
-            currFunction = IR_CODE.code[i].result;
-        }
+            std::string op = IR_CODE.code[i].op;
 
-        std::string name = CFG_CODE.blockName(i);
-        if (op == RETURN_FUNCTION)
-        {
-            // We need to store the return point
-            if (functionReturnFrom.find(currFunction) == functionReturnFrom.end())
+            if (op == FUNCTION_ENTRY)
             {
-                // Not added to map YET
-                functionReturnFrom[currFunction] = std::vector<std::string>();
+                currFunction = IR_CODE.code[i].result;
             }
-            functionReturnFrom[currFunction].push_back(name);
-        }
 
-        if (op == FUNCTION_EXIT)
-        {
-            if (functionReturnFrom.find(currFunction) == functionReturnFrom.end())
+            std::string name = CFG_CODE.blockName(i);
+            if (op == RETURN_FUNCTION)
             {
-                functionReturnFrom[currFunction] = std::vector<std::string>();
+                // We need to store the return point
+                if (functionReturnFrom.find(currFunction) == functionReturnFrom.end())
+                {
+                    // Not added to map YET
+                    functionReturnFrom[currFunction] = std::vector<std::string>();
+                }
                 functionReturnFrom[currFunction].push_back(name);
             }
-            // Else not need
+
+            if (op == FUNCTION_EXIT)
+            {
+                if (functionReturnFrom.find(currFunction) == functionReturnFrom.end())
+                {
+                    functionReturnFrom[currFunction] = std::vector<std::string>();
+                    functionReturnFrom[currFunction].push_back(name);
+                }
+                // Else not need
+            }
         }
-    }
 
 
-    std::cerr << "Function Return Points" << std::endl;
-    for (auto it : functionReturnFrom)
-    {
-        std::cerr << "ForFunction : " << it.first << " has return points -";
-        for (auto jt : it.second)
+        std::cerr << "Function Return Points" << std::endl;
+        for (auto it : functionReturnFrom)
         {
-            std::cerr << " " << jt;
+            std::cerr << "ForFunction : " << it.first << " has return points -";
+            for (auto jt : it.second)
+            {
+                std::cerr << " " << jt;
+            }
+            std::cerr << std::endl;
         }
-        std::cerr << std::endl;
-    }
-// ------
-*/
+    // ------
+    */
 
     //
     // Now we will add edges to all the blocks
@@ -400,15 +399,14 @@ int makeBasicBlocks()
         }
     }
 
-/* [TURNED OFF] -> Function call's as block
-    // Handle Return from points of main
-    for (auto it : functionReturnFrom["main"])
-    {
-        CFG_CODE.addEdge(it, "EXIT");
-        CERR << "Main Edge " << it << " -> EXIT" << std::endl;
-    }
-*/
-
+    /* [TURNED OFF] -> Function call's as block
+        // Handle Return from points of main
+        for (auto it : functionReturnFrom["main"])
+        {
+            CFG_CODE.addEdge(it, "EXIT");
+            CERR << "Main Edge " << it << " -> EXIT" << std::endl;
+        }
+    */
 
     return OKAY;
 }
@@ -584,7 +582,6 @@ int riscvCodeGen()
     // Copying the Data Section from IR_CODE to FINAL_CODE
     FINAL_CODE.addDataSection(IR_CODE.dataSection);
 
-
     std::stack<std::string> parameterStack;
 
     std::queue<std::string> blockOrder;
@@ -613,7 +610,7 @@ int riscvCodeGen()
         BasicBlock &block = CFG_CODE.blocks[currBlock];
         std::string riscCode;
 
-        // add block label
+        // Ignore Entry & Exit Blocks
         if (currBlock == "ENTRY" || currBlock == "EXIT")
         {
             continue;
@@ -639,7 +636,7 @@ int riscvCodeGen()
                 int stackSize = SYM_RECORD.getSize(funcName);
 
                 // Adding Comment
-                FINAL_CODE.addComment(" -- ENTRY Activation (start) - " + funcName);
+                FINAL_CODE.addComment(" ~TAC~ ➔ ENTRY (start) - " + funcName);
 
                 // Allocate Stack Space
                 riscCode = indentOP("addi") + "sp, sp, -" + std::to_string(stackSize);
@@ -671,8 +668,7 @@ int riscvCodeGen()
                 std::string funcName = currIR.result;
                 FINAL_CODE.addComment(" -- EXIT Activation (start) - " + funcName);
 
-        
-            //-- EARLY Spilling Code - Since we are at block END
+                //-- EARLY Spilling Code - Since we are at block END
                 // At the End of the block, we need to store all the registers into the memory
                 FINAL_CODE.addComment("   ~~ At End of Funcion Spilling Code - " + currBlock);
                 // We need to store all the variables in the registers -> memory
@@ -697,14 +693,58 @@ int riscvCodeGen()
 
                 // Finally we reset the SYM_RECORD for this block
                 SYM_RECORD.resetRegTable(); // reset the register map
-            //-- Spilling Code
-        
+                                            //-- Spilling Code
+
                 int stackSize = SYM_RECORD.getSize(funcName);
                 std::string riscCode;
 
                 FINAL_CODE.addComment("   ~~ Finished Variable Spilling Code");
                 // Comment
                 int loc;
+
+                // Return value was Stored in a1
+
+                // --- Return Value Code
+                // Decide OnHow to return the value
+                if (!returnValueViaRegister)
+                {
+                    // Store the return value at this address (but will depend on size of return value)
+                    // Assuming the return value's address is stored in `a0` (explicit address)
+                    int returnSize = std::stoi(currIR.arg1);
+
+                    // Now depending on the size of return we need to call multiple store instructions
+                    int destImm = 0; // w.r.t `a1` register;
+                    int srcImm = 0;  // w.r.t `a0` register;
+                    std::string srcReg = "t1", destReg = "t2";
+
+                    // If return size = -1 // denotes 'void' type
+                    // fetch the address where the return value must be stored [in the caller's Stack]
+                    int loc = 12;
+                    std::string imm = "-" + std::to_string(loc);
+                    riscCode = indentOP("lw") + destReg + ", " + imm + "(sp)";
+                    FINAL_CODE.addCode(riscCode, "Load return value's address from fp(-12) set by caller");
+
+                    // The return Variable's Address in present in `a1` register
+                    srcReg = "a1"; // Set during return statement
+
+                    // Now we need to copy the data from srcReg to destReg
+                    FINAL_CODE.addCopyInst("retVar", returnSize, srcImm, srcReg, destImm, destReg);
+                }
+                else
+                {
+                    std::string retReg;
+
+                    // We have got the register
+                    retReg = "a1"; // This is the register where the return value is stored
+
+                    // We return the value via `a0` register, and return statment has set it in register `a5`
+                    // We just need to move the value to the destination
+                    riscCode = indentOP("mv") + "a0, " + retReg;
+                    FINAL_CODE.addCode(riscCode, "Move return value stored by return statement into " + retReg + " to a0(default return reg)");
+                    // Now store the value in the destination
+                }
+
+                // ---
 
                 // Restore the old return PC
                 loc = stackSize - 4;
@@ -731,7 +771,7 @@ int riscvCodeGen()
             // AssignOP
             else if (op == ASSIGN_OP)
             {
-                FINAL_CODE.addComment(" ~TAC~ Assign OP 🟰 - " + currIR.toBaseString());
+                FINAL_CODE.addComment(" ~TAC~ ➔ Assign OP 🟰 - " + currIR.toBaseString());
                 // This will store address(explicit address) of return value in `a0` register
                 std::string dest = currIR.result;
                 std::string src = currIR.arg1;
@@ -757,12 +797,12 @@ int riscvCodeGen()
                     // src is a label
                     destReg = "x" + std::to_string(regMap[dest]);
                     riscCode = indentOP("la") + destReg + ", " + src;
-                    FINAL_CODE.addCode(riscCode, "Load address of label - " + src + " into " + destReg);
+                    FINAL_CODE.addCode(riscCode, "Load address of label - " + src + " into " + destReg + "(" + dest + ")");
                 }
                 else if (isAValueSymbol(src))
                 {
                     // src is a variable - No Need to load
-                    FINAL_CODE.addComment(" 🔄 Automatic copy - of " + src + " into " + destReg);
+                    FINAL_CODE.addComment(" 🔄 Automatic copy - of " + src + " into " + destReg + "(" + dest + ")");
                 }
                 else
                 {
@@ -770,12 +810,12 @@ int riscvCodeGen()
                     destReg = "x" + std::to_string(regMap[dest]);
                     // Load the constant in a register (temporary) (t0)
                     riscCode = indentOP("li") + destReg + ", " + src;
-                    FINAL_CODE.addCode(riscCode, "Load constant - " + src + " into " + destReg);
+                    FINAL_CODE.addCode(riscCode, "Load constant - " + src + " into " + destReg + "(" + dest + ")");
                 }
             }
             else if (op == LEFT_STAR)
             {
-                FINAL_CODE.addComment(" ~TAC~ Left Star 🌟 - " + currIR.toBaseString());
+                FINAL_CODE.addComment(" ~TAC~ ➔ Left Star 🌟 - " + currIR.toBaseString());
                 // src can't be label -> variable or constant
                 // dest can be a label or constant -> only variable
 
@@ -823,7 +863,7 @@ int riscvCodeGen()
             }
             else if (op == RIGHT_STAR)
             {
-                FINAL_CODE.addComment(" ~TAC~ Right Star ✨ - " + currIR.toBaseString());
+                FINAL_CODE.addComment(" ~TAC~ ➔ Right Star ✨ - " + currIR.toBaseString());
                 // src can't be a label or constant -> only variable
                 // dest can be a label or constant -> only variable
                 std::string dest = currIR.result;
@@ -858,7 +898,7 @@ int riscvCodeGen()
             }
             else if (op == AMPERSEND)
             {
-                FINAL_CODE.addComment(" ~TAC~  Ampersend (&) - " + currIR.toBaseString());
+                FINAL_CODE.addComment(" ~TAC~ ➔  Ampersend (&) - " + currIR.toBaseString());
                 std::string dest = currIR.result;
                 std::string src = currIR.arg1;
                 // src can't be constant -> variable or label
@@ -904,7 +944,7 @@ int riscvCodeGen()
 
             else if (op == OFFSET_LOAD)
             {
-                FINAL_CODE.addComment(" ~TAC~ Offset Load - " + currIR.toBaseString());
+                FINAL_CODE.addComment(" ~TAC~ ➔ Offset Load - " + currIR.toBaseString());
                 // This will load the address of the variable in the register
                 std::string dest = currIR.result;
                 std::string src = currIR.arg1;
@@ -943,7 +983,7 @@ int riscvCodeGen()
             // Param + Function Call + Return
             else if (op == PARAM)
             {
-                FINAL_CODE.addComment(" ~TAC~ Param - " + currIR.toBaseString());
+                FINAL_CODE.addComment(" ~TAC~ ➔ Param - " + currIR.toBaseString());
                 // Only one argument
                 std::string funcArg = currIR.arg1;
 
@@ -955,7 +995,7 @@ int riscvCodeGen()
             }
             else if (op == CALL)
             {
-                FINAL_CODE.addComment(" ~TAC~ Function Call - " + currIR.toBaseString());
+                FINAL_CODE.addComment(" ~TAC~ ➔ Function Call - " + currIR.toBaseString());
                 int noOfArg = std::stoi(currIR.arg2);
                 std::string result = currIR.result;
                 std::string funcName = currIR.arg1;
@@ -1090,94 +1130,76 @@ int riscvCodeGen()
             }
             else if (op == RETURN_FUNCTION)
             {
-                FINAL_CODE.addComment(" ~TAC~ Return Statements - " + currIR.toBaseString());
+                FINAL_CODE.addComment(" ~TAC~ ➔ Return Statements - " + currIR.toBaseString());
                 std::string retVar = currIR.arg1;
                 bool defaultRet = (retVar == NO_ARG);
+
+                std::string retReg = "a1";
 
                 // Decide OnHow to return the value
                 if (!returnValueViaRegister)
                 {
                     // Store the return value at this address (but will depend on size of return value)
                     // Assuming the return value's address is stored in `a0` (explicit address)
-                    int returnSize = std::stoi(currIR.arg1);
-
-                    // Now depending on the size of return we need to call multiple store instructions
-                    int destImm = 0; // w.r.t `a1` register;
-                    int srcImm = 0;  // w.r.t `a0` register;
-                    std::string srcReg = "t1", destReg = "t2";
-
-                    // If return size = -1 // denotes 'void' type
-                    // fetch the address where the return value must be stored [in the caller's Stack]
-                    int loc = 12;
-                    std::string imm = "-" + std::to_string(loc);
-                    riscCode = indentOP("lw") + destReg + ", " + imm + "(sp)";
-                    FINAL_CODE.addCode(riscCode, "Load return value's address from fp(-12)");
 
                     if (defaultRet)
                     {
-                        // Store x0 at this address
-                        std::string sl_type = store_load_Type(4);
-                        riscCode = indentOP("s" + sl_type) + "x0, 0(" + srcReg + ")";
-                        FINAL_CODE.addCode(riscCode, "Store default return value in caller's stack");
+                        // SHOULD NOT HAPPEN
+                        // Store x0 into `a1` register
+                        riscCode = indentOP("mv") + retReg + ", x0";
+                        FINAL_CODE.addCode(riscCode, "Move default return value in a1");
                     }
                     else
                     {
-
-                        bool isVarInMemory = SYM_RECORD.isInMemory(retVar);
-
-                        if (isVarInMemory)
-                        {
-                            // If in memory - just need to MEMCOPY
-                        }
-                        {
-                            // If not in memory - must be in reg;
-                            int regNo = SYM_RECORD.varStoredInWhichReg(retVar);
-                            if (regNo == -1)
-                            {
-                                CERR << "Error - Variable must have been in reg or memory" << std::endl;
-                                return FAIL;
-                            }
-
-                            FINAL_CODE.addStoreInst(retVar, regNo);
-                        }
-
-                        // Now it's in Memory
+                        // Store the return variable's address into `a1`
                         int offset = SYM_RECORD.getOffset(retVar);
-                        // Load the address of the variable in a register (temporary) (t2)
-                        std::string imm2 = "-" + std::to_string(offset);
-                        riscCode = indentOP("addi") + srcReg + ", fp, " + imm2;
-                        FINAL_CODE.addCode(riscCode, "Load variable's address - " + retVar + " into " + destReg);
-
-                        // Now we need to copy the data from srcReg to destReg
-                        FINAL_CODE.addCopyInst(retVar, returnSize, srcImm, srcReg, destImm, destReg);
+                        std::string imm = "-" + std::to_string(offset);
+                        // Find address of result variable
+                        riscCode = indentOP("addi") + retReg + ", fp, " + imm;
+                        FINAL_CODE.addCode(riscCode, "Load return variable's address - " + retVar + " into " + retReg);
                     }
                 }
                 else
                 {
-                    std::string retReg = "x0";
+                    std::string valueReg = "x0";
+                    std::string retReg = "a1";
                     if (defaultRet)
                     {
-                        // We need to return via register
-                        // We will use 0 as value
+                        valueReg = "x0"; // default return value - 0
                     }
                     else
                     {
-                        std::map<std::string, int> regMap;
-                        int check = getReg(currIR, regMap);
-                        if (check != OKAY)
-                        {
-                            CERR << "Error in getReg()" << std::endl;
-                            return check;
-                        }
 
-                        // We have got the register
-                        retReg = "x" + std::to_string(regMap[retVar]);
+                        // We need to check if return value is a constant or variable
+
+                        bool isVariable = isAValueSymbol(retVar);
+
+                        if (isVariable)
+                        {
+                            std::map<std::string, int> regMap;
+                            int check = getReg(currIR, regMap);
+                            if (check != OKAY)
+                            {
+                                CERR << "Error in getReg()" << std::endl;
+                                return check;
+                            }
+                            // We have got the register
+                            valueReg = "x" + std::to_string(regMap[retVar]);
+                        }
+                        else
+                        {
+                            // It's a constant
+                            valueReg = "t1"; // default return value - 0
+                            // Load the constant in a register (temporary) (t0)
+                            riscCode = indentOP("li") + valueReg + ", " + retVar;
+                            FINAL_CODE.addCode(riscCode, "Load constant - " + retVar + " into " + valueReg);
+                        }
                     }
 
                     // We return the value via `a0` register, and return statment has set it in register `a5`
                     // We just need to move the value to the destination
-                    riscCode = indentOP("mv") + "a0, " + retReg;
-                    FINAL_CODE.addCode(riscCode, "Move return value's reg - " + retReg + " to a0");
+                    riscCode = indentOP("mv") + retReg + ", " + valueReg;
+                    FINAL_CODE.addCode(riscCode, "Move return value's reg - " + valueReg + " to " + retReg);
                     // Now store the value in the destination
                 }
 
@@ -1187,7 +1209,7 @@ int riscvCodeGen()
             // Jump Operations
             else if (op == GOTO_EQUAL)
             {
-                FINAL_CODE.addComment(" ~TAC~ GOTO_EQUAL - " + currIR.toBaseString());
+                FINAL_CODE.addComment(" ~TAC~ ➔ GOTO_EQUAL - " + currIR.toBaseString());
                 std::string condVar1 = currIR.arg1;
                 std::string condVar2 = currIR.arg2;
                 std::string label = currIR.result;
@@ -1209,9 +1231,9 @@ int riscvCodeGen()
             }
             else if (op == GOTO_LABEL)
             {
-                FINAL_CODE.addComment(" ~TAC~ GOTO_LABEL - " + currIR.toBaseString());
+                FINAL_CODE.addComment(" ~TAC~ ➔ GOTO_LABEL - " + currIR.toBaseString());
                 // Unconditional Jump
-                std::string label = currIR.arg1;
+                std::string label = currIR.result;
 
                 // We need to jump to this label
                 riscCode = indentOP("j ") + label;
@@ -1219,9 +1241,9 @@ int riscvCodeGen()
             }
             else if (op == IF_TRUE)
             {
-                FINAL_CODE.addComment(" ~TAC~ IF_TRUE - " + currIR.toBaseString());
+                FINAL_CODE.addComment(" ~TAC~ ➔ IF_TRUE - " + currIR.toBaseString());
                 std::string condVar = currIR.arg1;
-                std::string label = currIR.arg2;
+                std::string label = currIR.result;
 
                 std::map<std::string, int> regMap;
                 int check = getReg(currIR, regMap);
@@ -1231,16 +1253,17 @@ int riscvCodeGen()
                     return check;
                 }
 
-                // Now we have the register having the condVar
                 std::string condReg = "x" + std::to_string(regMap[condVar]);
-                riscCode = indentOP("bnq") + condReg + ", x0, " + label;
+
+                // Now we have the register having the condVar
+                riscCode = indentOP("bne") + condReg + ", x0, " + label;
                 FINAL_CODE.addCode(riscCode, "Jump to label - " + label + " if " + condVar + " is true");
             }
             else if (op == IF_FALSE)
             {
-                FINAL_CODE.addComment(" ~TAC~ IF_FALSE - " + currIR.toBaseString());
+                FINAL_CODE.addComment(" ~TAC~ ➔ IF_FALSE - " + currIR.toBaseString());
                 std::string condVar = currIR.arg1;
-                std::string label = currIR.arg2;
+                std::string label = currIR.result;
 
                 std::map<std::string, int> regMap;
                 int check = getReg(currIR, regMap);
@@ -1266,7 +1289,7 @@ int riscvCodeGen()
             else
             {
                 // This will be a simple operation
-                FINAL_CODE.addComment(" ~TAC~ Simple Operation - " + currIR.toBaseString());
+                FINAL_CODE.addComment(" ~TAC~ ➔ Simple Operation - " + currIR.toBaseString());
 
                 generateSimpleExpCode(currIR); // This will do all the work
             }
@@ -1295,7 +1318,7 @@ int riscvCodeGen()
         }
 
         // Finally we reset the SYM_RECORD for this block
-        SYM_RECORD.resetRegTable(); // reset the register map
+        SYM_RECORD.resetRegTable(); // reset the register map [Thus Next Block will assume all registers are free]
 
         FINAL_CODE.addComment(" ~~ Finished Spilling Variable at end of block ");
     }
@@ -1307,11 +1330,11 @@ int riscvCodeGen()
 
 // Variour Possible Cases of getReg()
 /*
-1 - 1 assign + 2 usage
-2 - 1 assign + 1 usage
+1 - 1 assign + 2 usage 
+2 - 1 assign + 1 usage 
 3 - 1 assign + 0 usage [can be possible with `li`]
-4 - 0 assign + 2 usage
-5 - 0 assign + 1 usage
+4 - 0 assign + 2 usage 
+5 - 0 assign + 1 usage 
 6 - 0 assign + 0 usage [ cases of using only constants ]
 */
 
@@ -1337,13 +1360,13 @@ int getReg(NEW_TAC_Quadruple &code, std::map<std::string, int> &regMap)
     else
     {
         // All OP will need arg1 & arg2 as Usage
-        if (isAValueSymbol(arg1) || isALabel(arg1))
+        if (isAValueSymbol(arg1))
         {
             // If it's a symbol
             usageType.push_back(arg1);
         }
 
-        if (isAValueSymbol(arg2) || isALabel(arg2))
+        if (isAValueSymbol(arg2))
         {
             // If it's a symbol
             usageType.push_back(arg2);
@@ -1353,7 +1376,7 @@ int getReg(NEW_TAC_Quadruple &code, std::map<std::string, int> &regMap)
             op == GOTO_EQUAL || op == GOTO_LABEL || op == IF_TRUE || op == IF_FALSE)
         {
             // Those in which result is used & not assigned
-            if (isAValueSymbol(result)||isALabel(result))
+            if (isAValueSymbol(result))
             {
                 usageType.push_back(result);
             }
@@ -1363,14 +1386,12 @@ int getReg(NEW_TAC_Quadruple &code, std::map<std::string, int> &regMap)
             // Normal Operator's Type Operations + Special OP with assignment to result
             // Includes -> ASSIGN_OP, RIGHT_STAR, AMPERSEND, CAST {assignment to result}
             // Include -> PARAM, RETURN_FUNCTION {NO result variable}
-    
+
             if (isAValueSymbol(result))
             {
                 assignmentType.push_back(result);
             }
-    
         }
-    
     }
 
     // Step 1. Dividing things into usage & assignment Type
@@ -1379,12 +1400,11 @@ int getReg(NEW_TAC_Quadruple &code, std::map<std::string, int> &regMap)
     std::string usageVar2 = (usageType.size() > 1) ? usageType[1] : "NULL";
     std::string assignVar = (assignmentType.size() > 0) ? assignmentType[0] : "NULL";
 
-    
-    // CERR << "Debugging getReg() - " << std::endl;
-    // CERR << "Given TAC - " << code.toBaseString() << std::endl;
-    // CERR << "Usage Variables - " << usageVar1 << " " << usageVar2 << std::endl;
-    // CERR << "Assignment Variables - " << assignVar << std::endl;
-
+    CERR << "------ Debugging getReg() ------ " << std::endl;
+    CERR << "Given TAC - " << code.toBaseString() << std::endl;
+    CERR << "Usage Variables - " << usageVar1 << " " << usageVar2 << std::endl;
+    CERR << "Assignment Variables - " << assignVar << std::endl;
+    CERR << "--------------------------" << std::endl;
 
     if (usageType.size() > 2)
     {
@@ -2132,14 +2152,15 @@ std::string store_load_Type(int size)
     }
     else
     {
-        CERR << "Error - Invalid Size for Store/Load Instruction" << std::endl;
+        CERR << "Error - Invalid Size for Store/Load Instruction - " << size << std::endl;
         sl_type = "- WRONG -";
     }
 
     return sl_type;
 }
 
-int getFloatReg(NEW_TAC_Quadruple &code, std::map<std::string, int> &retMap){
+int getFloatReg(NEW_TAC_Quadruple &code, std::map<std::string, int> &retMap)
+{
 
     return OKAY;
 }
@@ -2183,7 +2204,8 @@ int generateSimpleExpCode(NEW_TAC_Quadruple code)
             riscCode = indentOP("li") + usageReg1 + ", " + usageVar1;
             FINAL_CODE.addCode(riscCode, "Loading Immediate Value - " + usageVar1 + " in " + usageReg1);
         }
-        else{
+        else
+        {
             usageReg1 = "x" + std::to_string(regMap[usageVar1]);
         }
 
@@ -2194,7 +2216,8 @@ int generateSimpleExpCode(NEW_TAC_Quadruple code)
             riscCode = indentOP("li") + usageReg2 + ", " + usageVar2;
             FINAL_CODE.addCode(riscCode, "Loading Immediate Value - " + usageVar2 + " in " + usageReg1);
         }
-        else{
+        else
+        {
             usageReg2 = "x" + std::to_string(regMap[usageVar2]);
         }
 
@@ -2205,7 +2228,7 @@ int generateSimpleExpCode(NEW_TAC_Quadruple code)
         std::string riscOp;
 
         // We need to update the SYM_RECORD
-        SYM_RECORD.variableRest(assignVar); // This variable is 
+        SYM_RECORD.variableRest(assignVar); // This variable is
         SYM_RECORD.addVarInReg(assignVar, regMap[assignVar]);
 
         // Arithmetic OP
@@ -2221,7 +2244,7 @@ int generateSimpleExpCode(NEW_TAC_Quadruple code)
             riscCode = indentOP(riscOp) + assignReg + ", " + usageReg1 + ", " + usageReg2;
             FINAL_CODE.addCode(riscCode, "Subtraction Operation - " + assignVar + " = " + usageVar1 + " - " + usageVar2);
         }
-        
+
         else if (op == "*")
         {
             riscOp = "mul";
@@ -2232,29 +2255,29 @@ int generateSimpleExpCode(NEW_TAC_Quadruple code)
         {
             riscOp = "div";
             riscCode = indentOP(riscOp) + assignReg + ", " + usageReg1 + ", " + usageReg2;
-            FINAL_CODE.addCode(riscCode, "Division Operation - " + assignVar + " = " + usageVar1 + "/"  + usageVar2);
+            FINAL_CODE.addCode(riscCode, "Division Operation - " + assignVar + " = " + usageVar1 + "/" + usageVar2);
         }
         else if (op == "%")
         {
             riscOp = "rem";
             riscCode = indentOP(riscOp) + assignReg + ", " + usageReg1 + ", " + usageReg2;
-            FINAL_CODE.addCode(riscCode, "Modulus Operation - " + assignVar + " = " + usageVar1 + "%"  + usageVar2);
+            FINAL_CODE.addCode(riscCode, "Modulus Operation - " + assignVar + " = " + usageVar1 + "%" + usageVar2);
         }
-        
-        //Shift OP
+
+        // Shift OP
         else if (op == "<<")
         {
             riscOp = "sll";
             riscCode = indentOP(riscOp) + assignReg + ", " + usageReg1 + ", " + usageReg2;
-            FINAL_CODE.addCode(riscCode, "Left Shift Operation - " + assignVar + " = " + usageVar1 + "<< "  + usageVar2);
+            FINAL_CODE.addCode(riscCode, "Left Shift Operation - " + assignVar + " = " + usageVar1 + "<< " + usageVar2);
         }
         else if (op == ">>")
         {
             riscOp = "srl";
             riscCode = indentOP(riscOp) + assignReg + ", " + usageReg1 + ", " + usageReg2;
-            FINAL_CODE.addCode(riscCode, "Right Shift Operation - " + assignVar + " = " + usageVar1 +">> "  + usageVar2);
+            FINAL_CODE.addCode(riscCode, "Right Shift Operation - " + assignVar + " = " + usageVar1 + ">> " + usageVar2);
         }
-        
+
         // Bitwise OP
         else if (op == "&")
         {
@@ -2266,19 +2289,19 @@ int generateSimpleExpCode(NEW_TAC_Quadruple code)
         {
             riscOp = "or";
             riscCode = indentOP(riscOp) + assignReg + ", " + usageReg1 + ", " + usageReg2;
-            FINAL_CODE.addCode(riscCode, "Bitwise OR Operation - "  + assignVar +" = "+ usageVar1 +" | "+ usageVar2);
+            FINAL_CODE.addCode(riscCode, "Bitwise OR Operation - " + assignVar + " = " + usageVar1 + " | " + usageVar2);
         }
         else if (op == "^")
         {
             riscOp = "xor";
-            riscCode = indentOP(riscOp) + assignReg+ ", "+usageReg1+", "+usageReg2;
-            FINAL_CODE.addCode(riscCode, "Bitwise XOR Operation - "+assignVar+" = "+usageVar1+" ^ "+usageVar2);
+            riscCode = indentOP(riscOp) + assignReg + ", " + usageReg1 + ", " + usageReg2;
+            FINAL_CODE.addCode(riscCode, "Bitwise XOR Operation - " + assignVar + " = " + usageVar1 + " ^ " + usageVar2);
         }
-        
+
         // Special sizeof Op
         else if (op == "sizeof")
         {
-            // Don't think will come - as per TAC - 
+            // Don't think will come - as per TAC -
         }
         // Comparision OP
         else if (op == "<")
@@ -2304,8 +2327,7 @@ int generateSimpleExpCode(NEW_TAC_Quadruple code)
             riscCode = indentOP("xori") + assignReg + ", " + tempReg + ", 1";
             FINAL_CODE.addCode(riscCode, "Part2 of Less Than Equal Operation - " + assignVar + " = " + usageVar1 + " <= " + usageVar2);
 
-
-            // Another Way 
+            // Another Way
             // riscCode = indentOP("slt") + tempReg + ", " + usageReg2 + ", " + usageReg1;
             // FINAL_CODE.addCode(riscCode, "Part1 of Less Than Equal Operation - " + assignVar + " = " + usageVar1 + " <= " + usageVar2);
 
@@ -2314,7 +2336,6 @@ int generateSimpleExpCode(NEW_TAC_Quadruple code)
 
             // riscCode = indentOP("addi") + assignReg + ", " + tempReg + ", 0xff";
             // FINAL_CODE.addCode(riscCode, "Part3 Less Than Equal Operation - " + assignVar + " = " + usageVar1 + " <= " + usageVar2);
-
         }
         else if (op == ">=")
         {
@@ -2339,7 +2360,7 @@ int generateSimpleExpCode(NEW_TAC_Quadruple code)
         }
         else if (op == "==")
         {
-            
+
             std::string tempReg = "t1";
             riscCode = indentOP("sub") + tempReg + ", " + usageReg1 + ", " + usageReg2;
             FINAL_CODE.addCode(riscCode, "Part1 of Equality Operation - " + assignVar + " = " + usageVar1 + " == " + usageVar2);
@@ -2349,7 +2370,6 @@ int generateSimpleExpCode(NEW_TAC_Quadruple code)
 
             riscCode = indentOP("addi") + assignReg + ", " + tempReg + ", 0xff";
             FINAL_CODE.addCode(riscCode, "Part3 of Equality Operation - " + assignVar + " = " + usageVar1 + " == " + usageVar2);
-
         }
         else if (op == "!=")
         {
@@ -2357,18 +2377,17 @@ int generateSimpleExpCode(NEW_TAC_Quadruple code)
             riscCode = indentOP("sub") + tempReg + ", " + usageReg1 + ", " + usageReg2;
             FINAL_CODE.addCode(riscCode, "Part1 of Not Equality Operation - " + assignVar + " = " + usageVar1 + " != " + usageVar2);
 
-            riscCode = indentOP("snez") + tempReg+ ", " + tempReg;
+            riscCode = indentOP("snez") + tempReg + ", " + tempReg;
             FINAL_CODE.addCode(riscCode, "Part2 of Not Equality Operation - " + assignVar + " = " + usageVar1 + " != " + usageVar2);
 
             riscCode = indentOP("addi") + assignReg + ", " + tempReg + ", 0xff";
             FINAL_CODE.addCode(riscCode, "Part3 of Not Equality Operation - " + assignVar + " = " + usageVar1 + " != " + usageVar2);
-
         }
         // Logical OP
         else if (op == "&&")
         {
             // Logical AND
-            
+
             std::string tempReg1 = "t1", tempReg2 = "t2";
 
             riscCode = indentOP("snez") + tempReg1 + ", " + usageReg1;
@@ -2379,7 +2398,6 @@ int generateSimpleExpCode(NEW_TAC_Quadruple code)
 
             riscCode = indentOP("and") + assignReg + ", " + tempReg1 + ", " + tempReg2;
             FINAL_CODE.addCode(riscCode, "Part3 of Logical AND Operation - " + assignVar + " = " + usageVar1 + " && " + usageVar2);
-
         }
         else if (op == "||")
         {
@@ -2395,7 +2413,8 @@ int generateSimpleExpCode(NEW_TAC_Quadruple code)
             riscCode = indentOP("or") + assignReg + ", " + tempReg1 + ", " + tempReg2;
             FINAL_CODE.addCode(riscCode, "Part3 of Logical OR Operation - " + assignVar + " = " + usageVar1 + " || " + usageVar2);
         }
-        else{
+        else
+        {
             // Invalid Operation
             CERR << "Error - Invalid Operation in generateSimpleExpCode()" << std::endl;
             return FAIL;
@@ -2408,7 +2427,7 @@ int generateSimpleExpCode(NEW_TAC_Quadruple code)
         // NO possibility of imm-values - since all would have been stored in memory first before loading
 
         std::string usageReg1, usageReg2, assignReg;
-        
+
         std::map<std::string, int> regMap;
         int check = getFloatReg(code, regMap);
         if (check != OKAY)
@@ -2422,44 +2441,133 @@ int generateSimpleExpCode(NEW_TAC_Quadruple code)
         assignReg = "f" + std::to_string(regMap[assignVar]);
 
         // Arithmetic OP
-        if(op == "+"){
+        if (op == "+")
+        {
             riscCode = indentOP("fadd.s") + assignReg + ", " + usageReg1 + ", " + usageReg2;
             FINAL_CODE.addCode(riscCode, "F_Addition Operation - " + assignVar + " = " + usageVar1 + " + " + usageVar2);
         }
-        else if(op == "-"){
+        else if (op == "-")
+        {
             riscCode = indentOP("fsub.s") + assignReg + ", " + usageReg1 + ", " + usageReg2;
             FINAL_CODE.addCode(riscCode, "F_Subtraction Operation - " + assignVar + " = " + usageVar1 + " - " + usageVar2);
         }
-        else if(op == "*"){
+        else if (op == "*")
+        {
             riscCode = indentOP("fmul.s") + assignReg + ", " + usageReg1 + ", " + usageReg2;
-            FINAL_CODE.addCode(riscCode, "F_Multiplication Operation - " + assignVar + " = " + usageVar1 + " * "  + usageVar2);
+            FINAL_CODE.addCode(riscCode, "F_Multiplication Operation - " + assignVar + " = " + usageVar1 + " * " + usageVar2);
         }
-        else if(op == "/"){
-            riscCode = indentOP("fdiv.s") + assignReg+ ", "+usageReg1+", "+usageReg2;
-            FINAL_CODE.addCode(riscCode, "F_Division Operation - "+assignVar+" = "+usageVar1+"/"+  usageVar2);
+        else if (op == "/")
+        {
+            riscCode = indentOP("fdiv.s") + assignReg + ", " + usageReg1 + ", " + usageReg2;
+            FINAL_CODE.addCode(riscCode, "F_Division Operation - " + assignVar + " = " + usageVar1 + "/" + usageVar2);
         }
 
         // Comparision OP
-        else if(op == "<"){
-
-        }else if(op == ">"){
-        }else if(op == "<="){
-        }else if(op == ">="){
-        }else if(op == "=="){
-        }else if(op == "!="){
+        else if (op == "<")
+        {
         }
-        else{
+        else if (op == ">")
+        {
+        }
+        else if (op == "<=")
+        {
+        }
+        else if (op == ">=")
+        {
+        }
+        else if (op == "==")
+        {
+        }
+        else if (op == "!=")
+        {
+        }
+        else
+        {
             // Invalid Operation
             CERR << "Error - Invalid Operation in generateSimpleExpCode()" << std::endl;
             return FAIL;
         }
-
-
-
-
-
-
     }
 
     return OKAY;
+}
+
+
+
+int addPrint_ScanLib(){
+    // This will add the print and scan library to the code
+
+    std::string printVar = "printVar";
+    std::string printString = "printString";
+    std::string scanVar = "scanVar";
+    std::string scanString = "scanString";
+
+    std::string riscCode;
+
+    FINAL_CODE.addComment(" ==== Adding Print and Scan Library ==== ");
+    
+    FINAL_CODE.addLabel("printVar");
+    
+    int stackSize = 20;
+
+    // Function Entry Code
+    FINAL_CODE.addComment("Function Entry - printVar");
+    riscCode = indentOP("addi") + "sp, sp, -" + std::to_string(stackSize);
+    FINAL_CODE.addCode(riscCode, "Allocating Stack Space");
+
+    int loc = stackSize - 4; // Offset of the return address
+    riscCode = indentOP("sw") + "ra, " + std::to_string(loc) + "(sp)";
+
+    loc = stackSize - 8; // Offset of the frame pointer
+    FINAL_CODE.addCode(riscCode, "Saving Return Address");
+    riscCode = indentOP("sw") + "fp, " + std::to_string(loc) + "(sp)";
+
+    FINAL_CODE.addCode(riscCode, "Saving Frame Pointer");
+    riscCode = indentOP("addi") + "fp, sp, -" + std::to_string(stackSize);
+    FINAL_CODE.addCode(riscCode, "Setting Frame Pointer");
+
+    // Load to print variable in a register
+    std::string varReg = "a0"; // DEFAULT register for print - System Call
+    loc = 20; // Offset of the variable
+    riscCode = indentOP("lw") + varReg + ", -" + std::to_string(loc) + "(fp)";
+
+    // Load system call code
+    std::string syscallCodeReg = "a7";
+    int printVarCode = 1;
+    riscCode = indentOP("li") + syscallCodeReg + ", " + std::to_string(printVarCode);
+
+    FINAL_CODE.addCode(riscCode, "Loading Print System Call Code");
+
+    // System Call
+    riscCode = indentOP("ecall");
+    FINAL_CODE.addCode(riscCode, "System Call for Print");
+    
+    FINAL_CODE.addComment("Function Exit - printVar");
+
+    // Resutlt would be in a0 register - exit code - 0 [since it's a void function]
+    int exitCode = 0;
+    riscCode = indentOP("li") + "a0, " + std::to_string(exitCode);
+    FINAL_CODE.addCode(riscCode, "Return value from printVar");
+
+    // Function Exit Code
+    loc = stackSize - 4; // Offset of the return address
+    riscCode = indentOP("lw") + "ra, " + std::to_string(loc) + "(sp)";
+    FINAL_CODE.addCode(riscCode, "Restoring Return Address");
+
+    loc = stackSize - 8; // Offset of the frame pointer
+    riscCode = indentOP("lw") + "fp, " + std::to_string(loc) + "(sp)";
+    FINAL_CODE.addCode(riscCode, "Restoring Frame Pointer");
+
+    // Deallocating Stack Space
+    riscCode = indentOP("addi") + "sp, sp, " + std::to_string(stackSize);
+    FINAL_CODE.addCode(riscCode, "Deallocating Stack Space");
+
+    // Return from the function
+    riscCode = indentOP("jr") + "ra";
+    FINAL_CODE.addCode(riscCode, "Returning from printVar");
+
+    FINAL_CODE.addComment("End of Function - printVar");
+
+
+
 }

@@ -2181,9 +2181,7 @@ int initializer_H(ASTNode *node, TypeExpression inh_type, std::string inh_varNam
         PASS_THE_ERROR(aex_check);
 
 
-
-
-        std::string irVarName = inh_varName+"$"+std::to_string(SYM_TABLE.scopeNo);
+        std::string irVarName = inh_varName + ((SYM_TABLE.scopeNo!=SYM_TABLE.globalScope) ? "$"+std::to_string(SYM_TABLE.scopeNo) : "");
 
         // First we check TypeChecking for operation
         TypeExpression left = inh_type;

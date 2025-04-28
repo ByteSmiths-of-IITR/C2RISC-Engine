@@ -179,7 +179,7 @@ int primary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
                 // It's a variable Symbol
                 type0 = ((Variable *)symbol)->type;
 
-                varName1 += "$" + std::to_string(symbol->scopeNo); // Change the name to the variable
+                varName1 += (symbol->scopeNo!=SYM_TABLE.globalScope) ? ("$" + std::to_string(symbol->scopeNo)) : ""; // Change the name to the variable
             }
             else if (symbolType == SYMBOL_TYPE::ENUM_CONSTANT)
             {
