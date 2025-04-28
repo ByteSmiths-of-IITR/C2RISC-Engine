@@ -594,7 +594,6 @@ public:
     std::string name;
     std::string type;  // can be .word, .byte
     std::string value; // value of the data
-    bool inAddressSpace; // This will be used to check if the data is in address space or not
 };
 
 extern std::string dataByte;
@@ -858,6 +857,7 @@ extern const int FAIL;
         return BUG;                                                                               \
     }
 
+//---------------------- Space 🚀Change 🔖IR Code for varName2 [🤫 TARGET Space Before USAGE]
 #define TO_GIVEN_SPACE_CHANGE(value, oldSpace, newSpace, type, node)                              \
     if ((oldSpace) == SPACE::ADDRESS_SPACE)                                                       \
     {                                                                                             \
@@ -1042,8 +1042,14 @@ class RISCV_CODE{
     std::vector<std::string> code;
     std::map<std::string, dataSegment> data;
     
+    int newLabelCount = 0;
+
     public:
     void addDataSection(const std::map<std::string, dataSegment> &dataSection);
+
+    std::string newDataLabel();
+
+    void addData(dataSegment data);
 
     void addCode(std::string code);
     void addCode(std::string code, std::string info);
@@ -1207,8 +1213,7 @@ public:
     // For Offset Calculations
     int size;
     int offset; // relative to function-block or global-space
-    bool isGlobal;
-    bool inAddressSpace; // This will be used to check if the variable is in address space or not
+    bool isGlobal; // also shor 
     bool isFloat;
 
     std::string whichFunction;
@@ -1227,8 +1232,8 @@ int const activation_start_offset = 16; // 4 words
 - Return Address
 */
 
-extern int MIN_REGNO;
-extern int MAX_REGNO;
+std::pair<int, int> intRegLimit;
+std::pair<int, int> floatRegLimit; // This will be the limit of float registers
 
 class SymTable
 {
@@ -1265,8 +1270,8 @@ public:
 
 
     int insert(const std::string &key, SymInfo &info);
-    int insert(const std::string &key, int size, bool space); // The Offset & isGlobal Will be autoSet
-    int insertGlobal(const std::string &key, int size, bool space); // This will be used to insert the global variable
+    int insert(const std::string &key, int size); // The Offset & isGlobal Will be autoSet
+    int insertGlobal(const std::string &key, int size); // This will be used to insert the global variable
     
     int lookup(const std::string &key, SymInfo &info);
 
@@ -1275,7 +1280,6 @@ public:
     int getSize(const std::string &key);
     int getOffset(const std::string &key);
     bool isGlobal(const std::string &key);
-    bool isInAddressSpace(const std::string &key);
     bool isFloat(const std::string &key);
 
     void printTable(std::ofstream &file);
@@ -1326,9 +1330,9 @@ public:
 
     int freeAllReg(); // Free all the registers
 
-    // Get a free register (via-Reference) [Gives Smallest Free Register or -1 if none is free]
+    // Get a free register [Gives Smallest Free Register or -1 if none is free]
     int getFreeReg();
-
+    int getFreeReg(std::pair<int, int> regLimit);  // In limit of regLimit
     // void resetRegTable(); // Reset the register info
 
     // int findRegToEvict(); // Find a register to evict & return the register number
@@ -1344,6 +1348,8 @@ int riscvCodeGen();
 
 int livelinessPass();
 
+void spillingCode();
+
 int getReg(NEW_TAC_Quadruple &code, std::map<std::string, int> &retMap);
 
 int getFloatReg(NEW_TAC_Quadruple &code, std::map<std::string, int> &retMap);
@@ -1351,6 +1357,7 @@ int getFloatReg(NEW_TAC_Quadruple &code, std::map<std::string, int> &retMap);
 int getManyReg(std::set<std::string> varName, LivelinessDS livelinessInfo, std::map<std::string, int> &retMap);
 
 std::string store_load_Type(int size);
+std::string getRegName(int regNo);
 
 int generateSimpleExpCode(NEW_TAC_Quadruple code);
 
@@ -1370,8 +1377,19 @@ bool isFloat(const std::string &value);
 
 int constantFolding();
 
+int strengthReduction_al_simplification();
+
 int machineIndependentOptimization();
 
 //======================[ Code Generation Utilies ]=========================================================================================
+
+
+//=====================[ Print & Scan Lib ]=========================================================================================
+
+int addPrint_ScanLib();
+void addPrintVar();
+void addScanVar();
+void addPrintString();
+void addScanString();
 
 #endif // !HEADER_H

@@ -178,8 +178,12 @@ int primary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
             {
                 // It's a variable Symbol
                 type0 = ((Variable *)symbol)->type;
-
-                varName1 += (symbol->scopeNo!=SYM_TABLE.globalScope) ? ("$" + std::to_string(symbol->scopeNo)) : ""; // Change the name to the variable
+                bool isConst = isConstant(type0); //
+                bool isGlobal = (symbol->scopeNo == SYM_TABLE.globalScope);
+                std::string suffix = (isGlobal) ? "" : "$" + std::to_string(symbol->scopeNo);
+                suffix = (isConst) ? suffix : ("_s_" + std::to_string(symbol->scopeNo));
+                
+                varName1 += suffix; // Change the name to the value
             }
             else if (symbolType == SYMBOL_TYPE::ENUM_CONSTANT)
             {
@@ -1341,16 +1345,29 @@ int assignment_expression_H(ASTNode *node, std::string inh_whereToSendString, st
 
             if (op != "=")
             {
-                std::string resName = newTemp(); // allocated width(dest)
-                int resSize = width(dest);
-                IR_CODE.addTAC(node, resName, ALLOCATE, std::to_string(resSize), NO_ARG); // Allocate memory for the variable
+                // instruction -> varName1 op varName2
 
-                IR_CODE.addTAC(node, resName, op, varName2, std::to_string(width1)); // resName = varName2 op width1
+                // First newVarName2 = varName2 * width1( width of dest )
+                std::string newVarName2 = newTemp(); // allocated width(dest)
+                IR_CODE.addTAC(node, newVarName2, ALLOCATE, std::to_string(width(dest)), NO_ARG); // Allocate memory for the variable
+                
+                IR_CODE.addTAC(node, newVarName2, "*", varName2, std::to_string(width1)); // resName = varName2 op width1
+                
+                // Then oldVarName1 = *varName1
+                std::string oldVarName1 = newTemp(); // allocated width(dest)
+                IR_CODE.addTAC(node, oldVarName1, ALLOCATE, std::to_string(width(dest)), NO_ARG); // Allocate memory for the variable
 
+                IR_CODE.addTAC(node, oldVarName1, RIGHT_STAR, varName1, std::to_string(width1)); // Load it
+                
+                // Then oldVarName1 = oldVarName1 op newVarName2
+                std::string newVarName1 = oldVarName1; // No need of extra temp variable
+                IR_CODE.addTAC(node, newVarName1, op, oldVarName1, newVarName2); // resName = varName2 op width1
+
+                // Then *varName1 = oldVarName1
                 int element_width = width(dest);
-                IR_CODE.addTAC(node, varName1, LEFT_STAR, resName, std::to_string(element_width)); // *varName1 = resName
+                IR_CODE.addTAC(node, varName1, LEFT_STAR, newVarName1, std::to_string(element_width)); // *varName1 = resName
 
-                varName0 = resName;
+                varName0 = newVarName1; // Old varName before inc/dec
             }
             else
             {
@@ -1365,9 +1382,14 @@ int assignment_expression_H(ASTNode *node, std::string inh_whereToSendString, st
             // No space change Code
             if (op != "=")
             {
+                // instruction -> varName1 op varName2
+                // First newVarName2 = varName2 * width1( width of dest )
+                std::string newVarName2 = newTemp(); // allocated width(dest)
+                IR_CODE.addTAC(node, newVarName2, ALLOCATE, std::to_string(width(dest)), NO_ARG); // Allocate memory for the variable
+                IR_CODE.addTAC(node, newVarName2, "*", varName2, std::to_string(width1)); // resName = varName2 op width1
 
-                IR_CODE.addTAC(node, varName1, op, varName2, std::to_string(width1)); // resName = varName2 op width1
-
+                // Then varName1 = varName1 op newVarName2
+                IR_CODE.addTAC(node, varName1, op, varName1, newVarName2); // resName = varName2 op width1
                 varName0 = varName1;
             }
             else

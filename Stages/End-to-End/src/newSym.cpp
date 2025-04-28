@@ -6,7 +6,8 @@
 bool isALabel(const std::string &label)
 {
     // This will check if the label is a leader or not
-    if(CFG_CODE.blocks.find(label) != CFG_CODE.blocks.end()){
+    if (CFG_CODE.blocks.find(label) != CFG_CODE.blocks.end())
+    {
         return true;
     }
     return false;
@@ -104,17 +105,6 @@ bool SymTable::isGlobal(const std::string &key)
     return symTable[key].isGlobal;
 }
 
-bool SymTable::isInAddressSpace(const std::string &key)
-{
-    // This will return the isGlobal of the key
-    if (symTable.find(key) == symTable.end())
-    {
-        return false;
-    }
-
-    return symTable[key].inAddressSpace;
-}
-
 bool SymTable::isFloat(const std::string &key)
 {
     // TODO
@@ -138,25 +128,24 @@ int SymTable::enterFunction(const std::string &funcName)
     // Create a Symbol to be used for adding activation record [storage Details]
     SymInfo funcSymbol;
     funcSymbol.size = 4;
-    funcSymbol.isGlobal = false; // Function is Global
+    funcSymbol.isGlobal = false;                   // Function is Global
     funcSymbol.whichFunction = this->functionName; // This will set the function name
-    funcSymbol.offset; // to be set
+    funcSymbol.offset;                             // to be set
 
     std::string funcFP = funcName + "$FP(fp)"; // This will be used to set the frame pointer
     std::string funcRA = funcName + "$RA(ra)"; // This will be used to set the return address
-    funcSymbol.offset = 8; // offset of fp
+    funcSymbol.offset = 8;                     // offset of fp
     symTable[funcFP] = funcSymbol;
-    funcSymbol.offset = 4; // offset of ra
+    funcSymbol.offset = 4;         // offset of ra
     symTable[funcRA] = funcSymbol; // This will set the return address
 
     std::string addressOfRetValue = funcName + "$RET_VAL_ADDR"; // This will be used to set the return address
-    funcSymbol.offset = 12; // offset of return value address
-    symTable[addressOfRetValue] = funcSymbol; // This will set the return address
+    funcSymbol.offset = 12;                                     // offset of return value address
+    symTable[addressOfRetValue] = funcSymbol;                   // This will set the return address
 
-    funcSymbol.offset = 16; // offset of return value
-    symTable[funcName+"(un-used)"] = funcSymbol; // This will set the return address
+    funcSymbol.offset = 16;                        // offset of return value
+    symTable[funcName + "(un-used)"] = funcSymbol; // This will set the return address
 
-    
     return OKAY;
 }
 
@@ -176,9 +165,9 @@ int SymTable::exitFunction()
     SymInfo funcSymbol;
     funcSymbol.size = stack_offset;
     funcSymbol.whichFunction = this->functionName; // This will set the function name
-    funcSymbol.offset = -1; // offset of return value
+    funcSymbol.offset = -1;                        // offset of return value
     // Set offset as size of return value
-    funcSymbol.isGlobal = true;                         // Function is Global
+    funcSymbol.isGlobal = true;                    // Function is Global
     int check = this->insert(oldName, funcSymbol); // Insert the function in the table
     if (check != INSERT_SUCCESS)
     {
@@ -189,10 +178,9 @@ int SymTable::exitFunction()
     return OKAY;
 }
 
-int SymTable::insert(const std::string &key, int size, bool space)
+int SymTable::insert(const std::string &key, int size)
 {
     // We are only give size
-
 
     // Allignment Logic -> TURNED OFF
     FEATURE_OFF("Alignment Logic");
@@ -200,11 +188,10 @@ int SymTable::insert(const std::string &key, int size, bool space)
 
     SymInfo info;
     info.size = size;
-    info.inAddressSpace = space; // This will be used to set the address space
-    stack_offset += size;       // This will set the offset of the function
+    stack_offset += size;              // This will set the offset of the function
     info.whichFunction = functionName; // This will set the function name
-    info.offset = stack_offset; // This will set the offset of the function
-    
+    info.offset = stack_offset;        // This will set the offset of the function
+
     // if(padding != 0){
     //     stack_offset += padding;
     //     SymInfo paddingInfo;
@@ -214,11 +201,11 @@ int SymTable::insert(const std::string &key, int size, bool space)
     //     SYM_RECORD.insert(key+"(padding)", paddingInfo);
     // }
 
-    info.isGlobal = false;      // Function is Global
+    info.isGlobal = false; // Function is Global
     return insert(key, info);
 }
 
-int SymTable::insertGlobal(const std::string &key, int size, bool space)
+int SymTable::insertGlobal(const std::string &key, int size)
 {
     // This will insert the key and info in the table
     if (symTable.find(key) != symTable.end())
@@ -226,68 +213,70 @@ int SymTable::insertGlobal(const std::string &key, int size, bool space)
         return INSERT_FAILURE;
     }
 
-
     SymInfo info;
     info.whichFunction = functionName;
     info.size = size;
-    info.inAddressSpace = space; // This will be used to set the address space
-    info.offset = -1; // no offset for global variables
-    info.isGlobal = true;      // Function is Global
-    
+    info.offset = -1;     // no offset for global variables
+    info.isGlobal = true; // Function is Global
+
     symTable[key] = info;
     return INSERT_SUCCESS;
 }
 
 void SymTable::printTable(std::ofstream &file)
 {
-    std::map<std::string, std::vector<std::pair<int,std::string>>> sortedSymTable;
+    std::map<std::string, std::vector<std::pair<int, std::string>>> sortedSymTable;
     int maxSize = 20;
     int minSize = 10;
-    
+
     std::string heading = "[ Symbol Table ]";
-    file << std::string(20, '=') << heading << std::string(70-heading.size(), '=') << std::endl;
+    file << std::string(20, '=') << heading << std::string(70 - heading.size(), '=') << std::endl;
     file << std::string(4, ' ') << std::left << std::setw(maxSize) << "Name" << std::setw(minSize) << "Size" << std::setw(maxSize) << "Offset(w.r.t(fp))" << std::setw(minSize) << "isGlobal" << std::endl;
-    
-    for(auto it : symTable)
+
+    for (auto it : symTable)
     {
         std::string func = it.second.whichFunction;
         int offset = it.second.offset;
         std::string toPrint;
         std::ostringstream ss;
-        std::string offset_str = (it.second.offset == -1) ? "N/A" : ("-"+std::to_string(it.second.offset));
+        std::string offset_str = (it.second.offset == -1) ? "N/A" : ("-" + std::to_string(it.second.offset));
         ss << std::left << std::setw(maxSize) << it.first << std::setw(minSize) << it.second.size << std::setw(maxSize) << offset_str << std::setw(minSize) << (it.second.isGlobal ? "YES" : "NO") << std::endl;
         toPrint = ss.str();
 
         // Check if the function is already present
-        if(sortedSymTable.find(func) == sortedSymTable.end()){
+        if (sortedSymTable.find(func) == sortedSymTable.end())
+        {
             // This is the first time we are seeing this function
-            sortedSymTable[func] = std::vector<std::pair<int,std::string>>();
+            sortedSymTable[func] = std::vector<std::pair<int, std::string>>();
         }
         // Add the symbol to the function
         sortedSymTable[func].push_back(std::make_pair(offset, toPrint));
     }
 
     // Now sort the symbols in the function
-    for(auto it : sortedSymTable){
+    for (auto it : sortedSymTable)
+    {
         std::string func = it.first;
-        std::vector<std::pair<int,std::string>> symbols = it.second;
+        std::vector<std::pair<int, std::string>> symbols = it.second;
 
         // Sort the symbols in the function
-        std::sort(symbols.begin(), symbols.end(), [](const std::pair<int,std::string> &a, const std::pair<int,std::string> &b){
-            return a.first > b.first;
-        });
+        std::sort(symbols.begin(), symbols.end(), [](const std::pair<int, std::string> &a, const std::pair<int, std::string> &b)
+                  { return a.first > b.first; });
 
         // Print the function name
-        if(func != "GLOBAL"){
+        if (func != "GLOBAL")
+        {
             file << "Activation Record of Function - " << func << std::endl;
         }
-        else{
+        else
+        {
             file << "Global Variables" << std::endl;
         }
         file << std::string(80, '-') << std::endl;
-        
+
         // Print the symbols in the function
-        for(auto jt : symbols){
+        for (auto jt : symbols)
+        {
             file << std::string(4, ' ') << jt.second;
         }
         file << std::string(80, '-') << std::endl;
@@ -333,7 +322,6 @@ int SymTable::setNotInMemory(const std::string &key)
     return OKAY;
 }
 
-
 int SymTable::varStoredInWhichReg(const std::string &key)
 {
     // This will check if the variable is stored in register or not
@@ -372,14 +360,16 @@ int SymTable::ex_varStoredInWhichReg(const std::string &key)
         return -1; // Variable not found [Should not happen]
     }
 
-    for(auto storeInReg : symTable[key].inRegNo){
+    for (auto storeInReg : symTable[key].inRegNo)
+    {
         // Check on all these if any register is exclusively used
-        if(regMap[storeInReg].size() == 1){
+        if (regMap[storeInReg].size() == 1)
+        {
             // This is the only variable in this register
             return storeInReg;
         }
     }
-    
+
     // No register is exclusively used
     return -1;
 }
@@ -438,7 +428,7 @@ int SymTable::removeVarFromAllReg(const std::string &key)
     {
         regMap[it].erase(key); // Remove the variable from the register
 
-        if(regMap[it].size() == 0)
+        if (regMap[it].size() == 0)
         {
             SetOfFreeReg.insert(it); // Add the register to the free register set
         }
@@ -451,7 +441,7 @@ int SymTable::removeVarFromAllReg(const std::string &key)
 
 int SymTable::variableRest(const std::string &key)
 {
-    // Just call 
+    // Just call
     int check = removeVarFromAllReg(key);
     if (check != OKAY)
     {
@@ -465,19 +455,38 @@ int SymTable::variableRest(const std::string &key)
     return OKAY;
 }
 
-int MIN_REGNO = 12;
-int MAX_REGNO = 31; // This will be the maximum number of registers
+std::pair<int, int> intRegLimit = std::make_pair(12, 31);             // This will be the limit of integer registers
+std::pair<int, int> floatRegLimit = std::make_pair(32 + 12, 32 + 31); // This will be the limit of float registers
+
+std::string getRegName(int regNo)
+{
+    // This will return the register name
+    if (regNo >= intRegLimit.first && regNo <= intRegLimit.second)
+    {
+        return getRegName(regNo);
+    }
+    else if (regNo >= floatRegLimit.first && regNo <= floatRegLimit.second)
+    {
+        return "f" + std::to_string(regNo - 32);
+    }
+    return "INVALID";
+}
 
 void SymTable::resetRegTable()
 {
     // This will initialize the register table
-    for (int i = MIN_REGNO; i <= MAX_REGNO; i++)
+    for (int i = intRegLimit.first; i <= intRegLimit.second; i++)
     {
-        SetOfFreeReg.insert(i); // Add the register to the free register set
+        SetOfFreeReg.insert(i);              // Add the register to the free register set
+        regMap[i] = std::set<std::string>(); // Initialize the register map
+    }
+
+    for (int i = floatRegLimit.first; i <= floatRegLimit.second; i++)
+    {
+        SetOfFreeReg.insert(i);              // Add the register to the free register set
         regMap[i] = std::set<std::string>(); // Initialize the register map
     }
 }
-
 
 bool SymTable::isFree(int regNo)
 {
@@ -545,7 +554,7 @@ int SymTable::freeAllReg()
 
     for (auto it : regMap)
     {
-        regMap[it.first].clear(); // Clear the register map
+        regMap[it.first].clear();      // Clear the register map
         SetOfFreeReg.insert(it.first); // Add the register to the free register set
     }
     return OKAY;
@@ -566,6 +575,30 @@ int SymTable::getFreeReg()
     return regNo;
 }
 
+int SymTable::getFreeReg(std::pair<int, int> regLimit)
+{
+
+    // Check over all free registers if any one in range return it
+    int regNo = -1;
+    for (int i = regLimit.first; i <= regLimit.second; i++)
+    {
+        if (SetOfFreeReg.find(i) != SetOfFreeReg.end())
+        {
+            regNo = i;
+            break;
+        }
+    }
+
+    // Now remove this register from the free register set
+    if (regNo != -1)
+    {
+        SetOfFreeReg.erase(regNo);
+    }
+
+    // regNo = -1 if no register is free
+    return regNo;
+}
+
 void SymTable::printRegTable(std::ofstream &file)
 {
     // This will print the register table
@@ -579,7 +612,7 @@ void SymTable::printRegTable(std::ofstream &file)
         {
             file << std::left << std::setw(20) << jt;
         }
-        if(it.second.size() == 0)
+        if (it.second.size() == 0)
         {
             file << std::left << std::setw(20) << "It's Free 🆓 ";
         }

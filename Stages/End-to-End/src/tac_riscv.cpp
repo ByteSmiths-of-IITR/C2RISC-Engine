@@ -31,7 +31,6 @@ std::string GOTO_EQUAL = "goto_equal"; // if arg1 == arg2 goto result
 
 std::string TO_BACKPATCH = "to_backpatch"; // This is used to backpatch the list with the label index
 
-
 std::string RO_DATA = ".rodata";
 std::string STACK_DATA = ".stack";
 std::string DATA = ".data";
@@ -550,6 +549,18 @@ int NEW_TAC::addVarInfo(int lineNo, const std::string &varName, bool isAlive, co
 void RISCV_CODE::addDataSection(const std::map<std::string, dataSegment> &dataSection)
 {
     this->data = dataSection;
+    return;
+}
+
+std::string RISCV_CODE::newDataLabel(){
+    std::string label = "data_"+std::to_string(newLabelCount++);
+    return label;
+}
+
+void RISCV_CODE::addData(dataSegment data)
+{
+    // Add the data to the data section
+    this->data[data.name] = data;
     return;
 }
 

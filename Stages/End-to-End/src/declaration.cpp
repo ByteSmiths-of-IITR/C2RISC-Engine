@@ -159,37 +159,41 @@ int init_declarator_H(ASTNode *node, TypeExpression inh_type, StorageClass inh_s
     std::string varName; // to be fetched ⬆️
     TypeExpression type; // to be fetched ⬆️
 
-    std::string appendToName = "$" + std::to_string(SYM_TABLE.scopeNo);
-
+    
     // Code Common to (P1, P2)
     if (whichProduction == P1 || whichProduction == P2)
     {
         // 0. Prepare syn_data to recieve
-
+        
         int decl_check = declarator_H(node->children[0], inh_type, varName, type);
         PASS_THE_ERROR(decl_check);
         SYMBOL_TYPE symbolInsertedType = SYMBOL_TYPE::NONE;
-
+        
         // At this point we have type of variable ready
-
+        
         bool isGlobal = (SYM_TABLE.scopeNo == SYM_TABLE.globalScope);
+        bool isStatic = (inh_storageClass == StorageClass::STATIC);
+
+        std::string appendToName = ((!isGlobal) ?  ("$" + std::to_string(SYM_TABLE.scopeNo)) : "");
+        
+        if(isStatic){
+            appendToName = ("_s_" + std::to_string(SYM_TABLE.scopeNo));
+        }
 
         std::string IRvarName = varName + appendToName;
-        if(!isGlobal){
+        if(!(isGlobal || isStatic)){
             int varSize = width(type);
-            IR_CODE.addTAC(node, IRvarName, ALLOCATE, std::to_string(varSize), NO_ARG); // Allocate memory for the variable
+            std::string isF = isFloatingPoint(type) ? "YES" : "NO";
+            IR_CODE.addTAC(node, IRvarName, ALLOCATE, std::to_string(varSize), isF); // Allocate memory for the variable
         }
         else{
-            // int varSize = width(type);
-            // IR_CODE.addTAC(node, IRvarName, ALLOCATE, std::to_string(varSize), GLOBAL_VAR); // Allocate memory for the variable
-
+            // Global Variable
             if(whichProduction == P1){
                 // Global Variable without initializer - assume it to be 0
                 dataSegment obj;
                 obj.name = IRvarName;
                 obj.type = dataZero;
                 obj.value = std::to_string(width(type));
-                obj.inAddressSpace = (getSpace(type) == SPACE::ADDRESS_SPACE);
                 IR_CODE.dataSection[IRvarName] = obj;
             }
         }
@@ -2180,8 +2184,11 @@ int initializer_H(ASTNode *node, TypeExpression inh_type, std::string inh_varNam
         int aex_check = assignment_expression_H(node->children[0], "NONE", varName1, type1, valueType1, valueSpace1);
         PASS_THE_ERROR(aex_check);
 
-
-        std::string irVarName = inh_varName + ((SYM_TABLE.scopeNo!=SYM_TABLE.globalScope) ? "$"+std::to_string(SYM_TABLE.scopeNo) : "");
+        bool isConst = isConstant(type1);
+        bool isGlobal = (SYM_TABLE.scopeNo == SYM_TABLE.globalScope);
+        std::string suffix = (isGlobal) ? "" : std::to_string(SYM_TABLE.scopeNo);
+        suffix = (isConst) ? suffix : "_c_" + std::to_string(SYM_TABLE.scopeNo);
+        std::string irVarName = inh_varName + suffix;
 
         // First we check TypeChecking for operation
         TypeExpression left = inh_type;
@@ -2191,7 +2198,6 @@ int initializer_H(ASTNode *node, TypeExpression inh_type, std::string inh_varNam
         TypeExpression dest = inh_type;
 
         // Special Case Handling for Global Initializations
-        bool isGlobal = (SYM_TABLE.scopeNo == SYM_TABLE.globalScope);
         if(isGlobal){
 
             // Just need to check if it's a constant value or constant variable

@@ -298,6 +298,7 @@ int CFG::setAlive(int atLine, const std::string &varName)
         return FAIL;
     }
 
+
     auto it = blocks[name].livelinessInfo.find(varName);
     if (it == blocks[name].livelinessInfo.end())
     {

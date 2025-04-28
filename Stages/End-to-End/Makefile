@@ -105,7 +105,7 @@ $(LEXER_C): $(LEXER)
 # Step 3: Compile everything together into an executable
 $(EXECUTABLE): $(LEXER_C) $(PARSER_C) $(PARSER_H) $(OBJ_FILES) 
 	@echo "=================== 🔨 Making C2RISC Engine(Beta Version) 🔨 ==================="
-	@$(CXX) $(CXXFLAGS) $(LEXER_C) $(PARSER_C) $(OBJ_FILES) -o $(EXECUTABLE)
+	$(CXX) $(CXXFLAGS) $(LEXER_C) $(PARSER_C) $(OBJ_FILES) -o $(EXECUTABLE)
 
 
 # Add below your current CXXFLAGS and RELEASE_FLAGS

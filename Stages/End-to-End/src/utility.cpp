@@ -8,6 +8,10 @@ int orderOfEval = 0; // Global variable to keep track of the order of evaluation
 std::set<std::string> typeDefIDs; // Defined Here
 bool expectingTypeName = false;   // Global variable to check if we are expecting a type name
 
+bool stdio_lib = false;
+bool stdarg_lib = false;
+
+
 //----------- ASTNode Class
 
 void ASTNode::addAttribute(std::string attribute)

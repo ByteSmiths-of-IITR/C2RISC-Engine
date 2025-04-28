@@ -63,6 +63,9 @@ std::string escapeCharacters(const std::string &input);
 
 extern std::set<std::string> typeDefIDs; // Set to store typedefs
 
+extern bool stdio_lib;
+extern bool stdarg_lib;
+
 // ASTNode class definition
 class ASTNode {
 public:

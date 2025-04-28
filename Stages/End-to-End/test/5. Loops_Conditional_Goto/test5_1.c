@@ -6,11 +6,11 @@
 int main() {
     int a = 10, b = 20, c = 30;
     if (a > b) {
-        printf("a is greater than b\n");
+        a = b;
     } else if (b > c) {
-        printf("b is greater than c\n");
+        b = c;
     } else {
-        printf("c is the greatest\n");
+        c = a;
     }
     return 0;
 }
