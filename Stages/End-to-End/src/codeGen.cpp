@@ -610,15 +610,19 @@ int riscvCodeGen()
         BasicBlock &block = CFG_CODE.blocks[currBlock];
         std::string riscCode;
 
+        
         // Ignore Entry & Exit Blocks
         if (currBlock == "ENTRY" || currBlock == "EXIT")
         {
             continue;
         }
-
+        
         // Add Lable
         riscCode = currBlock + ":";
         FINAL_CODE.addCode(riscCode);
+
+        // At the Start of each block -> RegTable is Reset
+        SYM_RECORD.resetRegTable();
 
         for (auto it : block.irCode.code)
         {
@@ -636,7 +640,7 @@ int riscvCodeGen()
                 int stackSize = SYM_RECORD.getSize(funcName);
 
                 // Adding Comment
-                FINAL_CODE.addComment(" ~TAC~ ➔ ENTRY (start) - " + funcName);
+                FINAL_CODE.addComment(" ‼️ TAC ❗️ ➔ ENTRY (start) - " + funcName);
 
                 // Allocate Stack Space
                 riscCode = indentOP("addi") + "sp, sp, -" + std::to_string(stackSize);
@@ -744,7 +748,7 @@ int riscvCodeGen()
             // AssignOP
             else if (op == ASSIGN_OP)
             {
-                FINAL_CODE.addComment(" ~TAC~ ➔ Assign OP 🟰 - " + currIR.toBaseString());
+                FINAL_CODE.addComment(" ‼️ TAC ❗️ ➔ Assign OP 🟰 - " + currIR.toBaseString());
                 // This will store address(explicit address) of return value in `a0` register
                 std::string dest = currIR.result;
                 std::string src = currIR.arg1;
@@ -796,7 +800,7 @@ int riscvCodeGen()
             }
             else if (op == LEFT_STAR)
             {
-                FINAL_CODE.addComment(" ~TAC~ ➔ Left Star 🌟 - " + currIR.toBaseString());
+                FINAL_CODE.addComment(" ‼️ TAC ❗️ ➔ Left Star 🌟 - " + currIR.toBaseString());
                 // src can't be label -> variable or constant
                 // dest can be a label or constant -> only variable
 
@@ -844,7 +848,7 @@ int riscvCodeGen()
             }
             else if (op == RIGHT_STAR)
             {
-                FINAL_CODE.addComment(" ~TAC~ ➔ Right Star ✨ - " + currIR.toBaseString());
+                FINAL_CODE.addComment(" ‼️ TAC ❗️ ➔ Right Star ✨ - " + currIR.toBaseString());
                 // src can't be a label or constant -> only variable
                 // dest can be a label or constant -> only variable
                 std::string dest = currIR.result;
@@ -879,7 +883,7 @@ int riscvCodeGen()
             }
             else if (op == AMPERSEND)
             {
-                FINAL_CODE.addComment(" ~TAC~ ➔  Ampersend (&) - " + currIR.toBaseString());
+                FINAL_CODE.addComment(" ‼️ TAC ❗️ ➔  Ampersend (&) - " + currIR.toBaseString());
                 std::string dest = currIR.result;
                 std::string src = currIR.arg1;
                 // src can't be constant -> variable or label
@@ -895,6 +899,10 @@ int riscvCodeGen()
                     CERR << "Error in getReg()" << std::endl;
                     return check;
                 }
+
+                // Since we are doing assigning, we need to update the SYM_RECORD
+                SYM_RECORD.variableRest(dest); // update the variable assigned
+                SYM_RECORD.addVarInReg(dest, regMap[dest]); // add the variable to the register
 
                 std::string destReg = getRegName(regMap[dest]);
                 if (isLabel || isGlobal)
@@ -921,7 +929,7 @@ int riscvCodeGen()
             else if (op == CAST)
             {
                 // Only when int-type -> float->type or vice-versa
-                FINAL_CODE.addComment(" ~TAC~ ➔ Cast - " + currIR.toBaseString());
+                FINAL_CODE.addComment(" ‼️ TAC ❗️ ➔ Cast - " + currIR.toBaseString());
 
                 std::string dest = currIR.result;
                 std::string src = currIR.arg1;
@@ -929,7 +937,7 @@ int riscvCodeGen()
 
             else if (op == OFFSET_LOAD)
             {
-                FINAL_CODE.addComment(" ~TAC~ ➔ Offset Load - " + currIR.toBaseString());
+                FINAL_CODE.addComment(" ‼️ TAC ❗️ ➔ Offset Load - " + currIR.toBaseString());
                 // This will load the address of the variable in the register
                 std::string dest = currIR.result;
                 std::string src = currIR.arg1;
@@ -968,7 +976,7 @@ int riscvCodeGen()
             // Param + Function Call + Return
             else if (op == PARAM)
             {
-                FINAL_CODE.addComment(" ~TAC~ ➔ Param - " + currIR.toBaseString());
+                FINAL_CODE.addComment(" ‼️ TAC ❗️ ➔ Param - " + currIR.toBaseString());
                 // Only one argument
                 std::string funcArg = currIR.arg1;
 
@@ -980,7 +988,7 @@ int riscvCodeGen()
             }
             else if (op == CALL)
             {
-                FINAL_CODE.addComment(" ~TAC~ ➔ Function Call - " + currIR.toBaseString());
+                FINAL_CODE.addComment(" ‼️ TAC ❗️ ➔ Function Call - " + currIR.toBaseString());
                 int noOfArg = std::stoi(currIR.arg2);
                 std::string result = currIR.result;
                 std::string funcName = currIR.arg1;
@@ -1116,7 +1124,7 @@ int riscvCodeGen()
             }
             else if (op == RETURN_FUNCTION)
             {
-                FINAL_CODE.addComment(" ~TAC~ ➔ Return Statements - " + currIR.toBaseString());
+                FINAL_CODE.addComment(" ‼️ TAC ❗️ ➔ Return Statements - " + currIR.toBaseString());
                 std::string retVar = currIR.arg1;
                 bool defaultRet = (retVar == NO_ARG);
 
@@ -1195,7 +1203,7 @@ int riscvCodeGen()
             // Jump Operations
             else if (op == GOTO_EQUAL)
             {
-                FINAL_CODE.addComment(" ~TAC~ ➔ GOTO_EQUAL - " + currIR.toBaseString());
+                FINAL_CODE.addComment(" ‼️ TAC ❗️ ➔ GOTO_EQUAL - " + currIR.toBaseString());
 
                 // Spilling Code
                 spillingCode();
@@ -1225,7 +1233,7 @@ int riscvCodeGen()
                 // Spilling Code
                 spillingCode();
 
-                FINAL_CODE.addComment(" ~TAC~ ➔ GOTO_LABEL - " + currIR.toBaseString());
+                FINAL_CODE.addComment(" ‼️ TAC ❗️ ➔ GOTO_LABEL - " + currIR.toBaseString());
                 // Unconditional Jump
                 std::string label = currIR.result;
 
@@ -1239,7 +1247,7 @@ int riscvCodeGen()
                 // Spilling Code
                 spillingCode();
 
-                FINAL_CODE.addComment(" ~TAC~ ➔ IF_TRUE - " + currIR.toBaseString());
+                FINAL_CODE.addComment(" ‼️ TAC ❗️ ➔ IF_TRUE - " + currIR.toBaseString());
                 std::string condVar = currIR.arg1;
                 std::string label = currIR.result;
 
@@ -1260,10 +1268,9 @@ int riscvCodeGen()
             else if (op == IF_FALSE)
             {
 
-                // Spilling Code
-                spillingCode();
+                
 
-                FINAL_CODE.addComment(" ~TAC~ ➔ IF_FALSE - " + currIR.toBaseString());
+                FINAL_CODE.addComment(" ‼️ TAC ❗️ ➔ IF_FALSE - " + currIR.toBaseString());
                 std::string condVar = currIR.arg1;
                 std::string label = currIR.result;
 
@@ -1279,6 +1286,11 @@ int riscvCodeGen()
                 std::string condReg = getRegName(regMap[condVar]);
                 riscCode = indentOP("beq") + condReg + ", x0, " + label;
                 FINAL_CODE.addCode(riscCode, "Jump to label - " + label + " if " + condVar + " is false");
+
+                // Spilling Code
+                spillingCode();
+
+                // Now we need to update the SYM_RECORD
             }
 
             // Instruction to Ignore
@@ -1291,7 +1303,7 @@ int riscvCodeGen()
             else
             {
                 // This will be a simple operation
-                FINAL_CODE.addComment(" ~TAC~ ➔ Simple Operation - " + currIR.toBaseString());
+                FINAL_CODE.addComment(" ‼️ TAC ❗️ ➔ Simple Operation - " + currIR.toBaseString());
 
                 generateSimpleExpCode(currIR); // This will do all the work
             }
@@ -1299,16 +1311,16 @@ int riscvCodeGen()
 
         // Spill the registers
         spillingCode();
+        SYM_RECORD.resetRegTable(); // reset the register map [Thus Next Block will assume all registers are free]
     }
 
     return OKAY;
 }
 
-
 void spillingCode()
 {
     // At the End of the block, we need to store all the registers into the memory
-    FINAL_CODE.addComment(" ~~ Spilling Code ~~ ");
+    FINAL_CODE.addComment(" 🫟 Spilling Code 🫟 ");
     // We need to store all the variables in the registers -> memory
     for (auto each : SYM_RECORD.regMap)
     {
@@ -1326,13 +1338,13 @@ void spillingCode()
             SYM_RECORD.setInMemory(var);         // set the variable in memory
         }
 
-        SYM_RECORD.freeGivenReg(regNo); // free this register
+        // SYM_RECORD.freeGivenReg(regNo); // free this register
     }
 
     // Finally we reset the SYM_RECORD for this block
     SYM_RECORD.resetRegTable(); // reset the register map [Thus Next Block will assume all registers are free]
 
-    FINAL_CODE.addComment(" ~~ Finished Spilling Code ~~ ");
+    FINAL_CODE.addComment(" 🫗 Finished Spilling Code 👌 ");
 }
 
 //======================[ Register Allocation ]=========================================================================================
@@ -1349,10 +1361,7 @@ void spillingCode()
 
 int getReg(NEW_TAC_Quadruple &code, std::map<std::string, int> &regMap)
 {
-    int minIntReg = 12;
-    int maxIntReg = 31;
-    std::pair<int, int> regLimit = std::make_pair(minIntReg, maxIntReg);
-    int check = getRegLimit(code, regMap, regLimit);
+    int check = getRegLimit(code, regMap, intRegLimit);
     if (check != OKAY)
     {
         CERR << "Error in getRegLimit()" << std::endl;
@@ -1423,11 +1432,22 @@ int getRegLimit(NEW_TAC_Quadruple &code, std::map<std::string, int> &regMap, std
     std::string usageVar2 = (usageType.size() > 1) ? usageType[1] : "NULL";
     std::string assignVar = (assignmentType.size() > 0) ? assignmentType[0] : "NULL";
 
+    // Special Case Handling
+    if (op == AMPERSEND)
+    {
+        usageVar1 = "NULL"; // since it would be loaded from memory
+    }
+
+    if (op == OFFSET_LOAD)
+    {
+        // We don't need register for 2nd operand
+        usageVar1 = "NULL"; // since it would be loaded from memory
+    }
+
     CERR << "------ Debugging getReg() ------ " << std::endl;
     CERR << "Given TAC - " << code.toBaseString() << std::endl;
     CERR << "Usage Variables - " << usageVar1 << " " << usageVar2 << std::endl;
     CERR << "Assignment Variables - " << assignVar << std::endl;
-    CERR << "--------------------------" << std::endl;
 
     if (usageType.size() > 2)
     {
@@ -1461,19 +1481,9 @@ int getRegLimit(NEW_TAC_Quadruple &code, std::map<std::string, int> &regMap, std
         - assign op
         */
 
-        // Special Case Handling
-        if (op == AMPERSEND)
-        {
-            usageVar1 = "NULL"; // since it would be loaded from memory
-        }
-
-        if (op == OFFSET_LOAD)
-        {
-            // We don't need register for 2nd operand
-            usageVar2 = "NULL"; // since it would be loaded from memory
-        }
-
+        
         std::set<int> justUsedReg;
+
         if (usageVar1 != "NULL")
         {
             std::string usageVar = usageVar1;
@@ -1483,6 +1493,7 @@ int getRegLimit(NEW_TAC_Quadruple &code, std::map<std::string, int> &regMap, std
             if (presentIn != -1)
             {
                 // This is already in register
+                FINAL_CODE.addComment(" 🔵 Already in register - " + usageVar + " in " + std::to_string(presentIn));
                 regMap[usageVar] = presentIn;
                 justUsedReg.insert(presentIn);
             }
@@ -1492,6 +1503,7 @@ int getRegLimit(NEW_TAC_Quadruple &code, std::map<std::string, int> &regMap, std
                 int anyFree = SYM_RECORD.getFreeReg(regLimit);
                 if (anyFree != -1)
                 {
+                    FINAL_CODE.addComment(" 🟢 Found Free Register - " + std::to_string(anyFree) + " for " + usageVar1);
                     // Give this register to the variable
                     regMap[usageVar] = anyFree;
                     justUsedReg.insert(anyFree);
@@ -1611,6 +1623,7 @@ int getRegLimit(NEW_TAC_Quadruple &code, std::map<std::string, int> &regMap, std
             if (presentIn != -1)
             {
                 // This is already in register
+                FINAL_CODE.addComment(" 🔵 Already in register - " + usageVar + " in " + std::to_string(presentIn));
                 regMap[usageVar] = presentIn;
                 justUsedReg.insert(presentIn);
             }
@@ -1620,6 +1633,8 @@ int getRegLimit(NEW_TAC_Quadruple &code, std::map<std::string, int> &regMap, std
                 int anyFree = SYM_RECORD.getFreeReg(regLimit);
                 if (anyFree != -1)
                 {
+                    FINAL_CODE.addComment(" 🟢 Found Free Register - " + std::to_string(anyFree) + " for " + usageVar2);
+
                     // Give this register to the variable
                     regMap[usageVar] = anyFree;
                     justUsedReg.insert(anyFree);
@@ -1735,8 +1750,9 @@ int getRegLimit(NEW_TAC_Quadruple &code, std::map<std::string, int> &regMap, std
         if (assignVar != "NULL")
         {
 
-            if (op == ASSIGN_OP && usageVar1 != "NULL")
+            if (op == ASSIGN_OP && usageVar1 != "NULL" && usageVar2 == "NULL")
             {
+                FINAL_CODE.addComment(" 🍊 Giving " + assignVar + " same reg as given to " + usageVar1);
                 regMap[assignVar] = regMap[usageVar1];
                 justUsedReg.insert(regMap[usageVar1]);
             }
@@ -1747,6 +1763,7 @@ int getRegLimit(NEW_TAC_Quadruple &code, std::map<std::string, int> &regMap, std
                 if (presentIn != -1)
                 {
                     // We have got our register
+                    FINAL_CODE.addComment(" 🔵 Already in (ex)register - " + assignVar + " in " + std::to_string(presentIn));
                     regMap[assignVar] = presentIn;
                     justUsedReg.insert(presentIn);
                 }
@@ -1764,12 +1781,14 @@ int getRegLimit(NEW_TAC_Quadruple &code, std::map<std::string, int> &regMap, std
                     if (noNextUse_1 && exclusivelyUsed_1)
                     {
                         // We can use this register
+                        FINAL_CODE.addComment(" 🍊 Giving " + assignVar + " same reg as given to " + usageVar1 + " since it not used again");
                         regMap[assignVar] = givenReg_1;
                         justUsedReg.insert(givenReg_1);
                     }
                     else if (noNextUse_2 && exclusivelyUsed_2)
                     {
                         // We can use this register
+                        FINAL_CODE.addComment(" 🍊 Giving " + assignVar + " same reg as given to " + usageVar2 + " since it not used again");
                         regMap[assignVar] = givenReg_2;
                         justUsedReg.insert(givenReg_2);
                     }
@@ -1779,6 +1798,7 @@ int getRegLimit(NEW_TAC_Quadruple &code, std::map<std::string, int> &regMap, std
                         int anyFree = SYM_RECORD.getFreeReg(regLimit);
                         if (anyFree != -1)
                         {
+                            FINAL_CODE.addComment(" 🟢 Found Free Register - " + std::to_string(anyFree) + " for " + assignVar);
                             // Give this register to the variable
                             regMap[assignVar] = anyFree;
                             justUsedReg.insert(anyFree);
@@ -1884,6 +1904,8 @@ int getRegLimit(NEW_TAC_Quadruple &code, std::map<std::string, int> &regMap, std
         }
     }
 
+    CERR << "--------------------------" << std::endl;
+
     // At the End of GetReg,
     std::string getRegResult = "";
     getRegResult += " 🙋🏼 GetReg() for " + code.toBaseString();
@@ -1893,7 +1915,7 @@ int getRegLimit(NEW_TAC_Quadruple &code, std::map<std::string, int> &regMap, std
         int regNo = it.second;
 
         // We need to update the SYM_RECORD
-        getRegResult += " | 🤝 " + getRegName(regNo) + "` reg ➜ " + varName;
+        getRegResult += " | 🤝 `" + getRegName(regNo) + "` reg ➜ " + varName;
     }
     getRegResult += " |";
 
@@ -2087,7 +2109,8 @@ void RISCV_CODE::addCopyInst(std::string variable, int size, int srcImm, std::st
     }
 }
 
-void RISCV_CODE::addLoadInst(const std::string &varName, std::string regName){
+void RISCV_CODE::addLoadInst(const std::string &varName, std::string regName)
+{
 
     std::string riscCode;
     int sizeOfVar = SYM_RECORD.getSize(varName);
@@ -2100,7 +2123,6 @@ void RISCV_CODE::addLoadInst(const std::string &varName, std::string regName){
     bool isFloat = SYM_RECORD.isFloat(varName);
     std::string loadOP = (isFloat) ? "fl" : "l";
 
-
     if (isGlobal)
     {
         // We need to load the address of the variable in a register
@@ -2110,14 +2132,14 @@ void RISCV_CODE::addLoadInst(const std::string &varName, std::string regName){
 
         // Now we can store the value in the memory
         riscCode = indentOP(loadOP + sl_type) + regName + ", 0(" + addrReg + ")";
-        this->addCode(riscCode, "Load Global Var - " + varName + " via " + addrReg + " in x" +regName);
+        this->addCode(riscCode, "Load Global Var - " + varName + " via " + addrReg + " in x" + regName);
     }
     else
     {
         // Else it's a local variable - we need its offset
-        int loc = SYM_RECORD.getOffset(varName);                                                          // [This Offset is w.r.t fp]
+        int loc = SYM_RECORD.getOffset(varName);                                                // [This Offset is w.r.t fp]
         riscCode = indentOP(loadOP + sl_type) + regName + ", -" + std::to_string(loc) + "(fp)"; // w.r.t frame pointer(fp)
-        this->addCode(riscCode, "Load Local Var - " + varName + " via fp in x" + regName);
+        this->addCode(riscCode, "Load Local Var - " + varName + " via fp in " + regName);
     }
 
     return;
@@ -2132,12 +2154,13 @@ void RISCV_CODE::addLoadInst(const std::string &varName, int regNo)
 
 void RISCV_CODE::addStoreInst(const std::string &varName, int regNo)
 {
-    
+
     std::string regName = getRegName(regNo);
     this->addStoreInst(varName, regName);
 }
 
-void RISCV_CODE::addStoreInst(const std::string &varName, std::string regName){
+void RISCV_CODE::addStoreInst(const std::string &varName, std::string regName)
+{
     std::string riscCode;
     int sizeOfVar = SYM_RECORD.getSize(varName);
 
@@ -2163,9 +2186,9 @@ void RISCV_CODE::addStoreInst(const std::string &varName, std::string regName){
     else
     {
         // Else it's a local variable - we need its offset
-        int loc = SYM_RECORD.getOffset(varName);                                                           // [This Offset is w.r.t fp]
+        int loc = SYM_RECORD.getOffset(varName);                                                 // [This Offset is w.r.t fp]
         riscCode = indentOP(storeOP + sl_type) + regName + ", -" + std::to_string(loc) + "(fp)"; // w.r.t frame pointer(fp)
-        this->addCode(riscCode, "Store Local Var - " + varName + " via fp in x" + regName);
+        this->addCode(riscCode, "Store Local Var - " + varName + " via fp in " + regName);
     }
 
     return;
@@ -2213,7 +2236,6 @@ int getFloatReg(NEW_TAC_Quadruple &code, std::map<std::string, int> &regMap)
 
     return OKAY;
 }
-
 
 int generateSimpleExpCode(NEW_TAC_Quadruple code)
 {
@@ -2541,7 +2563,6 @@ int generateSimpleExpCode(NEW_TAC_Quadruple code)
 
     return OKAY;
 }
-
 
 int addPrint_ScanLib()
 {

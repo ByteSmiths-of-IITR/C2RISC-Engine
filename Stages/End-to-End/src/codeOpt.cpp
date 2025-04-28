@@ -388,3 +388,263 @@ int strengthReduction_al_simplification()
     IR_CODE = newIR;
     return OKAY;
 }
+
+// Helper function to trim spaces
+std::string trim(const std::string &str)
+{
+    size_t first = str.find_first_not_of(' ');
+    if (first == std::string::npos)
+        return "";
+    size_t last = str.find_last_not_of(' ');
+    return str.substr(first, (last - first + 1));
+}
+
+// Function to process printf lines
+std::string processPrintf(const std::string &line, int &strCounter)
+{
+    std::string result;
+    size_t start = line.find('(');
+    size_t end = line.rfind(')');
+    if (start == std::string::npos || end == std::string::npos || start >= end)
+    {
+        return line; // Not a valid printf
+    }
+
+    std::string inside = line.substr(start + 1, end - start - 1);
+    size_t firstComma = inside.find(',');
+    std::string formatString, vars;
+    if (firstComma == std::string::npos)
+    {
+        formatString = inside;
+        vars = "";
+    }
+    else
+    {
+        formatString = inside.substr(0, firstComma);
+        vars = inside.substr(firstComma + 1);
+    }
+
+    formatString = trim(formatString);
+    if (!formatString.empty() && formatString.front() == '"' && formatString.back() == '"')
+    {
+        formatString = formatString.substr(1, formatString.length() - 2);
+    }
+
+    std::vector<std::string> variables;
+    std::string tempVar;
+    int bracketCount = 0;
+    for (char ch : vars)
+    {
+        if (ch == ',' && bracketCount == 0)
+        {
+            variables.push_back(trim(tempVar));
+            tempVar = "";
+        }
+        else
+        {
+            if (ch == '(')
+                bracketCount++;
+            if (ch == ')')
+                bracketCount--;
+            tempVar += ch;
+        }
+    }
+    if (!tempVar.empty())
+    {
+        variables.push_back(trim(tempVar));
+    }
+
+    int varIndex = 0;
+    std::string textPart;
+
+    for (size_t i = 0; i < formatString.length(); ++i)
+    {
+        if (formatString[i] == '%' && (i + 1 < formatString.length()))
+        {
+            bool matched = false;
+            if (formatString[i + 1] == 'd' || formatString[i + 1] == 'i' || formatString[i + 1] == 'c' || formatString[i + 1] == 'p')
+            {
+                matched = true;
+                i += 1;
+            }
+            else if (formatString[i + 1] == 'h' && (formatString[i + 2] == 'd' || formatString[i + 2] == 'i'))
+            {
+                matched = true;
+                i += 2;
+            }
+            else if (formatString[i + 1] == 'l' && (formatString[i + 2] == 'd' || formatString[i + 2] == 'i'))
+            {
+                matched = true;
+                i += 2;
+            }
+            else if (formatString[i + 1] == 'l' && formatString[i + 2] == 'l' && (formatString[i + 3] == 'd' || formatString[i + 3] == 'i'))
+            {
+                matched = true;
+                i += 3;
+            }
+
+            if (matched)
+            {
+                if (!textPart.empty())
+                {
+                    result += "char *__str__vira__" + std::to_string(strCounter) + " = \"" + textPart + "\";\n";
+                    result += "printString(__str__vira__" + std::to_string(strCounter) + ");\n";
+                    strCounter++;
+                    textPart.clear();
+                }
+                if (varIndex < variables.size())
+                {
+                    result += "printVar(" + variables[varIndex] + ");\n";
+                    varIndex++;
+                }
+            }
+        }
+        else
+        {
+            textPart += formatString[i];
+        }
+    }
+
+    if (!textPart.empty())
+    {
+        result += "char *__str__vira__" + std::to_string(strCounter) + " = \"" + textPart + "\";\n";
+        result += "printString(__str__vira__" + std::to_string(strCounter) + ");\n";
+        strCounter++;
+    }
+
+    return result;
+}
+
+// Function to process scanf lines
+std::string processScanf(const std::string &line)
+{
+    std::string result;
+    size_t start = line.find('(');
+    size_t end = line.rfind(')');
+    if (start == std::string::npos || end == std::string::npos || start >= end)
+    {
+        return line; // Not a valid scanf
+    }
+
+    std::string inside = line.substr(start + 1, end - start - 1);
+    size_t firstComma = inside.find(',');
+    if (firstComma == std::string::npos)
+    {
+        return line; // No variables
+    }
+
+    std::string formatString = inside.substr(0, firstComma);
+    std::string vars = inside.substr(firstComma + 1);
+
+    formatString = trim(formatString);
+    if (!formatString.empty() && formatString.front() == '"' && formatString.back() == '"')
+    {
+        formatString = formatString.substr(1, formatString.length() - 2);
+    }
+
+    std::vector<std::string> variables;
+    std::string tempVar;
+    int bracketCount = 0;
+    for (char ch : vars)
+    {
+        if (ch == ',' && bracketCount == 0)
+        {
+            variables.push_back(trim(tempVar));
+            tempVar.clear();
+        }
+        else
+        {
+            if (ch == '(')
+                bracketCount++;
+            if (ch == ')')
+                bracketCount--;
+            tempVar += ch;
+        }
+    }
+    if (!tempVar.empty())
+    {
+        variables.push_back(trim(tempVar));
+    }
+
+    int varIndex = 0;
+    for (size_t i = 0; i < formatString.length(); ++i)
+    {
+        if (formatString[i] == '%')
+        {
+            bool matched = false;
+            if (formatString[i + 1] == 'd' || formatString[i + 1] == 'i' || formatString[i + 1] == 'c' || formatString[i + 1] == 'p')
+            {
+                matched = true;
+                i += 1;
+            }
+            else if (formatString[i + 1] == 'h' && (formatString[i + 2] == 'd' || formatString[i + 2] == 'i'))
+            {
+                matched = true;
+                i += 2;
+            }
+            else if (formatString[i + 1] == 'l' && (formatString[i + 2] == 'd' || formatString[i + 2] == 'i'))
+            {
+                matched = true;
+                i += 2;
+            }
+            else if (formatString[i + 1] == 'l' && formatString[i + 2] == 'l' && (formatString[i + 3] == 'd' || formatString[i + 3] == 'i'))
+            {
+                matched = true;
+                i += 3;
+            }
+
+            if (matched)
+            {
+                if (varIndex < variables.size())
+                {
+                    std::string var = variables[varIndex];
+                    if (!var.empty() && var[0] == '&')
+                    {
+                        var = var.substr(1); // remove &
+                    }
+                    result += var + " = scanVar();\n";
+                    varIndex++;
+                }
+            }
+        }
+    }
+
+    return result;
+}
+
+// The main processing function
+void processFile(const std::string &inputFileName, const std::string &outputFileName)
+{
+    std::ifstream inputFile(inputFileName);
+    std::ofstream outputFile(outputFileName);
+
+    if (!inputFile.is_open() || !outputFile.is_open())
+    {
+        std::cout << "Error opening files!" << std::endl;
+        return;
+    }
+
+    std::string line;
+    int strCounter = 1;
+
+    while (std::getline(inputFile, line))
+    {
+        if (line.find("printf") != std::string::npos)
+        {
+            outputFile << processPrintf(line, strCounter);
+        }
+        else if (line.find("scanf") != std::string::npos)
+        {
+            outputFile << processScanf(line);
+        }
+        else
+        {
+            outputFile << line << std::endl;
+        }
+    }
+
+    inputFile.close();
+    outputFile.close();
+
+    std::cout << "Conversion complete. Output written to " << outputFileName << std::endl;
+}

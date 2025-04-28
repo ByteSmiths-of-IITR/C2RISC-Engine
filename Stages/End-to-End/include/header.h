@@ -846,8 +846,7 @@ extern const int FAIL;
         if (getSpace(type) == SPACE::ADDRESS_SPACE)                                               \
         {                                                                                         \
             std::string offset = newTemp();                                                       \
-            int size = width(type);                                                               \
-            IR_CODE.addTAC((node), offset, ALLOCATE, std::to_string(size), NO_ARG);               \
+            IR_CODE.addTAC((node), offset, ALLOCATE, std::to_string(ADDRESS_SIZE),"NO");          \
             IR_CODE.addTAC((node), offset, OFFSET_LOAD, (value), NO_ARG);                         \
             value = offset;                                                                       \
             (node)->attributes.push_back("🌋 Space Change from VALUE to ADDRESS 💥 ");            \
@@ -879,8 +878,7 @@ extern const int FAIL;
         if ((newSpace) == SPACE::ADDRESS_SPACE && getSpace(type) == SPACE::ADDRESS_SPACE)         \
         {                                                                                         \
             std::string offset = newTemp();                                                       \
-            int size = width(type);                                                               \
-            IR_CODE.addTAC((node), offset, ALLOCATE, std::to_string(size), NO_ARG);               \
+            IR_CODE.addTAC((node), offset, ALLOCATE, std::to_string(ADDRESS_SIZE), "NO");         \
             IR_CODE.addTAC((node), offset, OFFSET_LOAD, (value), NO_ARG);                         \
             value = offset;                                                                       \
             (node)->attributes.push_back(" .  Space Change from VALUE to ADDRESS   ");            \
@@ -1384,6 +1382,11 @@ int constantFolding();
 int strengthReduction_al_simplification();
 
 int machineIndependentOptimization();
+
+std::string trim(const std::string &str);
+std::string processPrintf(const std::string &line, int &strCounter);
+std::string processScanf(const std::string &line);
+void processFile(const std::string &inputFileName, const std::string &outputFileName);
 
 //======================[ Code Generation Utilies ]=========================================================================================
 

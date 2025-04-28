@@ -192,6 +192,7 @@ int SymTable::insert(const std::string &key, int size,bool isFloat)
     info.whichFunction = functionName; // This will set the function name
     info.offset = stack_offset;        // This will set the offset of the function
     info.isFloat = isFloat; // This will set the isFloat of the function
+    info.inMemory = true;
     // if(padding != 0){
     //     stack_offset += padding;
     //     SymInfo paddingInfo;
@@ -219,6 +220,7 @@ int SymTable::insertGlobal(const std::string &key, int size, bool isFloat)
     info.offset = -1;     // no offset for global variables
     info.isGlobal = true; // Function is Global
     info.isFloat = isFloat;  // This will set the isFloat of the function
+    info.inMemory = true; // This will set the isFloat of the function
 
     symTable[key] = info;
     return INSERT_SUCCESS;
@@ -306,7 +308,7 @@ bool SymTable::isInMemory(const std::string &key)
 
 int SymTable::setInMemory(const std::string &key)
 {
-    // This will set the variable as in memory
+    FINAL_CODE.addComment("Setting 🟢 " + key + " in memory");
     if (symTable.find(key) == symTable.end())
     {
         return FAIL;
@@ -316,9 +318,11 @@ int SymTable::setInMemory(const std::string &key)
     return OKAY;
 }
 
+
 int SymTable::setNotInMemory(const std::string &key)
 {
     // This will set the variable as not in memory
+    FINAL_CODE.addComment("Setting 🚫 " + key + " NOT in memory");
     if (symTable.find(key) == symTable.end())
     {
         return FAIL;
@@ -341,8 +345,10 @@ int SymTable::varStoredInWhichReg(const std::string &key)
     {
         return -1;
     }
+    CERR << " 🎨 Debug: " << key << " is stored in total of " << totalReg << " registers" << std::endl;
 
     auto it = symTable[key].inRegNo.begin();
+    // CERR << "Debug: " << key << " is stored in register " << *it << std::endl;
     int regNo = *it;
     return regNo;
 }
@@ -382,7 +388,7 @@ int SymTable::ex_varStoredInWhichReg(const std::string &key)
 
 int SymTable::addVarInReg(const std::string &key, int regNo)
 {
-    // This will add the variable to the register
+    FINAL_CODE.addComment("Adding 🌕 " + key + " to register " + std::to_string(regNo));
     if (symTable.find(key) == symTable.end())
     {
         return FAIL;
@@ -401,7 +407,7 @@ int SymTable::addVarInReg(const std::string &key, int regNo)
 
 int SymTable::removeVarFromReg(const std::string &key, int regNo)
 {
-    // This will remove the variable from the register
+    // FINAL_CODE.addComment("Removing 🔻 " + key + " from register " + std::to_string(regNo));
     if (symTable.find(key) == symTable.end())
     {
         return FAIL;
@@ -423,7 +429,7 @@ int SymTable::removeVarFromReg(const std::string &key, int regNo)
 
 int SymTable::removeVarFromAllReg(const std::string &key)
 {
-    // This will remove the variable from all the registers
+    // FINAL_CODE.addComment("Removing 🔻🔻 " + key + " from all registers");
     if (symTable.find(key) == symTable.end())
     {
         return FAIL;
@@ -447,7 +453,7 @@ int SymTable::removeVarFromAllReg(const std::string &key)
 
 int SymTable::variableRest(const std::string &key)
 {
-    // Just call
+    // FINAL_CODE.addComment("Resetting " + key + " variable");
     int check = removeVarFromAllReg(key);
     if (check != OKAY)
     {
@@ -480,18 +486,40 @@ std::string getRegName(int regNo)
 
 void SymTable::resetRegTable()
 {
+    // FINAL_CODE.addComment("😵 Resetting Register Table");
+    CERR << "Resetting Register Table" << std::endl;
+    // Remove all variables from the register
+    for(auto it:symTable){
+        removeVarFromAllReg(it.first); // Remove the variable from all registers
+    }
+
+    for(auto it:regMap){
+        freeGivenReg(it.first); // Free the register
+    }
+
     // This will initialize the register table
     for (int i = intRegLimit.first; i <= intRegLimit.second; i++)
     {
         SetOfFreeReg.insert(i);              // Add the register to the free register set
-        regMap[i] = std::set<std::string>(); // Initialize the register map
+        // regMap[i] = std::set<std::string>(); // Initialize the register map
     }
 
     for (int i = floatRegLimit.first; i <= floatRegLimit.second; i++)
     {
         SetOfFreeReg.insert(i);              // Add the register to the free register set
-        regMap[i] = std::set<std::string>(); // Initialize the register map
+        // regMap[i] = std::set<std::string>(); // Initialize the register map
     }
+
+    // std::string fileName = "output/RegTable.txt";
+    // std::ofstream file(fileName);
+    // if (!file.is_open())
+    // {
+    //     CERR << "Error in opening file " << fileName << std::endl;
+    //     return;
+    // }
+
+    // SYM_RECORD.printRegTable(file);
+
 }
 
 bool SymTable::isFree(int regNo)
@@ -544,7 +572,7 @@ int SymTable::howManyVarInReg(int regNo)
 
 int SymTable::freeGivenReg(int regNo)
 {
-    // This will free the given register
+    // FINAL_CODE.addComment("Freeing register " + std::to_string(regNo));
     if (regMap.find(regNo) == regMap.end())
     {
         return FAIL;
@@ -625,5 +653,23 @@ void SymTable::printRegTable(std::ofstream &file)
         file << std::endl;
     }
     file << "-------------------------------------------------------------------------------------------------------------------------" << std::endl;
+    
+    file << "=======================[ Address Description Table ]=====================================================================================" << std::endl;
+    file << std::left << std::setw(10) << "Address" << std::setw(20) << "InMemory" << std::setw(20) << "InRegNo" << std::endl;
+    file << "-------------------------------------------------------------------------------------------------------------------------" << std::endl;
+    for (auto it : symTable)
+    {
+        file << std::left << std::setw(10) << it.first;
+        file << std::left << std::setw(20) << it.second.inMemory;
+        file << std::left << std::setw(20) << "Present in RegNo-";
+        for(auto jt : it.second.inRegNo)
+        {
+            file << jt << " ";
+        }
+        file << std::endl;
+    }
+    file << "-------------------------------------------------------------------------------------------------------------------------" << std::endl;
+    file << "=======================[ End of Register Table ]=====================================================================================" << std::endl;
+    file << std::endl;
     return;
 }

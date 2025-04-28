@@ -1059,34 +1059,34 @@ int postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
         if (valueSpace1 == SPACE::ADDRESS_SPACE && reqSpace == SPACE::VALUE_SPACE)
         {
             // 🔖 IR Code
-            std::string valNew = newTemp(); // allocated width(type1)
+            std::string valOld = newTemp(); // allocated width(type1)
             int valNewSize = width(type1);
             std::string isF = isFloatingPoint(type1) ? "YES" : "NO";
-            IR_CODE.addTAC(node, valNew, ALLOCATE, std::to_string(valNewSize), isF); // Allocate memory for the variable
+            IR_CODE.addTAC(node, valOld, ALLOCATE, std::to_string(valNewSize), isF); // Allocate memory for the variable
 
             int element_width = width(type1);
             std::cout << "Adding arg2 to RIGHT_STAR " << element_width << std::endl;
-            IR_CODE.addTAC(node, valNew, RIGHT_STAR, varName1, std::to_string(element_width)); // Load it
-            std::string valNew2 = newTemp();                                             // allocated width(type1)
-            IR_CODE.addTAC(node, valNew2, ALLOCATE, std::to_string(valNewSize), isF); // Allocate memory for the variable
+            IR_CODE.addTAC(node, valOld, RIGHT_STAR, varName1, std::to_string(element_width)); // Load it
+            std::string valNew = newTemp();                                             // allocated width(type1)
+            IR_CODE.addTAC(node, valNew, ALLOCATE, std::to_string(valNewSize), isF); // Allocate memory for the variable
 
-            IR_CODE.addTAC(node, valNew2, op, valNew, inc_decBY); // Increment it
-            IR_CODE.addTAC(node, varName1, LEFT_STAR, valNew2, std::to_string(element_width)); // Store it
+            IR_CODE.addTAC(node, valNew, op, valOld, inc_decBY); // Increment it
+            IR_CODE.addTAC(node, varName1, LEFT_STAR, valNew, std::to_string(element_width)); // Store it
 
-            varName0 = valNew; // Old varName before inc/dec
+            varName0 = valOld; // Old varName before inc/dec
         }
         else if (valueSpace1 == SPACE::VALUE_SPACE)
         {
             // 🔖 IR Code
-            std::string valNew = newTemp(); // allocated width(type1)
+            std::string valOld = newTemp(); // allocated width(type1)
             int valNewSize = width(type1);
             std::string isF = isFloatingPoint(type1) ? "YES" : "NO";
-            IR_CODE.addTAC(node, valNew, ALLOCATE, std::to_string(valNewSize), isF); // Allocate memory for the variable
+            IR_CODE.addTAC(node, valOld, ALLOCATE, std::to_string(valNewSize), isF); // Allocate memory for the variable
 
-            IR_CODE.addTAC(node, valNew, "=", varName1, inc_decBY); // Store it
+            IR_CODE.addTAC(node, valOld, ASSIGN_OP, varName1, NO_ARG); // Store it
 
             IR_CODE.addTAC(node, varName1, op, varName1, inc_decBY); // Increment it
-            varName0 = valNew;                                       // Old varName before inc/dec
+            varName0 = valOld;                                       // Old varName before inc/dec
         }
         else
         {
