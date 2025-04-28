@@ -1,9 +1,9 @@
-#-------- 🎨 RISC-V Code Gen using C2RISC-Engine Time(2025-04-29 - 02:37:15) 🎨 ---------
+#-------- 🎨 RISC-V Code Gen using C2RISC-Engine Time(2025-04-29 - 02:54:45) 🎨 ---------
 
 .data
-        str_0:    .string "Hello World"
 
 .text
+        # #define <stdio.h> INCLUDED
         #  ==== Adding Print and Scan Library ==== 
         printVar:              # Function Signature - void printVar(int var)
         # Function Entry - printVar
@@ -56,35 +56,110 @@
         #  🫗 Finished Spilling Code 👌 
         # 
 # ‼️ TAC ❗️ ➔ ENTRY (start) - main
-        addi  sp, sp, -20      # Allocating Stack Space
-        sw    ra, 16(sp)       # Store return address (PC)
-        sw    fp, 12(sp)       # Store old frame pointer
-        addi  fp, sp,20        # Set new frame pointer
+        addi  sp, sp, -40      # Allocating Stack Space
+        sw    ra, 36(sp)       # Store return address (PC)
+        sw    fp, 32(sp)       # Store old frame pointer
+        addi  fp, sp,40        # Set new frame pointer
         # 
-# ‼️ TAC ❗️ ➔ Param - param str_0
-        # Adding str_0 to parameter queue
+# ‼️ TAC ❗️ ➔ Assign OP 🟰 - a$1 = 7
         # 
-# ‼️ TAC ❗️ ➔ Function Call - $0 = call printString, 1
-        la    t0, str_0        # Loading Address of Global Variable - str_0
-        lw    t2, 0(t0)        # Load Global Var - str_0 via t0 in xt2
-        mv    a0, t2           # Move argument - str_0 into a0
+# 🤙🏼 Calling getReg() for a$1 = 7
+        #  🟢 Found Free Register - 12 for a$1
+        # 
+# 👋 GetReg() for a$1 = 7 | 🤝 `x0` reg ➜ NULL | 🤝 `x12` reg ➜ a$1 |
+        # 💛 SYM_RECORD 💛 - Setting 🚫 a$1 NOT in memory
+        # 💛 SYM_RECORD 💛 - Adding 🌕 a$1 to register 12
+        li    x12, 7           # Load constant - 7 into x12(a$1)
+        # 
+# ‼️ TAC ❗️ ➔  Ampersend (&) - $0 = &a$1
+        # 
+# 🤙🏼 Calling getReg() for $0 = &a$1
+        #  🟢 Found Free Register - 13 for $0
+        # 
+# 👋 GetReg() for $0 = &a$1 | 🤝 `x13` reg ➜ $0 | 🤝 `x0` reg ➜ NULL |
+        # 💛 SYM_RECORD 💛 - Setting 🚫 $0 NOT in memory
+        # 💛 SYM_RECORD 💛 - Adding 🌕 $0 to register 13
+        addi  x13, fp, -20     # Load address of variable (via fp) - a$1 into x13
+        # 
+# ‼️ TAC ❗️ ➔ Assign OP 🟰 - p$1 = $0
+        # 
+# 🤙🏼 Calling getReg() for p$1 = $0
+        #  🔵 Already in register - $0 in 13
+        #  🍊 Giving p$1 same reg as given to $0 due to ASSIGN-OP
+        # 
+# 👋 GetReg() for p$1 = $0 | 🤝 `x13` reg ➜ $0 | 🤝 `x13` reg ➜ p$1 |
+        # 💛 SYM_RECORD 💛 - Setting 🚫 p$1 NOT in memory
+        # 💛 SYM_RECORD 💛 - Adding 🌕 p$1 to register 13
+        #  🔄 Automatic copy - of $0 into (p$1)
+        # 
+# ‼️ TAC ❗️ ➔ Left Star 🌟 - (4)*p$1 = 10
+        #  🫟 Spilling Code 🫟  due to ➢ 😱 Someone touched addressSpace ☄️
+        sw    x12, -20(fp)     # Store Local Var - a$1 via fp in x12
+        # 💛 SYM_RECORD 💛 - Setting 🟢 a$1 in memory
+        sw    x13, -28(fp)     # Store Local Var - $0 via fp in x13
+        # 💛 SYM_RECORD 💛 - Setting 🟢 $0 in memory
+        sw    x13, -24(fp)     # Store Local Var - p$1 via fp in x13
+        # 💛 SYM_RECORD 💛 - Setting 🟢 p$1 in memory
+        #  🫗 Finished Spilling Code 👌 
+        # 
+# 🤙🏼 Calling getReg() for (4)*p$1 = 10
+        #  🟢 Found Free Register - 12 for p$1
+        # 💛 SYM_RECORD 💛 - Adding 🌕 p$1 to register 12
+        lw    x12, -24(fp)     # Load Local Var - p$1 via fp in x12
+        # 
+# 👋 GetReg() for (4)*p$1 = 10 | 🤝 `x12` reg ➜ p$1 |
+        li    t0, 10           # Load constant - 10 into t0
+        sw    t0, 0(x12)       # Store constant of reg t0 at address pointed by x12
+        # 
+# ‼️ TAC ❗️ ➔ Param - param a$1
+        # Adding a$1 to parameter queue
+        # 
+# ‼️ TAC ❗️ ➔ Function Call - $1 = call printVar, 1
+        lw    t2, -20(fp)      # Load Local Var - a$1 via fp in t2
+        mv    a0, t2           # Move argument - a$1 into a0
         #  🫟 Spilling Code 🫟  due to ➢ Going to ☎️ call a Function
         #  🫗 Finished Spilling Code 👌 
-        jal   x1, printString  # Call function - printString
-        sw    a0, -20(fp)      # Store return value in caller's stack for - $0
-        # 💛 SYM_RECORD 💛 - Setting 🚫 $0 NOT in memory
-        # 💛 SYM_RECORD 💛 - Setting 🟢 $0 in memory
+        jal   x1, printVar     # Call function - printVar
+        sw    a0, -32(fp)      # Store return value in caller's stack for - $1
+        # 💛 SYM_RECORD 💛 - Setting 🚫 $1 NOT in memory
+        # 💛 SYM_RECORD 💛 - Setting 🟢 $1 in memory
         # 
-# ‼️ TAC ❗️ ➔ Return Statements - return 0
-        li    t1, 0            # Load constant - 0 into t1
-        mv    a1, t1           # Move return value's reg - t1 to a1
+# ‼️ TAC ❗️ ➔ Assign OP 🟰 - b$1 = a$1
+        # 
+# 🤙🏼 Calling getReg() for b$1 = a$1
+        #  🟢 Found Free Register - 12 for a$1
+        # 💛 SYM_RECORD 💛 - Adding 🌕 a$1 to register 12
+        lw    x12, -20(fp)     # Load Local Var - a$1 via fp in x12
+        #  🍊 Giving b$1 same reg as given to a$1 due to ASSIGN-OP
+        # 
+# 👋 GetReg() for b$1 = a$1 | 🤝 `x12` reg ➜ a$1 | 🤝 `x12` reg ➜ b$1 |
+        # 💛 SYM_RECORD 💛 - Setting 🚫 b$1 NOT in memory
+        # 💛 SYM_RECORD 💛 - Adding 🌕 b$1 to register 12
+        #  🔄 Automatic copy - of a$1 into (b$1)
+        # 
+# ‼️ TAC ❗️ ➔ Param - param b$1
+        # Adding b$1 to parameter queue
+        # 
+# ‼️ TAC ❗️ ➔ Function Call - $2 = call printVar, 1
+        mv    a0, x12          # Move argument - b$1 into a0
+        #  🫟 Spilling Code 🫟  due to ➢ Going to ☎️ call a Function
+        sw    x12, -36(fp)     # Store Local Var - b$1 via fp in x12
+        # 💛 SYM_RECORD 💛 - Setting 🟢 b$1 in memory
+        #  🫗 Finished Spilling Code 👌 
+        jal   x1, printVar     # Call function - printVar
+        sw    a0, -40(fp)      # Store return value in caller's stack for - $2
+        # 💛 SYM_RECORD 💛 - Setting 🚫 $2 NOT in memory
+        # 💛 SYM_RECORD 💛 - Setting 🟢 $2 in memory
+        # 
+# ‼️ TAC ❗️ ➔ Return Statements - return 
+        mv    a1, x0           # Move return value's reg - x0 to a1
         #  -- EXIT Activation (start) - main
         #  🫟 Spilling Code 🫟  due to ➢ End of Function main
         #  🫗 Finished Spilling Code 👌 
         mv    a0, a1           # Move return value stored by return statement into a1 to a0(default return reg)
-        lw    ra, 16(sp)       # Restore return address (PC)
-        lw    fp, 12(sp)       # Restore old frame pointer
-        addi  sp, sp, 20       # Restore stack pointer
+        lw    ra, 36(sp)       # Restore return address (PC)
+        lw    fp, 32(sp)       # Restore old frame pointer
+        addi  sp, sp, 40       # Restore stack pointer
         jr    ra               # Jump to return address(back to caller)
         #  -- EXIT Activation (end) - main
         #  🫟 Spilling Code 🫟  due to ➢ End of CodeGen Spilling

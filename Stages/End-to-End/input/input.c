@@ -6,8 +6,12 @@
 
 int main()
 {
-    printString("Hello World");
-    return 0;
+    int a = 7;
+    int *p = &a;
+    *p = 10;
+    printVar(a);
+    int b = a;
+    printVar(b);
 }
 
 //=========================== C2RISC-Engine =========================================================//

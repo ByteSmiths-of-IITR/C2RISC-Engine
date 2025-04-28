@@ -2718,7 +2718,7 @@ int addPrint_ScanLib()
 {
     // This will add the print and scan library to the code
 
-    if(stdio_lib){
+    if(!stdio_lib){
         FINAL_CODE.addComment("#define <stdio.h> NOT INCLUDED");
         return OKAY;
     }
