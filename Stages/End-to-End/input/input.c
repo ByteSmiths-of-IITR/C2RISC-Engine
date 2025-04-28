@@ -4,18 +4,6 @@
 
 #include <stdio.h>
 
-int factorial(int n)
-{
-    if (n == 0)
-        return 1;
-    else
-        return n * factorial(n - 1);
-}
-
-int main()
-{
-    int k = factorial(3);
-}
 //=========================== C2RISC-Engine =========================================================//
 // Lexical Analysis 👍 | Syntax Analysis 👍 | Semantic Analysis 👍 | Machine Independent Optimization 👍 |  🔖 IRCode Gen
 // 😊 Thanku for using our "C2RISC-Engine" (Till IR Phase) 

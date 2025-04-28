@@ -84,7 +84,7 @@ std::string TAC_Quadruple::toString()
 
     else if (op == FUNCTION_ENTRY)
     {
-        str = result + ": Func ENTER"; // FUNCTION_ENTRY p
+        str = result + ": Func with " + arg1 + " args"; // FUNCTION_ENTRY p, n
     }
 
 

@@ -1152,6 +1152,8 @@ public:
     std::vector<int> leaders;
     std::map<int, std::string> leaderToBlockMap;
 
+    std::vector<std::string> orderOfBlocks;
+
     int nextBlockIndex = 0;
 
     std::string newBlock();
@@ -1348,7 +1350,7 @@ int riscvCodeGen();
 
 int livelinessPass();
 
-void spillingCode();
+void spillingCode(std::string reason);
 
 int getReg(NEW_TAC_Quadruple &code, std::map<std::string, int> &regMap);
 

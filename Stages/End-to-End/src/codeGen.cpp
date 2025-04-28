@@ -588,6 +588,7 @@ int riscvCodeGen()
     std::map<std::string, bool> visitedBlocks;
 
     bool returnValueViaRegister = true; //[FOR Simple Things - OKAY]
+    bool argByRegister = true;   //[FOR Simple Things - OKAY]
 
     blockOrder.push("ENTRY");
     while (!blockOrder.empty())
@@ -621,7 +622,7 @@ int riscvCodeGen()
         FINAL_CODE.addCode(riscCode);
 
         // At the Start of each block -> RegTable is Reset
-        spillingCode(); // At Start of Block
+        spillingCode("Start of Block " + currBlock);
 
         for (auto it : block.irCode.code)
         {
@@ -660,8 +661,19 @@ int riscvCodeGen()
                 riscCode = indentOP("addi") + "fp, sp," + std::to_string(stackSize);
                 FINAL_CODE.addCode(riscCode, "Set new frame pointer");
 
-                // Argument Storing Code will be done by Caller Itself
-                // The Callee will assume the arguments are already in place
+                int noOfArg = std::stoi(currIR.arg1);
+                if(argByRegister){
+                    // We need to store all the arguments in the stack
+                    // assuming all argument to be stored at fp+offset
+                    for(int i = 0; i < noOfArg; i++)
+                    {
+                        int loc = 16 + 4 + (i*4); // 16+4 = 20
+                        std::string locStr = "-" + std::to_string(loc);
+                        std::string argReg = "a" + std::to_string(i);
+                        riscCode = indentOP("sw") + argReg + ", " + locStr + "(fp)";
+                        FINAL_CODE.addCode(riscCode, "Store argument " + std::to_string(i) + " in stack");
+                    }
+                }
 
                 // Done
             }
@@ -674,7 +686,7 @@ int riscvCodeGen()
                 
 
                 //-- Spilling Code
-                spillingCode(); // At End of Function
+                spillingCode("End of Function " + funcName); // Function Exit
 
                 int stackSize = SYM_RECORD.getSize(funcName);
                 std::string riscCode;
@@ -806,8 +818,8 @@ int riscvCodeGen()
                 // dest can be a label or constant -> only variable
 
                 // We are going to touch address -> Reset Register & Spill 
-                FINAL_CODE.addComment("😱 Someone is trying to touch address directly - to be ⚠️ cautious we spill & reset SYM_RECORD");
-                spillingCode(); // Before touching address space
+                // FINAL_CODE.addComment("😱 Someone is trying to touch address directly - to be ⚠️ cautious we spill & reset SYM_RECORD");
+                spillingCode("😱 Someone touched addressSpace ☄️"); // Before touching address space
 
                 std::string dest = currIR.result;
                 std::string src = currIR.arg1;
@@ -873,8 +885,8 @@ int riscvCodeGen()
                 std::string dest = currIR.result;
                 std::string src = currIR.arg1;
 
-                FINAL_CODE.addComment("😱 Someone is trying to touch address directly - to be ⚠️ cautious we spill & reset SYM_RECORD");
-                spillingCode(); // Before touching address space
+                // FINAL_CODE.addComment("😱 Someone is trying to touch address directly - to be ⚠️ cautious we spill & reset SYM_RECORD");
+                spillingCode("😱 Someone touched addressSpace ☄️"); // Before touching address space
 
                 std::map<std::string, int> regMap;
                 int check = getReg(currIR, regMap);
@@ -1061,77 +1073,123 @@ int riscvCodeGen()
                     // Now we need to store this register's value at the address of the caller's stack
                     bool isVariable = isAValueSymbol(args[i]);
                     
-                    if(!isVariable){
-                        // we need to store this value in the caller's stack
-                        std::string tempReg = "t2";
-                        // Load the constant in a register (temporary) (t0)
-                        riscCode = indentOP("li") + tempReg + ", " + args[i];
-                        FINAL_CODE.addCode(riscCode, "Load constant - " + args[i] + " into " + tempReg);
+                    if(argByRegister){
+                        if(!isVariable){
+                            targetOffset += 4; // move to next word
+                            std::string argReg = "a" + std::to_string(i);
+                            // Load the constant in a register (temporary) (t0)
+                            riscCode = indentOP("li") + argReg + ", " + args[i];
+                            FINAL_CODE.addCode(riscCode, "Load argument - " + args[i] + " into " + argReg);
+                        }else{
+                            int size = SYM_RECORD.getSize(args[i]);
+                            if(size>4){
+                                // Ignore [NOTHING CAN BE DONE]
+                            }else{
+                                std::string sl_type = store_load_Type(size);
+                                std::string tempReg = "t2";
 
-                        // Now store this tempReg to the caller's stack
-                        std::string imm2 = std::to_string(targetOffset);
-                        std::string sl_type = store_load_Type(4);
-                        riscCode = indentOP("s" + sl_type) + tempReg + ", " + imm2 + "(sp)";
-                        FINAL_CODE.addCode(riscCode, "Store argument " + args[i] + " via " + tempReg + " to callee's stack");
-                    }
-                    else{
-                        int offset = SYM_RECORD.getOffset(args[i]);
-                        int size = SYM_RECORD.getSize(args[i]);
-                        targetOffset += size; //
-                        if (size > 4)
-                        {
-                            // If size More than 4 we need MEMCOPY
-
-                            std::string var = args[i];
-                            int srcImm = 0, destImm = 0;
-                            std::string srcReg = "t1", destReg = "t2";
-
-                            // Load the address of the variable in a register (temporary) (t0)
-                            std::string imm = "-" + std::to_string(offset);
-                            std::string sl_type = store_load_Type(size);
-                            riscCode = indentOP("addi") + srcReg + ", fp, " + imm;
-                            FINAL_CODE.addCode(riscCode, "Load arg variable's address - " + args[i] + " into " + srcReg);
-
-                            // Load the address of the variable in a register (temporary) (t0)
-                            std::string imm2 = std::to_string(targetOffset);
-                            std::string sl_type2 = store_load_Type(size);
-                            riscCode = indentOP("addi") + destReg + ", sp, " + imm2;
-                            FINAL_CODE.addCode(riscCode, "Load callee's stack address for - " + args[i] + " into " + destReg);
-
-                            // Now we need to copy the data from srcReg to destReg
-                            FINAL_CODE.addCopyInst(var, size, srcImm, srcReg, destImm, destReg);
-                        }
-                        else
-                        {
-
-                            std::string sl_type = store_load_Type(size);
-                            std::string tempReg = "t2";
-
-                            // Before using check if the variable is in memory
-                            int regNo = SYM_RECORD.varStoredInWhichReg(args[i]);
-                            if (regNo == -1)
-                            {
-                                // If variable is not in any register it must be in memory
-
-                                // bool isInMemory = SYM_RECORD.isInMemory(args[i]);
-                                bool isInMemory = true;
-                                if (!isInMemory)
+                                // Before using check if the variable is in memory
+                                int regNo = SYM_RECORD.varStoredInWhichReg(args[i]);
+                                if (regNo == -1)
                                 {
-                                    CERR << "Error - Variable " << args[i] << " not in memory" << std::endl;
-                                    return FAIL;
+                                    // If variable is not in any register it must be in memory
+
+                                    // bool isInMemory = SYM_RECORD.isInMemory(args[i]);
+                                    bool isInMemory = true;
+                                    if (!isInMemory)
+                                    {
+                                        CERR << "Error - Variable " << args[i] << " not in memory" << std::endl;
+                                        return FAIL;
+                                    }
+
+                                    FINAL_CODE.addLoadInst(args[i], tempReg);
+                                }
+                                else
+                                {
+                                    tempReg = getRegName(regNo);
                                 }
 
-                                FINAL_CODE.addLoadInst(args[i], tempReg);
+                                // Move the value to the argument register
+                                std::string argReg = "a" + std::to_string(i);
+                                riscCode = indentOP("mv") + argReg + ", " + tempReg;
+                                FINAL_CODE.addCode(riscCode, "Move argument - " + args[i] + " into " + argReg);
+                                }
+                        }
+                    }
+                    else{
+                        if(!isVariable){
+                            // we need to store this value in the caller's stack
+                            targetOffset += 4; // move to next word
+                            std::string tempReg = "t2";
+                            // Load the constant in a register (temporary) (t0)
+                            riscCode = indentOP("li") + tempReg + ", " + args[i];
+                            FINAL_CODE.addCode(riscCode, "Load constant - " + args[i] + " into " + tempReg);
+
+                            // Now store this tempReg to the caller's stack
+                            std::string imm2 = "-" + std::to_string(targetOffset); // Negative offset
+                            std::string sl_type = store_load_Type(4);
+                            riscCode = indentOP("s" + sl_type) + tempReg + ", " + imm2 + "(sp)";
+                            FINAL_CODE.addCode(riscCode, "Store argument " + args[i] + " via " + tempReg + " to callee's stack");
+                        }
+                        else{
+                            int offset = SYM_RECORD.getOffset(args[i]);
+                            int size = SYM_RECORD.getSize(args[i]);
+                            targetOffset += size; //
+                            if (size > 4)
+                            {
+                                // If size More than 4 we need MEMCOPY
+
+                                std::string var = args[i];
+                                int srcImm = 0, destImm = 0;
+                                std::string srcReg = "t1", destReg = "t2";
+
+                                // Load the address of the variable in a register (temporary) (t0)
+                                std::string imm = "-" + std::to_string(offset);
+                                std::string sl_type = store_load_Type(size);
+                                riscCode = indentOP("addi") + srcReg + ", fp, " + imm;
+                                FINAL_CODE.addCode(riscCode, "Load arg variable's address - " + args[i] + " into " + srcReg);
+
+                                // Load the address of the variable in a register (temporary) (t0)
+                                std::string imm2 = "-"+std::to_string(targetOffset); // Negative offset
+                                std::string sl_type2 = store_load_Type(size);
+                                riscCode = indentOP("addi") + destReg + ", sp, " + imm2;
+                                FINAL_CODE.addCode(riscCode, "Load callee's stack address for - " + args[i] + " into " + destReg);
+
+                                // Now we need to copy the data from srcReg to destReg
+                                FINAL_CODE.addCopyInst(var, size, srcImm, srcReg, destImm, destReg);
                             }
                             else
                             {
-                                tempReg = getRegName(regNo);
-                            }
 
-                            // Now store this tempReg to the caller's stack
-                            std::string imm2 = std::to_string(targetOffset);
-                            riscCode = indentOP("s" + sl_type) + tempReg + ", " + imm2 + "(sp)";
-                            FINAL_CODE.addCode(riscCode, "Store argument " + args[i] + " via " + tempReg + " to callee's stack");
+                                std::string sl_type = store_load_Type(size);
+                                std::string tempReg = "t2";
+
+                                // Before using check if the variable is in memory
+                                int regNo = SYM_RECORD.varStoredInWhichReg(args[i]);
+                                if (regNo == -1)
+                                {
+                                    // If variable is not in any register it must be in memory
+
+                                    // bool isInMemory = SYM_RECORD.isInMemory(args[i]);
+                                    bool isInMemory = true;
+                                    if (!isInMemory)
+                                    {
+                                        CERR << "Error - Variable " << args[i] << " not in memory" << std::endl;
+                                        return FAIL;
+                                    }
+
+                                    FINAL_CODE.addLoadInst(args[i], tempReg);
+                                }
+                                else
+                                {
+                                    tempReg = getRegName(regNo);
+                                }
+
+                                // Now store this tempReg to the caller's stack
+                                std::string imm2 = "-"+std::to_string(targetOffset); // Negative offset
+                                riscCode = indentOP("s" + sl_type) + tempReg + ", " + imm2 + "(sp)";
+                                FINAL_CODE.addCode(riscCode, "Store argument " + args[i] + " via " + tempReg + " to callee's stack");
+                            }
                         }
                     }
                 }
@@ -1139,7 +1197,7 @@ int riscvCodeGen()
                 // Now that we have loaded all the arguments, we need to call the function
 
                 // Spill the registers
-                spillingCode(); // Before Function Call's jump
+                spillingCode("Going to ☎️ call a Function"); // Before Function Call's jump
 
                 // Call the function
                 riscCode = indentOP("jal") + "x1, " + funcName; // jal x1, funcName
@@ -1283,7 +1341,7 @@ int riscvCodeGen()
                 FINAL_CODE.addCode(riscCode, "Jump to label - " + label + " if " + condVar1 + " == " + condVar2);
 
                 // Spilling Code
-                spillingCode(); // After goto equal
+                spillingCode("Jump due to goto-equal"); // After goto equal
             }
             else if (op == GOTO_LABEL)
             {
@@ -1299,7 +1357,7 @@ int riscvCodeGen()
                 FINAL_CODE.addCode(riscCode, "Unconditional Jump to label - " + label);
 
                 // Spilling Code
-                spillingCode(); // After goto label
+                spillingCode("Jump Due to goto-label"); // After goto label
             }
             else if (op == IF_TRUE)
             {
@@ -1325,7 +1383,7 @@ int riscvCodeGen()
                 FINAL_CODE.addCode(riscCode, "Jump to label - " + label + " if " + condVar + " is true");
 
                 // Spilling Code
-                spillingCode(); // After IF_TRUE
+                spillingCode("Jump due to if_true"); // After IF_TRUE
             }
             else if (op == IF_FALSE)
             {
@@ -1348,7 +1406,7 @@ int riscvCodeGen()
                 FINAL_CODE.addCode(riscCode, "Jump to label - " + label + " if " + condVar + " is false");
 
                 // Spilling Code
-                spillingCode(); // After IF_FALSE
+                spillingCode("Jump due to if_false"); // After IF_FALSE
 
                 // Now we need to update the SYM_RECORD
             }
@@ -1378,10 +1436,10 @@ int riscvCodeGen()
     return OKAY;
 }
 
-void spillingCode()
+void spillingCode(std::string reason)
 {
     // At the End of the block, we need to store all the registers into the memory
-    FINAL_CODE.addComment(" 🫟 Spilling Code 🫟 ");
+    FINAL_CODE.addComment(" 🫟 Spilling Code 🫟  due to ➢ " + reason);
     // CERR << "Spilling Code" << std::endl;
     // We need to store all the variables in the registers -> memory
     for (auto each : SYM_RECORD.regMap)
@@ -1439,6 +1497,8 @@ int getRegLimit(NEW_TAC_Quadruple &code, std::map<std::string, int> &regMap, std
 {
     // THis will only consider the registers within the given limit
     // int lineNo = code.lineNo;
+
+    FINAL_CODE.addComment("\n# 🤙🏼 Calling getReg() for " + code.toBaseString());
 
     std::string op = code.op;
     std::vector<std::string> usageType;
@@ -1972,7 +2032,7 @@ int getRegLimit(NEW_TAC_Quadruple &code, std::map<std::string, int> &regMap, std
 
     // At the End of GetReg,
     std::string getRegResult = "";
-    getRegResult += " 🙋🏼 GetReg() for " + code.toBaseString();
+    getRegResult += "\n# 👋 GetReg() for " + code.toBaseString();
     for (auto it : regMap)
     {
         std::string varName = it.first;
@@ -1991,7 +2051,7 @@ int getRegLimit(NEW_TAC_Quadruple &code, std::map<std::string, int> &regMap, std
 int getManyReg(std::set<std::string> varNames, LivelinessDS liveInfo, std::map<std::string, int> &regMap)
 {
     // All the variable will be of usageType
-
+    
     // We have a set of variables - Even if multiple variables are used in the same line - there won't be any issue
 
     std::set<int> justUsedReg;
@@ -2501,11 +2561,11 @@ int generateSimpleExpCode(NEW_TAC_Quadruple code)
             riscCode = indentOP("sub") + tempReg + ", " + usageReg1 + ", " + usageReg2;
             FINAL_CODE.addCode(riscCode, "Part1 of Equality Operation - " + assignVar + " = " + usageVar1 + " == " + usageVar2);
 
-            riscCode = indentOP("seqz") + tempReg + ", " + tempReg;
+            riscCode = indentOP("seqz") + assignReg + ", " + tempReg;
             FINAL_CODE.addCode(riscCode, "Part2 of Equality Operation - " + assignVar + " = " + usageVar1 + " == " + usageVar2);
 
-            riscCode = indentOP("addi") + assignReg + ", " + tempReg + ", 0xff";
-            FINAL_CODE.addCode(riscCode, "Part3 of Equality Operation - " + assignVar + " = " + usageVar1 + " == " + usageVar2);
+            // riscCode = indentOP("addi") + assignReg + ", " + tempReg + ", 0xff";
+            // FINAL_CODE.addCode(riscCode, "Part3 of Equality Operation - " + assignVar + " = " + usageVar1 + " == " + usageVar2);
         }
         else if (op == "!=")
         {
@@ -2513,11 +2573,11 @@ int generateSimpleExpCode(NEW_TAC_Quadruple code)
             riscCode = indentOP("sub") + tempReg + ", " + usageReg1 + ", " + usageReg2;
             FINAL_CODE.addCode(riscCode, "Part1 of Not Equality Operation - " + assignVar + " = " + usageVar1 + " != " + usageVar2);
 
-            riscCode = indentOP("snez") + tempReg + ", " + tempReg;
+            riscCode = indentOP("snez") + assignReg + ", " + tempReg;
             FINAL_CODE.addCode(riscCode, "Part2 of Not Equality Operation - " + assignVar + " = " + usageVar1 + " != " + usageVar2);
 
-            riscCode = indentOP("addi") + assignReg + ", " + tempReg + ", 0xff";
-            FINAL_CODE.addCode(riscCode, "Part3 of Not Equality Operation - " + assignVar + " = " + usageVar1 + " != " + usageVar2);
+            // riscCode = indentOP("addi") + assignReg + ", " + tempReg + ", 0xff";
+            // FINAL_CODE.addCode(riscCode, "Part3 of Not Equality Operation - " + assignVar + " = " + usageVar1 + " != " + usageVar2);
         }
         // Logical OP
         else if (op == "&&")

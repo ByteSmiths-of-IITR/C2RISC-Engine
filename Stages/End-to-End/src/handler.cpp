@@ -1069,7 +1069,9 @@ int function_definition_H(ASTNode *node)
         }
 
         // 🔖IR Cdoe
-        IR_CODE.addTAC(node, varName, FUNCTION_ENTRY, NO_ARG, NO_ARG);
+        int noOfArgs = paramInfo->paramsType.size();
+        std::string argCount = std::to_string(noOfArgs);
+        IR_CODE.addTAC(node, varName, FUNCTION_ENTRY, argCount, NO_ARG);
 
         // Now we have list of all the prameters & their names
         if (!isAbstract)
