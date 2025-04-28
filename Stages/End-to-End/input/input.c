@@ -4,17 +4,19 @@
 
 #include <stdio.h>
 
-int fun(){
-    int a = 10;
-    return a;
+int factorial(int n)
+{
+    if (n == 0)
+        return 1;
+    else
+        return n * factorial(n - 1);
 }
 
 int main()
 {
-    int k = fun();
+    int k = factorial(3);
 }
 //=========================== C2RISC-Engine =========================================================//
-// 🌴 APTree 🌴 has been generated, can be used for debugging ❤️‍🩹 
 // Lexical Analysis 👍 | Syntax Analysis 👍 | Semantic Analysis 👍 | Machine Independent Optimization 👍 |  🔖 IRCode Gen
 // 😊 Thanku for using our "C2RISC-Engine" (Till IR Phase) 
 // 
@@ -23,37 +25,63 @@ int main()
 // 
 //  ---- IR Code Before Machine Independent Optimization ---- 
 // .text      : ------------------------------
-// 0          : main: Func ENTER              
-// 1          : alloca a$1, 4                 
-// 2          : alloca p$1, 4                 
-// 3          : alloca $0, 4                  
-// 4          : $0 = &a$1                     
-// 5          : p$1 = $0                      
-// 6          : alloca pp$1, 4                
-// 7          : alloca $1, 4                  
-// 8          : $1 = &p$1                     
-// 9          : pp$1 = $1                     
-// 10         : (4)*pp$1 = 10                 
-// 11         : return                        
-// 12         : main ret(4): EXIT             
+// 0          : factorial: Func ENTER         
+// 1          : alloca n$1, 4                 
+// 2          : alloca $0, 4                  
+// 3          : $0 = n$1 == 0                 
+// 4          : if $0 goto L(6)               
+// 5          : goto L(8)                     
+// 6          : return 1                      
+// 7          : goto L(16)                    
+// 8          : alloca $1, 4                  
+// 9          : $1 = n$1 - 1                  
+// 10         : param $1                      
+// 11         : alloca $2, 4                  
+// 12         : $2 = call factorial, 1        
+// 13         : alloca $3, 4                  
+// 14         : $3 = n$1 * $2                 
+// 15         : return $3                     
+// 16         : factorial ret(4): EXIT        
+// 
+// 17         : main: Func ENTER              
+// 18         : alloca k$2, 4                 
+// 19         : param 3                       
+// 20         : alloca $4, 4                  
+// 21         : $4 = call factorial, 1        
+// 22         : k$2 = $4                      
+// 23         : return                        
+// 24         : main ret(4): EXIT             
 // 
 // ----------------------------------------------------------------------------------------------------
 // 
 //  ---- IR Code After Machine Independent Optimization ---- 
 // .text      : ------------------------------
-// 0          : main: Func ENTER              
-// 1          : alloca a$1, 4                 
-// 2          : alloca p$1, 4                 
-// 3          : alloca $0, 4                  
-// 4          : $0 = &a$1                     
-// 5          : p$1 = $0                      
-// 6          : alloca pp$1, 4                
-// 7          : alloca $1, 4                  
-// 8          : $1 = &p$1                     
-// 9          : pp$1 = $1                     
-// 10         : (4)*pp$1 = 10                 
-// 11         : return                        
-// 12         : main ret(4): EXIT             
+// 0          : factorial: Func ENTER         
+// 1          : alloca n$1, 4                 
+// 2          : alloca $0, 4                  
+// 3          : $0 = n$1 == 0                 
+// 4          : if $0 goto L(6)               
+// 5          : goto L(8)                     
+// 6          : return 1                      
+// 7          : goto L(16)                    
+// 8          : alloca $1, 4                  
+// 9          : $1 = n$1 - 1                  
+// 10         : param $1                      
+// 11         : alloca $2, 4                  
+// 12         : $2 = call factorial, 1        
+// 13         : alloca $3, 4                  
+// 14         : $3 = n$1 * $2                 
+// 15         : return $3                     
+// 16         : factorial ret(4): EXIT        
+// 
+// 17         : main: Func ENTER              
+// 18         : alloca k$2, 4                 
+// 19         : param 3                       
+// 20         : alloca $4, 4                  
+// 21         : $4 = call factorial, 1        
+// 22         : k$2 = $4                      
+// 23         : return                        
+// 24         : main ret(4): EXIT             
 // 
 // ----------------------------------------------------------------------------------------------------
 // 

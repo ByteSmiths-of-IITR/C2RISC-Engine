@@ -520,6 +520,7 @@ void SymTable::resetRegTable()
     // }
 
     // SYM_RECORD.printRegTable(file);
+    // CERR << "Register Table Reset - OKAY" << std::endl;
 }
 
 bool SymTable::isFree(int regNo)
