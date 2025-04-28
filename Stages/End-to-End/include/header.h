@@ -587,6 +587,7 @@ int mergeList(std::vector<int> &list1, const std::vector<int> &addition); // Thi
 int mergeList(std::vector<int> &target, int addition);
 
 std::string newTemp(); // Generates a new temporary variable [compiler generated]
+std::string newDataLabel(); // Generates a new data label [compiler generated]
 
 class dataSegment
 {

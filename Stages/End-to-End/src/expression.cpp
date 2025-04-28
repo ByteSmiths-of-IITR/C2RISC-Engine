@@ -178,11 +178,11 @@ int primary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
             {
                 // It's a variable Symbol
                 type0 = ((Variable *)symbol)->type;
-                bool isConst = isConstant(type0); //
+                bool isStatic = (((Variable *)symbol)->storageClass == StorageClass::STATIC);
                 bool isGlobal = (symbol->scopeNo == SYM_TABLE.globalScope);
                 std::string suffix = (isGlobal) ? "" : "$" + std::to_string(symbol->scopeNo);
-                suffix = (isConst) ? suffix : ("_s_" + std::to_string(symbol->scopeNo));
-                
+                suffix = (!isStatic) ? suffix : ("_s_" + std::to_string(symbol->scopeNo));
+
                 varName1 += suffix; // Change the name to the value
             }
             else if (symbolType == SYMBOL_TYPE::ENUM_CONSTANT)
@@ -368,7 +368,8 @@ int primary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
         // Check if string to be sent in .rodata or .data
         if (/*inh_whereToSendString != STACK_DATA*/ true) // FORCE it to be .rodata
         {
-            std::string tempName = "@str" + newTemp(); // [SPECIAL ALLOCATION] - 📍ToDo
+            std::string tempName = "str" + newDataLabel(); // Create a new name for the string
+        
             // Remove the quotes from the string
             std::string data = strValue;
             dataSegment obj;
@@ -381,7 +382,7 @@ int primary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
         else
         {
             // Stack Data pass it as it is
-            varName = strValue;
+            // varName = strValue;
         }
     }
     else if (whichProduction == P4)

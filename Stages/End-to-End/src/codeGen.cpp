@@ -106,7 +106,7 @@ int addSymbolsToSymTable()
         }
         else if (type == dataString)
         {
-            size = obj.value.size();
+            size = 4;
         }
         else if (type == dataZero)
         {

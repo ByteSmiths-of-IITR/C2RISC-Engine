@@ -2184,10 +2184,13 @@ int initializer_H(ASTNode *node, TypeExpression inh_type, std::string inh_varNam
         int aex_check = assignment_expression_H(node->children[0], "NONE", varName1, type1, valueType1, valueSpace1);
         PASS_THE_ERROR(aex_check);
 
-        bool isConst = isConstant(type1);
+        GenericSymbol* sym;
+        int check = SYM_TABLE.lookup(varName1, sym);
+
+        bool isStatic = (((Variable *)sym)->storageClass == StorageClass::STATIC);
         bool isGlobal = (SYM_TABLE.scopeNo == SYM_TABLE.globalScope);
-        std::string suffix = (isGlobal) ? "" : std::to_string(SYM_TABLE.scopeNo);
-        suffix = (isConst) ? suffix : "_c_" + std::to_string(SYM_TABLE.scopeNo);
+        std::string suffix = (isGlobal) ? "" : "$" + std::to_string(SYM_TABLE.scopeNo);
+        suffix = (!isStatic) ? suffix : "_s_" + std::to_string(SYM_TABLE.scopeNo);
         std::string irVarName = inh_varName + suffix;
 
         // First we check TypeChecking for operation

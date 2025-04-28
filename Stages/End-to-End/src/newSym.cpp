@@ -469,7 +469,7 @@ std::string getRegName(int regNo)
     // This will return the register name
     if (regNo >= 0 && regNo <= 31)
     {
-        return "x" + std::to_string(regNo - 12);
+        return "x" + std::to_string(regNo);
     }
     else if (regNo >= 32 && regNo <= 63)
     {

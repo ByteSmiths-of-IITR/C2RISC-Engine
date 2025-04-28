@@ -192,6 +192,12 @@ std::string newTemp()
     return ("$" + std::to_string(tempCount++) /* + "$"*/);
 }
 
+std::string newDataLabel()
+{
+    static int tempCount = 0; // This will keep the count of the data variables
+    return ("_" + std::to_string(tempCount++) /* + "$"*/);
+}
+
 int TAC::addTAC(ASTNode *addedAt, std::string result, std::string op, std::string arg1, std::string arg2)
 {
     this->code.push_back(TAC_Quadruple(op, arg1, arg2, result));
