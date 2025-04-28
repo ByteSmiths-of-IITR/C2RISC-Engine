@@ -253,7 +253,8 @@ int primary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
             else{
                 // Space 🚀Change 🔖IR Code
                 std::string address = newTemp();                                               // allocate 'ADDRESS_SIZE' bytes
-                IR_CODE.addTAC(node, address, ALLOCATE, std::to_string(ADDRESS_SIZE), NO_ARG); // Allocate memory for the variable
+                std::string isF = "NO";
+                IR_CODE.addTAC(node, address, ALLOCATE, std::to_string(ADDRESS_SIZE), isF); // Allocate memory for the variable
 
                 // IF not global we would need to have offset 
                 std::string id_offset = varName1;
@@ -633,12 +634,13 @@ int postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
         std::string baseAddress = varName1;
 
         std::string jump_amount = newTemp();                                               // allocated 'int' size
-        IR_CODE.addTAC(node, jump_amount, ALLOCATE, std::to_string(ADDRESS_SIZE), NO_ARG); // Allocate memory for the variable
+        std::string isF = "NO";
+        IR_CODE.addTAC(node, jump_amount, ALLOCATE, std::to_string(ADDRESS_SIZE), isF); // Allocate memory for the variable
 
         IR_CODE.addTAC(node, jump_amount, "*", varName2, element_width_str);
 
         std::string finalAddress = newTemp();                                               // allocated 'int' size
-        IR_CODE.addTAC(node, finalAddress, ALLOCATE, std::to_string(ADDRESS_SIZE), NO_ARG); // Allocate memory for the variable
+        IR_CODE.addTAC(node, finalAddress, ALLOCATE, std::to_string(ADDRESS_SIZE), isF); // Allocate memory for the variable
 
         IR_CODE.addTAC(node, finalAddress, "+", baseAddress, jump_amount);
         varName = finalAddress;            // Change the name to the address
@@ -800,7 +802,8 @@ int postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
                         if (equal != OKAY)
                         {
                             std::string castedVarNam = newTemp();                                              // allocated width(dest)
-                            IR_CODE.addTAC(node, castedVarNam, ALLOCATE, std::to_string(width(dest)), NO_ARG); // Allocate memory for the variable
+                            std::string isF = isFloatingPoint(type) ? "YES" : "NO";
+                            IR_CODE.addTAC(node, castedVarNam, ALLOCATE, std::to_string(width(dest)), isF); // Allocate memory for the variable
 
                             IR_CODE.addTAC(node, castedVarNam, CAST, toString(dest), argName[i]); // Cast it
                             argName[i] = castedVarNam;                                            // Change the name to the address
@@ -821,7 +824,8 @@ int postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
 
         std::string returnVal = newTemp(); // allocated width(returnType)
         int returnSize = width(returnType);
-        IR_CODE.addTAC(node, returnVal, ALLOCATE, std::to_string(returnSize), NO_ARG); // Allocate memory for the variable
+        std::string isF = isFloatingPoint(returnType) ? "YES" : "NO";
+        IR_CODE.addTAC(node, returnVal, ALLOCATE, std::to_string(returnSize), isF); // Allocate memory for the variable
 
         IR_CODE.addTAC(node, returnVal, CALL, varName1, std::to_string(no_args));
 
@@ -976,7 +980,8 @@ int postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
         std::string offset = std::to_string(memberOffset);
         std::string baseAddress = varName1;
         std::string memberAddress = newTemp();                                               // allocated address size
-        IR_CODE.addTAC(node, memberAddress, ALLOCATE, std::to_string(ADDRESS_SIZE), NO_ARG); // Allocate memory for the variable
+        std::string isF = "NO";
+        IR_CODE.addTAC(node, memberAddress, ALLOCATE, std::to_string(ADDRESS_SIZE), isF); // Allocate memory for the variable
 
         IR_CODE.addTAC(node, memberAddress, "+", baseAddress, offset);
         varName = memberAddress;           // Change the name to the address 🟡
@@ -1055,13 +1060,14 @@ int postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
             // 🔖 IR Code
             std::string valNew = newTemp(); // allocated width(type1)
             int valNewSize = width(type1);
-            IR_CODE.addTAC(node, valNew, ALLOCATE, std::to_string(valNewSize), NO_ARG); // Allocate memory for the variable
+            std::string isF = isFloatingPoint(type1) ? "YES" : "NO";
+            IR_CODE.addTAC(node, valNew, ALLOCATE, std::to_string(valNewSize), isF); // Allocate memory for the variable
 
             int element_width = width(type1);
             std::cout << "Adding arg2 to RIGHT_STAR " << element_width << std::endl;
             IR_CODE.addTAC(node, valNew, RIGHT_STAR, varName1, std::to_string(element_width)); // Load it
             std::string valNew2 = newTemp();                                             // allocated width(type1)
-            IR_CODE.addTAC(node, valNew2, ALLOCATE, std::to_string(valNewSize), NO_ARG); // Allocate memory for the variable
+            IR_CODE.addTAC(node, valNew2, ALLOCATE, std::to_string(valNewSize), isF); // Allocate memory for the variable
 
             IR_CODE.addTAC(node, valNew2, op, valNew, inc_decBY); // Increment it
             IR_CODE.addTAC(node, varName1, LEFT_STAR, valNew2, std::to_string(element_width)); // Store it
@@ -1073,7 +1079,8 @@ int postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
             // 🔖 IR Code
             std::string valNew = newTemp(); // allocated width(type1)
             int valNewSize = width(type1);
-            IR_CODE.addTAC(node, valNew, ALLOCATE, std::to_string(valNewSize), NO_ARG); // Allocate memory for the variable
+            std::string isF = isFloatingPoint(type1) ? "YES" : "NO";
+            IR_CODE.addTAC(node, valNew, ALLOCATE, std::to_string(valNewSize), isF); // Allocate memory for the variable
 
             IR_CODE.addTAC(node, valNew, "=", varName1, inc_decBY); // Store it
 
@@ -1220,7 +1227,8 @@ int assignment_expression_H(ASTNode *node, std::string inh_whereToSendString, st
             if (equal != OKAY)
             {
                 std::string castedVarNam = newTemp();                                              // allocated width(dest)
-                IR_CODE.addTAC(node, castedVarNam, ALLOCATE, std::to_string(width(dest)), NO_ARG); // Allocate memory for the variable
+                std::string isF = isFloatingPoint(dest) ? "YES" : "NO";
+                IR_CODE.addTAC(node, castedVarNam, ALLOCATE, std::to_string(width(dest)), isF); // Allocate memory for the variable
 
                 IR_CODE.addTAC(node, castedVarNam, CAST, toString(dest), varName2); // Cast it
                 varName2 = castedVarNam;                                            // Change the name to the address
@@ -1243,7 +1251,8 @@ int assignment_expression_H(ASTNode *node, std::string inh_whereToSendString, st
             if (equal != OKAY)
             {
                 std::string castedVarNam = newTemp();                                              // allocated width(dest)
-                IR_CODE.addTAC(node, castedVarNam, ALLOCATE, std::to_string(width(dest)), NO_ARG); // Allocate memory for the variable
+                std::string isF = isFloatingPoint(dest) ? "YES" : "NO";
+                IR_CODE.addTAC(node, castedVarNam, ALLOCATE, std::to_string(width(dest)), isF); // Allocate memory for the variable
 
                 IR_CODE.addTAC(node, castedVarNam, CAST, toString(dest), varName2); // Cast it
                 varName2 = castedVarNam;                                            // Change the name to the address
@@ -1265,7 +1274,8 @@ int assignment_expression_H(ASTNode *node, std::string inh_whereToSendString, st
             if (equal != OKAY)
             {
                 std::string castedVarNam = newTemp();                                              // allocated width(dest)
-                IR_CODE.addTAC(node, castedVarNam, ALLOCATE, std::to_string(width(dest)), NO_ARG); // Allocate memory for the variable
+                std::string isF = isFloatingPoint(dest) ? "YES" : "NO";
+                IR_CODE.addTAC(node, castedVarNam, ALLOCATE, std::to_string(width(dest)), isF); // Allocate memory for the variable
 
                 IR_CODE.addTAC(node, castedVarNam, CAST, toString(dest), varName2); // Cast it
                 varName2 = castedVarNam;                                            // Change the name to the address
@@ -1287,7 +1297,8 @@ int assignment_expression_H(ASTNode *node, std::string inh_whereToSendString, st
             if (equal != OKAY)
             {
                 std::string castedVarNam = newTemp();                                              // allocated width(dest)
-                IR_CODE.addTAC(node, castedVarNam, ALLOCATE, std::to_string(width(dest)), NO_ARG); // Allocate memory for the variable
+                std::string isF = isFloatingPoint(dest) ? "YES" : "NO";
+                IR_CODE.addTAC(node, castedVarNam, ALLOCATE, std::to_string(width(dest)), isF); // Allocate memory for the variable
 
                 IR_CODE.addTAC(node, castedVarNam, CAST, toString(dest), varName2); // Cast it
                 varName2 = castedVarNam;                                            // Change the name to the address
@@ -1316,7 +1327,8 @@ int assignment_expression_H(ASTNode *node, std::string inh_whereToSendString, st
                 if (equal != OKAY)
                 {
                     std::string castedVarNam = newTemp();                                              // allocated width(dest)
-                    IR_CODE.addTAC(node, castedVarNam, ALLOCATE, std::to_string(width(dest)), NO_ARG); // Allocate memory for the variable
+                    std::string isF = isFloatingPoint(dest) ? "YES" : "NO";
+                    IR_CODE.addTAC(node, castedVarNam, ALLOCATE, std::to_string(width(dest)), isF); // Allocate memory for the variable
 
                     IR_CODE.addTAC(node, castedVarNam, CAST, toString(dest), varName2); // Cast it
                     varName2 = castedVarNam;                                            // Change the name to the address
@@ -1349,13 +1361,14 @@ int assignment_expression_H(ASTNode *node, std::string inh_whereToSendString, st
 
                 // First newVarName2 = varName2 * width1( width of dest )
                 std::string newVarName2 = newTemp(); // allocated width(dest)
-                IR_CODE.addTAC(node, newVarName2, ALLOCATE, std::to_string(width(dest)), NO_ARG); // Allocate memory for the variable
+                std::string isF = isFloatingPoint(dest) ? "YES" : "NO";
+                IR_CODE.addTAC(node, newVarName2, ALLOCATE, std::to_string(width(dest)), isF); // Allocate memory for the variable
                 
                 IR_CODE.addTAC(node, newVarName2, "*", varName2, std::to_string(width1)); // resName = varName2 op width1
                 
                 // Then oldVarName1 = *varName1
                 std::string oldVarName1 = newTemp(); // allocated width(dest)
-                IR_CODE.addTAC(node, oldVarName1, ALLOCATE, std::to_string(width(dest)), NO_ARG); // Allocate memory for the variable
+                IR_CODE.addTAC(node, oldVarName1, ALLOCATE, std::to_string(width(dest)), isF); // Allocate memory for the variable
 
                 IR_CODE.addTAC(node, oldVarName1, RIGHT_STAR, varName1, std::to_string(width1)); // Load it
                 
@@ -1385,7 +1398,8 @@ int assignment_expression_H(ASTNode *node, std::string inh_whereToSendString, st
                 // instruction -> varName1 op varName2
                 // First newVarName2 = varName2 * width1( width of dest )
                 std::string newVarName2 = newTemp(); // allocated width(dest)
-                IR_CODE.addTAC(node, newVarName2, ALLOCATE, std::to_string(width(dest)), NO_ARG); // Allocate memory for the variable
+                std::string isF = isFloatingPoint(dest) ? "YES" : "NO";
+                IR_CODE.addTAC(node, newVarName2, ALLOCATE, std::to_string(width(dest)), isF); // Allocate memory for the variable
                 IR_CODE.addTAC(node, newVarName2, "*", varName2, std::to_string(width1)); // resName = varName2 op width1
 
                 // Then varName1 = varName1 op newVarName2
@@ -1511,7 +1525,8 @@ int unary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::st
         // IRCode Generation
         std::string resName = newTemp(); // allocated width(type1)
         int resSize = width(type1);
-        IR_CODE.addTAC(node, resName, ALLOCATE, std::to_string(resSize), NO_ARG); // Allocate memory for the variable
+        std::string isF = isFloatingPoint(type1) ? "YES" : "NO";
+        IR_CODE.addTAC(node, resName, ALLOCATE, std::to_string(resSize), isF); // Allocate memory for the variable
 
         if (valueSpace1 == SPACE::ADDRESS_SPACE)
         {
@@ -1582,7 +1597,8 @@ int unary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::st
 
             std::string temp = newTemp(); // allocated width(type0)
             int tempSize = width(type0);
-            IR_CODE.addTAC(node, temp, ALLOCATE, std::to_string(tempSize), NO_ARG); // Allocate memory for the variable
+            std::string isF = isFloatingPoint(type0) ? "YES" : "NO";
+            IR_CODE.addTAC(node, temp, ALLOCATE, std::to_string(tempSize), isF); // Allocate memory for the variable
 
             if (valueSpace1 == SPACE::ADDRESS_SPACE)
             {
@@ -1668,7 +1684,8 @@ int unary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::st
             // IRCode Gen
             std::string resName = newTemp(); // allocated width(type1)
             int resSize = width(type1);
-            IR_CODE.addTAC(node, resName, ALLOCATE, std::to_string(resSize), NO_ARG); // Allocate memory for the variable
+            std::string isF = isFloatingPoint(type1) ? "YES" : "NO";
+            IR_CODE.addTAC(node, resName, ALLOCATE, std::to_string(resSize), isF); // Allocate memory for the variable
 
             IR_CODE.addTAC(node, resName, "-", "0", varName1); // resName = 0 - varName1
             varName0 = resName;                                // Change the name to the address
@@ -1693,7 +1710,8 @@ int unary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::st
             // IRCode Gen
             std::string resName = newTemp(); // allocated width(type1)
             int resSize = width(type1);
-            IR_CODE.addTAC(node, resName, ALLOCATE, std::to_string(resSize), NO_ARG); // Allocate memory for the variable
+            std::string isF = isFloatingPoint(type1) ? "YES" : "NO";
+            IR_CODE.addTAC(node, resName, ALLOCATE, std::to_string(resSize), isF); // Allocate memory for the variable
 
             IR_CODE.addTAC(node, resName, "~", varName1, NO_ARG); // resName = ~varName1
 
@@ -1718,7 +1736,8 @@ int unary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::st
             // IRCode Gen
             std::string resName = newTemp(); // allocated width(type1)
             int resSize = width(type1);
-            IR_CODE.addTAC(node, resName, ALLOCATE, std::to_string(resSize), NO_ARG); // Allocate memory for the variable
+            std::string isF = isFloatingPoint(type1) ? "YES" : "NO";
+            IR_CODE.addTAC(node, resName, ALLOCATE, std::to_string(resSize), isF); // Allocate memory for the variable
 
             IR_CODE.addTAC(node, resName, "!", varName1, NO_ARG); // resName = !varName1
 
@@ -1980,7 +1999,8 @@ int multiplicative_expression_H(ASTNode *node, std::string inh_whereToSendString
             // Now we can perform the operation
             std::string result = newTemp(); // allocated width(widenType)
             int resSize = width(widenType);
-            IR_CODE.addTAC(node, result, ALLOCATE, std::to_string(resSize), NO_ARG); // Allocate memory for the variable
+            std::string isF = "NO";
+            IR_CODE.addTAC(node, result, ALLOCATE, std::to_string(resSize), isF); // Allocate memory for the variable
 
             IR_CODE.addTAC(node, result, node->children[1]->value, varName1, varName2);
 
@@ -2066,7 +2086,8 @@ int multiplicative_expression_H(ASTNode *node, std::string inh_whereToSendString
             // Now we can perform the operation
             std::string result = newTemp(); // allocated width(widenType)
             int resSize = width(widenType);
-            IR_CODE.addTAC(node, result, ALLOCATE, std::to_string(resSize), NO_ARG); // Allocate memory for the variable
+            std::string isF = "NO";
+            IR_CODE.addTAC(node, result, ALLOCATE, std::to_string(resSize), isF); // Allocate memory for the variable
 
             IR_CODE.addTAC(node, result, node->children[1]->value, varName1, varName2);
 
@@ -2204,13 +2225,15 @@ int additive_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
                 std::string elementWidthStr = std::to_string(eleWidth);
 
                 std::string scaledIntegral = newTemp();                                            // allocated 'int' size
-                IR_CODE.addTAC(node, scaledIntegral, ALLOCATE, std::to_string(WORD_SIZE), NO_ARG); // Allocate memory for the variable
+                std::string isF = "NO";
+                IR_CODE.addTAC(node, scaledIntegral, ALLOCATE, std::to_string(WORD_SIZE), isF); // Allocate memory for the variable
 
                 IR_CODE.addTAC(node, scaledIntegral, "*", integralVar, elementWidthStr);
 
                 std::string result = newTemp(); // allocated width(pointerType)
                 int resSize = width(pointerType);
-                IR_CODE.addTAC(node, result, ALLOCATE, std::to_string(resSize), NO_ARG); // Allocate memory for the variable
+                isF = isFloatingPoint(pointerType) ? "YES" : "NO";
+                IR_CODE.addTAC(node, result, ALLOCATE, std::to_string(resSize), isF); // Allocate memory for the variable
 
                 IR_CODE.addTAC(node, result, node->children[1]->value, pointerVar, scaledIntegral);
 
@@ -2251,7 +2274,8 @@ int additive_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
                 // Now we can perform the operation
                 std::string result = newTemp(); // allocated width(widenType)
                 int resSize = width(widenType);
-                IR_CODE.addTAC(node, result, ALLOCATE, std::to_string(resSize), NO_ARG); // Allocate memory for the variable
+                std::string isF = "NO";
+                IR_CODE.addTAC(node, result, ALLOCATE, std::to_string(resSize), isF); // Allocate memory for the variable
 
                 IR_CODE.addTAC(node, result, node->children[1]->value, varName1, varName2);
 
@@ -2287,7 +2311,8 @@ int additive_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
             {
                 std::string result = newTemp(); // allocated width(type1)
                 int resSize = width(type1);
-                IR_CODE.addTAC(node, result, ALLOCATE, std::to_string(resSize), NO_ARG); // Allocate memory for the variable
+                std::string isF = isFloatingPoint(type1) ? "YES" : "NO";
+                IR_CODE.addTAC(node, result, ALLOCATE, std::to_string(resSize), isF); // Allocate memory for the variable
                 IR_CODE.addTAC(node, result, node->children[1]->value, varName1, varName2);
             }
 
@@ -2307,13 +2332,15 @@ int additive_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
                 std::string elementWidthStr = std::to_string(elementWid);
 
                 std::string scaledIntegral = newTemp();                                            // allocated 'int' size
-                IR_CODE.addTAC(node, scaledIntegral, ALLOCATE, std::to_string(WORD_SIZE), NO_ARG); // Allocate memory for the variable
+                std::string isF = "NO";
+                IR_CODE.addTAC(node, scaledIntegral, ALLOCATE, std::to_string(WORD_SIZE), isF); // Allocate memory for the variable
 
                 IR_CODE.addTAC(node, scaledIntegral, "*", varName2, elementWidthStr);
 
                 std::string result = newTemp(); // allocated width(type1)
                 int resSize = width(type1);
-                IR_CODE.addTAC(node, result, ALLOCATE, std::to_string(resSize), NO_ARG); // Allocate memory for the variable
+                isF = isFloatingPoint(type1) ? "YES" : "NO";
+                IR_CODE.addTAC(node, result, ALLOCATE, std::to_string(resSize), isF); // Allocate memory for the variable
 
                 IR_CODE.addTAC(node, result, node->children[1]->value, varName1, scaledIntegral);
 
@@ -2354,7 +2381,8 @@ int additive_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
                 // Now we can perform the operation
                 std::string result = newTemp(); // allocated width(widenType)
                 int resSize = width(widenType);
-                IR_CODE.addTAC(node, result, ALLOCATE, std::to_string(resSize), NO_ARG); // Allocate memory for the variable
+                std::string isF = "NO";
+                IR_CODE.addTAC(node, result, ALLOCATE, std::to_string(resSize), isF); // Allocate memory for the variable
 
                 IR_CODE.addTAC(node, result, node->children[1]->value, varName1, varName2);
 
@@ -2480,7 +2508,8 @@ int shift_expression_H(ASTNode *node, std::string inh_whereToSendString, std::st
             // do left shift
             std::string result = newTemp(); // allocated width(type1)
             int resSize = width(type1);
-            IR_CODE.addTAC(node, result, ALLOCATE, std::to_string(resSize), NO_ARG); // Allocate memory for the variable
+            std::string isF = isFloatingPoint(type1) ? "YES" : "NO";
+            IR_CODE.addTAC(node, result, ALLOCATE, std::to_string(resSize), isF); // Allocate memory for the variable
 
             if (whichProduction == P2)
             {
@@ -2612,7 +2641,8 @@ int relational_expression_H(ASTNode *node, std::string inh_whereToSendString, st
             // Perform relational operation
             std::string result = newTemp(); // allocated width(type0)
             int resSize = width(type0);
-            IR_CODE.addTAC(node, result, ALLOCATE, std::to_string(resSize), NO_ARG); // Allocate memory for the variable
+            std::string isF = isFloatingPoint(type0) ? "YES" : "NO";
+            IR_CODE.addTAC(node, result, ALLOCATE, std::to_string(resSize), isF); // Allocate memory for the variable
 
             IR_CODE.addTAC(node, result, node->children[1]->value, varName1, varName2);
 
@@ -2729,7 +2759,8 @@ int equality_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
             // Perform equality operation
             std::string result = newTemp(); // allocated width(type0)
             int resSize = width(type0);
-            IR_CODE.addTAC(node, result, ALLOCATE, std::to_string(resSize), NO_ARG); // Allocate memory for the variable
+            std::string isF = isFloatingPoint(type0) ? "YES" : "NO";
+            IR_CODE.addTAC(node, result, ALLOCATE, std::to_string(resSize), isF); // Allocate memory for the variable
 
             IR_CODE.addTAC(node, result, node->children[1]->value, varName1, varName2);
 
@@ -2865,7 +2896,8 @@ int and_expression_H(ASTNode *node, std::string inh_whereToSendString, std::stri
             // Perform BIT_AND operation
             std::string result = newTemp(); // allocated width(type0)
             int resSize = width(type0);
-            IR_CODE.addTAC(node, result, ALLOCATE, std::to_string(resSize), NO_ARG); // Allocate memory for the variable
+            std::string isF = isFloatingPoint(type0) ? "YES" : "NO";
+            IR_CODE.addTAC(node, result, ALLOCATE, std::to_string(resSize), isF); // Allocate memory for the variable
             CERR << "result = " << result << std::endl;
             CERR << "varName1 = " << varName1 << std::endl;
             CERR << "varName2 = " << varName2 << std::endl;
@@ -2993,7 +3025,8 @@ int exclusive_or_expression_H(ASTNode *node, std::string inh_whereToSendString, 
             // Perform BIT_AND operation
             std::string result = newTemp(); // allocated width(type0)
             int resSize = width(type0);
-            IR_CODE.addTAC(node, result, ALLOCATE, std::to_string(resSize), NO_ARG); // Allocate memory for the variable
+            std::string isF = isFloatingPoint(type0) ? "YES" : "NO";
+            IR_CODE.addTAC(node, result, ALLOCATE, std::to_string(resSize), isF); // Allocate memory for the variable
 
             IR_CODE.addTAC(node, result, "^", varName1, varName2);
 
@@ -3119,7 +3152,8 @@ int inclusive_or_expression_H(ASTNode *node, std::string inh_whereToSendString, 
             // Perform BIT_AND operation
             std::string result = newTemp(); // allocated width(type0)
             int resSize = width(type0);
-            IR_CODE.addTAC(node, result, ALLOCATE, std::to_string(resSize), NO_ARG); // Allocate memory for the variable
+            std::string isF = isFloatingPoint(type0) ? "YES" : "NO";
+            IR_CODE.addTAC(node, result, ALLOCATE, std::to_string(resSize), isF); // Allocate memory for the variable
 
             IR_CODE.addTAC(node, result, "|", varName1, varName2);
 
@@ -3263,7 +3297,8 @@ int logical_and_expression_H(ASTNode *node, std::string inh_whereToSendString, s
             // Apply AND_OP operator
             std::string result = newTemp(); // allocated width(type0)
             int resSize = width(type0);
-            IR_CODE.addTAC(node, result, ALLOCATE, std::to_string(resSize), NO_ARG); // Allocate memory for the variable
+            std::string isF = isFloatingPoint(type0) ? "YES" : "NO";
+            IR_CODE.addTAC(node, result, ALLOCATE, std::to_string(resSize), isF); // Allocate memory for the variable
 
             IR_CODE.addTAC(node, result, "&&", varName1, varName2);
 
@@ -3401,7 +3436,8 @@ int logical_or_expression_H(ASTNode *node, std::string inh_whereToSendString, st
 
             std::string result = newTemp(); // allocated width(type0)
             int resSize = width(type0);
-            IR_CODE.addTAC(node, result, ALLOCATE, std::to_string(resSize), NO_ARG); // Allocate memory for the variable
+            std::string isF = isFloatingPoint(type0) ? "YES" : "NO";
+            IR_CODE.addTAC(node, result, ALLOCATE, std::to_string(resSize), isF); // Allocate memory for the variable
 
             IR_CODE.addTAC(node, result, "||", varName1, varName2);
 
@@ -3458,7 +3494,8 @@ int conditional_expression_H(ASTNode *node, std::string inh_whereToSendString, s
 
         std::string varName0 = newTemp(); // allocated width(type1) [ToDo: check if this is correct]
         int resSize = width(type1);
-        IR_CODE.addTAC(node, varName0, ALLOCATE, std::to_string(resSize), NO_ARG); // Allocate memory for the variable
+        std::string isF = isFloatingPoint(type1) ? "YES" : "NO";
+        IR_CODE.addTAC(node, varName0, ALLOCATE, std::to_string(resSize), isF); // Allocate memory for the variable
 
         int falseJump = IR_CODE.addTAC(node, TO_BACKPATCH, IF_FALSE, varName1, NO_ARG);
 

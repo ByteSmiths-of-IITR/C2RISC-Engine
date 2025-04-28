@@ -1111,8 +1111,9 @@ int function_definition_H(ASTNode *node)
 
                 // Need a allocate Code
                 int size = width(paramVector[i]);
+                std::string isF = isFloatingPoint(paramVector[i]) ? "YES" : "NO";
                 std::string suffix = "$" + std::to_string(SYM_TABLE.scopeNo);
-                IR_CODE.addTAC(node, paramNames[i] + suffix, ALLOCATE, std::to_string(size), NO_ARG);
+                IR_CODE.addTAC(node, paramNames[i] + suffix, ALLOCATE, std::to_string(size), isF);
 
                 if (insertCheck == INSERT_FAILURE)
                 {
