@@ -575,6 +575,9 @@ int livelinessPass()
 
 //=====================[ RISC-V Code Generation ]=========================================================================================
 
+bool returnValueViaRegister = true; //[FOR Simple Things - OKAY]
+bool argByRegister = true;   //[FOR Simple Things - OKAY]
+
 int riscvCodeGen()
 {
     // Now we will generate the RISC-V code from the CFG_CODE (block by block in breadth first manner)
@@ -584,7 +587,7 @@ int riscvCodeGen()
 
     std::stack<std::string> parameterStack;
 
-    std::queue<std::string> blockOrder;
+    // std::queue<std::string> blockOrder;
     std::map<std::string, bool> visitedBlocks;
 
     // Library Functions
@@ -595,29 +598,28 @@ int riscvCodeGen()
         return check;
     }
 
-    bool returnValueViaRegister = true; //[FOR Simple Things - OKAY]
-    bool argByRegister = true;   //[FOR Simple Things - OKAY]
+    
 
     std::vector<int> blockLeaderOrder = CFG_CODE.leaders;
 
-    blockOrder.push("ENTRY");
+    // blockOrder.push("ENTRY");
     // while (!blockOrder.empty())
     for(int i = 0; i < blockLeaderOrder.size(); i++)
     {
         int leaderIndex = blockLeaderOrder[i];
         std::string currBlock = CFG_CODE.blockName(leaderIndex);
-        
+
         if (visitedBlocks.find(currBlock) != visitedBlocks.end())
         {
             continue;
         }
         visitedBlocks[currBlock] = true;
 
-        // Add the Next Blocks in CFG to QUE
-        for (auto it : CFG_CODE.edges[currBlock])
-        {
-            blockOrder.push(it);
-        }
+        // // Add the Next Blocks in CFG to QUE
+        // for (auto it : CFG_CODE.edges[currBlock])
+        // {
+        //     blockOrder.push(it);
+        // }
 
         // Now PerBlock Code Generation
         BasicBlock &block = CFG_CODE.blocks[currBlock];
@@ -2716,6 +2718,14 @@ int addPrint_ScanLib()
 {
     // This will add the print and scan library to the code
 
+    if(stdio_lib){
+        FINAL_CODE.addComment("#define <stdio.h> NOT INCLUDED");
+        return OKAY;
+    }
+    else{
+        FINAL_CODE.addComment("#define <stdio.h> INCLUDED");
+    }
+
     std::string printVar = "printVar";
     std::string printString = "printString";
     std::string scanVar = "scanVar";
@@ -2835,10 +2845,16 @@ void addPrintString(){
     FINAL_CODE.addCode(riscCode, "Setting Frame Pointer");
 
     // Load to print variable in a register
-    std::string varReg = "a0"; // DEFAULT register for print - System Call
-    loc = 20;                  // Offset of the variable
-    riscCode = indentOP("lw") + varReg + ", -" + std::to_string(loc) + "(fp)";
-    FINAL_CODE.addCode(riscCode, "Loading Address of String Variable");
+
+    if(!argByRegister){
+        std::string varReg = "a0"; // DEFAULT register for print - System Call
+        loc = 20;                  // Offset of the variable
+        riscCode = indentOP("lw") + varReg + ", -" + std::to_string(loc) + "(fp)";
+        FINAL_CODE.addCode(riscCode, "Loading Address of String Variable");
+    }
+    else{
+        // Argument already in a0 register
+    }
 
     // Load system call code
     std::string syscallCodeReg = "a7";
@@ -2944,6 +2960,8 @@ void addScanVar(){
 
 void addScanString(){
 
+    // Function Signature char *scanString(int size);
+
     std::string riscCode = "scanString:";
     FINAL_CODE.addCode(riscCode, "Function Signature - char *scanString(int size)");
 
@@ -2977,10 +2995,17 @@ void addScanString(){
     FINAL_CODE.addCode(riscCode, "Where to store the scanned string");
 
     // Load size variable in a register
-    std::string sizeReg = "a1"; // DEFAULT register for print - System Call
-    loc = 20;                   // Offset of the variable
-    riscCode = indentOP("lw") + sizeReg + ", -" + std::to_string(loc) + "(fp)";
-    FINAL_CODE.addCode(riscCode, "How many bytes to scan");
+    if(!argByRegister)
+    {
+        std::string sizeReg = "a1"; // DEFAULT register for print - System Call
+        loc = 20;                   // Offset of the variable
+        riscCode = indentOP("lw") + sizeReg + ", -" + std::to_string(loc) + "(fp)";
+        FINAL_CODE.addCode(riscCode, "Loading Size of String Variable");
+    }
+    else
+    {
+        // Argument already in a1 register
+    }
 
     // Load system call code
     std::string syscallCodeReg = "a7";

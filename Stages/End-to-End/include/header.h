@@ -1346,6 +1346,8 @@ int addSymbolsToSymTable();
 
 int makeBasicBlocks();
 
+extern bool returnValueViaRegister;
+extern bool argByRegister;
 int riscvCodeGen();
 
 int livelinessPass();

@@ -11,10 +11,11 @@ int main() {
             continue; // skip the number 5
         }
         for(int j = 0; j < 2; j++) {
-            printf("%d ", i * j); // print the product of i and j
+            printVar(i); // print the value of i
+            printVar(j); // print the value of j
         }
         i++;
     }
-    printf("\n");
+    // printf("\n");
     return 0;
 }
