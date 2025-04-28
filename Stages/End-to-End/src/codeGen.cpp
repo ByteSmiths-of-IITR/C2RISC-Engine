@@ -587,6 +587,14 @@ int riscvCodeGen()
     std::queue<std::string> blockOrder;
     std::map<std::string, bool> visitedBlocks;
 
+    // Library Functions
+    int check = addPrint_ScanLib();
+    if (check != OKAY)
+    {
+        CERR << "Error in adding library functions" << std::endl;
+        return check;
+    }
+
     bool returnValueViaRegister = true; //[FOR Simple Things - OKAY]
     bool argByRegister = true;   //[FOR Simple Things - OKAY]
 
@@ -981,6 +989,16 @@ int riscvCodeGen()
 
                 std::string dest = currIR.result;
                 std::string src = currIR.arg1;
+
+                std::map<std::string, int> regMap;
+                int check = getReg(currIR, regMap);
+                if (check != OKAY)
+                {
+                    CERR << "Error in getReg()" << std::endl;
+                    return check;
+                }
+
+                // Mostly cast happens b/w variables
             }
 
             else if (op == OFFSET_LOAD)
@@ -1336,12 +1354,13 @@ int riscvCodeGen()
                 std::string condReg1 = getRegName(regMap[condVar1]);
                 std::string condReg2 = getRegName(regMap[condVar2]);
 
+                spillingCode("Jump due to goto-equal"); // Just before jump-inst goto equal
+
                 // Now we have the register having the condVar
                 riscCode = indentOP("beq") + condReg1 + ", " + condReg2 + ", " + label;
                 FINAL_CODE.addCode(riscCode, "Jump to label - " + label + " if " + condVar1 + " == " + condVar2);
 
                 // Spilling Code
-                spillingCode("Jump due to goto-equal"); // After goto equal
             }
             else if (op == GOTO_LABEL)
             {
@@ -1352,13 +1371,14 @@ int riscvCodeGen()
                 // Unconditional Jump
                 std::string label = currIR.result;
 
+                // Spilling Code
+                spillingCode("Jump Due to goto-label"); // Before goto label inst
+
                 // We need to jump to this label
                 riscCode = indentOP("j ") + label;
                 FINAL_CODE.addCode(riscCode, "Unconditional Jump to label - " + label);
 
-                // Spilling Code
-                spillingCode("Jump Due to goto-label"); // After goto label
-            }
+                }
             else if (op == IF_TRUE)
             {
 
@@ -1378,12 +1398,14 @@ int riscvCodeGen()
 
                 std::string condReg = getRegName(regMap[condVar]);
 
+                // Spilling Code
+                spillingCode("Jump due to if_true"); // After IF_TRUE
+
                 // Now we have the register having the condVar
                 riscCode = indentOP("bne") + condReg + ", x0, " + label;
                 FINAL_CODE.addCode(riscCode, "Jump to label - " + label + " if " + condVar + " is true");
 
-                // Spilling Code
-                spillingCode("Jump due to if_true"); // After IF_TRUE
+                
             }
             else if (op == IF_FALSE)
             {
@@ -1400,14 +1422,13 @@ int riscvCodeGen()
                     return check;
                 }
 
+                // Spilling Code
+                spillingCode("Jump due to if_false"); // After IF_FALSE
+
                 // Now we have the register having the condVar
                 std::string condReg = getRegName(regMap[condVar]);
                 riscCode = indentOP("beq") + condReg + ", x0, " + label;
                 FINAL_CODE.addCode(riscCode, "Jump to label - " + label + " if " + condVar + " is false");
-
-                // Spilling Code
-                spillingCode("Jump due to if_false"); // After IF_FALSE
-
                 // Now we need to update the SYM_RECORD
             }
 
@@ -1429,9 +1450,8 @@ int riscvCodeGen()
             CERR << "----------------------------------------" << std::endl;
         }
 
-        // Spill the registers
-        // spillingCode(); // After each block
     }
+    spillingCode("End of CodeGen Spilling"); // At the end of the block
 
     return OKAY;
 }
@@ -2718,8 +2738,8 @@ int addPrint_ScanLib()
 void addPrintVar()
 {
 
-    std::string riscCode;
-    FINAL_CODE.addLabel("printVar");
+    std::string riscCode = "printVar:";
+    FINAL_CODE.addCode(riscCode, "Function Signature - void printVar(int var)");
 
     int stackSize = 20;
 
@@ -2784,13 +2804,12 @@ void addPrintVar()
     return;
 }
 
-void addPrintString()
-{
+void addPrintString(){
 
     // Function Signature void printString(char *str)
 
-    std::string riscCode;
-    FINAL_CODE.addLabel("printString");
+    std::string riscCode = "printString:";
+    FINAL_CODE.addCode(riscCode, "Function Signature - void printString(char *str)");
 
     int stackSize = 20;
 
@@ -2856,13 +2875,12 @@ void addPrintString()
     return;
 }
 
-void addScanVar()
-{
+void addScanVar(){
 
     // Function Signature int scanVar();
 
-    std::string riscCode;
-    FINAL_CODE.addLabel("scanVar");
+    std::string riscCode = "scanVar:";
+    FINAL_CODE.addCode(riscCode, "Function Signature - int scanVar()");
 
     int stackSize = 20;
 
@@ -2920,13 +2938,10 @@ void addScanVar()
     return;
 }
 
-void addScanString()
-{
+void addScanString(){
 
-    // Function Signature char* scanString(int size);
-
-    std::string riscCode;
-    FINAL_CODE.addLabel("scanString");
+    std::string riscCode = "scanString:";
+    FINAL_CODE.addCode(riscCode, "Function Signature - char *scanString(int size)");
 
     std::string strVar = FINAL_CODE.newDataLabel();
 

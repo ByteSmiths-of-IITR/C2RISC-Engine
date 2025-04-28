@@ -184,7 +184,7 @@ int SymTable::insert(const std::string &key, int size, bool isFloat)
 
     // Allignment Logic -> TURNED OFF
     FEATURE_OFF("Alignment Logic");
-    // int padding = std::max(0, (4 - size % 4) % 4); // This will be used to set the padding
+    size = std::max(size, 4); // This will set the size of the function
 
     SymInfo info;
     info.size = size;
@@ -193,15 +193,7 @@ int SymTable::insert(const std::string &key, int size, bool isFloat)
     info.offset = stack_offset;        // This will set the offset of the function
     info.isFloat = isFloat;            // This will set the isFloat of the function
     info.inMemory = true;
-    // if(padding != 0){
-    //     stack_offset += padding;
-    //     SymInfo paddingInfo;
-    //     paddingInfo.size = padding;
-    //     paddingInfo.whichFunction = functionName; // This will set the function name
-    //     paddingInfo.offset = stack_offset; // This will set the offset of the function
-    //     SYM_RECORD.insert(key+"(padding)", paddingInfo);
-    // }
-
+    
     info.isGlobal = false; // Function is Global
     return insert(key, info);
 }

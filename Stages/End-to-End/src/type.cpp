@@ -22,10 +22,10 @@ int width(const UserDType &dtype)
     }
     else if (recordType == RecordType::STRUCT)
     {
-        // For struct
+        // For struct [Needs Allignment]
         for (auto &member : members)
         {
-            totalSize += width(member.second);
+            totalSize += std::max(width(member.second), WORD_SIZE);
         }
     }
     else if (recordType == RecordType::ENUM)

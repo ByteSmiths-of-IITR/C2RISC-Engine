@@ -996,8 +996,8 @@ int direct_abstract_declarator_H(ASTNode *node, TypeExpression inh_type, TypeExp
 extern std::string NO_ARG_NAME;
 
 //----- Initializer -----
-int initializer_H(ASTNode *node, TypeExpression inh_type, std::string inh_varName, SPACE inh_valueSpace, VALUE_TYPE inh_valueType);
-int initializer_list_H(ASTNode *node, TypeExpression inh_type, std::string inh_varName, int &totalInitializers);
+int initializer_H(ASTNode *node, TypeExpression inh_type, std::string inh_varName, SPACE inh_valueSpace, VALUE_TYPE inh_valueType, StorageClass inh_storageClass);
+int initializer_list_H(ASTNode *node, TypeExpression inh_type, std::string inh_varName, int &totalInitializers, StorageClass inh_storageClass);
 
 //======================[ Expression Handlers ]=========================================================================================
 

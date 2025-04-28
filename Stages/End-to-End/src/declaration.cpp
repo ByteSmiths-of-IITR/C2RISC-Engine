@@ -198,35 +198,6 @@ int init_declarator_H(ASTNode *node, TypeExpression inh_type, StorageClass inh_s
             }
         }
 
-        // 0 First we Handle Initializer
-        if (whichProduction == P2)
-        {
-            // The inh_type must be INITIALIZABLE
-            std::string inh_varName1 = varName;
-            TypeExpression inh_type1 = type;
-
-            Type topType = whatIsType(inh_type1);
-            if (topType == Type::FUNCTION)
-            {
-                semanticError("Function cannot 🙂‍↔️ have initializer");
-                FAIL_H;
-                return FAIL;
-            }
-            else
-            {
-                SPACE inh_valueSpace = SPACE::VALUE_SPACE;
-                VALUE_TYPE inh_valueType = getValueType(inh_type1);
-                int initl_check = initializer_H(node->children[2], inh_type1, inh_varName1, inh_valueSpace, inh_valueType);
-                RECOVER_THE_ERROR(initl_check);
-                // Changing Initiailizer LOGIC - All things will be done by Initilizer
-            }
-        }
-
-        /*
-
-
-        */
-
         bool isValid = isValidTypeExpression(type);
         if (isValid == 0)
         {
@@ -382,6 +353,37 @@ int init_declarator_H(ASTNode *node, TypeExpression inh_type, StorageClass inh_s
                 aptLOG("Variable added ☞ \"" + varName + "\""); // 🌴 Adding syn_attr
             }
         }
+
+        // Handle Initializer
+        if (whichProduction == P2)
+        {
+            // The inh_type must be INITIALIZABLE
+            std::string inh_varName1 = varName;
+            TypeExpression inh_type1 = type;
+
+            Type topType = whatIsType(inh_type1);
+            if (topType == Type::FUNCTION)
+            {
+                semanticError("Function cannot 🙂‍↔️ have initializer");
+                FAIL_H;
+                return FAIL;
+            }
+            else
+            {
+                SPACE inh_valueSpace = SPACE::VALUE_SPACE;
+                VALUE_TYPE inh_valueType = getValueType(inh_type1);
+                int initl_check = initializer_H(node->children[2], inh_type1, inh_varName1, inh_valueSpace, inh_valueType, inh_storageClass);
+                RECOVER_THE_ERROR(initl_check);
+                // Changing Initiailizer LOGIC - All things will be done by Initilizer
+            }
+        }
+
+        /*
+
+
+        */
+
+    
     }
     else
     {
@@ -2160,7 +2162,7 @@ int direct_abstract_declarator_H(ASTNode *node, TypeExpression inh_type, TypeExp
 }
 
 //---- Initializers ---------
-int initializer_H(ASTNode *node, TypeExpression inh_type, std::string inh_varName, SPACE inh_valueSpace, VALUE_TYPE inh_valueType)
+int initializer_H(ASTNode *node, TypeExpression inh_type, std::string inh_varName, SPACE inh_valueSpace, VALUE_TYPE inh_valueType, StorageClass inh_storageClass)
 {
     ENTRY_H;
 
@@ -2173,6 +2175,7 @@ int initializer_H(ASTNode *node, TypeExpression inh_type, std::string inh_varNam
     aptLOG("inh_varName = " + inh_varName);
     aptLOG("inh_valueSpace = " + toString(inh_valueSpace));
     aptLOG("inh_valueType = " + toString(inh_valueType));
+    aptLOG("inh_storageClass = " + toString(inh_storageClass));
 
     if (whichProduction == P1)
     {
@@ -2187,7 +2190,7 @@ int initializer_H(ASTNode *node, TypeExpression inh_type, std::string inh_varNam
         GenericSymbol* sym;
         int check = SYM_TABLE.lookup(varName1, sym);
 
-        bool isStatic = (((Variable *)sym)->storageClass == StorageClass::STATIC);
+        bool isStatic = inh_storageClass == StorageClass::STATIC;
         bool isGlobal = (SYM_TABLE.scopeNo == SYM_TABLE.globalScope);
         std::string suffix = (isGlobal) ? "" : "$" + std::to_string(SYM_TABLE.scopeNo);
         suffix = (!isStatic) ? suffix : "_s_" + std::to_string(SYM_TABLE.scopeNo);
@@ -2200,8 +2203,9 @@ int initializer_H(ASTNode *node, TypeExpression inh_type, std::string inh_varNam
         TypeExpression source = type1;
         TypeExpression dest = inh_type;
 
+
         // Special Case Handling for Global Initializations
-        if(isGlobal){
+        if(isGlobal || isStatic){
 
             // Just need to check if it's a constant value or constant variable
 
@@ -2426,7 +2430,7 @@ int initializer_H(ASTNode *node, TypeExpression inh_type, std::string inh_varNam
 
 
         int totalInitializers = 0;
-        int iL_check = initializer_list_H(node->children[1], elementType, inh_varName, totalInitializers);
+        int iL_check = initializer_list_H(node->children[1], elementType, inh_varName, totalInitializers,inh_storageClass);
         PASS_THE_ERROR(iL_check);
 
         if (totalInitializers != dimSize)
@@ -2448,11 +2452,16 @@ int initializer_H(ASTNode *node, TypeExpression inh_type, std::string inh_varNam
     return OKAY;
 }
 
-int initializer_list_H(ASTNode *node, TypeExpression inh_type, std::string inh_varName, int &syn_indexNo)
+int initializer_list_H(ASTNode *node, TypeExpression inh_type, std::string inh_varName, int &syn_indexNo, StorageClass inh_storageClass)
 {
     ENTRY_H;
     std::string P1 = "initializer";
     std::string P2 = "initializer_list COMMA initializer";
+
+    aptLOG("inh_type = " + toString(inh_type));
+    aptLOG("inh_varName = " + inh_varName);
+    aptLOG("inh_storageClass = " + toString(inh_storageClass));
+    aptLOG("syn_indexNo = " + std::to_string(syn_indexNo));
 
     std::string whichProduction = getProduction(node);
 
@@ -2466,7 +2475,7 @@ int initializer_list_H(ASTNode *node, TypeExpression inh_type, std::string inh_v
         int syn_indexNo1 = 0; // by default or fetched if P2
 
         if(whichProduction == P2){ // Code Exclusive to P2
-            int iL_check = initializer_list_H(node->children[0], elementType, inh_varName, syn_indexNo1);
+            int iL_check = initializer_list_H(node->children[0], elementType, inh_varName, syn_indexNo1,inh_storageClass);
             PASS_THE_ERROR(iL_check);
         }
 
@@ -2478,7 +2487,7 @@ int initializer_list_H(ASTNode *node, TypeExpression inh_type, std::string inh_v
             
             // Simply Call the initializer
             int child = (whichProduction == P1) ? 0 : 2;
-            int iL_check = initializer_H(node->children[child], elementType, inh_varName, SPACE::UNKNOWN_SPACE, VALUE_TYPE::UNKNOWN);
+            int iL_check = initializer_H(node->children[child], elementType, inh_varName, SPACE::UNKNOWN_SPACE, VALUE_TYPE::UNKNOWN,inh_storageClass);
             PASS_THE_ERROR(iL_check);
         }
         else{
@@ -2510,7 +2519,7 @@ int initializer_list_H(ASTNode *node, TypeExpression inh_type, std::string inh_v
 
             // Now we call Initializer
             int child = (whichProduction == P1) ? 0 : 2;
-            int i_check = initializer_H(node->children[child], inh_type1, inh_varName1, inh_valueSpace1, inh_valueType1);
+            int i_check = initializer_H(node->children[child], inh_type1, inh_varName1, inh_valueSpace1, inh_valueType1, inh_storageClass);
             PASS_THE_ERROR(i_check);
         }
     }
@@ -2520,6 +2529,8 @@ int initializer_list_H(ASTNode *node, TypeExpression inh_type, std::string inh_v
         aptLOG("Which Production = " + whichProduction);
         return BUG;
     }
+
+    aptLOG("syn_indexNo = " + std::to_string(syn_indexNo)); // 🌴 Adding syn_attr
 
     EXIT_H;
     return OKAY;

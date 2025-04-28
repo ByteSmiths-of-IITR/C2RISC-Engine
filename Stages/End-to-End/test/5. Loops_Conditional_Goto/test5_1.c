@@ -6,11 +6,11 @@
 int main() {
     int a = 10, b = 20, c = 30;
     if (a > b) {
-        a = b;
+        a = 3;
     } else if (b > c) {
-        b = c;
+        b = 2;
     } else {
-        c = a;
+        c = 1;
     }
     return 0;
 }

@@ -958,7 +958,7 @@ int postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
                     {
                         break;
                     }
-                    memberOffset += width(member.second);
+                    memberOffset += std::max(4, width(member.second)); // 4 is the size of int
                 }
                 if (recordIDType == RecordType::UNION)
                 {
