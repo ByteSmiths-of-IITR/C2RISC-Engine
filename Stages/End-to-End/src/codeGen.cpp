@@ -1045,21 +1045,19 @@ int riscvCodeGen()
 
                         // Before using check if the variable is in memory
                         int regNo = SYM_RECORD.varStoredInWhichReg(args[i]);
-                        if (regNo != -1)
+                        if (regNo == -1)
                         {
                             // If variable is not in any register it must be in memory
 
-                            bool isInMemory = SYM_RECORD.isInMemory(args[i]);
+                            // bool isInMemory = SYM_RECORD.isInMemory(args[i]);
+                            bool isInMemory = true;
                             if (!isInMemory)
                             {
-                                CERR << "Error - Variable must have been in memory" << std::endl;
+                                CERR << "Error - Variable " << args[i] << " not in memory" << std::endl;
                                 return FAIL;
                             }
 
-                            // Load the variable into tempReg from memory
-                            std::string imm = "-" + std::to_string(offset);
-                            riscCode = indentOP("l" + sl_type) + tempReg + ", " + imm + "(fp)";
-                            FINAL_CODE.addCode(riscCode, "Load variable - " + args[i] + " into " + tempReg);
+                            FINAL_CODE.addLoadInst(args[i], tempReg);
                         }
                         else
                         {
@@ -1298,6 +1296,9 @@ int riscvCodeGen()
                 generateSimpleExpCode(currIR); // This will do all the work
             }
         }
+
+        // Spill the registers
+        spillingCode();
     }
 
     return OKAY;
@@ -2086,17 +2087,7 @@ void RISCV_CODE::addCopyInst(std::string variable, int size, int srcImm, std::st
     }
 }
 
-void RISCV_CODE::addLoadInst(const std::string &varName, int regNo)
-{
-    /*
-    Logic
-    - For VALUE_SPACE variables - we load the exact value of the variable at the address given by SYM_RECORD
-        - For Global - we load address from label THEN it's value
-        - For Local - we directly load the value from the offset
-    - For ADDRESS_SPACE variables - we load the address of the variable in a register
-        - For Global - we load address from label
-        - For Local - we load the offset using fp - this will be exact address (NOT w.r.t fp)
-    */
+void RISCV_CODE::addLoadInst(const std::string &varName, std::string regName){
 
     std::string riscCode;
     int sizeOfVar = SYM_RECORD.getSize(varName);
@@ -2109,6 +2100,7 @@ void RISCV_CODE::addLoadInst(const std::string &varName, int regNo)
     bool isFloat = SYM_RECORD.isFloat(varName);
     std::string loadOP = (isFloat) ? "fl" : "l";
 
+
     if (isGlobal)
     {
         // We need to load the address of the variable in a register
@@ -2117,31 +2109,35 @@ void RISCV_CODE::addLoadInst(const std::string &varName, int regNo)
         this->addCode(riscCode, "Loading Address of Global Variable - " + varName);
 
         // Now we can store the value in the memory
-        riscCode = indentOP(loadOP + sl_type) + getRegName(regNo) + ", 0(" + addrReg + ")";
-        this->addCode(riscCode, "Load Global Var - " + varName + " via " + addrReg + " in x" + std::to_string(regNo));
+        riscCode = indentOP(loadOP + sl_type) + regName + ", 0(" + addrReg + ")";
+        this->addCode(riscCode, "Load Global Var - " + varName + " via " + addrReg + " in x" +regName);
     }
     else
     {
         // Else it's a local variable - we need its offset
         int loc = SYM_RECORD.getOffset(varName);                                                          // [This Offset is w.r.t fp]
-        riscCode = indentOP(loadOP + sl_type) + getRegName(regNo) + ", -" + std::to_string(loc) + "(fp)"; // w.r.t frame pointer(fp)
-        this->addCode(riscCode, "Load Local Var - " + varName + " via fp in x" + std::to_string(regNo));
+        riscCode = indentOP(loadOP + sl_type) + regName + ", -" + std::to_string(loc) + "(fp)"; // w.r.t frame pointer(fp)
+        this->addCode(riscCode, "Load Local Var - " + varName + " via fp in x" + regName);
     }
 
     return;
 }
 
+void RISCV_CODE::addLoadInst(const std::string &varName, int regNo)
+{
+
+    std::string regName = getRegName(regNo);
+    this->addLoadInst(varName, regName);
+}
+
 void RISCV_CODE::addStoreInst(const std::string &varName, int regNo)
 {
-    /*
-    Logic
-    - For VALUE_SPACE variables - we store the exact value of the variable at the address given by SYM_RECORD
-        - For Global - we store address from label THEN it's value
-        - For Local - we directly store the value from the offset
-    - For ADDRESS_SPACE variables -
-        - For Global - we will need to store the data pointed by reg to the address of the variable
-        - For Local - we will need to store the data pointed by reg to - the variable
-    */
+    
+    std::string regName = getRegName(regNo);
+    this->addStoreInst(varName, regName);
+}
+
+void RISCV_CODE::addStoreInst(const std::string &varName, std::string regName){
     std::string riscCode;
     int sizeOfVar = SYM_RECORD.getSize(varName);
 
@@ -2161,15 +2157,15 @@ void RISCV_CODE::addStoreInst(const std::string &varName, int regNo)
         this->addCode(riscCode, "Loading Address of Global Variable - " + varName);
 
         // Now we can store the value in the memory
-        riscCode = indentOP(storeOP + sl_type) + getRegName(regNo) + ", 0(" + addrReg + ")";
-        this->addCode(riscCode, "Store Global Var - " + varName + " via " + addrReg + " in x" + std::to_string(regNo));
+        riscCode = indentOP(storeOP + sl_type) + regName + ", 0(" + addrReg + ")";
+        this->addCode(riscCode, "Store Global Var - " + varName + " via " + addrReg + " in x" + regName);
     }
     else
     {
         // Else it's a local variable - we need its offset
         int loc = SYM_RECORD.getOffset(varName);                                                           // [This Offset is w.r.t fp]
-        riscCode = indentOP(storeOP + sl_type) + getRegName(regNo) + ", -" + std::to_string(loc) + "(fp)"; // w.r.t frame pointer(fp)
-        this->addCode(riscCode, "Store Local Var - " + varName + " via fp in x" + std::to_string(regNo));
+        riscCode = indentOP(storeOP + sl_type) + regName + ", -" + std::to_string(loc) + "(fp)"; // w.r.t frame pointer(fp)
+        this->addCode(riscCode, "Store Local Var - " + varName + " via fp in x" + regName);
     }
 
     return;

@@ -475,7 +475,7 @@ std::string getRegName(int regNo)
     {
         return "f" + std::to_string(regNo - 32);
     }
-    return "INVALID";
+    return "INVALID"+std::to_string(regNo);
 }
 
 void SymTable::resetRegTable()

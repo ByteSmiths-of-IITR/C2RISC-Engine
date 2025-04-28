@@ -1066,8 +1066,11 @@ public:
 
     void addCopyInst(std::string variable, int size, int srcImm, std::string src_wrtReg, int destImm, std::string dest_wrtReg);
 
+
     void addLoadInst(const std::string &varName, int regNo);
+    void addLoadInst(const std::string &varName, std::string regName);
     void addStoreInst(const std::string &varName, int regNo);
+    void addStoreInst(const std::string &varName, std::string regName);
 };
 
 int codeGen();
