@@ -107,8 +107,13 @@ bool SymTable::isGlobal(const std::string &key)
 
 bool SymTable::isFloat(const std::string &key)
 {
-    // TODO
-    return false;
+    // This will return the isFloat of the key
+    if (symTable.find(key) == symTable.end())
+    {
+        return false;
+    }
+
+    return symTable[key].isFloat;
 }
 
 int SymTable::enterFunction(const std::string &funcName)
@@ -459,7 +464,7 @@ int SymTable::variableRest(const std::string &key)
 }
 
 std::pair<int, int> intRegLimit = std::make_pair(12, 31);             // This will be the limit of integer registers
-std::pair<int, int> floatRegLimit = std::make_pair(32 + 12, 32 + 31); // This will be the limit of float registers
+std::pair<int, int> floatRegLimit = std::make_pair(32 + 8, 32 + 31); // This will be the limit of float registers
 
 std::string getRegName(int regNo)
 {

@@ -629,7 +629,7 @@ void RISCV_CODE::printCode(std::ostringstream &oss)
 
 std::string indentOP(std::string op)
 {
-    int paddedsize = 6;
+    int paddedsize = 8;
     op = op + std::string(paddedsize - op.size(), ' ');
     return op;
 }

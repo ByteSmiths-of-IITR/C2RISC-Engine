@@ -98,6 +98,17 @@ bool isConstant(const TypeExpression &typeExpr)
     }
 }
 
+bool isFloatingPoint(std::string baseType)
+{
+    // Check if the base type is a floating point type
+    if (baseType == TYPE_FLOAT || baseType == TYPE_DOUBLE || baseType == TYPE_LONG_DOUBLE)
+    {
+        return true;
+    }
+    return false;
+
+}
+
 bool isFloatingPoint(const TypeExpression &typeExpr)
 {
     // Check if the type expression is a floating point type

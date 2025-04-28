@@ -487,7 +487,7 @@ int ProcessConstants(std::string inputValue, TypeExpression &typeExpr, std::stri
         if (inputValue.find('.') != std::string::npos)
         {
             double dval = std::stod(inputValue);
-            base->baseType = TYPE_DOUBLE;
+            base->baseType = TYPE_FLOAT;
             finalValue = std::to_string(dval);
             typeExpr.levelStack.push_back(base);
             return OKAY;

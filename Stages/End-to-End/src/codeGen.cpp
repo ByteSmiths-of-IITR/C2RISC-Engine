@@ -156,7 +156,7 @@ int addSymbolsToSymTable()
             int size = std::stoi(currIR.arg1);
 
             bool isF = (currIR.arg2 == "YES") ? true : false; // This will be used to check if the data is float or not
-
+            // CERR << " 😃 Var is " << (isF ? "float" : "int") << std::endl;
             // bool space = (currIR.arg2 == ADDRESS_VAR) ? true : false; // This will be used to check if the data is in address space or not
             int check = SYM_RECORD.insert(varName, size, isF);
             if (check != INSERT_SUCCESS)
@@ -788,8 +788,10 @@ int riscvCodeGen()
                     continue;
                 }
 
+                bool isF = SYM_RECORD.isFloat(dest);
+
                 std::map<std::string, int> regMap;
-                int check = getReg(currIR, regMap);
+                int check = (isF) ? getFloatReg(currIR, regMap) : getReg(currIR, regMap);
                 if (check != OKAY)
                 {
                     CERR << "Error in getReg()" << std::endl;
@@ -2658,9 +2660,14 @@ int generateSimpleExpCode(NEW_TAC_Quadruple code)
             return FAIL;
         }
 
-        usageReg1 = "f" + std::to_string(regMap[usageVar1]);
-        usageReg2 = "f" + std::to_string(regMap[usageVar2]);
-        assignReg = "f" + std::to_string(regMap[assignVar]);
+        usageReg1 = getRegName(regMap[usageVar1]);
+        usageReg2 = getRegName(regMap[usageVar2]);
+        assignReg = getRegName(regMap[assignVar]);
+
+        // Update the SYM_RECORD
+        SYM_RECORD.variableRest(assignVar); // This variable is
+        SYM_RECORD.addVarInReg(assignVar, regMap[assignVar]);
+        
 
         // Arithmetic OP
         if (op == "+")

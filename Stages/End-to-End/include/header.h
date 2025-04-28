@@ -657,6 +657,7 @@ bool isValidTypeExpression(const TypeExpression &typeExpr); // This will check i
 bool isIntegral(const TypeExpression &typeExpr);
 bool isConstant(const TypeExpression &typeExpr);
 bool isNumeric(const TypeExpression &typeExpr);
+bool isFloatingPoint(std::string baseType);
 bool isFloatingPoint(const TypeExpression &typeExpr);
 std::string isPrimitive(const TypeExpression &typeExpr);
 // Return values will be Primitive Types
