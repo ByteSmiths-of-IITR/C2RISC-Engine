@@ -467,11 +467,11 @@ std::pair<int,int> floatRegLimit = std::make_pair(32 + 12, 32 + 31); // This wil
 std::string getRegName(int regNo)
 {
     // This will return the register name
-    if (regNo >= intRegLimit.first && regNo <= intRegLimit.second)
+    if (regNo >= 0 && regNo <= 31)
     {
         return "x" + std::to_string(regNo - 12);
     }
-    else if (regNo >= floatRegLimit.first && regNo <= floatRegLimit.second)
+    else if (regNo >= 32 && regNo <= 63)
     {
         return "f" + std::to_string(regNo - 32);
     }
