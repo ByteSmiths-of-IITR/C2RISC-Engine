@@ -803,6 +803,11 @@ int riscvCodeGen()
                 // src can't be label -> variable or constant
                 // dest can be a label or constant -> only variable
 
+                // We are going to touch address -> Reset Register & Spill 
+                FINAL_CODE.addComment("😱 Someone is trying to touch address directly - to be ⚠️ cautious we spill & reset SYM_RECORD");
+                spillingCode();
+                SYM_RECORD.resetRegTable();
+
                 std::string dest = currIR.result;
                 std::string src = currIR.arg1;
 
@@ -815,6 +820,20 @@ int riscvCodeGen()
                 }
 
                 std::string destReg = getRegName(regMap[dest]);
+
+                // We are going at address of the variable - so it must be in Memory [WRONG LOGIC (ig) 🤔]
+                // bool isInMemory = SYM_RECORD.isInMemory(dest);
+                // if (!isInMemory)
+                // {
+                //     // We spill the register holding the variable
+                //     int regNum = SYM_RECORD.varStoredInWhichReg(dest);
+                //     std::string regName = getRegName(regNum);
+                //     FINAL_CODE.addStoreInst(dest, regName);
+
+                //     // Update the SYM_RECORD
+                //     FINAL_CODE.addComment("Spilling " + dest + " from register " + regName + " since we are going to use it");
+                //     SYM_RECORD.setInMemory(dest);
+                // }
 
                 if (isAValueSymbol(src))
                 {
@@ -853,6 +872,10 @@ int riscvCodeGen()
                 std::string dest = currIR.result;
                 std::string src = currIR.arg1;
 
+                FINAL_CODE.addComment("😱 Someone is trying to touch address directly - to be ⚠️ cautious we spill & reset SYM_RECORD");
+                spillingCode();
+                SYM_RECORD.resetRegTable();
+
                 std::map<std::string, int> regMap;
                 int check = getReg(currIR, regMap);
                 if (check != OKAY)
@@ -874,9 +897,23 @@ int riscvCodeGen()
                 int size = std::stoi(currIR.arg2);
                 std::string sl_type = store_load_Type(size);
 
+                // We are going at address of the variable - so it must be in Memory
+                bool isInMemory = SYM_RECORD.isInMemory(src);
+                if (!isInMemory)
+                {
+                    // We spill the register holding the variable
+                    int regNum = SYM_RECORD.varStoredInWhichReg(src);
+                    std::string regName = getRegName(regNum);
+                    FINAL_CODE.addStoreInst(src, regName);
+
+                    // Update the SYM_RECORD
+                    FINAL_CODE.addComment("Spilling " + src + " from register " + regName + " since we are going to use it");
+                    SYM_RECORD.setInMemory(src);
+                }
+
                 // Load x[srcReg] in address of x[destReg]
                 riscCode = indentOP("l" + sl_type) + destReg + ", 0(" + srcReg + ")";
-                FINAL_CODE.addCode(riscCode, "Load reg " + srcReg + " with value at address pointed by " + destReg);
+                FINAL_CODE.addCode(riscCode, "Load reg " + destReg + " with address pointed by " + srcReg);
 
                 // SYM_RECORD already updated
             }

@@ -1,4 +1,4 @@
-#-------- 🎨 RISC-V Code Gen using C2RISC-Engine Time(2025-04-28 - 22:45:58) 🎨 ---------
+#-------- 🎨 RISC-V Code Gen using C2RISC-Engine Time(2025-04-28 - 23:32:02) 🎨 ---------
 
 .data
 
@@ -42,22 +42,7 @@
         #  🔄 Automatic copy - of $1 into (pp$1)
         # 
 # ‼️ TAC ❗️ ➔ Right Star ✨ - $2 = (4)*pp$1
-        #  🔵 Already in register - pp$1 in 13
-        #  🟢 Found Free Register - 14 for $2
-        #  🙋🏼 GetReg() for $2 = (4)*pp$1 | 🤝 `x14` reg ➜ $2 | 🤝 `x0` reg ➜ NULL | 🤝 `x13` reg ➜ pp$1 |
-        # 💛 SYM_RECORD 💛 - Setting 🚫 $2 NOT in memory
-        # 💛 SYM_RECORD 💛 - Adding 🌕 $2 to register 14
-        lw    x14, 0(x13)      # Load reg x13 with value at address pointed by x14
-        # 
-# ‼️ TAC ❗️ ➔ Left Star 🌟 - (4)*$2 = 10
-        #  🔵 Already in register - $2 in 14
-        #  🙋🏼 GetReg() for (4)*$2 = 10 | 🤝 `x14` reg ➜ $2 |
-        li    t0, 10           # Load constant - 10 into t0
-        sw    t0, 0(x14)       # Store constant of reg t0 at address pointed by x14
-        # 
-# ‼️ TAC ❗️ ➔ Return Statements - return 
-        mv    a1, x0           # Move return value's reg - x0 to a1
-        #  -- EXIT Activation (start) - main
+        # 😱 Someone is trying to touch address directly - to be ⚠️ cautious we spill & reset SYM_RECORD
         #  🫟 Spilling Code 🫟 
         sw    x12, -28(fp)     # Store Local Var - $0 via fp in x12
         # 💛 SYM_RECORD 💛 - Setting 🟢 $0 in memory
@@ -67,8 +52,33 @@
         # 💛 SYM_RECORD 💛 - Setting 🟢 $1 in memory
         sw    x13, -32(fp)     # Store Local Var - pp$1 via fp in x13
         # 💛 SYM_RECORD 💛 - Setting 🟢 pp$1 in memory
-        sw    x14, -40(fp)     # Store Local Var - $2 via fp in x14
+        #  🫗 Finished Spilling Code 👌 
+        #  🟢 Found Free Register - 12 for pp$1
+        # 💛 SYM_RECORD 💛 - Adding 🌕 pp$1 to register 12
+        lw    x12, -32(fp)     # Load Local Var - pp$1 via fp in x12
+        #  🟢 Found Free Register - 13 for $2
+        #  🙋🏼 GetReg() for $2 = (4)*pp$1 | 🤝 `x13` reg ➜ $2 | 🤝 `x0` reg ➜ NULL | 🤝 `x12` reg ➜ pp$1 |
+        # 💛 SYM_RECORD 💛 - Setting 🚫 $2 NOT in memory
+        # 💛 SYM_RECORD 💛 - Adding 🌕 $2 to register 13
+        lw    x13, 0(x12)      # Load reg x13 with address pointed by x12
+        # 
+# ‼️ TAC ❗️ ➔ Left Star 🌟 - (4)*$2 = 10
+        # 😱 Someone is trying to touch address directly - to be ⚠️ cautious we spill & reset SYM_RECORD
+        #  🫟 Spilling Code 🫟 
+        sw    x13, -40(fp)     # Store Local Var - $2 via fp in x13
         # 💛 SYM_RECORD 💛 - Setting 🟢 $2 in memory
+        #  🫗 Finished Spilling Code 👌 
+        #  🟢 Found Free Register - 12 for $2
+        # 💛 SYM_RECORD 💛 - Adding 🌕 $2 to register 12
+        lw    x12, -40(fp)     # Load Local Var - $2 via fp in x12
+        #  🙋🏼 GetReg() for (4)*$2 = 10 | 🤝 `x12` reg ➜ $2 |
+        li    t0, 10           # Load constant - 10 into t0
+        sw    t0, 0(x12)       # Store constant of reg t0 at address pointed by x12
+        # 
+# ‼️ TAC ❗️ ➔ Return Statements - return 
+        mv    a1, x0           # Move return value's reg - x0 to a1
+        #  -- EXIT Activation (start) - main
+        #  🫟 Spilling Code 🫟 
         #  🫗 Finished Spilling Code 👌 
         mv    a0, a1           # Move return value stored by return statement into a1 to a0(default return reg)
         lw    ra, 36(sp)       # Restore return address (PC)
