@@ -4,12 +4,14 @@
 
 #include <stdio.h>
 
+int fun(){
+    int a = 10;
+    return a;
+}
+
 int main()
 {
-    int a;
-    int *p = &a;
-    int **pp = &p;
-    **pp = 10;
+    int k = fun();
 }
 //=========================== C2RISC-Engine =========================================================//
 // 🌴 APTree 🌴 has been generated, can be used for debugging ❤️‍🩹 

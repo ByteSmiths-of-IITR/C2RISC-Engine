@@ -2635,17 +2635,20 @@ int main(int argc, char **argv) {
     bool semanticFailed = (semanticLOG.size() > 0);
     if(semanticFailed){
         notificationStream <<  "Lexical Analysis 👍 | Syntax Analysis 👍 | Semantic Analysis ❌" << std::endl;
-        notificationStream <<  "🥺 Sorry for the inconvenience, please try again later with next release \n";
         errorStream <<  SEMANTICLOGHEADER << std::endl;
         for(auto log : semanticLOG){
             errorStream <<  log << std::endl;
         }
         errorStream <<  LOGFOOTER << std::endl;
-    }
-    else{
-    }
+        errorStream <<  std::endl;
 
-
+        notificationStream <<  "😊 Thanku for using our \"C2RISC-Engine\" (Till IR Phase) " << std::endl;
+        // Clean Up
+        if(yyin) fclose(yyin);  // Close the input file
+        exit_compiler(); // Clean up and exit
+        return 0;
+    }
+    
     // Print the IR code
 
     // Print the Annotated Parse Tree
@@ -2672,7 +2675,7 @@ int main(int argc, char **argv) {
     if(optStatus != OKAY){
         notificationStream <<  "Lexical Analysis 👍 | Syntax Analysis 👍 | Semantic Analysis 👍 | Machine Independent Optimization ❌\n";
         errorStream <<  "Machine Independent Optimization failed with error code: " << optStatus << std::endl;
-        notificationStream <<  "🥺 Sorry for the inconvenience, please try again later with next release \n";
+        notificationStream <<  "😊 Thanku for using our \"C2RISC-Engine\" (Till IR Phase) " << std::endl;
         if(yyin) fclose(yyin);  // Close the input file
         exit_compiler(); // Clean up and exit
         return 0;
