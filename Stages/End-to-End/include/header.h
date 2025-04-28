@@ -639,7 +639,6 @@ public:
         this->dataSection = other.dataSection;
         return *this;
     }
-
 };
 
 /*
@@ -769,11 +768,14 @@ extern std::string semanticMessage;
 
 #define LOC std::to_string(__LINE__) + " :" + __FILE__
 
-#define BUG_H do { \
-    if (ANNOTATE) { \
-        node->addAttribute("😱 COMPILER BUG Exit [" + std::to_string(__LINE__) + ":" + std::string(__FILE__) + "] ✋"); \
-    } \
-} while(0)
+#define BUG_H                                                                                                               \
+    do                                                                                                                      \
+    {                                                                                                                       \
+        if (ANNOTATE)                                                                                                       \
+        {                                                                                                                   \
+            node->addAttribute("😱 COMPILER BUG Exit [" + std::to_string(__LINE__) + ":" + std::string(__FILE__) + "] ✋"); \
+        }                                                                                                                   \
+    } while (0)
 
 #define RECOVER_H \
     if (ANNOTATE) \
@@ -835,7 +837,7 @@ extern const int FAIL;
             IR_CODE.addTAC((node), tempName, ALLOCATE, std::to_string(size), NO_ARG);             \
             IR_CODE.addTAC((node), tempName, RIGHT_STAR, (value), std::to_string(size));          \
             value = tempName;                                                                     \
-            (node)->attributes.push_back("🌋 Space Change from ADDRESS to VALUE 💥 ");             \
+            (node)->attributes.push_back("🌋 Space Change from ADDRESS to VALUE 💥 ");            \
         }                                                                                         \
     }                                                                                             \
     else if ((space) == SPACE::VALUE_SPACE)                                                       \
@@ -847,7 +849,7 @@ extern const int FAIL;
             IR_CODE.addTAC((node), offset, ALLOCATE, std::to_string(size), NO_ARG);               \
             IR_CODE.addTAC((node), offset, OFFSET_LOAD, (value), NO_ARG);                         \
             value = offset;                                                                       \
-            (node)->attributes.push_back("🌋 Space Change from VALUE to ADDRESS 💥 ");             \
+            (node)->attributes.push_back("🌋 Space Change from VALUE to ADDRESS 💥 ");            \
         }                                                                                         \
     }                                                                                             \
     else                                                                                          \
@@ -1031,20 +1033,21 @@ int constant_expression_H(ASTNode *node, std::string &value);
 
 //=====================[ Code Generations ]=========================================================================================
 
-bool isALabel(const std::string &varName); // This will check if the variable is a label or not
+bool isALabel(const std::string &varName);       // This will check if the variable is a label or not
 bool isAValueSymbol(const std::string &varName); // This will check if the variable is a symbol or not
 // bool isAddressSymbol(const std::string &varName); // This will check if the variable is a address symbol or not
 // using RISCV_CODE = std::vector<std::string>;
 
 std::string indentOP(std::string op);
 
-class RISCV_CODE{
+class RISCV_CODE
+{
     std::vector<std::string> code;
     std::map<std::string, dataSegment> data;
-    
+
     int newLabelCount = 0;
 
-    public:
+public:
     void addDataSection(const std::map<std::string, dataSegment> &dataSection);
 
     std::string newDataLabel();
@@ -1064,10 +1067,9 @@ class RISCV_CODE{
 
     void addLoadInst(const std::string &varName, int regNo);
     void addStoreInst(const std::string &varName, int regNo);
-    };
+};
 
 int codeGen();
-
 
 using LivelinessDS = std::map<std::string, std::pair<bool, std::set<int>>>; // This will be used to keep track of the liveliness of the variables
 
@@ -1082,7 +1084,8 @@ public:
 
     NEW_TAC_Quadruple() = default;
 
-    NEW_TAC_Quadruple(TAC_Quadruple oldTAC){
+    NEW_TAC_Quadruple(TAC_Quadruple oldTAC)
+    {
         this->op = oldTAC.op;
         this->arg1 = oldTAC.arg1;
         this->arg2 = oldTAC.arg2;
@@ -1106,14 +1109,13 @@ public:
     std::string toString();
 };
 
-
 class NEW_TAC
 {
 public:
     std::map<int, NEW_TAC_Quadruple> code;
 
     int addOLD_TAC(int lineNo, TAC_Quadruple oldIrCode);
-    int addVarInfo(int lineNo, const std::string  &varName, bool isAlive, const std::set<int> &nextUsage);
+    int addVarInfo(int lineNo, const std::string &varName, bool isAlive, const std::set<int> &nextUsage);
 
     int addTAC(int lineNo, NEW_TAC_Quadruple q);
 
@@ -1127,7 +1129,7 @@ public:
 
     LivelinessDS livelinessInfo; // This will be used to keep track of the liveliness of the variables
 
-    int generateRISCVCode();            // This will generate the RISC-V code & store in it's element -> risvCode
+    int generateRISCVCode(); // This will generate the RISC-V code & store in it's element -> risvCode
 
     std::string label; // Label for the basic block
 
@@ -1159,7 +1161,6 @@ public:
     // This will help find to which block any index belongs
     int whichBlock(int index);
 
-
     bool isALeader(int index);
     int addLeader(int index);                        // will generate a new Name for block & set things
     int addLeader(int index, std::string blockName); // This will set that Name
@@ -1183,27 +1184,24 @@ public:
     int attachLiveInfoToLine(int atLine);
 
     int setAlive(int atLine, const std::string &key); // Set the variable as alive
-    int setAllAlive(int atLine);                    // Set all the variables as alive
+    int setAllAlive(int atLine);                      // Set all the variables as alive
     int setDead(int atLine, const std::string &key);  // Set the variable as dead
-    int setAllDead(int atLine);                     // Set all the variables as dead
+    int setAllDead(int atLine);                       // Set all the variables as dead
 
     bool isAlive(int atLine, const std::string &key); // Check if the variable is alive or not
 
     int addUsage(int atLine, const std::string &key, int usageLine);    // Add the usage of the variable in the register
     int removeUsage(int atLine, const std::string &key, int usageLine); // Clear the usage of the variable in the register
-    int clearAllUsage(int atLine, const std::string &key);           // Clear all the usage of the variable in the register
-
+    int clearAllUsage(int atLine, const std::string &key);              // Clear all the usage of the variable in the register
 
     int removeLifeInfo(int atLine, const std::string &key); // Remove the liveliness info of the variable
 
     // For Us to use Simple Functions
 
     int assignmentAt(int atLine, const std::string &varName); // This will be used to assign the value to the variable
-    int usageAt(int atLine, const std::string &varName); // This will be used to use the variable as an operand
+    int usageAt(int atLine, const std::string &varName);      // This will be used to use the variable as an operand
 
     int resetLiveliness(int atLine);
-
-
 };
 
 class SymInfo
@@ -1212,8 +1210,8 @@ public:
     // Information of each symbol
     // For Offset Calculations
     int size;
-    int offset; // relative to function-block or global-space
-    bool isGlobal; // also shor 
+    int offset;    // relative to function-block or global-space
+    bool isGlobal; // also shor
     bool isFloat;
 
     std::string whichFunction;
@@ -1253,7 +1251,8 @@ public:
 
     // We will also Insert functions as a variable and it's size = activation record size;
 
-    SymTable(){
+    SymTable()
+    {
         bss_offset = 0;
         ro_offset = 0;
         data_offset = 0;
@@ -1268,11 +1267,10 @@ public:
     int enterFunction(const std::string &funcName);
     int exitFunction();
 
+    int insert(const std::string &key, SymInfo &info);                        // This will be used to insert the symbol in the table
+    int insert(const std::string &key, int size, bool isFloat = false);       // The Offset & isGlobal Will be autoSet
+    int insertGlobal(const std::string &key, int size, bool isFloat = false); // This will be used to insert the global variable
 
-    int insert(const std::string &key, SymInfo &info);
-    int insert(const std::string &key, int size); // The Offset & isGlobal Will be autoSet
-    int insertGlobal(const std::string &key, int size); // This will be used to insert the global variable
-    
     int lookup(const std::string &key, SymInfo &info);
 
     int remove(const std::string &key);
@@ -1290,14 +1288,14 @@ public:
     int setInMemory(const std::string &key);    // Set the variable as in memory
     int setNotInMemory(const std::string &key); // Set the variable as not in memory
 
-    int varStoredInWhichReg(const std::string &key); // Check if the variable is stored in register or not
+    int varStoredInWhichReg(const std::string &key);  // Check if the variable is stored in register or not
     int varStoreInHowManyReg(const std::string &key); // Check how many registers the variable is stored in
 
     int ex_varStoredInWhichReg(const std::string &key); // Check if  variable EXCLUSIVLY is stored in register or not
 
-    int addVarInReg(const std::string &key, int regNo);    // Set the variable as in register
+    int addVarInReg(const std::string &key, int regNo);      // Set the variable as in register
     int removeVarFromReg(const std::string &key, int regNo); // Clear the variable from register
-    int removeVarFromAllReg(const std::string &key);          // Clear all the registers for the variable
+    int removeVarFromAllReg(const std::string &key);         // Clear all the registers for the variable
 
     int variableRest(const std::string &key); // Reset the variable's info
 
@@ -1332,7 +1330,7 @@ public:
 
     // Get a free register [Gives Smallest Free Register or -1 if none is free]
     int getFreeReg();
-    int getFreeReg(std::pair<int, int> regLimit);  // In limit of regLimit
+    int getFreeReg(std::pair<int, int> regLimit); // In limit of regLimit
     // void resetRegTable(); // Reset the register info
 
     // int findRegToEvict(); // Find a register to evict & return the register number
@@ -1350,11 +1348,11 @@ int livelinessPass();
 
 void spillingCode();
 
-int getReg(NEW_TAC_Quadruple &code, std::map<std::string, int> &retMap);
+int getReg(NEW_TAC_Quadruple &code, std::map<std::string, int> &regMap);
 
-int getFloatReg(NEW_TAC_Quadruple &code, std::map<std::string, int> &retMap);
+int getFloatReg(NEW_TAC_Quadruple &code, std::map<std::string, int> &regMap);
 
-int getManyReg(std::set<std::string> varName, LivelinessDS livelinessInfo, std::map<std::string, int> &retMap);
+int getManyReg(std::set<std::string> varName, LivelinessDS livelinessInfo, std::map<std::string, int> &regMap);
 
 std::string store_load_Type(int size);
 std::string getRegName(int regNo);
@@ -1382,7 +1380,6 @@ int strengthReduction_al_simplification();
 int machineIndependentOptimization();
 
 //======================[ Code Generation Utilies ]=========================================================================================
-
 
 //=====================[ Print & Scan Lib ]=========================================================================================
 

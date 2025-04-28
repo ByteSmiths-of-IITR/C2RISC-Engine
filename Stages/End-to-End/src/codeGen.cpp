@@ -118,7 +118,9 @@ int addSymbolsToSymTable()
             return FAIL;
         }
 
-        SYM_RECORD.insertGlobal(varName, size);
+        bool isF = (type == dataFloat || type == dataDouble) ? true : false; // This will be used to check if the data is float or not
+
+        SYM_RECORD.insertGlobal(varName, size, isF);
     }
 
     for (size_t i = 0; i < IR_CODE.code.size(); i++)
@@ -153,9 +155,10 @@ int addSymbolsToSymTable()
             std::string varName = currIR.result;
             int size = std::stoi(currIR.arg1);
 
-            // bool space = (currIR.arg2 == ADDRESS_VAR) ? true : false; // This will be used to check if the data is in address space or not
+            bool isF = (currIR.arg2 == "YES") ? true : false; // This will be used to check if the data is float or not
 
-            int check = SYM_RECORD.insert(varName, size);
+            // bool space = (currIR.arg2 == ADDRESS_VAR) ? true : false; // This will be used to check if the data is in address space or not
+            int check = SYM_RECORD.insert(varName, size, isF);
             if (check != INSERT_SUCCESS)
             {
                 CERR << "Error in inserting variable" << std::endl;
@@ -425,7 +428,6 @@ int livelinessPass()
     bool isNewBlock = true;
     for (int i = n - 1; i >= 0; i--)
     {
-
         std::string op = IR_CODE.code[i].op;
         std::string result = IR_CODE.code[i].result;
         std::string arg1 = IR_CODE.code[i].arg1;
@@ -1300,6 +1302,7 @@ int riscvCodeGen()
 
     return OKAY;
 }
+
 
 void spillingCode()
 {
@@ -2201,11 +2204,20 @@ std::string store_load_Type(int size)
     return sl_type;
 }
 
-int getFloatReg(NEW_TAC_Quadruple &code, std::map<std::string, int> &retMap)
+int getFloatReg(NEW_TAC_Quadruple &code, std::map<std::string, int> &regMap)
 {
+
+    // This will return the register number for the variable
+    int check = getRegLimit(code, regMap, floatRegLimit);
+    if (check != OKAY)
+    {
+        CERR << "Error - getRegLimit() failed" << std::endl;
+        return FAIL;
+    }
 
     return OKAY;
 }
+
 
 int generateSimpleExpCode(NEW_TAC_Quadruple code)
 {
@@ -2533,6 +2545,7 @@ int generateSimpleExpCode(NEW_TAC_Quadruple code)
 
     return OKAY;
 }
+
 
 int addPrint_ScanLib()
 {

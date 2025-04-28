@@ -178,7 +178,7 @@ int SymTable::exitFunction()
     return OKAY;
 }
 
-int SymTable::insert(const std::string &key, int size)
+int SymTable::insert(const std::string &key, int size,bool isFloat=false)
 {
     // We are only give size
 
@@ -191,7 +191,7 @@ int SymTable::insert(const std::string &key, int size)
     stack_offset += size;              // This will set the offset of the function
     info.whichFunction = functionName; // This will set the function name
     info.offset = stack_offset;        // This will set the offset of the function
-
+    info.isFloat = isFloat; // This will set the isFloat of the function
     // if(padding != 0){
     //     stack_offset += padding;
     //     SymInfo paddingInfo;
@@ -205,7 +205,7 @@ int SymTable::insert(const std::string &key, int size)
     return insert(key, info);
 }
 
-int SymTable::insertGlobal(const std::string &key, int size)
+int SymTable::insertGlobal(const std::string &key, int size, bool isF=false)
 {
     // This will insert the key and info in the table
     if (symTable.find(key) != symTable.end())
@@ -218,6 +218,7 @@ int SymTable::insertGlobal(const std::string &key, int size)
     info.size = size;
     info.offset = -1;     // no offset for global variables
     info.isGlobal = true; // Function is Global
+    info.isFloat = isF;  // This will set the isFloat of the function
 
     symTable[key] = info;
     return INSERT_SUCCESS;
@@ -240,6 +241,11 @@ void SymTable::printTable(std::ofstream &file)
         std::string toPrint;
         std::ostringstream ss;
         std::string offset_str = (it.second.offset == -1) ? "N/A" : ("-" + std::to_string(it.second.offset));
+        std::string size_str = std::to_string(it.second.size);
+        if(it.second.isFloat)
+        {
+            size_str += " (f)";
+        }
         ss << std::left << std::setw(maxSize) << it.first << std::setw(minSize) << it.second.size << std::setw(maxSize) << offset_str << std::setw(minSize) << (it.second.isGlobal ? "YES" : "NO") << std::endl;
         toPrint = ss.str();
 
@@ -261,7 +267,7 @@ void SymTable::printTable(std::ofstream &file)
 
         // Sort the symbols in the function
         std::sort(symbols.begin(), symbols.end(), [](const std::pair<int, std::string> &a, const std::pair<int, std::string> &b)
-                  { return a.first > b.first; });
+                    { return a.first > b.first; });
 
         // Print the function name
         if (func != "GLOBAL")

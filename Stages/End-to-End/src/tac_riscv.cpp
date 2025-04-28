@@ -95,13 +95,14 @@ std::string TAC_Quadruple::toString()
 
     else if (op == ALLOCATE)
     {
-        if(arg2 == GLOBAL_VAR)
+        std::string isF = (arg2 == "YES") ? "float " : "";
+        if (arg2 == GLOBAL_VAR)
         {
-            str = "(global)alloca " + result + ", " + arg1; // allocate var, size
+            str = "(global)alloca " + isF + result + ", " + arg1; // allocate var, size
         }
         else
         {
-            str = "alloca " + result + ", " + arg1; // allocate var, size
+            str = "alloca " + isF + result + ", " + arg1; // allocate var, size
         }
         // str = result+" (" + arg1 + " bytes)"; // var (size bytes)
     }
