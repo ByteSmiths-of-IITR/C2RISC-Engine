@@ -610,13 +610,12 @@ int riscvCodeGen()
         BasicBlock &block = CFG_CODE.blocks[currBlock];
         std::string riscCode;
 
-        
         // Ignore Entry & Exit Blocks
         if (currBlock == "ENTRY" || currBlock == "EXIT")
         {
             continue;
         }
-        
+
         // Add Lable
         riscCode = currBlock + ":";
         FINAL_CODE.addCode(riscCode);
@@ -640,7 +639,7 @@ int riscvCodeGen()
                 int stackSize = SYM_RECORD.getSize(funcName);
 
                 // Adding Comment
-                FINAL_CODE.addComment(" ‼️ TAC ❗️ ➔ ENTRY (start) - " + funcName);
+                FINAL_CODE.addComment("\n# ‼️ TAC ❗️ ➔ ENTRY (start) - " + funcName);
 
                 // Allocate Stack Space
                 riscCode = indentOP("addi") + "sp, sp, -" + std::to_string(stackSize);
@@ -748,7 +747,7 @@ int riscvCodeGen()
             // AssignOP
             else if (op == ASSIGN_OP)
             {
-                FINAL_CODE.addComment(" ‼️ TAC ❗️ ➔ Assign OP 🟰 - " + currIR.toBaseString());
+                FINAL_CODE.addComment("\n# ‼️ TAC ❗️ ➔ Assign OP 🟰 - " + currIR.toBaseString());
                 // This will store address(explicit address) of return value in `a0` register
                 std::string dest = currIR.result;
                 std::string src = currIR.arg1;
@@ -800,7 +799,7 @@ int riscvCodeGen()
             }
             else if (op == LEFT_STAR)
             {
-                FINAL_CODE.addComment(" ‼️ TAC ❗️ ➔ Left Star 🌟 - " + currIR.toBaseString());
+                FINAL_CODE.addComment("\n# ‼️ TAC ❗️ ➔ Left Star 🌟 - " + currIR.toBaseString());
                 // src can't be label -> variable or constant
                 // dest can be a label or constant -> only variable
 
@@ -848,7 +847,7 @@ int riscvCodeGen()
             }
             else if (op == RIGHT_STAR)
             {
-                FINAL_CODE.addComment(" ‼️ TAC ❗️ ➔ Right Star ✨ - " + currIR.toBaseString());
+                FINAL_CODE.addComment("\n# ‼️ TAC ❗️ ➔ Right Star ✨ - " + currIR.toBaseString());
                 // src can't be a label or constant -> only variable
                 // dest can be a label or constant -> only variable
                 std::string dest = currIR.result;
@@ -883,7 +882,7 @@ int riscvCodeGen()
             }
             else if (op == AMPERSEND)
             {
-                FINAL_CODE.addComment(" ‼️ TAC ❗️ ➔  Ampersend (&) - " + currIR.toBaseString());
+                FINAL_CODE.addComment("\n# ‼️ TAC ❗️ ➔  Ampersend (&) - " + currIR.toBaseString());
                 std::string dest = currIR.result;
                 std::string src = currIR.arg1;
                 // src can't be constant -> variable or label
@@ -901,7 +900,7 @@ int riscvCodeGen()
                 }
 
                 // Since we are doing assigning, we need to update the SYM_RECORD
-                SYM_RECORD.variableRest(dest); // update the variable assigned
+                SYM_RECORD.variableRest(dest);              // update the variable assigned
                 SYM_RECORD.addVarInReg(dest, regMap[dest]); // add the variable to the register
 
                 std::string destReg = getRegName(regMap[dest]);
@@ -929,7 +928,7 @@ int riscvCodeGen()
             else if (op == CAST)
             {
                 // Only when int-type -> float->type or vice-versa
-                FINAL_CODE.addComment(" ‼️ TAC ❗️ ➔ Cast - " + currIR.toBaseString());
+                FINAL_CODE.addComment("\n# ‼️ TAC ❗️ ➔ Cast - " + currIR.toBaseString());
 
                 std::string dest = currIR.result;
                 std::string src = currIR.arg1;
@@ -937,7 +936,7 @@ int riscvCodeGen()
 
             else if (op == OFFSET_LOAD)
             {
-                FINAL_CODE.addComment(" ‼️ TAC ❗️ ➔ Offset Load - " + currIR.toBaseString());
+                FINAL_CODE.addComment("\n# ‼️ TAC ❗️ ➔ Offset Load - " + currIR.toBaseString());
                 // This will load the address of the variable in the register
                 std::string dest = currIR.result;
                 std::string src = currIR.arg1;
@@ -951,6 +950,10 @@ int riscvCodeGen()
                 }
 
                 std::string destReg = getRegName(regMap[dest]);
+
+                // Since we are doing assigning, we need to update the SYM_RECORD
+                SYM_RECORD.variableRest(dest);              // update the variable assigned
+                SYM_RECORD.addVarInReg(dest, regMap[dest]); // add the variable to the register
 
                 bool isGlobal = SYM_RECORD.isGlobal(src);
                 if (isGlobal)
@@ -976,7 +979,7 @@ int riscvCodeGen()
             // Param + Function Call + Return
             else if (op == PARAM)
             {
-                FINAL_CODE.addComment(" ‼️ TAC ❗️ ➔ Param - " + currIR.toBaseString());
+                FINAL_CODE.addComment("\n# ‼️ TAC ❗️ ➔ Param - " + currIR.toBaseString());
                 // Only one argument
                 std::string funcArg = currIR.arg1;
 
@@ -988,7 +991,7 @@ int riscvCodeGen()
             }
             else if (op == CALL)
             {
-                FINAL_CODE.addComment(" ‼️ TAC ❗️ ➔ Function Call - " + currIR.toBaseString());
+                FINAL_CODE.addComment("\n# ‼️ TAC ❗️ ➔ Function Call - " + currIR.toBaseString());
                 int noOfArg = std::stoi(currIR.arg2);
                 std::string result = currIR.result;
                 std::string funcName = currIR.arg1;
@@ -1124,7 +1127,7 @@ int riscvCodeGen()
             }
             else if (op == RETURN_FUNCTION)
             {
-                FINAL_CODE.addComment(" ‼️ TAC ❗️ ➔ Return Statements - " + currIR.toBaseString());
+                FINAL_CODE.addComment("\n# ‼️ TAC ❗️ ➔ Return Statements - " + currIR.toBaseString());
                 std::string retVar = currIR.arg1;
                 bool defaultRet = (retVar == NO_ARG);
 
@@ -1203,7 +1206,7 @@ int riscvCodeGen()
             // Jump Operations
             else if (op == GOTO_EQUAL)
             {
-                FINAL_CODE.addComment(" ‼️ TAC ❗️ ➔ GOTO_EQUAL - " + currIR.toBaseString());
+                FINAL_CODE.addComment("\n# ‼️ TAC ❗️ ➔ GOTO_EQUAL - " + currIR.toBaseString());
 
                 // Spilling Code
                 spillingCode();
@@ -1233,7 +1236,7 @@ int riscvCodeGen()
                 // Spilling Code
                 spillingCode();
 
-                FINAL_CODE.addComment(" ‼️ TAC ❗️ ➔ GOTO_LABEL - " + currIR.toBaseString());
+                FINAL_CODE.addComment("\n# ‼️ TAC ❗️ ➔ GOTO_LABEL - " + currIR.toBaseString());
                 // Unconditional Jump
                 std::string label = currIR.result;
 
@@ -1247,7 +1250,7 @@ int riscvCodeGen()
                 // Spilling Code
                 spillingCode();
 
-                FINAL_CODE.addComment(" ‼️ TAC ❗️ ➔ IF_TRUE - " + currIR.toBaseString());
+                FINAL_CODE.addComment("\n# ‼️ TAC ❗️ ➔ IF_TRUE - " + currIR.toBaseString());
                 std::string condVar = currIR.arg1;
                 std::string label = currIR.result;
 
@@ -1268,9 +1271,7 @@ int riscvCodeGen()
             else if (op == IF_FALSE)
             {
 
-                
-
-                FINAL_CODE.addComment(" ‼️ TAC ❗️ ➔ IF_FALSE - " + currIR.toBaseString());
+                FINAL_CODE.addComment("\n# ‼️ TAC ❗️ ➔ IF_FALSE - " + currIR.toBaseString());
                 std::string condVar = currIR.arg1;
                 std::string label = currIR.result;
 
@@ -1303,7 +1304,7 @@ int riscvCodeGen()
             else
             {
                 // This will be a simple operation
-                FINAL_CODE.addComment(" ‼️ TAC ❗️ ➔ Simple Operation - " + currIR.toBaseString());
+                FINAL_CODE.addComment("\n# ‼️ TAC ❗️ ➔ Simple Operation - " + currIR.toBaseString());
 
                 generateSimpleExpCode(currIR); // This will do all the work
             }
@@ -1481,7 +1482,6 @@ int getRegLimit(NEW_TAC_Quadruple &code, std::map<std::string, int> &regMap, std
         - assign op
         */
 
-        
         std::set<int> justUsedReg;
 
         if (usageVar1 != "NULL")
@@ -1752,7 +1752,7 @@ int getRegLimit(NEW_TAC_Quadruple &code, std::map<std::string, int> &regMap, std
 
             if (op == ASSIGN_OP && usageVar1 != "NULL" && usageVar2 == "NULL")
             {
-                FINAL_CODE.addComment(" 🍊 Giving " + assignVar + " same reg as given to " + usageVar1);
+                FINAL_CODE.addComment(" 🍊 Giving " + assignVar + " same reg as given to " + usageVar1 + " due to ASSIGN-OP");
                 regMap[assignVar] = regMap[usageVar1];
                 justUsedReg.insert(regMap[usageVar1]);
             }

@@ -6,10 +6,10 @@
 
 int main()
 {
-    int arr[3];
-    arr[0] = 10;
-    arr[1] = 20;
-    arr[2] = 30;
+    int a;
+    int *p = &a;
+    int **pp = &p;
+    **pp = 10;
 }
 //=========================== C2RISC-Engine =========================================================//
 // 🌴 APTree 🌴 has been generated, can be used for debugging ❤️‍🩹 

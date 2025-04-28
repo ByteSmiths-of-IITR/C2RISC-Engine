@@ -178,7 +178,7 @@ int SymTable::exitFunction()
     return OKAY;
 }
 
-int SymTable::insert(const std::string &key, int size,bool isFloat)
+int SymTable::insert(const std::string &key, int size, bool isFloat)
 {
     // We are only give size
 
@@ -191,7 +191,7 @@ int SymTable::insert(const std::string &key, int size,bool isFloat)
     stack_offset += size;              // This will set the offset of the function
     info.whichFunction = functionName; // This will set the function name
     info.offset = stack_offset;        // This will set the offset of the function
-    info.isFloat = isFloat; // This will set the isFloat of the function
+    info.isFloat = isFloat;            // This will set the isFloat of the function
     info.inMemory = true;
     // if(padding != 0){
     //     stack_offset += padding;
@@ -217,10 +217,10 @@ int SymTable::insertGlobal(const std::string &key, int size, bool isFloat)
     SymInfo info;
     info.whichFunction = functionName;
     info.size = size;
-    info.offset = -1;     // no offset for global variables
-    info.isGlobal = true; // Function is Global
-    info.isFloat = isFloat;  // This will set the isFloat of the function
-    info.inMemory = true; // This will set the isFloat of the function
+    info.offset = -1;       // no offset for global variables
+    info.isGlobal = true;   // Function is Global
+    info.isFloat = isFloat; // This will set the isFloat of the function
+    info.inMemory = true;   // This will set the isFloat of the function
 
     symTable[key] = info;
     return INSERT_SUCCESS;
@@ -244,7 +244,7 @@ void SymTable::printTable(std::ofstream &file)
         std::ostringstream ss;
         std::string offset_str = (it.second.offset == -1) ? "N/A" : ("-" + std::to_string(it.second.offset));
         std::string size_str = std::to_string(it.second.size);
-        if(it.second.isFloat)
+        if (it.second.isFloat)
         {
             size_str += " (f)";
         }
@@ -269,7 +269,7 @@ void SymTable::printTable(std::ofstream &file)
 
         // Sort the symbols in the function
         std::sort(symbols.begin(), symbols.end(), [](const std::pair<int, std::string> &a, const std::pair<int, std::string> &b)
-                    { return a.first > b.first; });
+                  { return a.first > b.first; });
 
         // Print the function name
         if (func != "GLOBAL")
@@ -308,7 +308,7 @@ bool SymTable::isInMemory(const std::string &key)
 
 int SymTable::setInMemory(const std::string &key)
 {
-    FINAL_CODE.addComment("Setting 🟢 " + key + " in memory");
+    FINAL_CODE.addComment("💛 SYM_RECORD 💛 - Setting 🟢 " + key + " in memory");
     if (symTable.find(key) == symTable.end())
     {
         return FAIL;
@@ -318,11 +318,10 @@ int SymTable::setInMemory(const std::string &key)
     return OKAY;
 }
 
-
 int SymTable::setNotInMemory(const std::string &key)
 {
     // This will set the variable as not in memory
-    FINAL_CODE.addComment("Setting 🚫 " + key + " NOT in memory");
+    FINAL_CODE.addComment("💛 SYM_RECORD 💛 - Setting 🚫 " + key + " NOT in memory");
     if (symTable.find(key) == symTable.end())
     {
         return FAIL;
@@ -388,7 +387,7 @@ int SymTable::ex_varStoredInWhichReg(const std::string &key)
 
 int SymTable::addVarInReg(const std::string &key, int regNo)
 {
-    FINAL_CODE.addComment("Adding 🌕 " + key + " to register " + std::to_string(regNo));
+    FINAL_CODE.addComment("💛 SYM_RECORD 💛 - Adding 🌕 " + key + " to register " + std::to_string(regNo));
     if (symTable.find(key) == symTable.end())
     {
         return FAIL;
@@ -407,7 +406,7 @@ int SymTable::addVarInReg(const std::string &key, int regNo)
 
 int SymTable::removeVarFromReg(const std::string &key, int regNo)
 {
-    // FINAL_CODE.addComment("Removing 🔻 " + key + " from register " + std::to_string(regNo));
+    // FINAL_CODE.addComment("💛 SYM_RECORD 💛 - Removing 🔻 " + key + " from register " + std::to_string(regNo));
     if (symTable.find(key) == symTable.end())
     {
         return FAIL;
@@ -429,7 +428,7 @@ int SymTable::removeVarFromReg(const std::string &key, int regNo)
 
 int SymTable::removeVarFromAllReg(const std::string &key)
 {
-    // FINAL_CODE.addComment("Removing 🔻🔻 " + key + " from all registers");
+    // FINAL_CODE.addComment("💛 SYM_RECORD 💛 - Removing 🔻🔻 " + key + " from all registers");
     if (symTable.find(key) == symTable.end())
     {
         return FAIL;
@@ -453,7 +452,7 @@ int SymTable::removeVarFromAllReg(const std::string &key)
 
 int SymTable::variableRest(const std::string &key)
 {
-    // FINAL_CODE.addComment("Resetting " + key + " variable");
+    // FINAL_CODE.addComment("💛 SYM_RECORD 💛 - Resetting " + key + " variable");
     int check = removeVarFromAllReg(key);
     if (check != OKAY)
     {
@@ -467,8 +466,8 @@ int SymTable::variableRest(const std::string &key)
     return OKAY;
 }
 
-std::pair<int,int> intRegLimit = std::make_pair(12, 31);             // This will be the limit of integer registers
-std::pair<int,int> floatRegLimit = std::make_pair(32 + 12, 32 + 31); // This will be the limit of float registers
+std::pair<int, int> intRegLimit = std::make_pair(12, 31);             // This will be the limit of integer registers
+std::pair<int, int> floatRegLimit = std::make_pair(32 + 12, 32 + 31); // This will be the limit of float registers
 
 std::string getRegName(int regNo)
 {
@@ -481,32 +480,34 @@ std::string getRegName(int regNo)
     {
         return "f" + std::to_string(regNo - 32);
     }
-    return "INVALID"+std::to_string(regNo);
+    return "INVALID" + std::to_string(regNo);
 }
 
 void SymTable::resetRegTable()
 {
-    // FINAL_CODE.addComment("😵 Resetting Register Table");
+    // FINAL_CODE.addComment("💛 SYM_RECORD 💛 - 😵 Resetting Register Table");
     CERR << "Resetting Register Table" << std::endl;
     // Remove all variables from the register
-    for(auto it:symTable){
+    for (auto it : symTable)
+    {
         removeVarFromAllReg(it.first); // Remove the variable from all registers
     }
 
-    for(auto it:regMap){
+    for (auto it : regMap)
+    {
         freeGivenReg(it.first); // Free the register
     }
 
     // This will initialize the register table
     for (int i = intRegLimit.first; i <= intRegLimit.second; i++)
     {
-        SetOfFreeReg.insert(i);              // Add the register to the free register set
+        SetOfFreeReg.insert(i); // Add the register to the free register set
         // regMap[i] = std::set<std::string>(); // Initialize the register map
     }
 
     for (int i = floatRegLimit.first; i <= floatRegLimit.second; i++)
     {
-        SetOfFreeReg.insert(i);              // Add the register to the free register set
+        SetOfFreeReg.insert(i); // Add the register to the free register set
         // regMap[i] = std::set<std::string>(); // Initialize the register map
     }
 
@@ -519,7 +520,6 @@ void SymTable::resetRegTable()
     // }
 
     // SYM_RECORD.printRegTable(file);
-
 }
 
 bool SymTable::isFree(int regNo)
@@ -572,7 +572,7 @@ int SymTable::howManyVarInReg(int regNo)
 
 int SymTable::freeGivenReg(int regNo)
 {
-    // FINAL_CODE.addComment("Freeing register " + std::to_string(regNo));
+    // FINAL_CODE.addComment("💛 SYM_RECORD 💛 - Freeing register " + std::to_string(regNo));
     if (regMap.find(regNo) == regMap.end())
     {
         return FAIL;
@@ -596,16 +596,7 @@ int SymTable::freeAllReg()
 
 int SymTable::getFreeReg()
 {
-    // This will get the register for the variable
-    if (SetOfFreeReg.size() == 0)
-    {
-        return FAIL;
-    }
-
-    // Get the free register
-    int regNo = *SetOfFreeReg.begin();
-    SetOfFreeReg.erase(SetOfFreeReg.begin());
-
+    int regNo = getFreeReg(intRegLimit); // Get the free register
     return regNo;
 }
 
@@ -653,7 +644,7 @@ void SymTable::printRegTable(std::ofstream &file)
         file << std::endl;
     }
     file << "-------------------------------------------------------------------------------------------------------------------------" << std::endl;
-    
+
     file << "=======================[ Address Description Table ]=====================================================================================" << std::endl;
     file << std::left << std::setw(10) << "Address" << std::setw(20) << "InMemory" << std::setw(20) << "InRegNo" << std::endl;
     file << "-------------------------------------------------------------------------------------------------------------------------" << std::endl;
@@ -662,7 +653,7 @@ void SymTable::printRegTable(std::ofstream &file)
         file << std::left << std::setw(10) << it.first;
         file << std::left << std::setw(20) << it.second.inMemory;
         file << std::left << std::setw(20) << "Present in RegNo-";
-        for(auto jt : it.second.inRegNo)
+        for (auto jt : it.second.inRegNo)
         {
             file << jt << " ";
         }

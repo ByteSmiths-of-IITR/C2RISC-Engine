@@ -619,7 +619,7 @@ void RISCV_CODE::printCode(std::ostringstream &oss)
     oss << ".text" << std::endl;
     for (auto it : code)
     {
-        oss << std::string(4, ' ') << it << std::endl;
+        oss << std::string(4,' ') << it << std::endl;
     }
     oss << std::endl;
     
