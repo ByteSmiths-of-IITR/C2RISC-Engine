@@ -2775,6 +2775,9 @@ int and_expression_H(ASTNode *node, std::string inh_whereToSendString, std::stri
         USAGE_SPACE_CHANGE(varName1, type1, valueSpace1, node);
         USAGE_SPACE_CHANGE(varName2, type2, valueSpace2, node);
 
+        CERR << "varName1 = " << varName1 << std::endl;
+        CERR << "varName2 = " << varName2 << std::endl;
+
         Type whichType1 = whatIsType(type1);
         Type whichType2 = whatIsType(type2);
 
@@ -2841,7 +2844,9 @@ int and_expression_H(ASTNode *node, std::string inh_whereToSendString, std::stri
             std::string result = newTemp(); // allocated width(type0)
             int resSize = width(type0);
             IR_CODE.addTAC(node, result, ALLOCATE, std::to_string(resSize), NO_ARG); // Allocate memory for the variable
-
+            CERR << "result = " << result << std::endl;
+            CERR << "varName1 = " << varName1 << std::endl;
+            CERR << "varName2 = " << varName2 << std::endl;
             IR_CODE.addTAC(node, result, "&", varName1, varName2);
 
             varName = result;

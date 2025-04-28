@@ -6,7 +6,7 @@ std::string NO_ARG = "#####";
 // Special TAC Operators (OP)
 std::string RIGHT_STAR = "right_star"; // result = *arg1
 std::string LEFT_STAR = "left_star"; // *result = arg1
-std::string AMPERSEND = "&"; // result = &arg1
+std::string AMPERSEND = "deref_&"; // result = &arg1
 
 std::string FUNCTION_ENTRY = "FUNCTION_ENTRY"; // function entry
 std::string FUNCTION_EXIT = "FUNCTION_EXIT"; // function exit
@@ -22,7 +22,7 @@ std::string PARAM = "param"; // param arg1
 std::string CALL = "call"; // result = call arg1, arg2
 std::string RETURN_FUNCTION = "return"; // return arg1 
 
-std::string ASSIGN_OP = "="; // result = arg1
+std::string ASSIGN_OP = "OP="; // result = arg1
 
 std::string IF_FALSE = "if_false"; // if arg1 == 0 goto result
 std::string IF_TRUE = "if"; // if arg1 != 0 goto result
