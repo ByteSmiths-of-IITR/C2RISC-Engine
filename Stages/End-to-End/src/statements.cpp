@@ -1082,7 +1082,8 @@ int jump_statement_H(ASTNode *node, std::vector<int> &S_nextList, std::vector<in
             {
                 std::string castedVarNam = newTemp(); // allocated width(dest)
                 int castedVarSize = width(dest);
-                IR_CODE.addTAC(node, castedVarNam, ALLOCATE, toString(castedVarSize), NO_ARG); // Allocate the space
+                std::string isF = isFloatingPoint(dest) ? "YES" : "NO";
+                IR_CODE.addTAC(node, castedVarNam, ALLOCATE, toString(castedVarSize), isF); // Allocate the space
 
                 IR_CODE.addTAC(node, castedVarNam, CAST, toString(dest), varName1); // Cast it
                 varName1 = castedVarNam;                                            // Change the name to the address

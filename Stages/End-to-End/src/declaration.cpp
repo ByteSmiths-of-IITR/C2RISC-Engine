@@ -2350,7 +2350,8 @@ int initializer_H(ASTNode *node, TypeExpression inh_type, std::string inh_varNam
                     // CERR << "Implicit TypeCasting - " << toString(source) << " to " << toString(dest) << std::endl;
                     
                     std::string castedVarNam = newTemp();                                              // allocated width(dest)
-                    IR_CODE.addTAC(node, castedVarNam, ALLOCATE, std::to_string(width(dest)), NO_ARG); // Allocate memory for the variable
+                    std::string isF = isFloatingPoint(dest) ? "YES" : "NO";
+                    IR_CODE.addTAC(node, castedVarNam, ALLOCATE, std::to_string(width(dest)), isF); // Allocate memory for the variable
                     
                     // CERR << "castedVarNam = " << castedVarNam << std::endl;
                     // CERR << "toBeCasted = " << varName1 << std::endl;
@@ -2486,12 +2487,13 @@ int initializer_list_H(ASTNode *node, TypeExpression inh_type, std::string inh_v
             std::string baseAddress = inh_varName;
 
             std::string jump_amount = newTemp();                                               // allocated 'int' size
-            IR_CODE.addTAC(node, jump_amount, ALLOCATE, std::to_string(ADDRESS_SIZE), NO_ARG); // Allocate memory for the variable
+            std::string isF = "NO";
+            IR_CODE.addTAC(node, jump_amount, ALLOCATE, std::to_string(ADDRESS_SIZE), isF); // Allocate memory for the variable
 
             IR_CODE.addTAC(node, jump_amount, "*", std::to_string(index), element_width_str);
 
             std::string finalAddress = newTemp();                                               // allocated 'int' size
-            IR_CODE.addTAC(node, finalAddress, ALLOCATE, std::to_string(ADDRESS_SIZE), NO_ARG); // Allocate memory for the variable
+            IR_CODE.addTAC(node, finalAddress, ALLOCATE, std::to_string(ADDRESS_SIZE), isF); // Allocate memory for the variable
 
             IR_CODE.addTAC(node, finalAddress, "+", baseAddress, jump_amount);
 
