@@ -15,7 +15,7 @@ extern int ANNOTATE; // 0 - OFF | 1 - ON [value set by header.cpp]
 #define WORD_SIZEx4 16 // long double or long long
 #define BYTE_SIZEx2 2  // short
 #define BYTE_SIZE 1    // 8 bits, char
-#define ADDRESS_SIZE 8 // 64 bit address
+#define ADDRESS_SIZE 4 // 32 bit address
 
 //===================[ Memory Monitoring + Debugging ]============================================================================================
 extern int MEMORY_MONITORING; // 0 - OFF | 1 - ON [value set by header.cpp]
@@ -409,7 +409,7 @@ public:
         MEM("SymbolTable Constructor");
     }
 
-    ~SymbolTable();
+    ~SymbolTable() = default;
 
     int enterScope(); // This will create a new scope and return the scope number
     int exitScope();  // Will return the ScopeNo that has been exited.
@@ -545,8 +545,8 @@ extern std::string LEFT_STAR;
 extern std::string FUNCTION_ENTRY;
 extern std::string FUNCTION_EXIT;
 // extern std::string BLANK;
+extern std::string OFFSET_LOAD;
 extern std::string CAST;
-extern std::string LABEL;
 extern std::string AMPERSEND;
 extern std::string RO_DATA;
 extern std::string STACK_DATA;
@@ -564,8 +564,9 @@ extern std::string GOTO_EQUAL;
 
 extern std::string TO_BACKPATCH;
 extern std::string RETURN_FUNCTION;
-extern std::string MEM_COPY;
 extern std::string ALLOCATE;
+extern std::string GLOBAL_VAR; // This is used to identify the global variable
+// extern std::string ADDRESS_VAR; // This is used to identify the address variable
 
 class TAC_Quadruple
 {
@@ -574,7 +575,6 @@ public:
     std::string arg1;
     std::string arg2;
     std::string result;
-    // ASTNode *addedAt;
 
     CON_DES(TAC_Quadruple)
 
@@ -587,15 +587,31 @@ int mergeList(std::vector<int> &list1, const std::vector<int> &addition); // Thi
 int mergeList(std::vector<int> &target, int addition);
 
 std::string newTemp(); // Generates a new temporary variable [compiler generated]
+std::string newDataLabel(); // Generates a new data label [compiler generated]
+
+class dataSegment
+{
+public:
+    std::string name;
+    std::string type;  // can be .word, .byte
+    std::string value; // value of the data
+};
+
+extern std::string dataByte;
+extern std::string dataHalfByte;
+extern std::string dataWord;
+extern std::string dataDouble;
+extern std::string dataString;
+extern std::string dataFloat;
+extern std::string dataZero; // Used for data-space allocation
 
 class TAC
 {
 public:
     std::vector<TAC_Quadruple> code;
-    std::vector<std::string> roData;
-    // std::vector<std::string> stackData;
-    std::vector<std::string> bssData;
-    std::vector<std::string> data;
+
+    std::map<std::string, dataSegment> dataSection;
+
     const int w = 10;
     const int wcode = 30;
 
@@ -616,6 +632,14 @@ public:
 
     int backpatch(ASTNode *currNode, const std::vector<int> &list, std::string lable);
     int backpatch(ASTNode *currNode, const std::vector<int> &list, int labelIndex); // This will be used to backpatch the list with the label index
+
+    // Overload =operator
+    TAC &operator=(const TAC &other)
+    {
+        this->code = other.code;
+        this->dataSection = other.dataSection;
+        return *this;
+    }
 };
 
 /*
@@ -633,6 +657,7 @@ bool isValidTypeExpression(const TypeExpression &typeExpr); // This will check i
 bool isIntegral(const TypeExpression &typeExpr);
 bool isConstant(const TypeExpression &typeExpr);
 bool isNumeric(const TypeExpression &typeExpr);
+bool isFloatingPoint(std::string baseType);
 bool isFloatingPoint(const TypeExpression &typeExpr);
 std::string isPrimitive(const TypeExpression &typeExpr);
 // Return values will be Primitive Types
@@ -682,7 +707,7 @@ int ProcessDecSpecifiers(std::vector<std::string> &valueVector, TypeExpression &
 
 //====================[ Globally Accessible Variables ]=========================================================================================
 extern SymbolTable SYM_TABLE; // Global Symbol Table
-extern TAC CODE_BASE;         // Global TAC Code Base
+extern TAC IR_CODE;           // Global TAC Code Base
 
 //====================[ Annotated Parse Tree ]=========================================================================================
 
@@ -705,6 +730,13 @@ extern std::ofstream *handlerLog; // This will be used to log the errors
     if (ANNOTATE) \
     node->addAttribute("👌 " + std::to_string(__LINE__) + ":" + __FILE__ + " ")
 
+#define STRINGIFY(x) #x
+#define TOSTRING(x) STRINGIFY(x)
+
+#define TODO(x) _Pragma(TOSTRING(message("TODO: " x)))
+
+#define FEATURE_OFF(x) _Pragma(TOSTRING(message("FEATURE OFF: " x)))
+
 #define semanticWarning(x)                                           \
     semanticLOG.push_back("SEMANTIC Warning ❗️: " + std::string(x)); \
     aptLOG("❗️ " + std::string(x));
@@ -716,6 +748,9 @@ extern std::ofstream *handlerLog; // This will be used to log the errors
     aptLOG("‼️ " + std::string(x));
 
 extern std::string semanticMessage;
+
+#define REACHING \
+    std::cout << "Reaching " << __LINE__ << " in " << __FILE__ << std::endl;
 
 #define aptLOG(x) \
     if (ANNOTATE) \
@@ -735,8 +770,14 @@ extern std::string semanticMessage;
 
 #define LOC std::to_string(__LINE__) + " :" + __FILE__
 
-#define BUG_H \                                                                                        
-    if (ANNOTATE) node->addAttribute("😱 COMPILER BUG Exit [" + std::to_string(__LINE__) + ":" + __FILE__ + "] ✋")
+#define BUG_H                                                                                                               \
+    do                                                                                                                      \
+    {                                                                                                                       \
+        if (ANNOTATE)                                                                                                       \
+        {                                                                                                                   \
+            node->addAttribute("😱 COMPILER BUG Exit [" + std::to_string(__LINE__) + ":" + std::string(__FILE__) + "] ✋"); \
+        }                                                                                                                   \
+    } while (0)
 
 #define RECOVER_H \
     if (ANNOTATE) \
@@ -773,8 +814,15 @@ extern const int FAIL;
 
 #define HERE std::cerr << "[" << __LINE__ << " in " << __FILE__ << "] " << std::endl
 
-#define H_HERE *handlerLog << "[" << __FILE__ << " : " << __LINE__ << "] ";
-#define CERR std::cerr << "[ 🐛 " << __FILE__ << " : " << __LINE__ << "]"
+// #define H_HERE *handlerLog << "[" << __FILE__ << " : " << __LINE__ << "] ";
+
+#ifdef NDEBUG
+#define CERR   \
+    if (false) \
+    std::cerr
+#else
+#define CERR std::cerr << "[ 🐛 " << __FILE__ << " : " << __LINE__ << "] "
+#endif
 
 #define REPORT std::cerr << "[" << __FILE__ << " : " << __LINE__ << "] "
 
@@ -788,12 +836,56 @@ extern const int FAIL;
         {                                                                                         \
             std::string tempName = newTemp();                                                     \
             int size = width(type);                                                               \
-            CODE_BASE.addTAC((node), tempName, ALLOCATE, std::to_string(size), NO_ARG);           \
-            CODE_BASE.addTAC((node), tempName, RIGHT_STAR, (value), NO_ARG);                      \
+            IR_CODE.addTAC((node), tempName, ALLOCATE, std::to_string(size), NO_ARG);             \
+            IR_CODE.addTAC((node), tempName, RIGHT_STAR, (value), std::to_string(size));          \
             value = tempName;                                                                     \
+            (node)->attributes.push_back("🌋 Space Change from ADDRESS to VALUE 💥 ");            \
         }                                                                                         \
     }                                                                                             \
-    else if ((space) != SPACE::VALUE_SPACE)                                                       \
+    else if ((space) == SPACE::VALUE_SPACE)                                                       \
+    {                                                                                             \
+        if (getSpace(type) == SPACE::ADDRESS_SPACE)                                               \
+        {                                                                                         \
+            std::string offset = newTemp();                                                       \
+            IR_CODE.addTAC((node), offset, ALLOCATE, std::to_string(ADDRESS_SIZE),"NO");          \
+            IR_CODE.addTAC((node), offset, OFFSET_LOAD, (value), NO_ARG);                         \
+            value = offset;                                                                       \
+            (node)->attributes.push_back("🌋 Space Change from VALUE to ADDRESS 💥 ");            \
+        }                                                                                         \
+    }                                                                                             \
+    else                                                                                          \
+    {                                                                                             \
+        (node)->attributes.push_back("🌋 Something Wrong in Space 💥 Change Code [" + LOC + "]"); \
+        BUG_H;                                                                                    \
+        return BUG;                                                                               \
+    }
+
+//---------------------- Space 🚀Change 🔖IR Code for varName2 [🤫 TARGET Space Before USAGE]
+#define TO_GIVEN_SPACE_CHANGE(value, oldSpace, newSpace, type, node)                              \
+    if ((oldSpace) == SPACE::ADDRESS_SPACE)                                                       \
+    {                                                                                             \
+        if ((newSpace) == SPACE::VALUE_SPACE)                                                     \
+        {                                                                                         \
+            std::string tempName = newTemp();                                                     \
+            int size = width(type);                                                               \
+            IR_CODE.addTAC((node), tempName, ALLOCATE, std::to_string(size), NO_ARG);             \
+            IR_CODE.addTAC((node), tempName, RIGHT_STAR, (value), std::to_string(size));          \
+            value = tempName;                                                                     \
+            (node)->attributes.push_back("   Space Change from ADDRESS to VALUE    ");            \
+        }                                                                                         \
+    }                                                                                             \
+    else if ((oldSpace) == SPACE::VALUE_SPACE)                                                    \
+    {                                                                                             \
+        if ((newSpace) == SPACE::ADDRESS_SPACE && getSpace(type) == SPACE::ADDRESS_SPACE)         \
+        {                                                                                         \
+            std::string offset = newTemp();                                                       \
+            IR_CODE.addTAC((node), offset, ALLOCATE, std::to_string(ADDRESS_SIZE), "NO");         \
+            IR_CODE.addTAC((node), offset, OFFSET_LOAD, (value), NO_ARG);                         \
+            value = offset;                                                                       \
+            (node)->attributes.push_back(" .  Space Change from VALUE to ADDRESS   ");            \
+        }                                                                                         \
+    }                                                                                             \
+    else                                                                                          \
     {                                                                                             \
         (node)->attributes.push_back("🌋 Something Wrong in Space 💥 Change Code [" + LOC + "]"); \
         BUG_H;                                                                                    \
@@ -817,7 +909,7 @@ std::string getCurrentTime();
 
 void semanticPass(ASTNode *node);
 // SYM_TABLE - Will be Globaly available
-// CODE_BASE - Will be Globaly available (TAC)
+// IR_CODE - Will be Globaly available (TAC)
 
 //=====================[ Starting Handlers ]=========================================================================================
 
@@ -905,8 +997,8 @@ int direct_abstract_declarator_H(ASTNode *node, TypeExpression inh_type, TypeExp
 extern std::string NO_ARG_NAME;
 
 //----- Initializer -----
-int initializer_H(ASTNode *node, TypeExpression &type, std::string &varName, int &size);
-int initializer_list_H(ASTNode *node, TypeExpression &type, std::string &varName, int &size);
+int initializer_H(ASTNode *node, TypeExpression inh_type, std::string inh_varName, SPACE inh_valueSpace, VALUE_TYPE inh_valueType, StorageClass inh_storageClass);
+int initializer_list_H(ASTNode *node, TypeExpression inh_type, std::string inh_varName, int &totalInitializers, StorageClass inh_storageClass);
 
 //======================[ Expression Handlers ]=========================================================================================
 
@@ -941,48 +1033,374 @@ int constant_expression_H(ASTNode *node, std::string &value);
 
 //=====================[ Code Generations ]=========================================================================================
 
-using RISCV_CODE = std::vector<std::string>;
+bool isALabel(const std::string &varName);       // This will check if the variable is a label or not
+bool isAValueSymbol(const std::string &varName); // This will check if the variable is a symbol or not
+// bool isAddressSymbol(const std::string &varName); // This will check if the variable is a address symbol or not
+// using RISCV_CODE = std::vector<std::string>;
 
-int codeGen(const TAC &irCode, RISCV_CODE &riscvCode);
+std::string indentOP(std::string op);
+
+class RISCV_CODE
+{
+    std::vector<std::string> code;
+    std::map<std::string, dataSegment> data;
+
+    int newLabelCount = 0;
+
+public:
+    void addDataSection(const std::map<std::string, dataSegment> &dataSection);
+
+    std::string newDataLabel();
+
+    void addData(dataSegment data);
+
+    void addCode(std::string code);
+    void addCode(std::string code, std::string info);
+
+    void printCode(std::ostringstream &oss);
+
+    void addLabel(std::string label);
+
+    void addComment(std::string comment);
+
+    void addCopyInst(std::string variable, int size, int srcImm, std::string src_wrtReg, int destImm, std::string dest_wrtReg);
+
+
+    void addLoadInst(const std::string &varName, int regNo);
+    void addLoadInst(const std::string &varName, std::string regName);
+    void addStoreInst(const std::string &varName, int regNo);
+    void addStoreInst(const std::string &varName, std::string regName);
+};
+
+int codeGen();
+
+using LivelinessDS = std::map<std::string, std::pair<bool, std::set<int>>>; // This will be used to keep track of the liveliness of the variables
+
+class NEW_TAC_Quadruple : public TAC_Quadruple
+{
+    // This will a improved version of TAC_Quadruple
+public:
+    // Storing Status of Three Variables in that Instruction (<= 3)
+    LivelinessDS VarInfo;
+
+    int lineNo; // [TODO - Add Support for this]
+
+    NEW_TAC_Quadruple() = default;
+
+    NEW_TAC_Quadruple(TAC_Quadruple oldTAC)
+    {
+        this->op = oldTAC.op;
+        this->arg1 = oldTAC.arg1;
+        this->arg2 = oldTAC.arg2;
+        this->result = oldTAC.result;
+    }
+
+    int addVariable(const std::string &varName, bool islive, const std::set<int> &nextUsage);
+
+    // Check if the variable is alive or NOT (via-reference)
+    bool isAlive(const std::string &varName);
+
+    int addLivelinessInfo(const LivelinessDS &info);
+
+    // Find the next usage of a variable
+    int nextUse(const std::string &varName, std::set<int> &usage);
+
+    int howManyNextUsage(const std::string &varName, int &total);
+
+    std::string toBaseString();
+
+    std::string toString();
+};
+
+class NEW_TAC
+{
+public:
+    std::map<int, NEW_TAC_Quadruple> code;
+
+    int addOLD_TAC(int lineNo, TAC_Quadruple oldIrCode);
+    int addVarInfo(int lineNo, const std::string &varName, bool isAlive, const std::set<int> &nextUsage);
+
+    int addTAC(int lineNo, NEW_TAC_Quadruple q);
+
+    void printTAC(std::ostringstream &oss);
+};
 
 class BasicBlock
 {
 public:
-    std::vector<TAC_Quadruple> irCode;  // Not using NOW
-    std::vector<std::string> riscvCode; // Will be generated
+    NEW_TAC irCode;
 
-    std::string label;                 // Label for the basic block
-    // std::vector<std::string> inLinks;  // can be 1 or more
-    // std::vector<std::string> outLinks; // <= 2
+    LivelinessDS livelinessInfo; // This will be used to keep track of the liveliness of the variables
 
-    // Two Special ENTRY and EXIT blocks
+    int generateRISCVCode(); // This will generate the RISC-V code & store in it's element -> risvCode
+
+    std::string label; // Label for the basic block
+
+    void printCode(std::ostringstream &oss);
+
+    void logLivelinessInfo();
 };
 
 class CFG
 {
 public:
-    std::vector<BasicBlock> blocks;
-    std::map<std::string, int> labelMap; // Map of labels to block index
+    std::map<std::string, BasicBlock> blocks; // Direclty map leader's Index to Block
+
+    std::map<std::string, dataSegment> dataSection;
+
+    void printCode(std::ostringstream &oss);
+
     std::vector<int> leaders;
+    std::map<int, std::string> leaderToBlockMap;
+
+    std::vector<std::string> orderOfBlocks;
 
     int nextBlockIndex = 0;
 
     std::string newBlock();
 
-    std::vector<std::pair<std::string, std::string>> edges; // Edges between blocks
+    std::map<std::string, std::vector<std::string>> edges; // This will be used to keep track of the leaders
 
     CFG() = default;
 
     // This will help find to which block any index belongs
     int whichBlock(int index);
 
+    bool isALeader(int index);
+    int addLeader(int index);                        // will generate a new Name for block & set things
+    int addLeader(int index, std::string blockName); // This will set that Name
+    void sortLeaders();
+
+    // This will check who is leader and send the leader's blocksLable
+    std::string blockName(int index);
+
+    int add_NEWTAC(int irLineNo, NEW_TAC_Quadruple code);
+
     int addEdge(const std::string &from, const std::string &to);
+    int addEdge(int from, int to);
 
     int generateDOTFile(const std::string &filename); // This will generate a dot file for the CFG
 
-    void generateRISCVCodes(RISCV_CODE &riscvCode);
+    void generateRISCVCodes();
+
+    //----------- Utilities for Liveliness Checking
+    int getAllLivelinessInfo(int atLine, LivelinessDS &livelinessInfo);
+
+    int attachLiveInfoToLine(int atLine);
+
+    int setAlive(int atLine, const std::string &key); // Set the variable as alive
+    int setAllAlive(int atLine);                      // Set all the variables as alive
+    int setDead(int atLine, const std::string &key);  // Set the variable as dead
+    int setAllDead(int atLine);                       // Set all the variables as dead
+
+    bool isAlive(int atLine, const std::string &key); // Check if the variable is alive or not
+
+    int addUsage(int atLine, const std::string &key, int usageLine);    // Add the usage of the variable in the register
+    int removeUsage(int atLine, const std::string &key, int usageLine); // Clear the usage of the variable in the register
+    int clearAllUsage(int atLine, const std::string &key);              // Clear all the usage of the variable in the register
+
+    int removeLifeInfo(int atLine, const std::string &key); // Remove the liveliness info of the variable
+
+    // For Us to use Simple Functions
+
+    int assignmentAt(int atLine, const std::string &varName); // This will be used to assign the value to the variable
+    int usageAt(int atLine, const std::string &varName);      // This will be used to use the variable as an operand
+
+    int resetLiveliness(int atLine);
 };
 
-int makeBasicBlocks(const TAC &irCode, CFG &cfg);
+class SymInfo
+{
+public:
+    // Information of each symbol
+    // For Offset Calculations
+    int size;
+    int offset;    // relative to function-block or global-space
+    bool isGlobal; // also shor
+    bool isFloat;
+
+    std::string whichFunction;
+
+    // Will be used by getReg
+    bool inMemory;
+    std::set<int> inRegNo;
+};
+
+// Some Constant Needed
+int const activation_start_offset = 16; // 4 words
+/* Usage of last 4 Words
+- (unused)
+- Where to Store Return Value Address
+- Old Frame Pointer
+- Return Address
+*/
+
+extern std::pair<int, int> intRegLimit;
+extern std::pair<int, int> floatRegLimit; // This will be the limit of float registers
+
+class SymTable
+{
+    // This will be scope-disabled Symbol Table
+
+public:
+    std::map<std::string, SymInfo> symTable; // This will be used to keep track of the symbols
+
+    int bss_offset;  // This will be used to keep track of the bss offset
+    int ro_offset;   // This will be used to keep track of the ro offset
+    int data_offset; // This will be used to keep track of the data offset
+
+    int stack_offset; // For Local Offset
+
+    bool inFunction;
+    std::string functionName = "GLOBAL"; // This will be used to keep track of the function name
+
+    // We will also Insert functions as a variable and it's size = activation record size;
+
+    SymTable()
+    {
+        bss_offset = 0;
+        ro_offset = 0;
+        data_offset = 0;
+        stack_offset = 0;
+
+        inFunction = false;
+        functionName = "GLOBAL"; // This will be used to keep track of the function name
+
+        resetRegTable();
+    }
+
+    int enterFunction(const std::string &funcName);
+    int exitFunction();
+
+    int insert(const std::string &key, SymInfo &info);                        // This will be used to insert the symbol in the table
+    int insert(const std::string &key, int size, bool isFloat = false);       // The Offset & isGlobal Will be autoSet
+    int insertGlobal(const std::string &key, int size, bool isFloat = false); // This will be used to insert the global variable
+
+    int lookup(const std::string &key, SymInfo &info);
+
+    int remove(const std::string &key);
+
+    int getSize(const std::string &key);
+    int getOffset(const std::string &key);
+    bool isGlobal(const std::string &key);
+    bool isFloat(const std::string &key);
+
+    void printTable(std::ofstream &file);
+
+    //---------- Utility Function for getReg
+    bool isInMemory(const std::string &key); // Check if the variable(updated) is in memory or not
+
+    int setInMemory(const std::string &key);    // Set the variable as in memory
+    int setNotInMemory(const std::string &key); // Set the variable as not in memory
+
+    int varStoredInWhichReg(const std::string &key);  // Check if the variable is stored in register or not
+    int varStoreInHowManyReg(const std::string &key); // Check how many registers the variable is stored in
+
+    int ex_varStoredInWhichReg(const std::string &key); // Check if  variable EXCLUSIVLY is stored in register or not
+
+    int addVarInReg(const std::string &key, int regNo);      // Set the variable as in register
+    int removeVarFromReg(const std::string &key, int regNo); // Clear the variable from register
+    int removeVarFromAllReg(const std::string &key);         // Clear all the registers for the variable
+
+    int variableRest(const std::string &key); // Reset the variable's info
+
+    // RegDescription Table Structures
+    std::map<int, std::set<std::string>> regMap; // Map of register to variable
+
+    std::set<int> SetOfFreeReg; // Set of free registers
+
+    void resetRegTable(); // Initialize the register table
+
+    // Utility Functions for Register Table
+    // Check if a particular register is free or NOT
+    bool isFree(int regNo);
+
+    // Check a particular variable is in a particular register
+    bool isVarInReg(int regNo, const std::string &varName);
+
+    // Get all the variable whose value is in the arg_given register
+    int whatIsInReg(int regNo, std::set<std::string> &varName);
+
+    int howManyVarInReg(int regNo); // Get the number of variables in the register
+
+    // Add a variable to the register
+    // int addVarToReg(int regNo, const std::string &varName); [Already Present for get_regUtilites]
+
+    // Remove a variable from the register
+    // int removeVarFromReg(int regNo, const std::string &varName); [Already Present for get_regUtilites]
+
+    int freeGivenReg(int regNo); // Free the register
+
+    int freeAllReg(); // Free all the registers
+
+    // Get a free register [Gives Smallest Free Register or -1 if none is free]
+    int getFreeReg();
+    int getFreeReg(std::pair<int, int> regLimit); // In limit of regLimit
+    // void resetRegTable(); // Reset the register info
+
+    // int findRegToEvict(); // Find a register to evict & return the register number
+
+    void printRegTable(std::ofstream &file); // Print the register info
+};
+
+int addSymbolsToSymTable();
+
+int makeBasicBlocks();
+
+extern bool returnValueViaRegister;
+extern bool argByRegister;
+int riscvCodeGen();
+
+int livelinessPass();
+
+void spillingCode(std::string reason);
+
+int getReg(NEW_TAC_Quadruple &code, std::map<std::string, int> &regMap);
+
+int getRegLimit(NEW_TAC_Quadruple &code, std::map<std::string, int> &regMap, std::pair<int, int> regLimit);
+
+int getFloatReg(NEW_TAC_Quadruple &code, std::map<std::string, int> &regMap);
+
+int getManyReg(std::set<std::string> varName, LivelinessDS livelinessInfo, std::map<std::string, int> &regMap);
+
+std::string store_load_Type(int size);
+std::string getRegName(int regNo);
+
+int generateSimpleExpCode(NEW_TAC_Quadruple code);
+
+//====================[ Externed Global CodeGen Variables ]=========================================================================================
+
+extern std::string NO_BLOCK;
+
+extern CFG CFG_CODE;
+extern SymTable SYM_RECORD;
+
+extern RISCV_CODE FINAL_CODE;
+
+//======================[ Code Optimization ]=========================================================================================
+
+bool isInt(const std::string &value);
+bool isFloat(const std::string &value);
+
+int constantFolding();
+
+int strengthReduction_al_simplification();
+
+int machineIndependentOptimization();
+
+std::string trim(const std::string &str);
+std::string processPrintf(const std::string &line, int &strCounter);
+std::string processScanf(const std::string &line);
+void processFile(const std::string &inputFileName, const std::string &outputFileName);
+
+//======================[ Code Generation Utilies ]=========================================================================================
+
+//=====================[ Print & Scan Lib ]=========================================================================================
+
+int addPrint_ScanLib();
+void addPrintVar();
+void addScanVar();
+void addPrintString();
+void addScanString();
 
 #endif // !HEADER_H

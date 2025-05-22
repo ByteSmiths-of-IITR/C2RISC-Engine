@@ -31,7 +31,7 @@ echo "🚀 Running tests with: $EXECUTABLE"
 if [ -n "$FILTER_DIR" ]; then
     find "$FILTER_DIR"* -type f -name "*.c" 2>/dev/null | while IFS= read -r test_file; do
         echo "🔹 Running on: $test_file"
-        "$EXECUTABLE" "$test_file" -t 2>>"$ERROR"
+        "$EXECUTABLE" "$test_file" -o 2>>"$ERROR"
         echo "---------------------------"
         sleep 0.5
     done
@@ -39,8 +39,8 @@ else
     # Run all .c tests if no folder filter is provided
     find "$TEST_DIR" -type f -name "*.c" | while IFS= read -r test_file; do
         echo "🔹 Running on: $test_file"
-        "$EXECUTABLE" "$test_file" -t 2>>"$ERROR"
+        "$EXECUTABLE" "$test_file" -o 2>>"$ERROR"
         echo "---------------------------"
         sleep 0.5
     done
-fii
+fi

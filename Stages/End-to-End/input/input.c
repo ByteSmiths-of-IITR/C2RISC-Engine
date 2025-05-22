@@ -1,58 +1,51 @@
-/*
-variations of for statement
-*/
-int main()
-{
-    int i = 0;
-
-    for (; i < 5;)
-    {
-        i++;
-    }
-
-    for (i = 0; i < 5;)
-    {
-        i++;
-    }
-
-    for (i = 0;;)
-    {
-        i++;
-        if (i == 4)
-            break;
-    }
+int main(){
+    int arr[2];
+    int k = arr[1];
 }
 
 //=========================== C2RISC-Engine =========================================================//
-// Lexical Analysis 👍 | Syntax Analysis 👍 | Semantic Analysis 👍 | 🔖 IRCode Gen
-// RISC-V Code Generation failed 
+// 🌴 APTree 🌴 has been generated, can be used for debugging ❤️‍🩹 
+// Lexical Analysis 👍 | Syntax Analysis 👍 | Semantic Analysis 👍 | Machine Independent Optimization 👍 |  🔖 IRCode Gen
+// 😊 Thanku for using our "C2RISC-Engine" (Till IR Phase) 
 // 
-// ------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------
 // 
-// ------------------------------------------------------------------------------------
-// CodeLineNo : TAC                           
-// ---------- : -------------------------------
-// 0          : main: ⤵️                  
-// 1          : alloca i$1, 4                 
-// 2          : i$1 = 0                       
+// 
+//  ---- IR Code Before Machine Independent Optimization ---- 
+// .text      : ------------------------------
+// 0          : main: Func with 0 args        
+// 1          : alloca arr$1, 8               
+// 2          : alloca k$1, 4                 
 // 3          : alloca $0, 4                  
-// 4          : $0 = i$1 < 5                  
-// 5          : if $0 goto L(7)               
-// 6          : goto L(11)                    
-// 7          : alloca $1, 4                  
-// 8          : $1 = i$1                      
-// 9          : i$1 = i$1 + 1                 
-// 10         : goto L(3)                     
-// 11         : i$1 = 0                       
-// 12         : alloca $2, 4                  
-// 13         : $2 = i$1 < 5                  
-// 14         : if $2 goto L(16)              
-// 15         : goto L(20)                    
-// 16         : alloca $3, 4                  
-// 17         : $3 = i$1                      
-// 18         : i$1 = i$1 + 1                 
-// 19         : goto L(12)                    
-// 20         : i$1 = 0                       
-// 21         : main: ↙️                  
+// 4          : $0 = arr$1.offset             
+// 5          : alloca $1, 4                  
+// 6          : $1 = 1 * 4                    
+// 7          : alloca $2, 4                  
+// 8          : $2 = $0 + $1                  
+// 9          : alloca $3, 4                  
+// 10         : $3 = (4)*$2                   
+// 11         : k$1 = $3                      
+// 12         : return                        
+// 13         : main ret(4): EXIT             
 // 
+// ----------------------------------------------------------------------------------------------------
+// 
+//  ---- IR Code After Machine Independent Optimization ---- 
+// .text      : ------------------------------
+// 0          : main: Func with 0 args        
+// 1          : alloca arr$1, 8               
+// 2          : alloca k$1, 4                 
+// 3          : alloca $0, 4                  
+// 4          : $0 = arr$1.offset             
+// 5          : alloca $1, 4                  
+// 6          : $1 = 4                        
+// 7          : alloca $2, 4                  
+// 8          : $2 = $0 + 4                   
+// 9          : alloca $3, 4                  
+// 10         : $3 = (4)*$2                   
+// 11         : k$1 = $3                      
+// 12         : return                        
+// 13         : main ret(4): EXIT             
+// 
+// ----------------------------------------------------------------------------------------------------
 // 

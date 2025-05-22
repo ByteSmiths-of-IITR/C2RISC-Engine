@@ -14,11 +14,21 @@ CXX = g++ -std=c++17 # Added Latest Version [Some error due to old compiler]
 CC = gcc
 CXXFLAGS = -w -lm -I $(INCLUDE_DIR)
 
+RELEASE_FLAGS = -O3 -DNDEBUG
+
+# Release executable
+RELEASE_EXECUTABLE = $(BIN_DIR)/C2RISC_Engine
+
 # Directories
 REQUIRED_DIRS = build bin object output
 
 $(REQUIRED_DIRS):
-	@if [ ! -d $@ ]; then mkdir -p $@; fi
+ifeq ($(OS),Windows_NT)
+	@if not exist "$@" mkdir "$@"
+else
+	@if [ ! -d "$@" ]; then mkdir -p "$@"; fi
+endif
+
 
 .PHONY: all $(REQUIRED_DIRS) 
 
@@ -60,7 +70,7 @@ PARSER_C = $(BUILD_DIR)/parser.tab.c
 PARSER = $(GRAMMAR_DIR)/parser.y # just change Grammar File Here will change all 
 
 PARSER_H = $(INCLUDE_DIR)/parser.tab.h
-EXECUTABLE = $(BIN_DIR)/C2RISC_Engine
+EXECUTABLE = $(BIN_DIR)/C2RISC_Engine_beta
 
 # Making Object files
 SRC_FILES = $(wildcard $(SRC_DIR)/*.cpp)
@@ -81,8 +91,6 @@ Recursive = $(OUTPUT_DIR)/recursive_output.txt
 # Default target
 all: $(REQUIRED_DIRS) $(OUTPUT) $(INPUT) $(CERR) 
 
-compiler: all $(EXECUTABLE) $(INPUT) $(OUTPUT) $(CERR)
-	@echo "----- 🏗️ C2RISC_Engine Successfully Built 🏗️ -----"
 
 # Step 1: Generate parser files from Bison
 $(PARSER_C) $(PARSER_H): $(PARSER) 
@@ -96,8 +104,25 @@ $(LEXER_C): $(LEXER)
 
 # Step 3: Compile everything together into an executable
 $(EXECUTABLE): $(LEXER_C) $(PARSER_C) $(PARSER_H) $(OBJ_FILES) 
-	@echo "=================== 🔨 Making C2RISC Engine 🔨 ==================="
-	@$(CXX) $(CXXFLAGS) $(LEXER_C) $(PARSER_C) $(OBJ_FILES) -o $(EXECUTABLE)
+	@echo "=================== 🔨 Making C2RISC Engine(Beta Version) 🔨 ==================="
+	$(CXX) $(CXXFLAGS) $(LEXER_C) $(PARSER_C) $(OBJ_FILES) -o $(EXECUTABLE)
+
+
+# Add below your current CXXFLAGS and RELEASE_FLAGS
+RELEASE_CXXFLAGS = $(CXXFLAGS) $(RELEASE_FLAGS)
+
+# New Target
+compiler: CXXFLAGS := $(RELEASE_CXXFLAGS)
+compiler: clean $(REQUIRED_DIRS) $(RELEASE_EXECUTABLE)
+	@echo "----- 🏗️ C2RISC_Engine Successfully Built 🏗️ -----"
+	@echo "👌 Ready to use Compiler -" $(EXECUTABLE)
+
+
+# Fix the linking rule
+$(RELEASE_EXECUTABLE): $(LEXER_C) $(PARSER_C) $(PARSER_H) $(OBJ_FILES)
+	@echo "=================== 🚀 Making C2RISC Engine (Release Version) 🚀 ==================="
+	@$(CXX) $(RELEASE_CXXFLAGS) $(LEXER_C) $(PARSER_C) $(OBJ_FILES) -o $(RELEASE_EXECUTABLE)
+
 
 $(CERR): | $(OUTPUT_DIR)
 	@touch $(CERR)
@@ -171,7 +196,7 @@ semantic: all $(EXECUTABLE) $(INPUT) $(OUTPUT)
 
 execute: all $(INPUT)
 	$(CC) $(INPUT) -o $(BIN_DIR)/input_exec
-	@./$(BIN_DIR)/input_exec
+	./$(BIN_DIR)/input_exec
 
 sem_ptree: all $(EXECUTABLE) $(INPUT) $(OUTPUT)  $(CERR)
 	@echo "---------------------------------------GCC Compilation---------------------------------------"
@@ -235,7 +260,7 @@ testing: all $(EXECUTABLE) $(INPUT) $(OUTPUT) $(CERR)
 	@echo "Testing Over"
 
 debugging: all $(EXECUTABLE) $(INPUT) $(OUTPUT) $(CERR)
-	@echo "🚥 Starting C2RISC Engine 🟢 "
+	@echo "🚥 Starting C2RISC Engine 🟢 (DEBUG-MODE 🐞)"
 	@-./$(EXECUTABLE) $(INPUT) -t -d2 $(APTreeFile) 2> $(CERR)
 	@echo "🎄 APTree in - " $(APTreeSVG)
 	@-$(DOT) -Tsvg $(APTreeFile) -o $(APTreeSVG)
@@ -244,8 +269,27 @@ debugging: all $(EXECUTABLE) $(INPUT) $(OUTPUT) $(CERR)
 CFGFile = $(BUILD_DIR)/cfg.dot
 CFGSVG = $(OUTPUT_DIR)/cfg.svg
 
-cfg: all $(EXECUTABLE) $(INPUT) $(OUTPUT) $(CERR)
-	@echo "🚥 Starting C2RISC Engine 🟢 "
-	@-./$(EXECUTABLE) $(INPUT) -t 2> $(CERR)
-	@echo "CFG in - " $(CFGSVG)
+# same name as input with .s extension
+RISCVOut = "input.s"
+
+codeGen: all $(EXECUTABLE) $(INPUT) $(OUTPUT) $(CERR)
+	@echo "🚥 Starting C2RISC Engine 🟢 (Output Mode)\n"
+	@-./$(EXECUTABLE) $(INPUT) -o 2> $(CERR)
+
+codeGenDebug: all $(EXECUTABLE) $(INPUT) $(OUTPUT) $(CERR)
+	@echo "🚥 Starting C2RISC Engine 🟢 (Output Mode) + (DEBUG-MODE 🐞)\n"
+	@-./$(EXECUTABLE) $(INPUT) -d2 $(APTreeFile) -o 2> $(CERR)
 	@-$(DOT) -Tsvg $(CFGFile) -o $(CFGSVG)
+	@echo "CFG in - " $(CFGSVG)
+
+irGen: all $(EXECUTABLE) $(INPUT) $(OUTPUT) $(CERR)
+	@echo "🚥 Starting C2RISC Engine 🟢 (Till IR)\n"
+	@-./$(EXECUTABLE) $(INPUT) -t -ir 2> $(CERR)
+
+irDebug: all $(EXECUTABLE) $(INPUT) $(OUTPUT) $(CERR)
+	@echo "🚥 Starting C2RISC Engine 🟢 (Till IR) + (DEBUG-MODE 🐞)\n" 
+	@-./$(EXECUTABLE) $(INPUT) -t -d2 $(APTreeFile) -ir 2> $(CERR)
+	@echo "🎄 APTree in - " $(APTreeSVG)
+	@-$(DOT) -Tsvg $(APTreeFile) -o $(APTreeSVG)	
+
+	

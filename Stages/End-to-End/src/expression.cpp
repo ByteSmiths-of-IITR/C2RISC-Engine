@@ -157,8 +157,7 @@ int primary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
         // Get Name of Identifier
         std::string varName1 = node->children[0]->value;
 
-        TypeExpression type0;            // Find Type of Identifier from Symbol Table
-        bool wasFunctionDecayed = false; // To check if the function was decayed to pointer
+        TypeExpression type0; // Find Type of Identifier from Symbol Table
 
         // Look into the SymbolTable and Find it's
         GenericSymbol *symbol = nullptr;
@@ -179,8 +178,13 @@ int primary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
             {
                 // It's a variable Symbol
                 type0 = ((Variable *)symbol)->type;
+                // CERR << "Variable Type : " << toString(type0) << std::endl;
+                bool isStatic = (((Variable *)symbol)->storageClass == StorageClass::STATIC);
+                bool isGlobal = (symbol->scopeNo == SYM_TABLE.globalScope);
+                std::string suffix = (isGlobal) ? "" : "$" + std::to_string(symbol->scopeNo);
+                suffix = (!isStatic) ? suffix : ("_s_" + std::to_string(symbol->scopeNo));
 
-                varName1 += "$" + std::to_string(symbol->scopeNo); // Change the name to the variable
+                varName1 += suffix; // Change the name to the value
             }
             else if (symbolType == SYMBOL_TYPE::ENUM_CONSTANT)
             {
@@ -198,10 +202,11 @@ int primary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
                 // If type is a variable cast it to a poniter
 
                 // Add a new pointer level
-                aptLOG("Funtion to Pointer Decay 🏴‍☠️");
-                wasFunctionDecayed = true;
-                PointerInfo *ptr = new PointerInfo();
-                type0.levelStack.push_back(ptr);
+                // aptLOG("Funtion to Pointer Decay 🏴‍☠️"); [Function Pointer Decay OFF]
+                aptLOG("No Function Pointer Decay ❌");
+                // wasFunctionDecayed = true;
+                // PointerInfo *ptr = new PointerInfo();
+                // type0.levelStack.push_back(ptr);
             }
             else
             {
@@ -215,11 +220,17 @@ int primary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
 
         Type whichType = whatIsType(type0); // This tell me about TypeExpression
 
-        SPACE val0Space = getSpace(type0); // struct/union or array 🤯
+        SPACE val0Space = SPACE::VALUE_SPACE; // Initially all Variable will be in value space
+        // The Space Change will happen when TRANSFER_SPACE_CHANGE is called
 
-        VALUE_TYPE val0Type = (wasFunctionDecayed) ? VALUE_TYPE::NM_LVALUE : getValueType(type0); // Get the value type
+        // struct/union or array 🤯
 
+        VALUE_TYPE val0Type = getValueType(type0); // Get the value type
+
+        // CERR << "Type of Variable: " << varName1 << " is " << toString(type0) << std::endl;
         bool isConst = isConstant(type0); // [REDUANDANT CODE]
+
+
         if (isConst)
         {
             val0Type = VALUE_TYPE::NM_LVALUE; // Non Modifiable LValue
@@ -234,16 +245,25 @@ int primary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
         {
             // If in address space we need to deal with offset
 
-            // Space 🚀Change 🔖IR Code
-            std::string address = newTemp(); // allocate 'ADDRESS_SIZE' bytes
-            CODE_BASE.addTAC(node, address, ALLOCATE, std::to_string(ADDRESS_SIZE), NO_ARG); // Allocate memory for the variable
-            
             // std::string id_offset = std::to_string(((Variable *)symbol)->offset);
-            std::string id_offset = varName1 + ".offset";
+            bool isVariableGlobal = (symbol->scopeNo == SYM_TABLE.globalScope);
+            if (isVariableGlobal)
+            {
+                // If not global, it would be used as a label [which would be handled by ]
+                // No need to load offset
+            }
+            else
+            {
+                // Space 🚀Change 🔖IR Code
+                std::string address = newTemp(); // allocate 'ADDRESS_SIZE' bytes
+                std::string isF = "NO";
+                IR_CODE.addTAC(node, address, ALLOCATE, std::to_string(ADDRESS_SIZE), isF); // Allocate memory for the variable
 
-            CODE_BASE.addTAC(node, address, "=", id_offset, NO_ARG);
-
-            varName1 = address; // Change the name to the address
+                // IF not global we would need to have offset
+                std::string id_offset = varName1;
+                IR_CODE.addTAC(node, address, OFFSET_LOAD, id_offset, NO_ARG);
+                varName1 = address; // Change the name to the address
+            }
         }
         else if (val0Space == SPACE::VALUE_SPACE)
         {
@@ -284,6 +304,7 @@ int primary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
     else if (whichProduction == P2)
     {
         // aptLOG("P2 - CONSTANT");
+
         varName = node->children[0]->value;
 
         // 🟡 type
@@ -297,16 +318,34 @@ int primary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
             FAIL_H;
             return FAIL;
         }
-        type = type0;
 
-        // 🟡 VarName is the constant's value itself
-        varName = finalValue; // Change the name to the value
+        bool isFloat = isFloatingPoint(type0);
+        if (isFloat)
+        {
+            // We would need to store things in dataSection Load
+            std::string dataName = "fVar" + newDataLabel(); // Create a new name for the string
+            dataSegment data;
+            data.name = dataName;
+            data.type = dataFloat;
+            data.value = finalValue;
+            IR_CODE.dataSection[dataName] = data; // Add to the data section
+
+            varName = dataName; // Change the name to the value
+        }
+        else
+        {
+            // 🟡 VarName is the constant's value itself
+            varName = finalValue; // Change the name to the value
+        }
+
+        // Add constant qualifiers to type
+        type = type0;
 
         // 🟡 valueType
         Type whichType = whatIsType(type0);
 
         // 🟡 valueSpace
-        SPACE val0Space = getSpace(type0);
+        SPACE val0Space = SPACE::VALUE_SPACE; // Constant are in value space
 
         VALUE_TYPE val0Type = VALUE_TYPE::RVALUE;
 
@@ -344,17 +383,21 @@ int primary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
         // Check if string to be sent in .rodata or .data
         if (/*inh_whereToSendString != STACK_DATA*/ true) // FORCE it to be .rodata
         {
-            std::string tempName = "@str" + newTemp(); // [SPECIAL ALLOCATION] - 📍ToDo
+            std::string tempName = "str" + newDataLabel(); // Create a new name for the string
+
             // Remove the quotes from the string
-            std::string raw = strValue.substr(1, strValue.length() - 2);
-            std::string data = tempName + " : c\"" + raw + "\\0\"";
-            CODE_BASE.roData.push_back(data); // Add to the rodata
+            std::string data = strValue;
+            dataSegment obj;
+            obj.name = tempName;
+            obj.type = dataString;
+            obj.value = data;
+            IR_CODE.dataSection[tempName] = obj; // Add to the data section
             varName = tempName;
         }
         else
         {
             // Stack Data pass it as it is
-            varName = strValue;
+            // varName = strValue;
         }
     }
     else if (whichProduction == P4)
@@ -585,6 +628,7 @@ int postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
 
         // 🚀 SPACE CHANGE 🚀
         USAGE_SPACE_CHANGE(varName2, type2, valueSpace2, node);
+        USAGE_SPACE_CHANGE(varName1, type1, valueSpace1, node);
 
         // We need SPACE CHANGE for postfix_expression [array - Address , pointer-Value]
 
@@ -606,15 +650,15 @@ int postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
         std::string baseAddress = varName1;
 
         std::string jump_amount = newTemp(); // allocated 'int' size
-        CODE_BASE.addTAC(node, jump_amount, ALLOCATE, std::to_string(ADDRESS_SIZE), NO_ARG); // Allocate memory for the variable
+        std::string isF = "NO";
+        IR_CODE.addTAC(node, jump_amount, ALLOCATE, std::to_string(ADDRESS_SIZE), isF); // Allocate memory for the variable
 
-        CODE_BASE.addTAC(node, jump_amount, "*", varName2, element_width_str);
+        IR_CODE.addTAC(node, jump_amount, "*", varName2, element_width_str);
 
-        std::string finalAddress = newTemp(); // allocated 'int' size
-        CODE_BASE.addTAC(node, finalAddress, ALLOCATE, std::to_string(ADDRESS_SIZE), NO_ARG); // Allocate memory for the variable
+        std::string finalAddress = newTemp();                                            // allocated 'int' size
+        IR_CODE.addTAC(node, finalAddress, ALLOCATE, std::to_string(ADDRESS_SIZE), isF); // Allocate memory for the variable
 
-
-        CODE_BASE.addTAC(node, finalAddress, "+", baseAddress, jump_amount);
+        IR_CODE.addTAC(node, finalAddress, "+", baseAddress, jump_amount);
         varName = finalAddress;            // Change the name to the address
         valueSpace = SPACE::ADDRESS_SPACE; // Array Subscript is in address space
         // 🤔🤔🤔🤔🤔🤔 IMP LOGIC 🤔🤔🤔🤔🤔
@@ -655,7 +699,7 @@ int postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
 
         if (whichType1 == Type::POINTER)
         {
-            aptHERE;
+            // aptHERE;
             // First we remove the top level with is
             if (popALevel(type1) != POP_SUCCESS)
             {
@@ -663,8 +707,7 @@ int postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
                 BUG_H;
                 return BUG;
             }
-            aptHERE;
-            returnType = type1; // reset the returnType
+            // aptHERE;
             Type isFunctionPtr = whatIsType(type1);
             if (isFunctionPtr != Type::FUNCTION)
             {
@@ -674,21 +717,38 @@ int postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
             }
 
             wasVaradic = ((ParameterInfo *)type1.levelStack[type1.levelStack.size() - 1])->isVaradic;
-            aptHERE;
+            // aptHERE;
             // Find ParameterInfo
             aptLOG("Type : " + toString(type1));
             paramTypes = ((ParameterInfo *)type1.levelStack[type1.levelStack.size() - 1])->paramsType;
-            aptHERE;
+            // aptHERE;
             // Find Return Type
-            aptLOG("Return Type : " + toString(returnType));
+            returnType = type1; // reset the returnType
             if (popALevel(returnType) != POP_SUCCESS)
             {
                 compilerError("Error in popALevel");
                 BUG_H;
                 return BUG;
             }
+            aptLOG("Return Type : " + toString(returnType));
 
             // Will check function sign later
+        }
+        else if (whichType1 == Type::FUNCTION)
+        {
+            // We have a function
+            wasVaradic = ((ParameterInfo *)type1.levelStack[type1.levelStack.size() - 1])->isVaradic;
+            paramTypes = ((ParameterInfo *)type1.levelStack[type1.levelStack.size() - 1])->paramsType;
+            aptHERE;
+            // Find Return Type
+            returnType = type1; // reset the returnType
+            if (popALevel(returnType) != POP_SUCCESS)
+            {
+                compilerError("Error in popALevel");
+                BUG_H;
+                return BUG;
+            }
+            aptLOG("Return Type : " + toString(returnType));
         }
         else
         {
@@ -758,10 +818,11 @@ int postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
                         if (equal != OKAY)
                         {
                             std::string castedVarNam = newTemp(); // allocated width(dest)
-                            CODE_BASE.addTAC(node, castedVarNam, ALLOCATE, std::to_string(width(dest)), NO_ARG); // Allocate memory for the variable
-                            
-                            CODE_BASE.addTAC(node, castedVarNam, CAST, toString(dest), argName[i]); // Cast it
-                            argName[i] = castedVarNam;                                              // Change the name to the address
+                            std::string isF = isFloatingPoint(type) ? "YES" : "NO";
+                            IR_CODE.addTAC(node, castedVarNam, ALLOCATE, std::to_string(width(dest)), isF); // Allocate memory for the variable
+
+                            IR_CODE.addTAC(node, castedVarNam, CAST, toString(dest), argName[i]); // Cast it
+                            argName[i] = castedVarNam;                                            // Change the name to the address
                         }
                     }
                 }
@@ -772,16 +833,17 @@ int postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
         // Write all Parameters to TAC
         for (int i = 0; i < argName.size(); i++)
         {
-            CODE_BASE.addTAC(node, NO_ARG, PARAM, argName[i], NO_ARG);
+            IR_CODE.addTAC(node, NO_ARG, PARAM, argName[i], NO_ARG);
         }
 
         int no_args = argName.size();
 
         std::string returnVal = newTemp(); // allocated width(returnType)
         int returnSize = width(returnType);
-        CODE_BASE.addTAC(node, returnVal, ALLOCATE, std::to_string(returnSize), NO_ARG); // Allocate memory for the variable
+        std::string isF = isFloatingPoint(returnType) ? "YES" : "NO";
+        IR_CODE.addTAC(node, returnVal, ALLOCATE, std::to_string(returnSize), isF); // Allocate memory for the variable
 
-        CODE_BASE.addTAC(node, returnVal, CALL, varName1, std::to_string(no_args));
+        IR_CODE.addTAC(node, returnVal, CALL, varName1, std::to_string(no_args));
 
         varName = returnVal;               // Change the name to the address
         valueSpace = getSpace(returnType); // Function Call is in address space
@@ -852,6 +914,9 @@ int postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
         // 🚀 USAGE 🤫 SPACE CHANGE 🚀
         USAGE_SPACE_CHANGE(varName1, type1, valueSpace1, node);
 
+        // 2nd part is simply a variable
+        // USAGE_SPACE_CHANGE(varName2, type2, valueSpace2, node);
+
         // 👻 Existance Check on member of record
         BaseInfo *base = (BaseInfo *)type1.levelStack[type1.levelStack.size() - 1];
         std::string baseName = base->baseType;
@@ -908,7 +973,7 @@ int postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
                     {
                         break;
                     }
-                    memberOffset += width(member.second);
+                    memberOffset += std::max(4, width(member.second)); // 4 is the size of int
                 }
                 if (recordIDType == RecordType::UNION)
                 {
@@ -920,20 +985,21 @@ int postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
         // 🔖 IRCode Gen
 
         // valueSpace must be address space
-        if (valueSpace1 != SPACE::ADDRESS_SPACE)
-        {   
-            compilerError("Member Access was on a value space variable. SCOPE FAIL LOGIC");
-            BUG_H;
-            return BUG;
-        }
+        // if (valueSpace1 != SPACE::ADDRESS_SPACE)
+        // {
+        //     compilerError("Member Access was on a value space variable. SCOPE FAIL LOGIC");
+        //     BUG_H;
+        //     return BUG;
+        // }
 
         // Get the offset of the member
         std::string offset = std::to_string(memberOffset);
         std::string baseAddress = varName1;
         std::string memberAddress = newTemp(); // allocated address size
-        CODE_BASE.addTAC(node, memberAddress, ALLOCATE, std::to_string(ADDRESS_SIZE), NO_ARG); // Allocate memory for the variable
+        std::string isF = "NO";
+        IR_CODE.addTAC(node, memberAddress, ALLOCATE, std::to_string(ADDRESS_SIZE), isF); // Allocate memory for the variable
 
-        CODE_BASE.addTAC(node, memberAddress, "+", baseAddress, offset);
+        IR_CODE.addTAC(node, memberAddress, "+", baseAddress, offset);
         varName = memberAddress;           // Change the name to the address 🟡
         valueSpace = SPACE::ADDRESS_SPACE; // Member Selection is in address space 🟡
         // 🟡 valueType
@@ -1008,31 +1074,34 @@ int postfix_expression_H(ASTNode *node, std::string inh_whereToSendString, std::
         if (valueSpace1 == SPACE::ADDRESS_SPACE && reqSpace == SPACE::VALUE_SPACE)
         {
             // 🔖 IR Code
-            std::string valNew = newTemp(); // allocated width(type1)
+            std::string valOld = newTemp(); // allocated width(type1)
             int valNewSize = width(type1);
-            CODE_BASE.addTAC(node, valNew, ALLOCATE, std::to_string(valNewSize), NO_ARG); // Allocate memory for the variable
+            std::string isF = isFloatingPoint(type1) ? "YES" : "NO";
+            IR_CODE.addTAC(node, valOld, ALLOCATE, std::to_string(valNewSize), isF); // Allocate memory for the variable
 
-            CODE_BASE.addTAC(node, valNew, RIGHT_STAR, varName1, NO_ARG); // Load it
-            std::string valNew2 = newTemp(); // allocated width(type1)
-            CODE_BASE.addTAC(node, valNew2, ALLOCATE, std::to_string(valNewSize), NO_ARG); // Allocate memory for the variable
+            int element_width = width(type1);
+            std::cout << "Adding arg2 to RIGHT_STAR " << element_width << std::endl;
+            IR_CODE.addTAC(node, valOld, RIGHT_STAR, varName1, std::to_string(element_width)); // Load it
+            std::string valNew = newTemp();                                                    // allocated width(type1)
+            IR_CODE.addTAC(node, valNew, ALLOCATE, std::to_string(valNewSize), isF);           // Allocate memory for the variable
 
-            CODE_BASE.addTAC(node, valNew2, op, valNew, inc_decBY); // Increment it
+            IR_CODE.addTAC(node, valNew, op, valOld, inc_decBY);                              // Increment it
+            IR_CODE.addTAC(node, varName1, LEFT_STAR, valNew, std::to_string(element_width)); // Store it
 
-            CODE_BASE.addTAC(node, varName1, LEFT_STAR, valNew2, NO_ARG); // Store it
-
-            varName0 = valNew; // Old varName before inc/dec
+            varName0 = valOld; // Old varName before inc/dec
         }
         else if (valueSpace1 == SPACE::VALUE_SPACE)
         {
             // 🔖 IR Code
-            std::string valNew = newTemp(); // allocated width(type1)
+            std::string valOld = newTemp(); // allocated width(type1)
             int valNewSize = width(type1);
-            CODE_BASE.addTAC(node, valNew, ALLOCATE, std::to_string(valNewSize), NO_ARG); // Allocate memory for the variable
+            std::string isF = isFloatingPoint(type1) ? "YES" : "NO";
+            IR_CODE.addTAC(node, valOld, ALLOCATE, std::to_string(valNewSize), isF); // Allocate memory for the variable
 
-            CODE_BASE.addTAC(node, valNew, "=", varName1, inc_decBY); // Store it
+            IR_CODE.addTAC(node, valOld, ASSIGN_OP, varName1, NO_ARG); // Store it
 
-            CODE_BASE.addTAC(node, varName1, op, varName1, inc_decBY); // Increment it
-            varName0 = valNew;                                         // Old varName before inc/dec
+            IR_CODE.addTAC(node, varName1, op, varName1, inc_decBY); // Increment it
+            varName0 = valOld;                                       // Old varName before inc/dec
         }
         else
         {
@@ -1105,7 +1174,15 @@ int assignment_expression_H(ASTNode *node, std::string inh_whereToSendString, st
         PASS_THE_ERROR(a_check);
 
         //---------------------- Space 🚀Change 🔖IR Code for varName2 [🤫 General Space Before USAGE]
-        USAGE_SPACE_CHANGE(varName2, type2, valueSpace2, node);
+
+        bool bothinValueSpace = (valueSpace1 == SPACE::VALUE_SPACE && valueSpace2 == SPACE::VALUE_SPACE);
+        if (!bothinValueSpace)
+        {
+            USAGE_SPACE_CHANGE(varName2, type2, valueSpace2, node);
+            SPACE addSpace = SPACE::ADDRESS_SPACE;
+            // This will help to add offset if needed
+            TO_GIVEN_SPACE_CHANGE(varName1, valueSpace1, addSpace, type1, node);
+        }
 
         // 🅰️ TypeChecking for varName2
         // Rule - valueType - {M_LVALUE, NM_LVALUE, RVALUE} Allowed
@@ -1135,7 +1212,6 @@ int assignment_expression_H(ASTNode *node, std::string inh_whereToSendString, st
             return FAIL;
         }
 
-
         // First we check TypeChecking for operation
         TypeExpression left = type1;
         TypeExpression right = type2;
@@ -1146,37 +1222,41 @@ int assignment_expression_H(ASTNode *node, std::string inh_whereToSendString, st
         Type t2 = whatIsType(right);
 
         std::string assOP = node->children[1]->value;
-        if(assOP == "+=" || assOP == "-="){
+        if (assOP == "+=" || assOP == "-=")
+        {
             bool isNum = isNumeric(right);
             // bool isMLvalue = (valueType1 == VALUE_TYPE::M_LVALUE);
-            bool bothPtr = ((t1 == Type::ARRAY || t1==Type::POINTER) && (t2==Type::ARRAY || t2 == Type::POINTER));
+            bool bothPtr = ((t1 == Type::ARRAY || t1 == Type::POINTER) && (t2 == Type::ARRAY || t2 == Type::POINTER));
             bool okay = ((assOP == "-=") && (bothPtr));
 
             if (!isNum && !okay)
             {
-                semanticError("For Operator \""+ assOP + "\" assignment expression's operand \"" + varName2 + "\" is not a numeric type");
+                semanticError("For Operator \"" + assOP + "\" assignment expression's operand \"" + varName2 + "\" is not a numeric type");
                 FAIL_H;
                 return FAIL;
             }
 
-        ///------
+            ///------
             // Implicit Type Casting
             int equal = ourEquivalent(source, dest);
             if (equal != OKAY)
             {
                 std::string castedVarNam = newTemp(); // allocated width(dest)
-                CODE_BASE.addTAC(node, castedVarNam, ALLOCATE, std::to_string(width(dest)), NO_ARG); // Allocate memory for the variable
+                std::string isF = isFloatingPoint(dest) ? "YES" : "NO";
+                IR_CODE.addTAC(node, castedVarNam, ALLOCATE, std::to_string(width(dest)), isF); // Allocate memory for the variable
 
-                CODE_BASE.addTAC(node, castedVarNam, CAST, toString(dest), varName2); // Cast it
-                varName2 = castedVarNam;                                              // Change the name to the address
+                IR_CODE.addTAC(node, castedVarNam, CAST, toString(dest), varName2); // Cast it
+                varName2 = castedVarNam;                                            // Change the name to the address
             }
-        ////-----
+            ////-----
         }
-        else if(assOP == "*=" || assOP == "/="){
+        else if (assOP == "*=" || assOP == "/=")
+        {
             bool isNum = isNumeric(left);
             bool isNUm2 = isNumeric(right);
-            if(!isNum || !isNUm2){
-                semanticError("For Operator \""+ assOP + "\" assignment expression's operand \"" + varName1 + "\" or \"" + varName2 + "\" is not a numeric type");
+            if (!isNum || !isNUm2)
+            {
+                semanticError("For Operator \"" + assOP + "\" assignment expression's operand \"" + varName1 + "\" or \"" + varName2 + "\" is not a numeric type");
                 FAIL_H;
                 return FAIL;
             }
@@ -1186,38 +1266,20 @@ int assignment_expression_H(ASTNode *node, std::string inh_whereToSendString, st
             if (equal != OKAY)
             {
                 std::string castedVarNam = newTemp(); // allocated width(dest)
-                CODE_BASE.addTAC(node, castedVarNam, ALLOCATE, std::to_string(width(dest)), NO_ARG); // Allocate memory for the variable
+                std::string isF = isFloatingPoint(dest) ? "YES" : "NO";
+                IR_CODE.addTAC(node, castedVarNam, ALLOCATE, std::to_string(width(dest)), isF); // Allocate memory for the variable
 
-                CODE_BASE.addTAC(node, castedVarNam, CAST, toString(dest), varName2); // Cast it
-                varName2 = castedVarNam;                                              // Change the name to the address
-            }
-
-
-        }else if(assOP == "%=" || assOP == "<<=" || assOP == ">>="){
-            bool isNum = isIntegral(left);
-            bool isNUm2 = isIntegral(right);
-            if(!isNum || !isNUm2){
-                semanticError("For Operator \""+ assOP + "\" assignment expression's operand \"" + varName1 + "\" or \"" + varName2 + "\" is not a numeric type");
-                FAIL_H;
-                return FAIL;
-            }
-
-            // Implicit Type Casting
-            int equal = ourEquivalent(source, dest);
-            if (equal != OKAY)
-            {
-                std::string castedVarNam = newTemp();  // allocated width(dest)
-                CODE_BASE.addTAC(node, castedVarNam, ALLOCATE, std::to_string(width(dest)), NO_ARG); // Allocate memory for the variable
-
-                CODE_BASE.addTAC(node, castedVarNam, CAST, toString(dest), varName2); // Cast it
-                varName2 = castedVarNam;                                              // Change the name to the address
+                IR_CODE.addTAC(node, castedVarNam, CAST, toString(dest), varName2); // Cast it
+                varName2 = castedVarNam;                                            // Change the name to the address
             }
         }
-        else if(assOP == "&=" || assOP == "^=" || assOP == "|="){
+        else if (assOP == "%=" || assOP == "<<=" || assOP == ">>=")
+        {
             bool isNum = isIntegral(left);
             bool isNUm2 = isIntegral(right);
-            if(!isNum || !isNUm2){
-                semanticError("For Operator \""+ assOP + "\" assignment expression's operand \"" + varName1 + "\" or \"" + varName2 + "\" is not a numeric type");
+            if (!isNum || !isNUm2)
+            {
+                semanticError("For Operator \"" + assOP + "\" assignment expression's operand \"" + varName1 + "\" or \"" + varName2 + "\" is not a numeric type");
                 FAIL_H;
                 return FAIL;
             }
@@ -1227,13 +1289,38 @@ int assignment_expression_H(ASTNode *node, std::string inh_whereToSendString, st
             if (equal != OKAY)
             {
                 std::string castedVarNam = newTemp(); // allocated width(dest)
-                CODE_BASE.addTAC(node, castedVarNam, ALLOCATE, std::to_string(width(dest)), NO_ARG); // Allocate memory for the variable
+                std::string isF = isFloatingPoint(dest) ? "YES" : "NO";
+                IR_CODE.addTAC(node, castedVarNam, ALLOCATE, std::to_string(width(dest)), isF); // Allocate memory for the variable
 
-                CODE_BASE.addTAC(node, castedVarNam, CAST, toString(dest), varName2); // Cast it
-                varName2 = castedVarNam;                                              // Change the name to the address
+                IR_CODE.addTAC(node, castedVarNam, CAST, toString(dest), varName2); // Cast it
+                varName2 = castedVarNam;                                            // Change the name to the address
             }
         }
-        else if(assOP == "="){
+        else if (assOP == "&=" || assOP == "^=" || assOP == "|=")
+        {
+            bool isNum = isIntegral(left);
+            bool isNUm2 = isIntegral(right);
+            if (!isNum || !isNUm2)
+            {
+                semanticError("For Operator \"" + assOP + "\" assignment expression's operand \"" + varName1 + "\" or \"" + varName2 + "\" is not a numeric type");
+                FAIL_H;
+                return FAIL;
+            }
+
+            // Implicit Type Casting
+            int equal = ourEquivalent(source, dest);
+            if (equal != OKAY)
+            {
+                std::string castedVarNam = newTemp(); // allocated width(dest)
+                std::string isF = isFloatingPoint(dest) ? "YES" : "NO";
+                IR_CODE.addTAC(node, castedVarNam, ALLOCATE, std::to_string(width(dest)), isF); // Allocate memory for the variable
+
+                IR_CODE.addTAC(node, castedVarNam, CAST, toString(dest), varName2); // Cast it
+                varName2 = castedVarNam;                                            // Change the name to the address
+            }
+        }
+        else if (assOP == "=")
+        {
             // Implicit Type Casting
             bool isNum = isNumeric(source);
             bool isNum2 = isNumeric(dest);
@@ -1243,7 +1330,7 @@ int assignment_expression_H(ASTNode *node, std::string inh_whereToSendString, st
                 int check = checkEquivalance(source, dest);
                 if (check != OKAY)
                 {
-                    semanticError("For Operator \""+ assOP + "\" assignment expression's operand \"" + varName1 + "\" or \"" + varName2 + "\" is not compatible");
+                    semanticError("For Operator \"" + assOP + "\" assignment expression's operand \"" + varName1 + "\" or \"" + varName2 + "\" is not compatible");
                     FAIL_H;
                     return FAIL;
                 }
@@ -1255,14 +1342,14 @@ int assignment_expression_H(ASTNode *node, std::string inh_whereToSendString, st
                 if (equal != OKAY)
                 {
                     std::string castedVarNam = newTemp(); // allocated width(dest)
-                    CODE_BASE.addTAC(node, castedVarNam, ALLOCATE, std::to_string(width(dest)), NO_ARG); // Allocate memory for the variable
+                    std::string isF = isFloatingPoint(dest) ? "YES" : "NO";
+                    IR_CODE.addTAC(node, castedVarNam, ALLOCATE, std::to_string(width(dest)), isF); // Allocate memory for the variable
 
-                    CODE_BASE.addTAC(node, castedVarNam, CAST, toString(dest), varName1); // Cast it
-                    varName1 = castedVarNam;                                              // Change the name to the address
+                    IR_CODE.addTAC(node, castedVarNam, CAST, toString(dest), varName2); // Cast it
+                    varName2 = castedVarNam;                                            // Change the name to the address
                 }
             }
         }
-
 
         // 🎉 SIDE EFFECTS 🎉
         int width1 = elementWidth(dest);
@@ -1285,47 +1372,70 @@ int assignment_expression_H(ASTNode *node, std::string inh_whereToSendString, st
 
             if (op != "=")
             {
-                std::string resName = newTemp(); // allocated width(dest)
-                int resSize = width(dest);
-                CODE_BASE.addTAC(node, resName, ALLOCATE, std::to_string(resSize), NO_ARG); // Allocate memory for the variable
+                // instruction -> varName1 op varName2
 
-                CODE_BASE.addTAC(node, resName, op, varName2, std::to_string(width1)); // resName = varName2 op width1
+                // First newVarName2 = varName2 * width1( width of dest )
+                std::string newVarName2 = newTemp(); // allocated width(dest)
+                std::string isF = isFloatingPoint(dest) ? "YES" : "NO";
+                IR_CODE.addTAC(node, newVarName2, ALLOCATE, std::to_string(width(dest)), isF); // Allocate memory for the variable
 
-                CODE_BASE.addTAC(node, varName1, LEFT_STAR, resName, NO_ARG); // *varName1 = resName
+                IR_CODE.addTAC(node, newVarName2, "*", varName2, std::to_string(width1)); // resName = varName2 op width1
 
-                varName0 = resName;
+                // Then oldVarName1 = *varName1
+                std::string oldVarName1 = newTemp();                                           // allocated width(dest)
+                IR_CODE.addTAC(node, oldVarName1, ALLOCATE, std::to_string(width(dest)), isF); // Allocate memory for the variable
+
+                IR_CODE.addTAC(node, oldVarName1, RIGHT_STAR, varName1, std::to_string(width1)); // Load it
+
+                // Then oldVarName1 = oldVarName1 op newVarName2
+                std::string newVarName1 = oldVarName1;                           // No need of extra temp variable
+                IR_CODE.addTAC(node, newVarName1, op, oldVarName1, newVarName2); // resName = varName2 op width1
+
+                // Then *varName1 = oldVarName1
+                int element_width = width(dest);
+                IR_CODE.addTAC(node, varName1, LEFT_STAR, newVarName1, std::to_string(element_width)); // *varName1 = resName
+
+                varName0 = newVarName1; // Old varName before inc/dec
             }
             else
             {
                 // Simple Assignment
-                CODE_BASE.addTAC(node, varName1, LEFT_STAR, varName2, NO_ARG); // *varName1 = varName2
-                varName0 = varName2;                                           //
+                int element_width = width(dest);
+                IR_CODE.addTAC(node, varName1, LEFT_STAR, varName2, std::to_string(element_width)); // *varName1 = varName2
+                varName0 = varName2;                                                                //
             }
         }
-        else if (reqSpace1 == valueSpace1)
+        else
         {
             // No space change Code
             if (op != "=")
             {
+                // instruction -> varName1 op varName2
+                // First newVarName2 = varName2 * width1( width of dest )
+                std::string newVarName2 = newTemp(); // allocated width(dest)
+                std::string isF = isFloatingPoint(dest) ? "YES" : "NO";
+                IR_CODE.addTAC(node, newVarName2, ALLOCATE, std::to_string(width(dest)), isF); // Allocate memory for the variable
+                IR_CODE.addTAC(node, newVarName2, "*", varName2, std::to_string(width1));      // resName = varName2 op width1
 
-                CODE_BASE.addTAC(node, varName1, op, varName2, std::to_string(width1)); // resName = varName2 op width1
-
+                // Then varName1 = varName1 op newVarName2
+                IR_CODE.addTAC(node, varName1, op, varName1, newVarName2); // resName = varName2 op width1
                 varName0 = varName1;
             }
             else
             {
                 // Simple Assignment
 
-                CODE_BASE.addTAC(node, varName1, ASSIGN_OP, varName2, NO_ARG); // *varName1 = varName2
-                varName0 = varName1;                                           //
+                IR_CODE.addTAC(node, varName1, ASSIGN_OP, varName2, NO_ARG); // *varName1 = varName2
+                varName0 = varName1;                                         //
             }
         }
-        else
-        {
-            compilerError("Something Wrong in Space Change");
-            BUG_H;
-            return BUG; // SetUp Dummy Data
-        }
+
+        // else
+        // {
+        //     compilerError("Something Wrong in Space Change");
+        //     BUG_H;
+        //     return BUG; // SetUp Dummy Data
+        // }
         //-------------------------------------------------------------------
 
         // 🤮 Return Value 🤮
@@ -1430,25 +1540,29 @@ int unary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::st
         // IRCode Generation
         std::string resName = newTemp(); // allocated width(type1)
         int resSize = width(type1);
-        CODE_BASE.addTAC(node, resName, ALLOCATE, std::to_string(resSize), NO_ARG); // Allocate memory for the variable
-        
+        std::string isF = isFloatingPoint(type1) ? "YES" : "NO";
+        IR_CODE.addTAC(node, resName, ALLOCATE, std::to_string(resSize), isF); // Allocate memory for the variable
+
         if (valueSpace1 == SPACE::ADDRESS_SPACE)
         {
             // Load the value from address
-            CODE_BASE.addTAC(node, resName, RIGHT_STAR, varName1, NO_ARG); // resName = *varName1
+            int element_width = width(type1);
+            std::cout << "Adding arg2 to RIGHT_STAR " << element_width << std::endl;
+            IR_CODE.addTAC(node, resName, RIGHT_STAR, varName1, std::to_string(element_width)); // Load it
 
             // Perform the operation
-            CODE_BASE.addTAC(node, resName, op, resName, std::to_string(width1)); // resName = resName op width1
+            IR_CODE.addTAC(node, resName, op, resName, std::to_string(width1)); // resName = resName op width1
 
             // Store the value back to address
-            CODE_BASE.addTAC(node, varName1, LEFT_STAR, resName, NO_ARG); // *varName1 = resName
+
+            IR_CODE.addTAC(node, varName1, LEFT_STAR, resName, std::to_string(element_width)); // *varName1 = resName
 
             varName = resName; // Change the name to the address
         }
         else if (valueSpace1 == SPACE::VALUE_SPACE)
         {
-            CODE_BASE.addTAC(node, resName, op, varName1, std::to_string(width1)); // resName = varName2 op width1
-            varName = resName;                                                     // Change the name to the address
+            IR_CODE.addTAC(node, resName, op, varName1, std::to_string(width1)); // resName = varName2 op width1
+            varName = resName;                                                   // Change the name to the address
         }
         else
         {
@@ -1498,16 +1612,20 @@ int unary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::st
 
             std::string temp = newTemp(); // allocated width(type0)
             int tempSize = width(type0);
-            CODE_BASE.addTAC(node, temp, ALLOCATE, std::to_string(tempSize), NO_ARG); // Allocate memory for the variable
+            std::string isF = isFloatingPoint(type0) ? "YES" : "NO";
+            IR_CODE.addTAC(node, temp, ALLOCATE, std::to_string(tempSize), isF); // Allocate memory for the variable
 
             if (valueSpace1 == SPACE::ADDRESS_SPACE)
             {
                 // Load the value from address
-                CODE_BASE.addTAC(node, temp, ASSIGN_OP, varName1, NO_ARG); // varName = *varName1
+                // NO NEED TO LOAD THE VALUE -> already in address space
+                aptLOG("Already in Address Space - Ignore & operate on it");
+                // IR_CODE.addTAC(node, temp, ASSIGN_OP, varName1, NO_ARG); // varName = varName1  [No need of extra code]
+                temp = varName1; // Change the name to the address
             }
             else if (valueSpace1 == SPACE::VALUE_SPACE)
             {
-                CODE_BASE.addTAC(node, temp, AMPERSEND, varName1, NO_ARG); // varName = varName1
+                IR_CODE.addTAC(node, temp, AMPERSEND, varName1, NO_ARG); // varName = &varName1
             }
             else
             {
@@ -1542,7 +1660,7 @@ int unary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::st
                 return BUG;
             }
             valueType0 = getValueType(type1); // return type is of varName1
-            type0 = type1;                      // return type is of varName1
+            type0 = type1;                    // return type is of varName1
             // Pop the top level
 
             // There is no need to deref Now - will be de-referenced in the USAGE_SPACE_CHANGE
@@ -1580,12 +1698,13 @@ int unary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::st
             // IRCode Gen
             std::string resName = newTemp(); // allocated width(type1)
             int resSize = width(type1);
-            CODE_BASE.addTAC(node, resName, ALLOCATE, std::to_string(resSize), NO_ARG); // Allocate memory for the variable
-            
-            CODE_BASE.addTAC(node, resName, "-", "0", varName1); // resName = 0 - varName1
-            varName0 = resName;                                  // Change the name to the address
-            valueSpace0 = SPACE::VALUE_SPACE;                    // return space is of varName1
-            type0 = type1;                                       // return type is of varName1
+            std::string isF = isFloatingPoint(type1) ? "YES" : "NO";
+            IR_CODE.addTAC(node, resName, ALLOCATE, std::to_string(resSize), isF); // Allocate memory for the variable
+
+            IR_CODE.addTAC(node, resName, "-", "0", varName1); // resName = 0 - varName1
+            varName0 = resName;                                // Change the name to the address
+            valueSpace0 = SPACE::VALUE_SPACE;                  // return space is of varName1
+            type0 = type1;                                     // return type is of varName1
             valueType0 = VALUE_TYPE::RVALUE;
             // varName = varName0; // Change the name to the address
         }
@@ -1604,10 +1723,11 @@ int unary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::st
 
             // IRCode Gen
             std::string resName = newTemp(); // allocated width(type1)
-            int resSize = width(type1); 
-            CODE_BASE.addTAC(node, resName, ALLOCATE, std::to_string(resSize), NO_ARG); // Allocate memory for the variable
+            int resSize = width(type1);
+            std::string isF = isFloatingPoint(type1) ? "YES" : "NO";
+            IR_CODE.addTAC(node, resName, ALLOCATE, std::to_string(resSize), isF); // Allocate memory for the variable
 
-            CODE_BASE.addTAC(node, resName, "~", varName1, NO_ARG); // resName = ~varName1
+            IR_CODE.addTAC(node, resName, "~", varName1, NO_ARG); // resName = ~varName1
 
             valueType0 = VALUE_TYPE::RVALUE;
             type0 = type1;                    // return type is of varName1
@@ -1627,12 +1747,13 @@ int unary_expression_H(ASTNode *node, std::string inh_whereToSendString, std::st
                 return FAIL;
             }
 
-            // IRCode Gen 
+            // IRCode Gen
             std::string resName = newTemp(); // allocated width(type1)
             int resSize = width(type1);
-            CODE_BASE.addTAC(node, resName, ALLOCATE, std::to_string(resSize), NO_ARG); // Allocate memory for the variable
+            std::string isF = isFloatingPoint(type1) ? "YES" : "NO";
+            IR_CODE.addTAC(node, resName, ALLOCATE, std::to_string(resSize), isF); // Allocate memory for the variable
 
-            CODE_BASE.addTAC(node, resName, "!", varName1, NO_ARG); // resName = !varName1
+            IR_CODE.addTAC(node, resName, "!", varName1, NO_ARG); // resName = !varName1
 
             valueType0 = VALUE_TYPE::RVALUE;
             type0 = type1;                    // return type is of varName1
@@ -1869,32 +1990,33 @@ int multiplicative_expression_H(ASTNode *node, std::string inh_whereToSendString
 
             std::string widenType = maxWidth(primType1, primType2);
 
-            if(widenType == "SHOULD_NOT_HAPPEN"){
+            if (widenType == "SHOULD_NOT_HAPPEN")
+            {
                 semanticError("Implicit Casting is not possible with \'" + toString(type1) + "\' and \'" + toString(type2) + "\'");
                 FAIL_H;
                 return FAIL;
             }
 
-
             if (primType1 != widenType)
             {
 
-                CODE_BASE.addTAC(node, varName1, CAST, widenType, varName1);
+                IR_CODE.addTAC(node, varName1, CAST, widenType, varName1);
             }
 
             if (primType2 != widenType)
             {
 
-                CODE_BASE.addTAC(node, varName2, CAST, widenType, varName2);
+                IR_CODE.addTAC(node, varName2, CAST, widenType, varName2);
             }
 
             // Now we have both the operands in same type
             // Now we can perform the operation
             std::string result = newTemp(); // allocated width(widenType)
             int resSize = width(widenType);
-            CODE_BASE.addTAC(node, result, ALLOCATE, std::to_string(resSize), NO_ARG); // Allocate memory for the variable
+            std::string isF = isFloatingPoint(widenType) ? "YES" : "NO";
+            IR_CODE.addTAC(node, result, ALLOCATE, std::to_string(resSize), isF); // Allocate memory for the variable
 
-            CODE_BASE.addTAC(node, result, node->children[1]->value, varName1, varName2);
+            IR_CODE.addTAC(node, result, node->children[1]->value, varName1, varName2);
 
             // Sending syn_attr up
             varName = result; // Change the name to the result
@@ -1955,7 +2077,8 @@ int multiplicative_expression_H(ASTNode *node, std::string inh_whereToSendString
 
             std::string widenType = maxWidth(primType1, primType2);
 
-            if(widenType == "SHOULD_NOT_HAPPEN"){
+            if (widenType == "SHOULD_NOT_HAPPEN")
+            {
                 semanticError("Implicit Casting is not possible with \'" + toString(type1) + "\' and \'" + toString(type2) + "\'");
                 FAIL_H;
                 return FAIL;
@@ -1964,22 +2087,23 @@ int multiplicative_expression_H(ASTNode *node, std::string inh_whereToSendString
             if (primType1 != widenType)
             {
 
-                CODE_BASE.addTAC(node, varName1, CAST, widenType, varName1);
+                IR_CODE.addTAC(node, varName1, CAST, widenType, varName1);
             }
 
             if (primType2 != widenType)
             {
 
-                CODE_BASE.addTAC(node, varName2, CAST, widenType, varName2);
+                IR_CODE.addTAC(node, varName2, CAST, widenType, varName2);
             }
 
             // Now we have both the operands in same type
             // Now we can perform the operation
             std::string result = newTemp(); // allocated width(widenType)
             int resSize = width(widenType);
-            CODE_BASE.addTAC(node, result, ALLOCATE, std::to_string(resSize), NO_ARG); // Allocate memory for the variable
+            std::string isF = isFloatingPoint(widenType) ? "YES" : "NO";
+            IR_CODE.addTAC(node, result, ALLOCATE, std::to_string(resSize), isF); // Allocate memory for the variable
 
-            CODE_BASE.addTAC(node, result, node->children[1]->value, varName1, varName2);
+            IR_CODE.addTAC(node, result, node->children[1]->value, varName1, varName2);
 
             // Sending syn_attr up
             varName = result; // Change the name to the result
@@ -2076,10 +2200,12 @@ int additive_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
             (whichType2 == Type::POINTER || whichType2 == Type::FUNCTION || whichType2 == Type::ARRAY || whichType2 == Type::STRUCT_UNION))
         {
             bool bothPointer = ((whichType1 == Type::POINTER || whichType1 == Type::ARRAY) && (whichType2 == Type::POINTER || whichType2 == Type::ARRAY));
-            if(bothPointer & whichProduction == P3){
+            if (bothPointer & whichProduction == P3)
+            {
                 typeLong = true;
             }
-            else{
+            else
+            {
                 semanticError("Invalid operation " + node->children[1]->value + " between incompatible types \"" + toString(type1) + "\" and \"" + toString(type2) + "\"");
             }
         }
@@ -2113,15 +2239,17 @@ int additive_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
                 std::string elementWidthStr = std::to_string(eleWidth);
 
                 std::string scaledIntegral = newTemp(); // allocated 'int' size
-                CODE_BASE.addTAC(node, scaledIntegral, ALLOCATE, std::to_string(WORD_SIZE), NO_ARG); // Allocate memory for the variable
+                std::string isF = "NO";
+                IR_CODE.addTAC(node, scaledIntegral, ALLOCATE, std::to_string(WORD_SIZE), isF); // Allocate memory for the variable
 
-                CODE_BASE.addTAC(node, scaledIntegral, "*", integralVar, elementWidthStr);
+                IR_CODE.addTAC(node, scaledIntegral, "*", integralVar, elementWidthStr);
 
                 std::string result = newTemp(); // allocated width(pointerType)
                 int resSize = width(pointerType);
-                CODE_BASE.addTAC(node, result, ALLOCATE, std::to_string(resSize), NO_ARG); // Allocate memory for the variable
+                isF = isFloatingPoint(pointerType) ? "YES" : "NO";
+                IR_CODE.addTAC(node, result, ALLOCATE, std::to_string(resSize), isF); // Allocate memory for the variable
 
-                CODE_BASE.addTAC(node, result, node->children[1]->value, pointerVar, scaledIntegral);
+                IR_CODE.addTAC(node, result, node->children[1]->value, pointerVar, scaledIntegral);
 
                 varName = result;
                 type = pointerType;
@@ -2137,31 +2265,33 @@ int additive_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
 
                 std::string widenType = maxWidth(primType1, primType2);
 
-            if(widenType == "SHOULD_NOT_HAPPEN"){
-                semanticError("Implicit Casting is not possible with \'" + toString(type1) + "\' and \'" + toString(type2) + "\'");
-                FAIL_H;
-                return FAIL;
-            }
+                if (widenType == "SHOULD_NOT_HAPPEN")
+                {
+                    semanticError("Implicit Casting is not possible with \'" + toString(type1) + "\' and \'" + toString(type2) + "\'");
+                    FAIL_H;
+                    return FAIL;
+                }
 
                 if (primType1 != widenType)
                 {
 
-                    CODE_BASE.addTAC(node, varName1, CAST, widenType, varName1);
+                    IR_CODE.addTAC(node, varName1, CAST, widenType, varName1);
                 }
 
                 if (primType2 != widenType)
                 {
 
-                    CODE_BASE.addTAC(node, varName2, CAST, widenType, varName2);
+                    IR_CODE.addTAC(node, varName2, CAST, widenType, varName2);
                 }
 
                 // Now we have both the operands in same type
                 // Now we can perform the operation
                 std::string result = newTemp(); // allocated width(widenType)
                 int resSize = width(widenType);
-                CODE_BASE.addTAC(node, result, ALLOCATE, std::to_string(resSize), NO_ARG); // Allocate memory for the variable
+                std::string isF = isFloatingPoint(widenType) ? "YES" : "NO";
+                IR_CODE.addTAC(node, result, ALLOCATE, std::to_string(resSize), isF); // Allocate memory for the variable
 
-                CODE_BASE.addTAC(node, result, node->children[1]->value, varName1, varName2);
+                IR_CODE.addTAC(node, result, node->children[1]->value, varName1, varName2);
 
                 // Sending syn_attr up
                 varName = result; // Change the name to the result
@@ -2173,7 +2303,7 @@ int additive_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
                 type0.levelStack.push_back(base);
 
                 type = type0; // Change the type to the result type
-                valueType  = VALUE_TYPE::RVALUE;
+                valueType = VALUE_TYPE::RVALUE;
                 // Set Correctly
                 valueSpace = getSpace(type0);
             }
@@ -2187,7 +2317,6 @@ int additive_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
             }
         }
 
-        
         else if (whichProduction == P3)
         {
             aptLOG("here");
@@ -2196,8 +2325,9 @@ int additive_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
             {
                 std::string result = newTemp(); // allocated width(type1)
                 int resSize = width(type1);
-                CODE_BASE.addTAC(node, result, ALLOCATE, std::to_string(resSize), NO_ARG); // Allocate memory for the variable
-                CODE_BASE.addTAC(node, result, node->children[1]->value, varName1, varName2);
+                std::string isF = isFloatingPoint(type1) ? "YES" : "NO";
+                IR_CODE.addTAC(node, result, ALLOCATE, std::to_string(resSize), isF); // Allocate memory for the variable
+                IR_CODE.addTAC(node, result, node->children[1]->value, varName1, varName2);
             }
 
             // if in left integral then in right we cannot have pointer, function, array
@@ -2216,15 +2346,17 @@ int additive_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
                 std::string elementWidthStr = std::to_string(elementWid);
 
                 std::string scaledIntegral = newTemp(); // allocated 'int' size
-                CODE_BASE.addTAC(node, scaledIntegral, ALLOCATE, std::to_string(WORD_SIZE), NO_ARG); // Allocate memory for the variable
+                std::string isF = "NO";
+                IR_CODE.addTAC(node, scaledIntegral, ALLOCATE, std::to_string(WORD_SIZE), isF); // Allocate memory for the variable
 
-                CODE_BASE.addTAC(node, scaledIntegral, "*", varName2, elementWidthStr);
+                IR_CODE.addTAC(node, scaledIntegral, "*", varName2, elementWidthStr);
 
                 std::string result = newTemp(); // allocated width(type1)
                 int resSize = width(type1);
-                CODE_BASE.addTAC(node, result, ALLOCATE, std::to_string(resSize), NO_ARG); // Allocate memory for the variable
+                isF = isFloatingPoint(type1) ? "YES" : "NO";
+                IR_CODE.addTAC(node, result, ALLOCATE, std::to_string(resSize), isF); // Allocate memory for the variable
 
-                CODE_BASE.addTAC(node, result, node->children[1]->value, varName1, scaledIntegral);
+                IR_CODE.addTAC(node, result, node->children[1]->value, varName1, scaledIntegral);
 
                 varName = result;
                 type = type1;
@@ -2240,31 +2372,33 @@ int additive_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
 
                 std::string widenType = maxWidth(primType1, primType2);
 
-            if(widenType == "SHOULD_NOT_HAPPEN"){
-                semanticError("Implicit Casting is not possible with \'" + toString(type1) + "\' and \'" + toString(type2) + "\'");
-                FAIL_H;
-                return FAIL;
-            }
+                if (widenType == "SHOULD_NOT_HAPPEN")
+                {
+                    semanticError("Implicit Casting is not possible with \'" + toString(type1) + "\' and \'" + toString(type2) + "\'");
+                    FAIL_H;
+                    return FAIL;
+                }
 
                 if (primType1 != widenType)
                 {
 
-                    CODE_BASE.addTAC(node, varName1, CAST, widenType, varName1);
+                    IR_CODE.addTAC(node, varName1, CAST, widenType, varName1);
                 }
 
                 if (primType2 != widenType)
                 {
 
-                    CODE_BASE.addTAC(node, varName2, CAST, widenType, varName2);
+                    IR_CODE.addTAC(node, varName2, CAST, widenType, varName2);
                 }
 
                 // Now we have both the operands in same type
                 // Now we can perform the operation
                 std::string result = newTemp(); // allocated width(widenType)
                 int resSize = width(widenType);
-                CODE_BASE.addTAC(node, result, ALLOCATE, std::to_string(resSize), NO_ARG); // Allocate memory for the variable
+                std::string isF = isFloatingPoint(widenType) ? "YES" : "NO";
+                IR_CODE.addTAC(node, result, ALLOCATE, std::to_string(resSize), isF); // Allocate memory for the variable
 
-                CODE_BASE.addTAC(node, result, node->children[1]->value, varName1, varName2);
+                IR_CODE.addTAC(node, result, node->children[1]->value, varName1, varName2);
 
                 // Sending syn_attr up
                 varName = result; // Change the name to the result
@@ -2285,8 +2419,6 @@ int additive_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
                 valueType = VALUE_TYPE::RVALUE;
                 valueSpace = getSpace(type0);
             }
-
-            
 
             // If none of the above cases match, it's an invalid operation
             else
@@ -2374,7 +2506,7 @@ int shift_expression_H(ASTNode *node, std::string inh_whereToSendString, std::st
             if (primType1 == TYPE_CHAR || primType1 == TYPE_SHORT || primType1 == ENUM_CONSTANT || primType1 == TYPE_ENUM)
             {
 
-                CODE_BASE.addTAC(node, varName1, CAST, TYPE_INT, varName1);
+                IR_CODE.addTAC(node, varName1, CAST, TYPE_INT, varName1);
                 primType1 = TYPE_INT;
             }
 
@@ -2383,24 +2515,25 @@ int shift_expression_H(ASTNode *node, std::string inh_whereToSendString, std::st
             if (primType2 == TYPE_CHAR || primType2 == TYPE_SHORT || primType2 == ENUM_CONSTANT || primType2 == TYPE_ENUM)
             {
 
-                CODE_BASE.addTAC(node, varName2, CAST, TYPE_INT, varName2);
+                IR_CODE.addTAC(node, varName2, CAST, TYPE_INT, varName2);
                 primType2 = TYPE_INT;
             }
 
-            // do left shift 
+            // do left shift
             std::string result = newTemp(); // allocated width(type1)
             int resSize = width(type1);
-            CODE_BASE.addTAC(node, result, ALLOCATE, std::to_string(resSize), NO_ARG); // Allocate memory for the variable
-            
+            std::string isF = isFloatingPoint(type1) ? "YES" : "NO";
+            IR_CODE.addTAC(node, result, ALLOCATE, std::to_string(resSize), isF); // Allocate memory for the variable
+
             if (whichProduction == P2)
             {
 
-                CODE_BASE.addTAC(node, result, "<<", varName1, varName2);
+                IR_CODE.addTAC(node, result, "<<", varName1, varName2);
             }
             else
             {
 
-                CODE_BASE.addTAC(node, result, ">>", varName1, varName2);
+                IR_CODE.addTAC(node, result, ">>", varName1, varName2);
             }
             // return type will be the current type of the left operand
             varName = result;
@@ -2493,38 +2626,39 @@ int relational_expression_H(ASTNode *node, std::string inh_whereToSendString, st
 
                 std::string widenType = maxWidth(primType1, primType2);
 
-            if(widenType == "SHOULD_NOT_HAPPEN"){
-                semanticError("Implicit Casting is not possible with \'" + toString(type1) + "\' and \'" + toString(type2) + "\'");
-                FAIL_H;
-                return FAIL;
-            }
+                if (widenType == "SHOULD_NOT_HAPPEN")
+                {
+                    semanticError("Implicit Casting is not possible with \'" + toString(type1) + "\' and \'" + toString(type2) + "\'");
+                    FAIL_H;
+                    return FAIL;
+                }
 
                 if (primType1 != widenType)
                 {
 
-                    CODE_BASE.addTAC(node, varName1, CAST, widenType, varName1);
+                    IR_CODE.addTAC(node, varName1, CAST, widenType, varName1);
                 }
 
                 if (primType2 != widenType)
                 {
 
-                    CODE_BASE.addTAC(node, varName2, CAST, widenType, varName2);
+                    IR_CODE.addTAC(node, varName2, CAST, widenType, varName2);
                 }
             }
 
-            
             // Final type of result will be INTEGER
             BaseInfo *base = new BaseInfo();
             base->baseType = TYPE_INT;
             TypeExpression type0;
             type0.levelStack.push_back(base);
-            
+
             // Perform relational operation
             std::string result = newTemp(); // allocated width(type0)
             int resSize = width(type0);
-            CODE_BASE.addTAC(node, result, ALLOCATE, std::to_string(resSize), NO_ARG); // Allocate memory for the variable
-            
-            CODE_BASE.addTAC(node, result, node->children[1]->value, varName1, varName2);
+            std::string isF = isFloatingPoint(type0) ? "YES" : "NO";
+            IR_CODE.addTAC(node, result, ALLOCATE, std::to_string(resSize), isF); // Allocate memory for the variable
+
+            IR_CODE.addTAC(node, result, node->children[1]->value, varName1, varName2);
 
             varName = result;
             type = type0;
@@ -2610,39 +2744,40 @@ int equality_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
 
                 std::string widenType = maxWidth(primType1, primType2);
 
-            if(widenType == "SHOULD_NOT_HAPPEN"){
-                semanticError("Implicit Casting is not possible with \'" + toString(type1) + "\' and \'" + toString(type2) + "\'");
-                FAIL_H;
-                return FAIL;
-            }
+                if (widenType == "SHOULD_NOT_HAPPEN")
+                {
+                    semanticError("Implicit Casting is not possible with \'" + toString(type1) + "\' and \'" + toString(type2) + "\'");
+                    FAIL_H;
+                    return FAIL;
+                }
 
                 if (primType1 != widenType)
                 {
 
-                    CODE_BASE.addTAC(node, varName1, CAST, widenType, varName1);
+                    IR_CODE.addTAC(node, varName1, CAST, widenType, varName1);
                 }
 
                 if (primType2 != widenType)
                 {
 
-                    CODE_BASE.addTAC(node, varName2, CAST, widenType, varName2);
+                    IR_CODE.addTAC(node, varName2, CAST, widenType, varName2);
                 }
             }
 
-            
             // Final type of result will be INTEGER
             BaseInfo *base = new BaseInfo();
             base->baseType = TYPE_INT;
             TypeExpression type0;
             type0.levelStack.push_back(base);
-            
+
             // Perform equality operation
             std::string result = newTemp(); // allocated width(type0)
             int resSize = width(type0);
-            CODE_BASE.addTAC(node, result, ALLOCATE, std::to_string(resSize), NO_ARG); // Allocate memory for the variable
-            
-            CODE_BASE.addTAC(node, result, node->children[1]->value, varName1, varName2);
-            
+            std::string isF = isFloatingPoint(type0) ? "YES" : "NO";
+            IR_CODE.addTAC(node, result, ALLOCATE, std::to_string(resSize), isF); // Allocate memory for the variable
+
+            IR_CODE.addTAC(node, result, node->children[1]->value, varName1, varName2);
+
             varName = result;
             type = type0;
             valueType = VALUE_TYPE::RVALUE;
@@ -2654,7 +2789,6 @@ int equality_expression_H(ASTNode *node, std::string inh_whereToSendString, std:
             semanticError("Equality operation requires numeric or pointer types, but found \"" + toString(type1) + "\" and \"" + toString(type2) + "\"");
             FAIL_H;
             return FAIL;
-        
         }
     }
     else
@@ -2708,6 +2842,9 @@ int and_expression_H(ASTNode *node, std::string inh_whereToSendString, std::stri
         USAGE_SPACE_CHANGE(varName1, type1, valueSpace1, node);
         USAGE_SPACE_CHANGE(varName2, type2, valueSpace2, node);
 
+        CERR << "varName1 = " << varName1 << std::endl;
+        CERR << "varName2 = " << varName2 << std::endl;
+
         Type whichType1 = whatIsType(type1);
         Type whichType2 = whatIsType(type2);
 
@@ -2721,7 +2858,6 @@ int and_expression_H(ASTNode *node, std::string inh_whereToSendString, std::stri
             semanticError("BIT_AND operation requires integral types, but found \"" + toString(type1) + "\" and \"" + toString(type2) + "\"");
             FAIL_H;
             return FAIL;
-        
         }
         else
         {
@@ -2732,21 +2868,22 @@ int and_expression_H(ASTNode *node, std::string inh_whereToSendString, std::stri
             if (primType1 == TYPE_CHAR || primType1 == TYPE_SHORT || primType1 == ENUM_CONSTANT || primType1 == TYPE_ENUM)
             {
 
-                CODE_BASE.addTAC(node, varName1, CAST, TYPE_INT, varName1);
+                IR_CODE.addTAC(node, varName1, CAST, TYPE_INT, varName1);
                 primType1 = TYPE_INT;
             }
 
             if (primType2 == TYPE_CHAR || primType2 == TYPE_SHORT || primType2 == ENUM_CONSTANT || primType2 == TYPE_ENUM)
             {
 
-                CODE_BASE.addTAC(node, varName2, CAST, TYPE_INT, varName2);
+                IR_CODE.addTAC(node, varName2, CAST, TYPE_INT, varName2);
                 primType2 = TYPE_INT;
             }
 
             // Cast both to max width type
             std::string widenType = maxWidth(primType1, primType2);
 
-            if(widenType == "SHOULD_NOT_HAPPEN"){
+            if (widenType == "SHOULD_NOT_HAPPEN")
+            {
                 semanticError("Implicit Casting is not possible with \'" + toString(type1) + "\' and \'" + toString(type2) + "\'");
                 FAIL_H;
                 return FAIL;
@@ -2755,29 +2892,31 @@ int and_expression_H(ASTNode *node, std::string inh_whereToSendString, std::stri
             if (primType1 != widenType)
             {
 
-                CODE_BASE.addTAC(node, varName1, CAST, widenType, varName1);
+                IR_CODE.addTAC(node, varName1, CAST, widenType, varName1);
             }
 
             if (primType2 != widenType)
             {
 
-                CODE_BASE.addTAC(node, varName2, CAST, widenType, varName2);
+                IR_CODE.addTAC(node, varName2, CAST, widenType, varName2);
             }
 
-            
             // Set the result attributes
             BaseInfo *base = new BaseInfo();
             base->baseType = widenType;
             TypeExpression type0;
             type0.levelStack.push_back(base);
-            
+
             // Perform BIT_AND operation
             std::string result = newTemp(); // allocated width(type0)
             int resSize = width(type0);
-            CODE_BASE.addTAC(node, result, ALLOCATE, std::to_string(resSize), NO_ARG); // Allocate memory for the variable
-            
-            CODE_BASE.addTAC(node, result, "&", varName1, varName2);
-            
+            std::string isF = isFloatingPoint(type0) ? "YES" : "NO";
+            IR_CODE.addTAC(node, result, ALLOCATE, std::to_string(resSize), isF); // Allocate memory for the variable
+            CERR << "result = " << result << std::endl;
+            CERR << "varName1 = " << varName1 << std::endl;
+            CERR << "varName2 = " << varName2 << std::endl;
+            IR_CODE.addTAC(node, result, "&", varName1, varName2);
+
             varName = result;
             type = type0;
             valueType = VALUE_TYPE::RVALUE;
@@ -2848,7 +2987,6 @@ int exclusive_or_expression_H(ASTNode *node, std::string inh_whereToSendString, 
             semanticError("BIT_XOR operation requires integral types, but found \"" + toString(type1) + "\" and \"" + toString(type2) + "\"");
             FAIL_H;
             return FAIL;
-        
         }
         else
         {
@@ -2859,21 +2997,22 @@ int exclusive_or_expression_H(ASTNode *node, std::string inh_whereToSendString, 
             if (primType1 == TYPE_CHAR || primType1 == TYPE_SHORT || primType1 == ENUM_CONSTANT || primType1 == TYPE_ENUM)
             {
 
-                CODE_BASE.addTAC(node, varName1, CAST, TYPE_INT, varName1);
+                IR_CODE.addTAC(node, varName1, CAST, TYPE_INT, varName1);
                 primType1 = TYPE_INT;
             }
 
             if (primType2 == TYPE_CHAR || primType2 == TYPE_SHORT || primType2 == ENUM_CONSTANT || primType2 == TYPE_ENUM)
             {
 
-                CODE_BASE.addTAC(node, varName2, CAST, TYPE_INT, varName2);
+                IR_CODE.addTAC(node, varName2, CAST, TYPE_INT, varName2);
                 primType2 = TYPE_INT;
             }
 
             // Cast both to max width type
             std::string widenType = maxWidth(primType1, primType2);
 
-            if(widenType == "SHOULD_NOT_HAPPEN"){
+            if (widenType == "SHOULD_NOT_HAPPEN")
+            {
                 semanticError("Implicit Casting is not possible with \'" + toString(type1) + "\' and \'" + toString(type2) + "\'");
                 FAIL_H;
                 return FAIL;
@@ -2882,28 +3021,28 @@ int exclusive_or_expression_H(ASTNode *node, std::string inh_whereToSendString, 
             if (primType1 != widenType)
             {
 
-                CODE_BASE.addTAC(node, varName1, CAST, widenType, varName1);
+                IR_CODE.addTAC(node, varName1, CAST, widenType, varName1);
             }
 
             if (primType2 != widenType)
             {
 
-                CODE_BASE.addTAC(node, varName2, CAST, widenType, varName2);
+                IR_CODE.addTAC(node, varName2, CAST, widenType, varName2);
             }
 
-            
             // Set the result attributes
             BaseInfo *base = new BaseInfo();
             base->baseType = widenType;
             TypeExpression type0;
             type0.levelStack.push_back(base);
-            
+
             // Perform BIT_AND operation
             std::string result = newTemp(); // allocated width(type0)
             int resSize = width(type0);
-            CODE_BASE.addTAC(node, result, ALLOCATE, std::to_string(resSize), NO_ARG); // Allocate memory for the variable
+            std::string isF = isFloatingPoint(type0) ? "YES" : "NO";
+            IR_CODE.addTAC(node, result, ALLOCATE, std::to_string(resSize), isF); // Allocate memory for the variable
 
-            CODE_BASE.addTAC(node, result, "^", varName1, varName2);
+            IR_CODE.addTAC(node, result, "^", varName1, varName2);
 
             varName = result;
             type = type0;
@@ -2985,21 +3124,22 @@ int inclusive_or_expression_H(ASTNode *node, std::string inh_whereToSendString, 
             if (primType1 == TYPE_CHAR || primType1 == TYPE_SHORT || primType1 == ENUM_CONSTANT || primType1 == TYPE_ENUM)
             {
 
-                CODE_BASE.addTAC(node, varName1, CAST, TYPE_INT, varName1);
+                IR_CODE.addTAC(node, varName1, CAST, TYPE_INT, varName1);
                 primType1 = TYPE_INT;
             }
 
             if (primType2 == TYPE_CHAR || primType2 == TYPE_SHORT || primType2 == ENUM_CONSTANT || primType2 == TYPE_ENUM)
             {
 
-                CODE_BASE.addTAC(node, varName2, CAST, TYPE_INT, varName2);
+                IR_CODE.addTAC(node, varName2, CAST, TYPE_INT, varName2);
                 primType2 = TYPE_INT;
             }
 
             // Cast both to max width type
             std::string widenType = maxWidth(primType1, primType2);
 
-            if(widenType == "SHOULD_NOT_HAPPEN"){
+            if (widenType == "SHOULD_NOT_HAPPEN")
+            {
                 semanticError("Implicit Casting is not possible with \'" + toString(type1) + "\' and \'" + toString(type2) + "\'");
                 FAIL_H;
                 return FAIL;
@@ -3008,28 +3148,28 @@ int inclusive_or_expression_H(ASTNode *node, std::string inh_whereToSendString, 
             if (primType1 != widenType)
             {
 
-                CODE_BASE.addTAC(node, varName1, CAST, widenType, varName1);
+                IR_CODE.addTAC(node, varName1, CAST, widenType, varName1);
             }
 
             if (primType2 != widenType)
             {
 
-                CODE_BASE.addTAC(node, varName2, CAST, widenType, varName2);
+                IR_CODE.addTAC(node, varName2, CAST, widenType, varName2);
             }
 
-            
             // Set the result attributes
             BaseInfo *base = new BaseInfo();
             base->baseType = widenType;
             TypeExpression type0;
             type0.levelStack.push_back(base);
-            
+
             // Perform BIT_AND operation
             std::string result = newTemp(); // allocated width(type0)
             int resSize = width(type0);
-            CODE_BASE.addTAC(node, result, ALLOCATE, std::to_string(resSize), NO_ARG); // Allocate memory for the variable
+            std::string isF = isFloatingPoint(type0) ? "YES" : "NO";
+            IR_CODE.addTAC(node, result, ALLOCATE, std::to_string(resSize), isF); // Allocate memory for the variable
 
-            CODE_BASE.addTAC(node, result, "|", varName1, varName2);
+            IR_CODE.addTAC(node, result, "|", varName1, varName2);
 
             varName = result;
             type = type0;
@@ -3113,13 +3253,13 @@ int logical_and_expression_H(ASTNode *node, std::string inh_whereToSendString, s
             if (whichType1 == Type::POINTER || whichType1 == Type::ARRAY || whichType1 == Type::FUNCTION)
             {
 
-                CODE_BASE.addTAC(node, varName1, CAST, TYPE_LONG_LONG, varName1);
+                IR_CODE.addTAC(node, varName1, CAST, TYPE_LONG_LONG, varName1);
             }
 
             if (whichType2 == Type::POINTER || whichType2 == Type::ARRAY || whichType2 == Type::FUNCTION)
             {
 
-                CODE_BASE.addTAC(node, varName2, CAST, TYPE_LONG_LONG, varName2);
+                IR_CODE.addTAC(node, varName2, CAST, TYPE_LONG_LONG, varName2);
             }
 
             // Convert char, short, enum_const, enum_obj to int
@@ -3129,21 +3269,22 @@ int logical_and_expression_H(ASTNode *node, std::string inh_whereToSendString, s
             if (primType1 == TYPE_CHAR || primType1 == TYPE_SHORT || primType1 == ENUM_CONSTANT || primType1 == TYPE_ENUM)
             {
 
-                CODE_BASE.addTAC(node, varName1, CAST, TYPE_INT, varName1);
+                IR_CODE.addTAC(node, varName1, CAST, TYPE_INT, varName1);
                 primType1 = TYPE_INT;
             }
 
             if (primType2 == TYPE_CHAR || primType2 == TYPE_SHORT || primType2 == ENUM_CONSTANT || primType2 == TYPE_ENUM)
             {
 
-                CODE_BASE.addTAC(node, varName2, CAST, TYPE_INT, varName2);
+                IR_CODE.addTAC(node, varName2, CAST, TYPE_INT, varName2);
                 primType2 = TYPE_INT;
             }
 
             // Convert both to max type
             std::string widenType = maxWidth(primType1, primType2);
 
-            if(widenType == "SHOULD_NOT_HAPPEN"){
+            if (widenType == "SHOULD_NOT_HAPPEN")
+            {
                 semanticError("Implicit Casting is not possible with \'" + toString(type1) + "\' and \'" + toString(type2) + "\'");
                 FAIL_H;
                 return FAIL;
@@ -3152,28 +3293,28 @@ int logical_and_expression_H(ASTNode *node, std::string inh_whereToSendString, s
             if (primType1 != widenType)
             {
 
-                CODE_BASE.addTAC(node, varName1, CAST, widenType, varName1);
+                IR_CODE.addTAC(node, varName1, CAST, widenType, varName1);
             }
 
             if (primType2 != widenType)
             {
 
-                CODE_BASE.addTAC(node, varName2, CAST, widenType, varName2);
+                IR_CODE.addTAC(node, varName2, CAST, widenType, varName2);
             }
 
-            
             // Result type is int
             BaseInfo *base = new BaseInfo();
             base->baseType = TYPE_INT;
             TypeExpression type0;
             type0.levelStack.push_back(base);
-            
+
             // Apply AND_OP operator
             std::string result = newTemp(); // allocated width(type0)
             int resSize = width(type0);
-            CODE_BASE.addTAC(node, result, ALLOCATE, std::to_string(resSize), NO_ARG); // Allocate memory for the variable
-            
-            CODE_BASE.addTAC(node, result, "&&", varName1, varName2);
+            std::string isF = isFloatingPoint(type0) ? "YES" : "NO";
+            IR_CODE.addTAC(node, result, ALLOCATE, std::to_string(resSize), isF); // Allocate memory for the variable
+
+            IR_CODE.addTAC(node, result, "&&", varName1, varName2);
 
             varName = result;
             type = type0;
@@ -3255,13 +3396,13 @@ int logical_or_expression_H(ASTNode *node, std::string inh_whereToSendString, st
             if (whichType1 == Type::POINTER || whichType1 == Type::ARRAY || whichType1 == Type::FUNCTION)
             {
 
-                CODE_BASE.addTAC(node, varName1, CAST, TYPE_LONG_LONG, varName1);
+                IR_CODE.addTAC(node, varName1, CAST, TYPE_LONG_LONG, varName1);
             }
 
             if (whichType2 == Type::POINTER || whichType2 == Type::ARRAY || whichType2 == Type::FUNCTION)
             {
 
-                CODE_BASE.addTAC(node, varName2, CAST, TYPE_LONG_LONG, varName2);
+                IR_CODE.addTAC(node, varName2, CAST, TYPE_LONG_LONG, varName2);
             }
 
             std::string primType1 = isPrimitive(type1);
@@ -3270,20 +3411,21 @@ int logical_or_expression_H(ASTNode *node, std::string inh_whereToSendString, st
             if (primType1 == TYPE_CHAR || primType1 == TYPE_SHORT || primType1 == ENUM_CONSTANT || primType1 == TYPE_ENUM)
             {
 
-                CODE_BASE.addTAC(node, varName1, CAST, TYPE_INT, varName1);
+                IR_CODE.addTAC(node, varName1, CAST, TYPE_INT, varName1);
                 primType1 = TYPE_INT;
             }
 
             if (primType2 == TYPE_CHAR || primType2 == TYPE_SHORT || primType2 == ENUM_CONSTANT || primType2 == TYPE_ENUM)
             {
 
-                CODE_BASE.addTAC(node, varName2, CAST, TYPE_INT, varName2);
+                IR_CODE.addTAC(node, varName2, CAST, TYPE_INT, varName2);
                 primType2 = TYPE_INT;
             }
 
             std::string widenType = maxWidth(primType1, primType2);
 
-            if(widenType == "SHOULD_NOT_HAPPEN"){
+            if (widenType == "SHOULD_NOT_HAPPEN")
+            {
                 semanticError("Implicit Casting is not possible with \'" + toString(type1) + "\' and \'" + toString(type2) + "\'");
                 FAIL_H;
                 return FAIL;
@@ -3292,27 +3434,27 @@ int logical_or_expression_H(ASTNode *node, std::string inh_whereToSendString, st
             if (primType1 != widenType)
             {
 
-                CODE_BASE.addTAC(node, varName1, CAST, widenType, varName1);
+                IR_CODE.addTAC(node, varName1, CAST, widenType, varName1);
             }
 
             if (primType2 != widenType)
             {
 
-                CODE_BASE.addTAC(node, varName2, CAST, widenType, varName2);
+                IR_CODE.addTAC(node, varName2, CAST, widenType, varName2);
             }
 
-            
             BaseInfo *base = new BaseInfo();
             base->baseType = TYPE_INT;
             TypeExpression type0;
             type0.levelStack.push_back(base);
-            
+
             std::string result = newTemp(); // allocated width(type0)
             int resSize = width(type0);
-            CODE_BASE.addTAC(node, result, ALLOCATE, std::to_string(resSize), NO_ARG); // Allocate memory for the variable
-            
-            CODE_BASE.addTAC(node, result, "||", varName1, varName2);
-            
+            std::string isF = isFloatingPoint(type0) ? "YES" : "NO";
+            IR_CODE.addTAC(node, result, ALLOCATE, std::to_string(resSize), isF); // Allocate memory for the variable
+
+            IR_CODE.addTAC(node, result, "||", varName1, varName2);
+
             varName = result;
             type = type0;
             valueType = VALUE_TYPE::RVALUE;
@@ -3366,32 +3508,33 @@ int conditional_expression_H(ASTNode *node, std::string inh_whereToSendString, s
 
         std::string varName0 = newTemp(); // allocated width(type1) [ToDo: check if this is correct]
         int resSize = width(type1);
-        CODE_BASE.addTAC(node, varName0, ALLOCATE, std::to_string(resSize), NO_ARG); // Allocate memory for the variable
+        std::string isF = isFloatingPoint(type1) ? "YES" : "NO";
+        IR_CODE.addTAC(node, varName0, ALLOCATE, std::to_string(resSize), isF); // Allocate memory for the variable
 
-        int falseJump = CODE_BASE.addTAC(node, TO_BACKPATCH, IF_FALSE, varName1, NO_ARG);
+        int falseJump = IR_CODE.addTAC(node, TO_BACKPATCH, IF_FALSE, varName1, NO_ARG);
 
         // Call expression_H for the second part
         int expr_check = expression_H(node->children[2], inh_whereToSendString, varName2, type2, valueType2, valueSpace2);
         PASS_THE_ERROR(expr_check);
         // 🚀 USAGE 🤫 SPACE CHANGE 🚀
         USAGE_SPACE_CHANGE(varName2, type2, valueSpace2, node);
-        CODE_BASE.addTAC(node, varName0, ASSIGN_OP, varName2, NO_ARG);
+        IR_CODE.addTAC(node, varName0, ASSIGN_OP, varName2, NO_ARG);
 
-        int trueExit = CODE_BASE.addTAC(node, TO_BACKPATCH, GOTO_LABEL, NO_ARG, NO_ARG);
+        int trueExit = IR_CODE.addTAC(node, TO_BACKPATCH, GOTO_LABEL, NO_ARG, NO_ARG);
 
-        int falseStart = CODE_BASE.nextIndex();
+        int falseStart = IR_CODE.nextIndex();
 
-        CODE_BASE.backpatch(node, {falseJump}, falseStart);
+        IR_CODE.backpatch(node, {falseJump}, falseStart);
 
         // Call conditional_expression_H for the third part
         int cond_check = conditional_expression_H(node->children[4], inh_whereToSendString, varName3, type3, valueType3, valueSpace3);
         PASS_THE_ERROR(cond_check);
         // 🚀 USAGE 🤫 SPACE CHANGE 🚀
         USAGE_SPACE_CHANGE(varName3, type3, valueSpace3, node);
-        CODE_BASE.addTAC(node, varName0, ASSIGN_OP, varName3, NO_ARG);
+        IR_CODE.addTAC(node, varName0, ASSIGN_OP, varName3, NO_ARG);
 
-        int endOf = CODE_BASE.nextIndex();
-        CODE_BASE.backpatch(node, {trueExit}, endOf);
+        int endOf = IR_CODE.nextIndex();
+        IR_CODE.backpatch(node, {trueExit}, endOf);
 
         // 🆎 Type Checking
         // If in baseType -> widen to max width | else both must be same
@@ -3407,13 +3550,14 @@ int conditional_expression_H(ASTNode *node, std::string inh_whereToSendString, s
             {
                 std::string widenType = maxWidth(primType1, primType2);
 
-            if(widenType == "SHOULD_NOT_HAPPEN"){
-                semanticError("Implicit Casting is not possible with \'" + toString(type1) + "\' and \'" + toString(type2) + "\'");
-                FAIL_H;
-                return FAIL;
-            }
+                if (widenType == "SHOULD_NOT_HAPPEN")
+                {
+                    semanticError("Implicit Casting is not possible with \'" + toString(type1) + "\' and \'" + toString(type2) + "\'");
+                    FAIL_H;
+                    return FAIL;
+                }
                 // We cast the varName0 to the max width type
-                CODE_BASE.addTAC(node, varName0, CAST, widenType, varName0);
+                IR_CODE.addTAC(node, varName0, CAST, widenType, varName0);
 
                 // Assign
                 BaseInfo *base = new BaseInfo();

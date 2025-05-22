@@ -5,6 +5,8 @@
 #include <vector>
 #include <string>
 #include <map>
+#include <queue>
+#include <climits>
 #include <fstream>
 #include <stdexcept>
 #include <numeric>
@@ -42,6 +44,7 @@
 #include <unordered_set>
 #include <cmath>
 #include <cstdint>
+#include <queue>
 
 // Forward declaration
 class TokenAttribute;
@@ -59,6 +62,9 @@ extern bool expectingTypeName;
 std::string escapeCharacters(const std::string &input);
 
 extern std::set<std::string> typeDefIDs; // Set to store typedefs
+
+extern bool stdio_lib;
+extern bool stdarg_lib;
 
 // ASTNode class definition
 class ASTNode {

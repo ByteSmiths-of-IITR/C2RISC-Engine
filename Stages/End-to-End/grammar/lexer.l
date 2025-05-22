@@ -29,6 +29,7 @@ std::string currentToken;
 std::string lastToken;
 
 
+
 std::vector<std::string> lexerLOG;
 
 int checkForTypeDef(std::string id){
@@ -107,7 +108,18 @@ COMMENT2   "/*"([^*]|\*+[^*/])*\*+"/"
 
 %%
 
-{PREPROCESSOR_STATEMENT}        { /* Ignore preprocessor statements */ }
+{PREPROCESSOR_STATEMENT}        { 
+                                    std::string preProc = yytext;
+                                    if(preProc == "#include <stdio.h>"){
+                                        stdio_lib = true;
+                                        // std::cerr << "<stdio.h> included" << std::endl;
+                                    } 
+                                    // std::cerr << "Preprocessor: |" << yytext << "|" << std::endl;
+                                    if(preProc == "#include <stdarg.h>"){
+                                        stdarg_lib = true;
+                                        // std::cerr << "<stdarg.h> included" << std::endl;
+                                    }
+                                }
 
 {CHAR}                          { TOKEN(CONSTANT)  }
 {BINARY}                        { TOKEN(CONSTANT)  }
@@ -130,6 +142,7 @@ COMMENT2   "/*"([^*]|\*+[^*/])*\*+"/"
 "]"                             { TOKEN(RSQUARE)  }
 "."                             { TOKEN(DOT)  }
 ","                             { TOKEN(COMMA)  }
+
 "&"                             { TOKEN(BIT_AND)  }
 "*"                             { TOKEN(STAR)  }
 "+"                             { TOKEN(PLUS)  }

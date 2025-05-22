@@ -22,10 +22,10 @@ int width(const UserDType &dtype)
     }
     else if (recordType == RecordType::STRUCT)
     {
-        // For struct
+        // For struct [Needs Allignment]
         for (auto &member : members)
         {
-            totalSize += width(member.second);
+            totalSize += std::max(width(member.second), WORD_SIZE);
         }
     }
     else if (recordType == RecordType::ENUM)
@@ -448,6 +448,7 @@ int ProcessConstants(std::string inputValue, TypeExpression &typeExpr, std::stri
 {
     // Allocate a new BaseInfo to record the type.
     BaseInfo *base = new BaseInfo();
+    base->typeQualifiers.push_back(TypeQualifier::CONST);
     try
     {
         // ----- Character Literals -----
@@ -486,7 +487,7 @@ int ProcessConstants(std::string inputValue, TypeExpression &typeExpr, std::stri
         if (inputValue.find('.') != std::string::npos)
         {
             double dval = std::stod(inputValue);
-            base->baseType = TYPE_DOUBLE;
+            base->baseType = TYPE_FLOAT;
             finalValue = std::to_string(dval);
             typeExpr.levelStack.push_back(base);
             return OKAY;
@@ -608,7 +609,7 @@ int ProcessConstants(std::string inputValue, TypeExpression &typeExpr, std::stri
                 base->baseType = TYPE_INT;
             }
             else if (value >= std::numeric_limits<long>::min() &&
-                     value <= std::numeric_limits<long>::max())
+                    value <= std::numeric_limits<long>::max())
             {
                 base->baseType = TYPE_LONG;
             }
@@ -672,6 +673,10 @@ SPACE getSpace(const TypeExpression &typeExpr)
     {
         return SPACE::ADDRESS_SPACE;
     }
+    // if(whichType == Type::FUNCTION){
+    //     // Function is also in Address Space
+    //     return SPACE::ADDRESS_SPACE;
+    // }
 
     return SPACE::VALUE_SPACE;
 }
@@ -778,6 +783,30 @@ int checkEquivalance(const TypeExpression &typeExpr1, const TypeExpression &type
 
     // Both are not empty
 
+    
+
+    // If type is a function, decay them by a pointer level
+    Type type_1 = whatIsType(temp1);
+    Type type_2 = whatIsType(temp2);
+    if(type_1 == Type::FUNCTION ^ type_2 == Type::FUNCTION){
+        // If only anyone is function then decay them
+        if(type_1 == Type::FUNCTION){
+            // std::cerr << LOC << "Function Type: Decay to Pointer\n";
+            // Decay to pointer
+            PointerInfo *ptr = new PointerInfo();
+            temp1.levelStack.push_back(ptr);
+            CERR << "Function Type: Decay to Pointer on Type1\n";
+        }
+        else{
+            // std::cerr << LOC << "Function Type: Decay to Pointer\n";
+            // Decay to pointer
+            PointerInfo *ptr = new PointerInfo();
+            temp2.levelStack.push_back(ptr);
+            CERR << "Function Type: Decay to Pointer on Type2\n";
+        }
+    }
+
+
     // Check a level
     LevelInfo *info1 = temp1.levelStack.back();
     LevelInfo *info2 = temp2.levelStack.back();
@@ -834,12 +863,36 @@ int ourEquivalent(const TypeExpression &type1, const TypeExpression &type2)
     TypeExpression temp2 = type2;
     removeTopParenthesis(temp1);
     removeTopParenthesis(temp2);
+
+    Type type_1 = whatIsType(temp1);
+    Type type_2 = whatIsType(temp2);
+    if (type_1 == Type::FUNCTION ^ type_2 == Type::FUNCTION)
+    {
+        // If only anyone is function then decay them
+        if (type_1 == Type::FUNCTION)
+        {
+            // std::cerr << LOC << "Function Type: Decay to Pointer\n";
+            // Decay to pointer
+            PointerInfo *ptr = new PointerInfo();
+            temp1.levelStack.push_back(ptr);
+            CERR << "Function Type: Decay to Pointer on Type1\n";
+        }
+        else
+        {
+            // std::cerr << LOC << "Function Type: Decay to Pointer\n";
+            // Decay to pointer
+            PointerInfo *ptr = new PointerInfo();
+            temp2.levelStack.push_back(ptr);
+            CERR << "Function Type: Decay to Pointer on Type2\n";
+        }
+    }
     // // std::cerr << LOC  << "Type1: " << toString(temp1) << "\n";
     // // std::cerr << LOC  << "Type2: " << toString(temp2) << "\n";
     // If top is pointer Type - POINTER, ARRAY
     // Then ignore lower levels
     Type topType1 = whatIsType(temp1);
     Type topType2 = whatIsType(temp2);
+
 
     // // std::cerr << LOC  << "Top Type1: of Type1: " << toString(topType1) << "is " << toString(temp1) << "\n";
     // // std::cerr << LOC  << "Top Type2: of Type2: " << toString(topType2) << "is " << toString(temp2) << "\n";

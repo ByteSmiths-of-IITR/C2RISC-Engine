@@ -27,6 +27,7 @@ bool isIntegral(const TypeExpression &typeExpr)
     return false;
 }
 
+
 bool isVoid(const TypeExpression &typeExpr){
     // Check if the type expression is a void type
     LevelInfo *bottomLevel = typeExpr.levelStack[0];
@@ -95,6 +96,38 @@ bool isConstant(const TypeExpression &typeExpr)
             }
         }
     }
+    else if (topType == Type::ENUM)
+    {
+        return true; // Enum is treated as constant
+    }
+    return false;
+}
+
+bool isFloatingPoint(std::string baseType)
+{
+    // Check if the base type is a floating point type
+    if (baseType == TYPE_FLOAT || baseType == TYPE_DOUBLE || baseType == TYPE_LONG_DOUBLE)
+    {
+        return true;
+    }
+    return false;
+
+}
+
+bool isFloatingPoint(const TypeExpression &typeExpr)
+{
+    // Check if the type expression is a floating point type
+    Type topType = whatIsType(typeExpr);
+    if (topType == Type::VARIABLE)
+    {
+        BaseInfo *baseInfo = dynamic_cast<BaseInfo *>(typeExpr.levelStack[typeExpr.levelStack.size() - 1]);
+        std::string baseType = baseInfo->baseType;
+        if (baseType == TYPE_FLOAT || baseType == TYPE_DOUBLE || baseType == TYPE_LONG_DOUBLE)
+        {
+            return true;
+        }
+    }
+    return false;
 }
 
 bool isNumeric(const TypeExpression &typeExpr)
@@ -386,21 +419,6 @@ std::string combineType(std::vector<std::string> typeSpecifierVector)
     return INVALID_COMBINATION;
 }
 
-bool isFloatingPoint(const TypeExpression &typeExpr)
-{
-    // Check if the type expression is a floating point type
-    Type topType = whatIsType(typeExpr);
-    if (topType == Type::VARIABLE)
-    {
-        BaseInfo *baseInfo = dynamic_cast<BaseInfo *>(typeExpr.levelStack[typeExpr.levelStack.size() - 1]);
-        std::string baseType = baseInfo->baseType;
-        if (baseType == TYPE_FLOAT || baseType == TYPE_DOUBLE || baseType == TYPE_LONG_DOUBLE)
-        {
-            return true;
-        }
-    }
-    return false;
-}
 
 std::string INVALID_COMBINATION = "#INVALID_COMBINATION#"; // This will be used for invalid combination of types
 

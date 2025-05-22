@@ -148,10 +148,10 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 210 "grammar/parser.y"
+#line 224 "grammar/parser.y"
 
-    struct TokenAttribute* tokenAtr;
-    struct ASTNode* astNode;
+    class TokenAttribute* tokenAtr;
+    class ASTNode* astNode;
 
 #line 157 "include/parser.tab.h"
 

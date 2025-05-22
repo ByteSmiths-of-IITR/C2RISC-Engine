@@ -54,6 +54,9 @@
     "unordered_map": "cpp",
     "variant": "cpp",
     "algorithm": "cpp",
-    "complex": "cpp"
+    "complex": "cpp",
+    "unordered_set": "cpp",
+    "type_traits": "cpp",
+    "stdio.h": "c"
   }
 }

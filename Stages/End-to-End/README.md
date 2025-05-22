@@ -9,88 +9,71 @@
 - Implement `int` and `char` arrays
 - Work with pointers
 - Create and use `struct`
-- Use `printf` and `scanf`
+- Use `printf` and `scanf` | A custom version since we are not able to link the standard library
 - Implement function calls with arguments
 - Use `goto`, `break`, and `continue`
 - Use the `static` keyword
 
 ## Advanced Features
 - Implement recursive function calls
-- Perform dynamic memory allocation
 - Use `typedef`
-- Use `enum`, `union`, and `struct`
 - Implement an `until` loop
 - Implement multi-dimensional arrays
 - Work with multi-level pointers
-- Use function pointers
-- Handle command-line input
-- Implement function calls with variable arguments
 
 ## Extra Features
 - Extended to all type of arrays
 - Any Combination of array, pointer, function levels
 - `const` keyword supported
 
+Here's your **usage instruction** converted into a clean and readable **Markdown format**:
 
-# Instructions to `Run`
+---
 
-## Building the Compiler
-To build the compiler, execute the following command in the main project directory:
-```bash
-make compiler
-```
+##  C2RISC-Engine Usage Instructions
 
-## Running Tests
-To test the compiler, use the following command:
-  ```bash
-  bash run.sh <testFolderNumber>
-  ```
-  Windows users can use:
-  ```python
-  python3 script.py <testFolderNumber>
-  ```
+#### Usage: `bin/C2RISC_Engine <input_file> [ -o <output_file> ]/[ -t ] [ -d{1,2} <dot_file> ]`
 
-This will execute all test cases in the specified test folder.  
-For example:
-```bash
-bash run.sh 3
-```
-This will run all test cases under the folder `test/3. Declaration`.
+---
 
-## One-on-One Analysis
-Follow these steps for analyzing a single `.c` program:
+### 💡 Compiler Options
 
-1. Place your `.c` program in the `input/input.c` file.
+| Option               | Description                                                                 |
+| -------------------- | --------------------------------------------------------------------------- |
+| *(No Arguments)*     | Output will be printed to `stdout` (terminal).                              |
+| `-o [<output_file>]` | Send output to a file to `<output_file>` else same name as input create a output with `input_file's base + (.s)` |
+| `-t`                 | **Testing Mode** - Appends output to `<input_file>`.                        |
 
-2. Use the following commands for different purposes:
-    - **Build the Compiler**:  
-      Run:
-      ```bash
-      make compiler
-      ```
-      This will generate an executable file at `bin/C2RISC_Engine`.
+---
 
-    - **Check Input Instructions**:  
-      Run:
-      ```bash
-      ./bin/C2RISC_Engine
-      ```
+### 🐞 Debugging Options
 
-    - **Simplified Debugging**:  
-      Run:
-      ```bash
-      make debugging
-      ```
-      This will process the `input.c` file and display the results directly.
+| Option           | Description                                                  |
+| ---------------- | ------------------------------------------------------------ |
+| `-d1 <dot_file>` | Outputs **Parse Tree** to `<dot_file>`                       |
+| `-d2 <dot_file>` | Outputs **Annotated Parse Tree** to `<dot_file>`             |
+| `-ir`            | **Stops at the IR (Intermediate Representation) Phase only** |
 
-    - **Detailed Analysis**:  
-      After running the above commands, you can analyze the generated parse tree in the file `output/A_Ptree.svg` to understand the processing flow.
+---
+
+
+
 
 # Major Concepts Used
 - Lvalue(Modifiable or Non-Modifiable) & Rvalue
 - Backpatching used for control-flow
 - Space Change logic for array/pointer derefrencing to accomodate limitations of TAC
 
+- Register allocation (sub-optimal)
+- Stack allocation
+- Function call
+- Function return
+- Function arguments
+
+- Live variable analysis
+- Dead code elimination
+- Constant folding
+and more Optimizations
 ---
 
 

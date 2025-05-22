@@ -307,24 +307,6 @@ int SymbolTable::lookupNode(const std::string &key, SymbolNode *&node)
     return LOOKUP_SUCCESS;
 }
 
-SymbolTable::~SymbolTable()
-{
-
-    lastFuncCalled = "SymbolTable::~SymbolTable";
-
-    // CleanUp Code [📍 ToDo]
-    for (auto &pair : this->symTable)
-    {
-        SymbolNode *node = pair.second;
-        while (node)
-        {
-            SymbolNode *temp = node;
-            node = node->next;
-            delete temp;
-        }
-    }
-    MEM("SymbolTable Destructor");
-}
 
 // Print the SymbolTable
 

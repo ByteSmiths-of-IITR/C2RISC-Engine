@@ -8,7 +8,7 @@ std::vector<std::string> semanticLOG; // [extern declared in header.h]
 std::string semanticMessage;          // [extern declared in header.h]
 //====================[ Globally Accessible Variables ]=========================================================================================
 SymbolTable SYM_TABLE; // Global Symbol Table
-TAC CODE_BASE;         // Global TAC Code Base
+TAC IR_CODE;           // Global TAC Code Base
 
 //====================[ Annotated Parse Tree ]=========================================================================================
 
@@ -469,15 +469,15 @@ int add_printf_scanf(ASTNode *node)
     ParameterInfo *paramInfo = new ParameterInfo();
 
     // Create first ArgType (const char *)
-    TypeExpression firstArgType;
+    TypeExpression intArg;
     BaseInfo *base = new BaseInfo();
     base->baseType = TYPE_CHAR;
     base->typeQualifiers.push_back(TypeQualifier::CONST);
-    firstArgType.levelStack.push_back(base);
+    intArg.levelStack.push_back(base);
     PointerInfo *ptrInfo = new PointerInfo();
-    firstArgType.levelStack.push_back(ptrInfo);
+    intArg.levelStack.push_back(ptrInfo);
 
-    paramInfo->paramsType.push_back(firstArgType);
+    paramInfo->paramsType.push_back(intArg);
     paramInfo->isVariadic = true;
     paramInfo->isVaradic = true;
 
@@ -521,7 +521,135 @@ int add_printf_scanf(ASTNode *node)
         return insertCheck;
     }
 
-    aptLOG("Added 🤫 printf and scanf to symbol table 🖨️ due to lib <stdio.h>");
+
+    // aptLOG("Added 🤫 printf and scanf to symbol table 🖨️ due to lib <stdio.h>");
+
+    return INSERT_SUCCESS;
+}
+
+int add_our_print_scan(ASTNode *node){
+
+    /* Function signatures
+    -> void printVar(int var);
+    -> void printString(char *str);
+    -> int scanVar();
+    -> char *scanString(int size);
+    */
+
+    TypeExpression printVarType;
+    TypeExpression printStringType;
+    TypeExpression scanVarType;
+    TypeExpression scanStringType;
+
+
+    // Create int
+    TypeExpression intArg;
+    BaseInfo *intBase = new BaseInfo();
+    intBase->baseType = TYPE_INT;
+    intArg.levelStack.push_back(intBase);
+
+    // Create char *
+    TypeExpression charPtrArg;
+    BaseInfo *charBase = new BaseInfo();
+    charBase->baseType = TYPE_CHAR;
+    charPtrArg.levelStack.push_back(charBase);
+    PointerInfo *ptrInfo = new PointerInfo();
+    charPtrArg.levelStack.push_back(ptrInfo);
+
+    // Create void
+    TypeExpression voidType;
+    BaseInfo *voidBase = new BaseInfo();
+    voidBase->baseType = TYPE_VOID;
+    voidType.levelStack.push_back(voidBase);
+
+    // Creating all the function signatures
+    printVarType.levelStack.push_back(voidBase);
+        // Create argument type
+    ParameterInfo *printVarParam = new ParameterInfo();
+    printVarParam->paramsType.push_back(intArg);
+    printVarParam->isVariadic = false;
+
+    printVarType.levelStack.push_back(printVarParam);
+
+    // Add these to the symbol table
+    Function *printVarFunc = new Function();
+    printVarFunc->symbolName = "printVar";
+    printVarFunc->type = printVarType;
+    printVarFunc->isDefined = true;
+    printVarFunc->location = std::make_pair(-1, -1);
+    printVarFunc->symbolType = SYMBOL_TYPE::FUNCTION;
+    int insertCheck = SYM_TABLE.insert(SYMBOL_TYPE::FUNCTION, "printVar", printVarFunc);
+    if (insertCheck == INSERT_FAILURE)
+    {
+        return insertCheck;
+    }
+
+    // Create printString function
+    printStringType.levelStack.push_back(voidBase);
+    // Create argument type
+    ParameterInfo *printStringParam = new ParameterInfo();
+    printStringParam->paramsType.push_back(charPtrArg);
+    printStringParam->isVariadic = false;
+
+    printStringType.levelStack.push_back(printStringParam);
+
+    // Add these to the symbol table
+    Function *printStringFunc = new Function();
+    printStringFunc->symbolName = "printString";
+    printStringFunc->type = printStringType;
+    printStringFunc->isDefined = true;
+    printStringFunc->location = std::make_pair(-1, -1);
+    printStringFunc->symbolType = SYMBOL_TYPE::FUNCTION;
+    insertCheck = SYM_TABLE.insert(SYMBOL_TYPE::FUNCTION, "printString", printStringFunc);
+    if (insertCheck == INSERT_FAILURE)
+    {
+        return insertCheck;
+    }
+
+    // Create scanVar function
+    scanVarType.levelStack.push_back(intBase);
+    // Create argument type
+    ParameterInfo *scanVarParam = new ParameterInfo();
+    // No arguments
+    
+    scanVarParam->isVariadic = false;
+    scanVarType.levelStack.push_back(scanVarParam);
+
+    // Add these to the symbol table
+    Function *scanVarFunc = new Function();
+    scanVarFunc->symbolName = "scanVar";
+    scanVarFunc->type = scanVarType;
+    scanVarFunc->isDefined = true;
+    scanVarFunc->location = std::make_pair(-1, -1);
+    scanVarFunc->symbolType = SYMBOL_TYPE::FUNCTION;
+    insertCheck = SYM_TABLE.insert(SYMBOL_TYPE::FUNCTION, "scanVar", scanVarFunc);
+    if (insertCheck == INSERT_FAILURE)
+    {
+        return insertCheck;
+    }
+
+    // Create scanString function
+    scanStringType.levelStack.push_back(charBase);
+    // Create argument type
+    ParameterInfo *scanStringParam = new ParameterInfo();
+    scanStringParam->paramsType.push_back(intArg);
+    scanStringParam->isVariadic = false;
+    scanStringType.levelStack.push_back(scanStringParam);
+
+    // Add these to the symbol table
+    Function *scanStringFunc = new Function();
+    scanStringFunc->symbolName = "scanString";
+    scanStringFunc->type = scanStringType;
+    scanStringFunc->isDefined = true;
+    scanStringFunc->location = std::make_pair(-1, -1);
+    scanStringFunc->symbolType = SYMBOL_TYPE::FUNCTION;
+    insertCheck = SYM_TABLE.insert(SYMBOL_TYPE::FUNCTION, "scanString", scanStringFunc);
+    if (insertCheck == INSERT_FAILURE)
+    {
+        return insertCheck;
+    }
+
+    // aptLOG("Added 🤫 our print and scan to symbol table 🖨️ due to lib <stdio.h>");
 
     return INSERT_SUCCESS;
 }
@@ -652,12 +780,12 @@ int addVaradicLib(ASTNode *node)
         return insertCheck;
     }
 
-    aptLOG("Added 🤫 'va_start', 'va_end', 'va_arg' and 'va_copy' functions to symbol table due to lib <stdarg.h>");
+    // aptLOG("Added 🤫 'va_start', 'va_end', 'va_arg' and 'va_copy' functions to symbol table due to lib <stdarg.h>");
 
-    aptLOG("Type of va_start : " + toString(va_startType));
-    aptLOG("Type of va_end : " + toString(va_endType));
-    aptLOG("Type of va_arg : " + toString(va_argType));
-    aptLOG("Type of va_copy : " + toString(va_copyType));
+    // aptLOG("Type of va_start : " + toString(va_startType));
+    // aptLOG("Type of va_end : " + toString(va_endType));
+    // aptLOG("Type of va_arg : " + toString(va_argType));
+    // aptLOG("Type of va_copy : " + toString(va_copyType));
 
     return INSERT_SUCCESS;
 }
@@ -686,28 +814,45 @@ void semanticPass(ASTNode *node)
     SYM_TABLE.setScopeName(scopeName);                                 // Set the name of the scope
     aptLOG("Scope (Global) : S" + std::to_string(globalScope) + " ⤵️"); // 🌴 Adding syn_attr
 
-    // Hard Code addition of printf & scanf Definitions in SYM_TABLE 🖨️ 🖨️
-    int insertCheck = add_printf_scanf(node);
-    if (insertCheck == INSERT_FAILURE)
-    {
-        semanticError("Failed to insert printf and scanf in symbol table");
-        FAIL_H; // no need to return
-    }
-    else
-    {
-        // aptLOG("Added 🤫 printf and scanf to symbol table 🖨️");
+    // Auto Detected Code addition of printf & scanf Definitions in SYM_TABLE 🖨️ 🖨️
+    if(stdio_lib){
+        int insertCheck = add_printf_scanf(node);
+        if (insertCheck == INSERT_FAILURE)
+        {
+            semanticError("Failed to insert printf and scanf in symbol table");
+            FAIL_H; // no need to return
+        }
+        else
+        {
+            aptLOG("Added 🤫 printf and scanf to symbol table 🖨️ due to lib <stdio.h>");
+        }
+
+
+        // Add our print and scan functions
+        insertCheck = add_our_print_scan(node);
+        if (insertCheck == INSERT_FAILURE)
+        {
+            semanticError("Failed to insert our print and scan in symbol table");
+            FAIL_H; // no need to return
+        }
+        else
+        {
+            aptLOG("Added 🚀OUR🚀 print and scan to symbol table 🖨️ due to lib <stdio.h>");
+        }
     }
 
     // Hard Code addition of va_start & va_end Definitions in SYM_TABLE
-    insertCheck = addVaradicLib(node);
-    if (insertCheck == INSERT_FAILURE)
-    {
-        semanticError("Failed to insert va_start and va_end in symbol table");
-        FAIL_H; // no need to return
-    }
-    else
-    {
-        // aptLOG("Added 🤫 va_start and va_end to symbol table");
+    if(stdarg_lib){
+        int insertCheck = addVaradicLib(node);
+        if (insertCheck == INSERT_FAILURE)
+        {
+            semanticError("Failed to insert va_start and va_end in symbol table");
+            FAIL_H; // no need to return
+        }
+        else
+        {
+            aptLOG("Added 🤫 'va_start', 'va_end', 'va_arg' and 'va_copy' functions to symbol table due to lib <stdarg.h>");
+        }
     }
 
     translation_unit_H(node->children[0]);
@@ -717,7 +862,7 @@ void semanticPass(ASTNode *node)
     aptLOG("Scope (Global) S" + std::to_string(globalScope) + " Exited ↙️"); // 🌴 Adding syn_attr
 }
 // SYM_TABLE - Will be Globaly available
-// CODE_BASE - Will be Globaly available (TAC)
+// IR_CODE - Will be Globaly available (TAC)
 
 //====================[ Starting Handlers ]=========================================================================================
 
@@ -923,6 +1068,11 @@ int function_definition_H(ASTNode *node)
             }
         }
 
+        // 🔖IR Cdoe
+        int noOfArgs = paramInfo->paramsType.size();
+        std::string argCount = std::to_string(noOfArgs);
+        IR_CODE.addTAC(node, varName, FUNCTION_ENTRY, argCount, NO_ARG);
+
         // Now we have list of all the prameters & their names
         if (!isAbstract)
         {
@@ -960,6 +1110,13 @@ int function_definition_H(ASTNode *node)
 
                 // Add the symbol to the symbol table
                 int insertCheck = SYM_TABLE.insert(SYMBOL_TYPE::VARIABLE, paramNames[i], var);
+
+                // Need a allocate Code
+                int size = width(paramVector[i]);
+                std::string isF = isFloatingPoint(paramVector[i]) ? "YES" : "NO";
+                std::string suffix = "$" + std::to_string(SYM_TABLE.scopeNo);
+                IR_CODE.addTAC(node, paramNames[i] + suffix, ALLOCATE, std::to_string(size), isF);
+
                 if (insertCheck == INSERT_FAILURE)
                 {
                     semanticError("Parameter \"" + paramNames[i] + "\" already declared in function scope");
@@ -972,10 +1129,6 @@ int function_definition_H(ASTNode *node)
             }
         }
 
-        // 🔖IR Cdoe
-
-        CODE_BASE.addTAC(node, varName, FUNCTION_ENTRY, NO_ARG, NO_ARG);
-
         // Call the compound_statement handler
         // Data to be fetched
         std::vector<int> S1_nextList;
@@ -985,8 +1138,8 @@ int function_definition_H(ASTNode *node)
         compound_statement_H(node->children[2], S1_nextList, S1_breakList, S1_continueList, caseMap);
 
         // Backpatch the next list
-        int aLabel = CODE_BASE.nextIndex();
-        CODE_BASE.backpatch(node, S1_nextList, aLabel);
+        int aLabel = IR_CODE.nextIndex();
+        IR_CODE.backpatch(node, S1_nextList, aLabel);
 
         // TO BACKPATCH GOTO LABELS
         for (auto &pair : labelList)
@@ -996,7 +1149,7 @@ int function_definition_H(ASTNode *node)
             if (labelMap.find(label) != labelMap.end())
             {
                 int labelIndex = labelMap[label];
-                CODE_BASE.backpatch(node, list, labelIndex);
+                IR_CODE.backpatch(node, list, labelIndex);
             }
             else
             {
@@ -1005,12 +1158,12 @@ int function_definition_H(ASTNode *node)
         }
 
         // The last Code was supposed to be a return statement
-        int returnIndex = CODE_BASE.nextIndex();
-        TAC_Quadruple code = CODE_BASE.code[returnIndex - 1];
+        int returnIndex = IR_CODE.nextIndex();
+        TAC_Quadruple code = IR_CODE.code[returnIndex - 1];
 
         bool returnAbsent = (code.op != RETURN_FUNCTION);
 
-        returnAbsent = false; // [TURNED OFF]
+        // returnAbsent = false; // [TURNED ON] [ERROR SUPPRESSION]
 
         if (returnAbsent)
         {
@@ -1023,22 +1176,31 @@ int function_definition_H(ASTNode *node)
                 std::string ret = base->baseType;
                 if (ret != TYPE_VOID)
                 {
-                    semanticWarning("Function \'" + varName + "\'s return type is not void but no return statement found");
-                    FAIL_H;
-                    return FAIL;
+
+                    // Add a return statement
+                    IR_CODE.addTAC(node, NO_ARG, RETURN_FUNCTION, NO_ARG, NO_ARG);
+
+                    // semanticWarning("Function \'" + varName + "\'s return type is not void but no return statement found");
+                    // FAIL_H;
+                    // return FAIL;
                 }
             }
             else
             {
-                semanticWarning("Function \'" + varName + "\'s return type is not void but no return statement found");
-                FAIL_H;
-                return FAIL;
+
+                // Add a return statement
+                IR_CODE.addTAC(node, NO_ARG, RETURN_FUNCTION, NO_ARG, NO_ARG);
+
+                // semanticWarning("Function \'" + varName + "\'s return type is not void but no return statement found");
+                // FAIL_H;
+                // return FAIL;
             }
         }
 
-        // Adding Function Exit TAC
-        CODE_BASE.addTAC(node, varName, FUNCTION_EXIT, NO_ARG, NO_ARG);
+        int returnSize = width(returnTypeExpr);
 
+        // Adding Function Exit TAC
+        IR_CODE.addTAC(node, varName, FUNCTION_EXIT, std::to_string(returnSize), NO_ARG);
 
         // Early Entry's Exit
         int exitedScope = SYM_TABLE.earlyExit(); //  [☀️ EarlyScope Entry] [IT's POSSIBLE that the early scope entry was never used in here]
