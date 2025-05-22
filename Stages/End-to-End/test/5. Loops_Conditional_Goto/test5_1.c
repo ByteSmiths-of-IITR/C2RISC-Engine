@@ -1,5 +1,3 @@
-// test case for simple if and if else and if else if ladder
-// Output : c is the greatest
 
 #include <stdio.h>
 
@@ -12,5 +10,8 @@ int main() {
     } else {
         c = 1;
     }
+    printVar(a);
+    printVar(b);
+    printVar(c);
     return 0;
 }

@@ -11,7 +11,7 @@ int main() {
             continue; // skip the number 5
         }
         for(int j = 0; j < 2; j++) {
-            // printVar(i); // print the value of i
+            printVar(i); // print the value of i
             // printVar(j); // print the value of j
         }
         i++;

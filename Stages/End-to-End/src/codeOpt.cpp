@@ -91,6 +91,15 @@ int constantFolding(){ // TODO: unary operators left to implement
         std::string arg1 = IR_CODE.code[i].arg1;
         std::string arg2 = IR_CODE.code[i].arg2;
 
+        // Constant Propagation
+        if(newValues.find(arg1) != newValues.end()){
+            arg1 = newValues[arg1];
+        }
+
+        if(newValues.find(arg2) != newValues.end()){
+            arg2 = newValues[arg2];
+        }
+
         // Check if either of operand is a compiler temporary which is evaluated constant folded earlier
         if(newValues.find(arg1) != newValues.end()){
             arg1 = newValues[arg1];
@@ -109,7 +118,12 @@ int constantFolding(){ // TODO: unary operators left to implement
             }
         } 
         else {
-            newIR.addTAC(IR_CODE.code[i]);
+            TAC_Quadruple newTAC = IR_CODE.code[i];
+            newTAC.arg1 = arg1;
+            newTAC.arg2 = arg2;
+            newTAC.result = result;
+            newTAC.op = op;
+            newIR.addTAC(newTAC);
         }
     }
 

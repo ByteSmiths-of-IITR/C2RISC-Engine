@@ -1,4 +1,4 @@
-#-------- 🎨 RISC-V Code Gen using C2RISC-Engine Time(2025-04-29 - 11:01:37) 🎨 ---------
+#-------- 🎨 RISC-V Code Gen using C2RISC-Engine Time(2025-04-29 - 11:14:00) 🎨 ---------
 
 .data
 
@@ -61,34 +61,28 @@
         sw      fp, 20(sp)     # Store old frame pointer
         addi    fp, sp,28      # Set new frame pointer
         # 
-# ‼️ TAC ❗️ ➔ Assign OP 🟰 - i$1 = 0
+# ‼️ TAC ❗️ ➔ Assign OP 🟰 - favorite$1 = 1
         # 
-# 🤙🏼 Calling getReg() for i$1 = 0
-        #  🟢 Found Free Register - 12 for i$1
+# 🤙🏼 Calling getReg() for favorite$1 = 1
+        #  🟢 Found Free Register - 12 for favorite$1
         # 
-# 👋 GetReg() for i$1 = 0 | 🤝 `x0` reg ➜ NULL | 🤝 `x12` reg ➜ i$1 |
-        # 💛 SYM_RECORD 💛 - Setting 🚫 i$1 NOT in memory
-        # 💛 SYM_RECORD 💛 - Adding 🌕 i$1 to register 12
-        li      x12, 0         # Load constant - 0 into x12(i$1)
-        Block_2:
-        #  🫟 Spilling Code 🫟  due to ➢ Start of Block Block_2
-        sw      x12, -20(fp)   # Store Local Var - i$1 via fp in x12
-        # 💛 SYM_RECORD 💛 - Setting 🟢 i$1 in memory
-        #  🫗 Finished Spilling Code 👌 
+# 👋 GetReg() for favorite$1 = 1 | 🤝 `x0` reg ➜ NULL | 🤝 `x12` reg ➜ favorite$1 |
+        # 💛 SYM_RECORD 💛 - Setting 🚫 favorite$1 NOT in memory
+        # 💛 SYM_RECORD 💛 - Adding 🌕 favorite$1 to register 12
+        li      x12, 1         # Load constant - 1 into x12(favorite$1)
         # 
-# ‼️ TAC ❗️ ➔ Simple Operation - $0 = i$1 < 10
+# ‼️ TAC ❗️ ➔ Simple Operation - $0 = favorite$1 == 1
         # 
-# 🤙🏼 Calling getReg() for $0 = i$1 < 10
-        #  🟢 Found Free Register - 12 for i$1
-        # 💛 SYM_RECORD 💛 - Adding 🌕 i$1 to register 12
-        lw      x12, -20(fp)   # Load Local Var - i$1 via fp in x12
+# 🤙🏼 Calling getReg() for $0 = favorite$1 == 1
+        #  🔵 Already in register - favorite$1 in 12
         #  🟢 Found Free Register - 13 for $0
         # 
-# 👋 GetReg() for $0 = i$1 < 10 | 🤝 `x13` reg ➜ $0 | 🤝 `x0` reg ➜ NULL | 🤝 `x12` reg ➜ i$1 |
-        li      t1, 10         # Loading Immediate Value - 10 in x12
+# 👋 GetReg() for $0 = favorite$1 == 1 | 🤝 `x13` reg ➜ $0 | 🤝 `x0` reg ➜ NULL | 🤝 `x12` reg ➜ favorite$1 |
+        li      t1, 1          # Loading Immediate Value - 1 in x12
         # 💛 SYM_RECORD 💛 - Setting 🚫 $0 NOT in memory
         # 💛 SYM_RECORD 💛 - Adding 🌕 $0 to register 13
-        slt     x13, x12, t1   # Less Than Operation - $0 = i$1 < 10
+        sub     t1, x12, t1    # Part1 of Equality Operation - $0 = favorite$1 == 1
+        seqz    x13, t1        # Part2 of Equality Operation - $0 = favorite$1 == 1
         # 
 # ‼️ TAC ❗️ ➔ IF_TRUE - if $0 goto L(Block_0)
         # 
@@ -97,6 +91,8 @@
         # 
 # 👋 GetReg() for if $0 goto L(Block_0) | 🤝 `x13` reg ➜ $0 |
         #  🫟 Spilling Code 🫟  due to ➢ Jump due to if_true
+        sw      x12, -20(fp)   # Store Local Var - favorite$1 via fp in x12
+        # 💛 SYM_RECORD 💛 - Setting 🟢 favorite$1 in memory
         sw      x13, -24(fp)   # Store Local Var - $0 via fp in x13
         # 💛 SYM_RECORD 💛 - Setting 🟢 $0 in memory
         #  🫗 Finished Spilling Code 👌 
@@ -110,29 +106,18 @@
         #  🫟 Spilling Code 🫟  due to ➢ Start of Block Block_0
         #  🫗 Finished Spilling Code 👌 
         # 
-# ‼️ TAC ❗️ ➔ Assign OP 🟰 - $1 = i$1
-        # 🪦 Ignoring Assignment ☠️ dead variable $1
+# ‼️ TAC ❗️ ➔ Param - param favorite$1
+        # Adding favorite$1 to parameter queue
         # 
-# ‼️ TAC ❗️ ➔ Simple Operation - i$1 = i$1 + 1
-        # 
-# 🤙🏼 Calling getReg() for i$1 = i$1 + 1
-        #  🟢 Found Free Register - 12 for i$1
-        # 💛 SYM_RECORD 💛 - Adding 🌕 i$1 to register 12
-        lw      x12, -20(fp)   # Load Local Var - i$1 via fp in x12
-        #  🔵 Already in (ex)register - i$1 in 12
-        # 
-# 👋 GetReg() for i$1 = i$1 + 1 | 🤝 `x12` reg ➜ i$1 |
-        li      t1, 1          # Loading Immediate Value - 1 in x12
-        # 💛 SYM_RECORD 💛 - Setting 🚫 i$1 NOT in memory
-        # 💛 SYM_RECORD 💛 - Adding 🌕 i$1 to register 12
-        add     x12, x12, t1   # Addition Operation - i$1 = i$1 + 1
-        # 
-# ‼️ TAC ❗️ ➔ GOTO_LABEL - goto L(Block_2)
-        #  🫟 Spilling Code 🫟  due to ➢ Jump Due to goto-label
-        sw      x12, -20(fp)   # Store Local Var - i$1 via fp in x12
-        # 💛 SYM_RECORD 💛 - Setting 🟢 i$1 in memory
+# ‼️ TAC ❗️ ➔ Function Call - $1 = call printVar, 1
+        lw      t2, -20(fp)    # Load Local Var - favorite$1 via fp in t2
+        mv      a0, t2         # Move argument - favorite$1 into a0
+        #  🫟 Spilling Code 🫟  due to ➢ Going to ☎️ call a Function
         #  🫗 Finished Spilling Code 👌 
-        j       Block_2        # Unconditional Jump to label - Block_2
+        jal     x1, printVar   # Call function - printVar
+        sw      a0, -28(fp)    # Store return value in caller's stack for - $1
+        # 💛 SYM_RECORD 💛 - Setting 🚫 $1 NOT in memory
+        # 💛 SYM_RECORD 💛 - Setting 🟢 $1 in memory
         Block_1:
         #  🫟 Spilling Code 🫟  due to ➢ Start of Block Block_1
         #  🫗 Finished Spilling Code 👌 

@@ -1466,8 +1466,9 @@ int riscvCodeGen()
             CERR << "----------------------------------------" << std::endl;
         }
 
+        spillingCode("At the end of Block"); // At the end of the block
     }
-    spillingCode("End of CodeGen Spilling"); // At the end of the block
+    // spillingCode("End of CodeGen Spilling"); // At the end of the block
 
     return OKAY;
 }
